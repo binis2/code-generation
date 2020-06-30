@@ -320,11 +320,11 @@ public class Generator {
         }
     }
 
-    public static String handleType(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Type type) {
-        return handleType(source.findCompilationUnit().get(), destination.findCompilationUnit().get(), type);
+    public static String handleType(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Type type, boolean isCollection) {
+        return handleType(source.findCompilationUnit().get(), destination.findCompilationUnit().get(), type, isCollection);
     }
 
-    public static String handleType(CompilationUnit source, CompilationUnit destination, Type type) {
+    public static String handleType(CompilationUnit source, CompilationUnit destination, Type type, boolean isCollection) {
         var result = type.toString();
         if (type.isClassOrInterfaceType()) {
             var generic = handleGenericTypes(source, destination, type.asClassOrInterfaceType());
@@ -333,7 +333,7 @@ public class Generator {
             }
         }
 
-        return handleType(source, destination, result);
+        return handleType(source, destination, result, isCollection);
     }
 
     public static List<String> handleGenericTypes(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type) {
@@ -342,20 +342,20 @@ public class Generator {
         if (arguments.isEmpty() || arguments.get().isEmpty()) {
             return result;
         } else {
-            return arguments.get().stream().map(n -> handleType(source, destination, n.toString())).collect(Collectors.toList());
+            return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), false)).collect(Collectors.toList());
         }
     }
 
-    public static String getGenericsList(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type) {
+    public static String getGenericsList(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type, boolean isCollection) {
         var arguments = type.getTypeArguments();
         if (arguments.isEmpty() || arguments.get().isEmpty()) {
             return "Object";
         } else {
-            return arguments.get().stream().map(n -> handleType(source, destination, n.toString())).collect(Collectors.joining(", "));
+            return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), isCollection)).collect(Collectors.joining(", "));
         }
     }
 
-    public static String handleType(CompilationUnit source, CompilationUnit destination, String type) {
+    public static String handleType(CompilationUnit source, CompilationUnit destination, String type, boolean isCollection) {
         var parse = parsed.get(getExternalClassName(source, type));
 
         if (nonNull(parse)) {
@@ -365,6 +365,11 @@ public class Generator {
 
             var intf = parse.getFiles().get(1).getType(0);
             destination.addImport(intf.getFullyQualifiedName().get());
+            
+            if (isCollection && parse.getProperties().isGenerateModifier()) {
+                CollectionsHandler.handleEmbeddedModifier(type, parse.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration(), intf.asClassOrInterfaceDeclaration());
+            }
+            
             return intf.getNameAsString();
         } else {
             return type;
@@ -453,7 +458,7 @@ public class Generator {
             if (nonNull(generic)) {
                 field = spec.addField(generic, fieldName, PROTECTED);
             } else {
-                field = spec.addField(handleType(type, spec, method.getType()), fieldName, PROTECTED);
+                field = spec.addField(handleType(type, spec, method.getType(), false), fieldName, PROTECTED);
             }
         }
         handleFieldAnnotations(spec.findCompilationUnit().get(), field, method);
@@ -486,7 +491,7 @@ public class Generator {
         if (!methodExists(spec, declaration, name)) {
             var method = spec
                     .addMethod(name)
-                    .setType(handleType(type, spec, declaration.getType()));
+                    .setType(handleType(type, spec, declaration.getType(), false));
             if (isClass) {
                 method
                         .addModifier(PUBLIC)
@@ -536,7 +541,7 @@ public class Generator {
         if (!methodExists(spec, declaration, name)) {
             var method = spec
                     .addMethod(name)
-                    .addParameter(new Parameter().setName(declaration.getName()).setType(handleType(type, spec, declaration.getType())));
+                    .addParameter(new Parameter().setName(declaration.getName()).setType(handleType(type, spec, declaration.getType(), false)));
             if (isClass) {
                 method
                         .addModifier(PUBLIC)
@@ -586,7 +591,7 @@ public class Generator {
             var method = spec
                     .addMethod(declaration.getNameAsString())
                     .setType(modifierName)
-                    .addParameter(new Parameter().setName(declaration.getName()).setType(handleType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getType())));
+                    .addParameter(new Parameter().setName(declaration.getName()).setType(handleType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getType(), false)));
             if (isClass) {
                 method
                         .addModifier(PUBLIC)
@@ -604,7 +609,7 @@ public class Generator {
             var method = spec
                     .addMethod(declaration.getNameAsString())
                     .setType(modifierName)
-                    .addParameter(new Parameter().setName(declaration.getName()).setType(handleType(type, spec, declaration.getParameter(0).getType())));
+                    .addParameter(new Parameter().setName(declaration.getName()).setType(handleType(type, spec, declaration.getParameter(0).getType(), false)));
             if (isClass) {
                 method
                         .addModifier(PUBLIC)

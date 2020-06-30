@@ -3,6 +3,7 @@ package net.binis.demo;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.demo.codegen.CollectionsHandler;
 import net.binis.demo.codegen.Generator;
 
 import java.io.BufferedWriter;
@@ -53,11 +54,11 @@ public class CodeGen {
 
         parsed.values().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
             if (isNull(p.getProperties().getMixInClass())) {
-                var file = p.getFiles().get(0);
+                var file = CollectionsHandler.finalizeEmbeddedModifier(p.getFiles().get(0));
                 saveFile(args[1], file);
             }
             if (p.getProperties().isGenerateInterface()) {
-                var file = p.getFiles().get(1);
+                var file = CollectionsHandler.finalizeEmbeddedModifier(p.getFiles().get(1));
                 saveFile(args[1], file);
             }
         });
