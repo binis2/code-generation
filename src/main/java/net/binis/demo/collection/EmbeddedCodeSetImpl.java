@@ -26,7 +26,7 @@ public class EmbeddedCodeSetImpl<M, T, R> implements EmbeddedCodeSet<M, T, R> {
     public M add() {
         T value = CodeFactory.create(cls);
         set.add(value);
-        return CodeFactory.modify(value);
+        return CodeFactory.modify(this, value);
     }
 
     @Override

@@ -26,7 +26,7 @@ public class EmbeddedCodeListImpl<M, T, R> implements EmbeddedCodeList<M, T, R> 
     public M add() {
         T value = CodeFactory.create(cls);
         list.add(value);
-        return CodeFactory.modify(value);
+        return CodeFactory.modify(this, value);
     }
 
     @Override

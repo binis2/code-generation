@@ -97,6 +97,8 @@ public class Generator {
                         if (properties.isGenerateModifier()) {
                             addModifyMethod(spec, properties.getLongModifierName(), modifierClass.getNameAsString(), true, false);
                             addModifyMethod(intf, properties.getLongModifierName(), null, false, false);
+                            addDoneMethod(modifierClass, properties.getInterfaceName(), properties.getClassName(), true, false);
+                            addDoneMethod(modifier, properties.getInterfaceName(), null, false, false);
                             handleModifierBaseImplementation(properties, spec, modifier, modifierClass);
                         }
                     }
@@ -451,6 +453,23 @@ public class Generator {
         }
     }
 
+    private static void addDoneMethod(ClassOrInterfaceDeclaration spec, String parentName, String parentClassName, boolean isClass, boolean isAbstract) {
+        var method = spec
+                .addMethod("done")
+                .setType(parentName);
+        if (isClass) {
+            method
+                    .addModifier(PUBLIC)
+                    .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName(parentClassName + ".this"))));
+        } else {
+            if (isAbstract) {
+                method.addModifier(ABSTRACT).addModifier(PUBLIC);
+            }
+            method.setBody(null);
+        }
+    }
+
+
     private static void addField(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Type generic) {
         var fieldName = method.getNameAsString();
         var field = findField(spec, fieldName);
@@ -605,7 +624,7 @@ public class Generator {
     }
 
     private static void addModifierFromModifier(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String modifierClassName, String modifierName, boolean isClass) {
-        if (!methodExists(spec, declaration)) {
+        if (!methodExists(spec, declaration) && declaration.getParameters().isNonEmpty()) {
             var method = spec
                     .addMethod(declaration.getNameAsString())
                     .setType(modifierName)

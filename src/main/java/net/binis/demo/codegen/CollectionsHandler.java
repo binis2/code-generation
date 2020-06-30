@@ -6,6 +6,7 @@ import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.AssignExpr;
+import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
@@ -62,7 +63,7 @@ public class CollectionsHandler {
             if (isClass) {
                 var parent = className + ".this." + declaration.getName();
                 var block = new BlockStmt()
-                        .addStatement(new IfStmt().setCondition(new NameExpr().setName(parent + " != null")).setThenStmt(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName(parent)).setValue(new NameExpr().setName("new " + collection.getImplementor() + "<>()")))));
+                        .addStatement(new IfStmt().setCondition(new NameExpr().setName(parent + " == null")).setThenStmt(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName(parent)).setValue(new NameExpr().setName("new " + collection.getImplementor() + "<>()")))));
                 if (collection.isPrototypeParam()) {
                     block
                         .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection.getClassType() + "<>(this, " + parent + ", " + collection.getGeneric() +".class)")));
@@ -208,6 +209,9 @@ public class CollectionsHandler {
 
             spec.addMember(modifierClass);
             intf.addMember(modifier);
+
+            spec.findCompilationUnit().get().addImport("net.binis.demo.factory.CodeFactory");
+            spec.addStaticInitializer();
         }
     }
 
@@ -226,37 +230,52 @@ public class CollectionsHandler {
                 eIntf = embedded.getImplementedTypes(0).toString();
             }
 
+            var intfName = "<void>";
+
             for (var old : modifier.getMethods()) {
-                var method = embedded.addMethod(old.getNameAsString())
-                        .setModifiers(old.getModifiers())
-                        .setParameters(old.getParameters());
+                if (!"done".equals(old.getNameAsString())) {
+                    var method = embedded.addMethod(old.getNameAsString())
+                            .setModifiers(old.getModifiers())
+                            .setParameters(old.getParameters());
 
-                if (old.getType().asString().equals(intf)) {
-                    method.setType(eIntf);
-                    if (old.getBody().isPresent()) {
-                        method.setBody(new BlockStmt()
-                                .addStatement(new AssignExpr().setTarget(new NameExpr().setName("entity." + method.getNameAsString())).setValue(new NameExpr().setName(method.getNameAsString())))
-                                .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("this"))));
-                    } else {
-                        method.setBody(null);
-                    }
-                } else if (isCollection(old.getType())) {
-                    method.setType(old.getType().toString().replace(intf, eIntf));
-                    if (old.getBody().isPresent()) {
-                        var collection = getCollectionType(unit, unit, old.getType().asClassOrInterfaceType());
-                        var parent = "entity." + method.getNameAsString();
+                    if (old.getType().asString().equals(intf)) {
+                        method.setType(eIntf);
+                        if (old.getBody().isPresent()) {
+                            method.setBody(new BlockStmt()
+                                    .addStatement(new AssignExpr().setTarget(new NameExpr().setName("entity." + method.getNameAsString())).setValue(new NameExpr().setName(method.getNameAsString())))
+                                    .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("this"))));
+                        } else {
+                            method.setBody(null);
+                        }
+                    } else if (isCollection(old.getType())) {
+                        method.setType(old.getType().toString().replace(intf, eIntf));
+                        if (old.getBody().isPresent()) {
+                            var collection = getCollectionType(unit, unit, old.getType().asClassOrInterfaceType());
+                            var parent = "entity." + method.getNameAsString();
 
-                        method.setBody(new BlockStmt()
-                                .addStatement(new IfStmt().setCondition(new NameExpr().setName(parent + " != null")).setThenStmt(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName(parent)).setValue(new NameExpr().setName("new " + collection.getImplementor() + "<>()")))))
-                                .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection.getClassType() + "<>(this, " + parent + ")"))));
+                            method.setBody(new BlockStmt()
+                                    .addStatement(new IfStmt().setCondition(new NameExpr().setName(parent + " != null")).setThenStmt(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName(parent)).setValue(new NameExpr().setName("new " + collection.getImplementor() + "<>()")))))
+                                    .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection.getClassType() + "<>(this, " + parent + ")"))));
+                        } else {
+                            method.setBody(null);
+                        }
                     } else {
-                        method.setBody(null);
+                        method.setType(old.getType());
+                        method.setBody(old.getBody().orElse(null));
                     }
                 } else {
-                    method.setType(old.getType());
-                    method.setBody(old.getBody().orElse(null));
+                    intfName = old.getType().asClassOrInterfaceType().getNameAsString();
                 }
+            }
 
+            var initilizer = unit.getType(0).getMembers().stream().filter(BodyDeclaration::isInitializerDeclaration).map(BodyDeclaration::asInitializerDeclaration).findFirst().orElse(null);
+            if (initilizer != null) {
+                initilizer.getBody()
+                        .addStatement(new MethodCallExpr()
+                                .setName("CodeFactory.registerEmbeddableType")
+                                .addArgument(intfName + ".class")
+                                .addArgument(unit.getType(0).asClassOrInterfaceDeclaration().getNameAsString() + ".class")
+                                .addArgument(embedded.getNameAsString() + ".class"));
             }
         }
         return unit;
