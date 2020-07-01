@@ -2,35 +2,49 @@ package net.binis.demo.collection;
 
 import net.binis.demo.factory.CodeFactory;
 
+import java.util.Comparator;
 import java.util.List;
 
-public class EmbeddedCodeListImpl<M, T, R> implements EmbeddedCollection<M, T, R> {
+public class EmbeddedCodeListImpl<M, T, R> extends EmbeddedCodeCollectionImpl<M, T, R> {
 
-    private final R parent;
     private final List<T> list;
-    private final Class<T> cls;
 
     public EmbeddedCodeListImpl(R parent, List<T> list, Class<T> cls) {
-        this.parent = parent;
+        super(parent, list, cls);
         this.list = list;
-        this.cls = cls;
     }
 
     @Override
-    public EmbeddedCollection<M, T, R> add(T value) {
-        list.add(value);
+    public EmbeddedCodeCollection<M, T, R> remove(int index) {
+        list.remove(index);
         return this;
     }
 
     @Override
-    public M add() {
+    public EmbeddedCodeCollection<M, T, R> sort(Comparator<? super T> comparator) {
+        list.sort(comparator);
+        return this;
+    }
+
+    @Override
+    public M get(int index) {
+        return CodeFactory.modify(this, list.get(index));
+    }
+
+    @Override
+    public M insert(int index) {
         T value = CodeFactory.create(cls);
-        list.add(value);
+        list.add(index, value);
         return CodeFactory.modify(this, value);
     }
 
     @Override
-    public R and() {
-        return parent;
+    public M first() {
+        return CodeFactory.modify(this, list.get(0));
+    }
+
+    @Override
+    public M last() {
+        return CodeFactory.modify(this, list.get(list.size() - 1));
     }
 }

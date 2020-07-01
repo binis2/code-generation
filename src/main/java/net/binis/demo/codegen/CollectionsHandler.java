@@ -168,12 +168,12 @@ public class CollectionsHandler {
         var result = builder.build();
 
         if (result.isPrototypeParam()) {
-            result.setType("EmbeddedCollection");
+            result.setType("EmbeddedCodeCollection");
             result.setClassType("Embedded" + result.getClassType());
         }
 
-        result.setClassImport("net.binis.demo.collection." + result.getClassType());
         result.setInterfaceImport("net.binis.demo.collection." + result.getType());
+        result.setClassImport("net.binis.demo.collection." + result.getClassType());
 
         return result;
     }
@@ -188,7 +188,7 @@ public class CollectionsHandler {
                     .addTypeParameter("T")
                     .setInterface(true);
             modifier.addMethod("and")
-                    .setType("EmbeddedCollection<EmbeddedModify<T>, Inner, T>")
+                    .setType("EmbeddedCodeCollection<EmbeddedModify<T>, " + intf.getNameAsString() + ", T>")
                     .setBody(null);
 
             var modifierClass = new ClassOrInterfaceDeclaration(
@@ -204,16 +204,16 @@ public class CollectionsHandler {
                             .addStatement(new AssignExpr().setTarget(new NameExpr().setName("this.parent")).setValue(new NameExpr().setName("parent")))
                             .addStatement(new AssignExpr().setTarget(new NameExpr().setName("this.entity")).setValue(new NameExpr().setName("entity"))));
             modifierClass.addMethod("and", PUBLIC)
-                    .setType("EmbeddedCollection<EmbeddedModify<T>, Inner, T>")
-                    .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("(EmbeddedCollection) parent"))));
+                    .setType("EmbeddedCodeCollection<EmbeddedModify<T>, " + intf.getNameAsString() + ", T>")
+                    .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("(EmbeddedCodeCollection) parent"))));
 
             spec.addMember(modifierClass);
             intf.addMember(modifier);
 
-            intf.findCompilationUnit().get().addImport("net.binis.demo.collection.EmbeddedCollection");
+            intf.findCompilationUnit().get().addImport("net.binis.demo.collection.EmbeddedCodeCollection");
             spec.findCompilationUnit().ifPresent(u -> {
                 u.addImport("net.binis.demo.factory.CodeFactory");
-                u.addImport("net.binis.demo.collection.EmbeddedCollection");
+                u.addImport("net.binis.demo.collection.EmbeddedCodeCollection");
             });
             spec.addStaticInitializer();
         }
