@@ -326,13 +326,14 @@ public class Generator {
                 intf.addExtendedType(parentIntf.getNameAsString());
                 parentSpec.findCompilationUnit().get().addImport(intf.getFullyQualifiedName().get());
                 parentSpec.addImplementedType(intf.getNameAsString());
-                mergeTypes(spec, parentSpec, m -> !m.isMethodDeclaration() || !m.asMethodDeclaration().getNameAsString().equals("modify"));
+                mergeTypes(spec, parentSpec, m -> !m.isMethodDeclaration() || !Constants.MODIFIER_METHOD_NAME.equals(m.asMethodDeclaration().getNameAsString()));
                 mergeImports(spec.findCompilationUnit().get(), parentSpec.findCompilationUnit().get());
                 var modifier = findModifier(intf);
                 if (parse.getProperties().isGenerateModifier() && parent.getProperties().isGenerateModifier()) {
                     mergeModifierTypes(parse, parent.getProperties(), modifier, findModifier(spec), findModifier(parentIntf), findModifier(parentSpec));
                 }
                 intf.getMembers().remove(modifier);
+                intf.findFirst(MethodDeclaration.class).ifPresent(m -> intf.getMembers().remove(m));
             }
         }
     }
@@ -454,7 +455,7 @@ public class Generator {
 
     private static void addModifyMethod(ClassOrInterfaceDeclaration spec, String modifierName, String modifierClassName, boolean isClass, boolean isAbstract) {
         var method = spec
-                .addMethod("modify")
+                .addMethod(Constants.MODIFIER_METHOD_NAME)
                 .setType(modifierName);
         if (isClass) {
             method

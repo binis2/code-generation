@@ -173,8 +173,7 @@ public class Helpers {
     }
 
     public static ClassOrInterfaceDeclaration findModifier(ClassOrInterfaceDeclaration intf) {
-        return intf.getMembers().stream().filter(m -> m instanceof ClassOrInterfaceDeclaration &&
-                nullCheck(m.asClassOrInterfaceDeclaration().getNameAsString(), name -> name.equals("Modify") || name.endsWith("ModifyImpl"))).findFirst().get().asClassOrInterfaceDeclaration();
+        return intf.findFirst(ClassOrInterfaceDeclaration.class, m -> nullCheck(m.getNameAsString(), name -> name.equals("Modify") || name.endsWith("ModifyImpl"))).orElseThrow();
     }
 
     public static Parsed getParsed(ClassOrInterfaceType type) {
