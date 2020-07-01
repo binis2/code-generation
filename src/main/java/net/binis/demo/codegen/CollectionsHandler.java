@@ -168,7 +168,7 @@ public class CollectionsHandler {
         var result = builder.build();
 
         if (result.isPrototypeParam()) {
-            result.setType("Embedded" + result.getType());
+            result.setType("EmbeddedCollection");
             result.setClassType("Embedded" + result.getClassType());
         }
 

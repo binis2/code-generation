@@ -23,6 +23,7 @@ public class Structures {
 
         private String baseClassName;
 
+        private boolean generateConstructor;
         private boolean generateInterface;
         private boolean generateModifier;
         private boolean base;

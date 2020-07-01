@@ -8,6 +8,7 @@ import java.lang.annotation.RetentionPolicy;
 public @interface CodePrototype {
 
     String name() default "";
+    boolean generateConstructor() default true;
     boolean generateInterface() default true;
     boolean generateModifier() default false;
     boolean base() default false;

@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 public class CodeFactory {
 
     private static Map<Class<?>, RegistryEntry> registry = new HashMap<>();
+    private static Map<Class<?>, Class<?>> implementors = new HashMap<>();
 
     @SuppressWarnings("unchecked")
     public static <T> T create(Class<T> cls) {
@@ -39,21 +40,26 @@ public class CodeFactory {
     @SuppressWarnings("unchecked")
     public static <M, T, P> M modify(P parent, T value) {
         try {
-            var entry = registry.get(value.getClass());
-            if (entry != null) {
-                var modifier = entry.getModifier();
-                if (modifier == null) {
-                    modifier = tryGenerateModifier(entry.modifierClass);
-                    entry.setModifier(modifier);
-                }
+            var intf = implementors.get(value.getClass());
+            if (intf != null) {
+                var entry = registry.get(intf);
+                if (entry != null) {
+                    var modifier = entry.getModifier();
+                    if (modifier == null) {
+                        modifier = tryGenerateModifier(entry.modifierClass, entry.getImplClass());
+                        entry.setModifier(modifier);
+                    }
 
-                if (modifier != null) {
-                    return (M) modifier.apply(parent, value);
+                    if (modifier != null) {
+                        return (M) modifier.apply(parent, value);
+                    } else {
+                        throw new RuntimeException("Can't instantiate " + value.getClass().getName());
+                    }
                 } else {
-                    throw new RuntimeException("Can't instantiate " + value.getClass().getName());
+                    throw new RuntimeException("There is no registry for " + value.getClass().getName());
                 }
             } else {
-                throw new RuntimeException("There is no registry for " + value.getClass().getName());
+                throw new RuntimeException("Can't find interface for " + value.getClass().getName());
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -70,9 +76,10 @@ public class CodeFactory {
         };
     }
 
-    private static BiFunction<Object, Object, Object> tryGenerateModifier(Class<?> modifierClass) {
+    private static BiFunction<Object, Object, Object> tryGenerateModifier(Class<?> modifierClass, Class<?> entityClass) {
         try {
-            var constructor = modifierClass.getDeclaredConstructor(Object.class, Object.class);
+            var constructor = modifierClass.getDeclaredConstructor(Object.class, entityClass);
+            constructor.setAccessible(true);
 
             return (parent, entity) -> {
                 try {
@@ -91,6 +98,7 @@ public class CodeFactory {
 
     public static void registerEmbeddableType(Class<?> intf, Class<?> impl, Class<?> modifier) {
         registry.put(intf, RegistryEntry.builder().implClass(impl).modifierClass(modifier).build());
+        implementors.put(impl, intf);
     }
 
     @Data

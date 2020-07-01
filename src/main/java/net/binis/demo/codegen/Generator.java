@@ -56,6 +56,10 @@ public class Generator {
                     mergeImports(parser, unit);
                     spec.addModifier(PUBLIC);
 
+                    if (properties.isGenerateConstructor()) {
+                        spec.addConstructor(PUBLIC);
+                    }
+
                     var iUnit = new CompilationUnit();
                     var intf = iUnit.addClass(properties.getInterfaceName()).setInterface(true);
                     iUnit.setPackageDeclaration(properties.getInterfacePackage());
@@ -79,6 +83,12 @@ public class Generator {
                                 properties.setBaseClassName(parsed.getParsedName());
                                 spec.addExtendedType(parsed.getParsedName());
                                 implementModifier(properties, modifier, modifierClass, parsed.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration());
+
+                                if (parsed.getProperties().isGenerateConstructor() && properties.isGenerateConstructor()) {
+                                    spec.findFirst(ConstructorDeclaration.class).ifPresent(c ->
+                                            c.getBody().addStatement("super();")
+                                    );
+                                }
                             } else {
                                 implementInterface(properties, spec, modifier, modifierClass, parsed.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration());
                             }
@@ -115,7 +125,7 @@ public class Generator {
                                 addModifier(modifierClass, declaration, properties.getClassName(), properties.getLongModifierName(), true);
                                 addModifier(modifier, declaration, null, properties.getModifierName(), false);
                                 if (CollectionsHandler.isCollection(declaration.getType())) {
-                                    CollectionsHandler.addModifier(modifierClass, declaration, properties.getLongModifierName(), properties.getClassName(),  true);
+                                    CollectionsHandler.addModifier(modifierClass, declaration, properties.getLongModifierName(), properties.getClassName(), true);
                                     CollectionsHandler.addModifier(modifier, declaration, properties.getModifierName(), null, false);
                                 }
                             }
@@ -151,7 +161,9 @@ public class Generator {
     private static PrototypeData getProperties(AnnotationExpr prototype) {
         var type = (ClassOrInterfaceDeclaration) prototype.getParentNode().get();
         var iName = defaultInterfaceName(type);
-        var builder = PrototypeData.builder().generateInterface(true)
+        var builder = PrototypeData.builder()
+                .generateConstructor(true)
+                .generateInterface(true)
                 .className(defaultClassName(type))
                 .classPackage(defaultClassPackage(type))
                 .interfaceName(iName)
@@ -173,6 +185,9 @@ public class Generator {
                                 .interfacePackage("net.binis.demo.objects")
                                 .modifierName("Modify")
                                 .longModifierName(intf + ".Modify");
+                        break;
+                    case "generateConstructor":
+                        builder.generateConstructor(pair.getValue().asBooleanLiteralExpr().getValue());
                         break;
                     case "generateInterface":
                         builder.generateInterface(pair.getValue().asBooleanLiteralExpr().getValue());
@@ -220,7 +235,7 @@ public class Generator {
                     addModifierFromSetter(modifierClass, method, properties.getClassName(), properties.getLongModifierName(), true);
                     addModifierFromSetter(modifier, method, null, properties.getModifierName(), false);
                     if (CollectionsHandler.isCollection(method.getParameter(0).getType())) {
-                        CollectionsHandler.addModifierFromSetter(modifierClass, method, properties.getLongModifierName(), properties.getClassName(),  true);
+                        CollectionsHandler.addModifierFromSetter(modifierClass, method, properties.getLongModifierName(), properties.getClassName(), true);
                         CollectionsHandler.addModifierFromSetter(modifier, method, properties.getModifierName(), null, false);
                     }
                 }
@@ -237,7 +252,7 @@ public class Generator {
                 addSetterFromSetter(spec, method, true);
                 if (properties.isGenerateModifier()) {
                     if (CollectionsHandler.isCollection(method.getType())) {
-                        CollectionsHandler.addModifier(modifierClass, method, properties.getLongModifierName(), properties.getClassName(),  true);
+                        CollectionsHandler.addModifier(modifierClass, method, properties.getLongModifierName(), properties.getClassName(), true);
                         CollectionsHandler.addModifier(modifier, method, properties.getModifierName(), null, false);
                     } else {
                         addModifierFromSetter(modifierClass, method, properties.getClassName(), properties.getLongModifierName(), true);
@@ -274,7 +289,7 @@ public class Generator {
                 addSetterFromSetter(spec, method, true, generic);
                 if (properties.isGenerateModifier()) {
                     if (CollectionsHandler.isCollection(method.getParameterTypes()[0])) {
-                        CollectionsHandler.addModifier(modifierClass, method, properties.getLongModifierName(), properties.getClassName(),  true);
+                        CollectionsHandler.addModifier(modifierClass, method, properties.getLongModifierName(), properties.getClassName(), true);
                         CollectionsHandler.addModifier(modifier, method, properties.getModifierName(), null, false);
                     } else {
                         addModifierFromSetter(modifierClass, method, properties.getClassName(), properties.getLongModifierName(), true, generic);
@@ -367,11 +382,11 @@ public class Generator {
 
             var intf = parse.getFiles().get(1).getType(0);
             destination.addImport(intf.getFullyQualifiedName().get());
-            
+
             if (isCollection && parse.getProperties().isGenerateModifier()) {
                 CollectionsHandler.handleEmbeddedModifier(type, parse.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration(), intf.asClassOrInterfaceDeclaration());
             }
-            
+
             return intf.getNameAsString();
         } else {
             return type;
@@ -728,7 +743,7 @@ public class Generator {
                 var method = member.asMethodDeclaration();
                 if (CollectionsHandler.isCollection(method.getType())) {
                     method.getType().asClassOrInterfaceType().getTypeArguments().get().removeLast();
-                    CollectionsHandler.addModifier(parentModifierClass, method, parentProperties.getLongModifierName(), parentProperties.getClassName(),  true);
+                    CollectionsHandler.addModifier(parentModifierClass, method, parentProperties.getLongModifierName(), parentProperties.getClassName(), true);
                     CollectionsHandler.addModifier(parentModifier, method, parentProperties.getModifierName(), null, false);
                 } else {
                     addModifierFromModifier(parsed.getDeclaration(), parentModifierClass, method, parentProperties.getClassName(), parentProperties.getLongModifierName(), true);

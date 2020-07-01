@@ -4,7 +4,7 @@ import net.binis.demo.factory.CodeFactory;
 
 import java.util.Set;
 
-public class EmbeddedCodeSetImpl<M, T, R> implements EmbeddedCodeSet<M, T, R> {
+public class EmbeddedCodeSetImpl<M, T, R> implements EmbeddedCollection<M, T, R> {
 
     private final R parent;
     private final Set<T> set;
@@ -17,7 +17,7 @@ public class EmbeddedCodeSetImpl<M, T, R> implements EmbeddedCodeSet<M, T, R> {
     }
 
     @Override
-    public EmbeddedCodeSet<M, T, R> add(T value) {
+    public EmbeddedCollection<M, T, R> add(T value) {
         set.add(value);
         return this;
     }

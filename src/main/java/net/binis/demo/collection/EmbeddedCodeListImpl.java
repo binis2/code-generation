@@ -4,7 +4,7 @@ import net.binis.demo.factory.CodeFactory;
 
 import java.util.List;
 
-public class EmbeddedCodeListImpl<M, T, R> implements EmbeddedCodeList<M, T, R> {
+public class EmbeddedCodeListImpl<M, T, R> implements EmbeddedCollection<M, T, R> {
 
     private final R parent;
     private final List<T> list;
@@ -17,7 +17,7 @@ public class EmbeddedCodeListImpl<M, T, R> implements EmbeddedCodeList<M, T, R> 
     }
 
     @Override
-    public EmbeddedCodeList<M, T, R> add(T value) {
+    public EmbeddedCollection<M, T, R> add(T value) {
         list.add(value);
         return this;
     }
