@@ -303,6 +303,10 @@ public class Generator {
     private static void handleModifierBaseImplementation(PrototypeData properties, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {
         notNull(findInheritanceProperty(spec, properties, (s, p) -> nullCheck(p.getBaseModifierClass(), prp -> getExternalClassName(s.findCompilationUnit().get(), prp))), baseClass ->
                 notNull(loadClass(baseClass), cls -> {
+                    if (net.binis.demo.modifier.Modifier.class.isAssignableFrom(cls)) {
+                        modifierClass.addConstructor(PROTECTED).setBody(new BlockStmt().addStatement("((Modifier) this).setObject("+ properties.getClassName() + ".this);"));
+                        spec.findCompilationUnit().get().addImport(net.binis.demo.modifier.Modifier.class);
+                    }
                     spec.findCompilationUnit().get().addImport(baseClass);
                     modifierClass.addExtendedType(cls.getSimpleName());
                     for (var method : cls.getDeclaredMethods()) {
