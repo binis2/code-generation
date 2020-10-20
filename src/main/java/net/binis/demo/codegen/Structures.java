@@ -2,6 +2,7 @@ package net.binis.demo.codegen;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.Builder;
 import lombok.Data;
 
@@ -29,12 +30,14 @@ public class Structures {
         private boolean base;
 
         private String baseModifierClass;
+        private String creatorClass;
+        private boolean creatorModifier;
         private String mixInClass;
     }
 
     @Data
     @Builder
-    public static class Parsed {
+    public static class Parsed<T extends TypeDeclaration<T>> {
 
         private PrototypeData properties;
 
@@ -47,7 +50,7 @@ public class Structures {
         private String modifierName;
         private String modifierClassName;
 
-        private ClassOrInterfaceDeclaration declaration;
+        private TypeDeclaration<T> declaration;
         private List<CompilationUnit> files;
 
     }

@@ -2,9 +2,7 @@ package net.binis.demo.codegen;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.FieldDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithName;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
@@ -26,8 +24,11 @@ import static net.binis.demo.tools.Tools.nullCheck;
 @Slf4j
 public class Helpers {
 
-    public static final Map<String, Parsed> parsed = new HashMap<>();
-    public static final Map<String, Parsed> generated = new HashMap<>();
+    public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> parsed = new HashMap<>();
+    public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
+    public static final Map<String, Parsed<EnumDeclaration>> enumParsed = new HashMap<>();
+    public static final Map<String, Parsed<EnumDeclaration>> enumGenerated = new HashMap<>();
+
     public static final Method classSignature = initClassSignature();
     public static final Method methodSignature = initMethodSignature();
     public static final Pattern methodSignatureMatcher = Pattern.compile("T(.*?);");
@@ -87,7 +88,7 @@ public class Helpers {
         return name.substring(3, 4).toLowerCase() + name.substring(4);
     }
 
-    public static String getClassName(ClassOrInterfaceDeclaration type) {
+    public static String getClassName(TypeDeclaration<?> type) {
         var result = Holder.blank();
         type.findCompilationUnit().flatMap(CompilationUnit::getPackageDeclaration).ifPresent(p -> {
             result.set(p.getName().asString());
@@ -176,7 +177,7 @@ public class Helpers {
         return intf.findFirst(ClassOrInterfaceDeclaration.class, m -> nullCheck(m.getNameAsString(), name -> name.equals("Modify") || name.endsWith("ModifyImpl"))).orElseThrow();
     }
 
-    public static Parsed getParsed(ClassOrInterfaceType type) {
+    public static Parsed<ClassOrInterfaceDeclaration> getParsed(ClassOrInterfaceType type) {
         return parsed.get(getClassName(type));
     }
 

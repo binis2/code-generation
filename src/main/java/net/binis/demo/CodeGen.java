@@ -2,6 +2,7 @@ package net.binis.demo;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.demo.codegen.CollectionsHandler;
 import net.binis.demo.codegen.Generator;
@@ -18,8 +19,7 @@ import java.util.Collection;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.demo.codegen.Helpers.getClassName;
-import static net.binis.demo.codegen.Helpers.parsed;
+import static net.binis.demo.codegen.Helpers.*;
 import static net.binis.demo.codegen.Structures.Parsed;
 import static net.binis.demo.tools.Tools.ifNull;
 
@@ -40,8 +40,7 @@ public class CodeGen {
                 var parse = parser.parse(file);
                 log.info("Parsed {} - {}", fileName, parse.toString());
                 parse.getResult().ifPresent(u ->
-                        u.getTypes().forEach(t ->
-                                parsed.put(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asClassOrInterfaceDeclaration()).build())));
+                        u.getTypes().forEach(CodeGen::handleType));
             } catch (IOException e) {
                 log.error("Unable to parse {}", file.getFileName(), e);
             }
@@ -62,6 +61,15 @@ public class CodeGen {
                 saveFile(args[1], file);
             }
         });
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void handleType(TypeDeclaration<?> t) {
+        if (t.isEnumDeclaration()) {
+            enumParsed.put(getClassName(t.asEnumDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).build());
+        } else {
+            parsed.put(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).build());
+        }
     }
 
     private static void saveFile(String baseDir, CompilationUnit file) {
