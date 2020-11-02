@@ -10,6 +10,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 public @interface EnumPrototype {
 
-    String name();
+    String name() default "";
+    Class<?> mixIn() default void.class;
 
 }

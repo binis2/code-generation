@@ -6,6 +6,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static java.util.Objects.nonNull;
+
 public class Tools {
 
     private Tools() {
@@ -16,12 +18,16 @@ public class Tools {
         return nullCheck(object, func, null);
     }
 
+    public static <T> T nullCheck(T object, T defaultObject) {
+        return nonNull(object) ? object : defaultObject;
+    }
+
     public static <T, R, Q> T nullCheck(R object, Class<Q> iface, Function<Q, T> func) {
-        return Objects.nonNull(object) ? func.apply(iface.cast(object)) : null;
+        return nonNull(object) ? func.apply(iface.cast(object)) : null;
     }
 
     public static <T, R> T nullCheck(R object, Function<R, T> func, T defaultObject) {
-        return Objects.nonNull(object) ? func.apply(object) : defaultObject;
+        return nonNull(object) ? func.apply(object) : defaultObject;
     }
 
     public static <R> void notNull(R object, Consumer<R> consumer) {

@@ -4,6 +4,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithName;
+import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
@@ -56,8 +57,13 @@ public class Helpers {
     }
 
 
-    public static String defaultPackage(ClassOrInterfaceDeclaration type, String name) {
-        return type.findCompilationUnit().get().getPackageDeclaration().get().getNameAsString().replace("prototype", name);
+    public static String defaultPackage(TypeDeclaration<?> type, String name) {
+        var result = type.findCompilationUnit().get().getPackageDeclaration().get().getNameAsString();
+        if (nonNull(name)) {
+            return result.replace("prototype", name);
+        } else {
+            return result.replace(".prototype", "");
+        }
     }
 
     public static String defaultInterfacePackage(ClassOrInterfaceDeclaration type) {
@@ -69,10 +75,10 @@ public class Helpers {
     }
 
     public static String defaultInterfaceName(ClassOrInterfaceDeclaration type) {
-        return defaultClassName(type).replace("Prototype", "").replace("Entity", "");
+        return defaultClassName(type).replace("Entity", "");
     }
 
-    public static String defaultClassName(ClassOrInterfaceDeclaration type) {
+    public static String defaultClassName(TypeDeclaration<?> type) {
         return type.getNameAsString().replace("Prototype", "");
     }
 

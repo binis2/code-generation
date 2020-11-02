@@ -5,10 +5,8 @@ import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.BlockComment;
-import com.github.javaparser.ast.expr.AnnotationExpr;
-import com.github.javaparser.ast.expr.AssignExpr;
-import com.github.javaparser.ast.expr.MemberValuePair;
-import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.comments.Comment;
+import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -236,6 +234,14 @@ public class Generator {
                         name -> notNull(parsed.get(name), parse ->
                                 ifNull(parse.getFiles(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get())))));
     }
+
+    private static void ensureParsedParents(EnumDeclaration declaration, PrototypeData properties) {
+        notNull(properties.getMixInClass(), c ->
+                notNull(getExternalClassName(declaration.findCompilationUnit().get(), c),
+                        name -> notNull(enumParsed.get(name), parse ->
+                                ifNull(parse.getFiles(), () -> generateCodeForEnum(parse.getDeclaration().findCompilationUnit().get())))));
+    }
+
 
     private static void implementModifier(PrototypeData properties, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration declaration) {
         if (properties.isGenerateModifier()) {
@@ -787,5 +793,91 @@ public class Generator {
         }
     }
 
+    public static void generateCodeForEnum(CompilationUnit parser) {
+        for (var type : parser.getTypes()) {
+            if (type.isEnumDeclaration()) {
+                type.getAnnotationByName("EnumPrototype").ifPresent(prototype -> {
+                    var typeDeclaration = type.asEnumDeclaration();
+
+                    log.info("Processing - {}", prototype.toString());
+
+                    var properties = getEnumProperties(prototype);
+                    ensureParsedParents(typeDeclaration, properties);
+
+                    var unit = new CompilationUnit();
+                    var spec = unit.addEnum(properties.getClassName());
+                    unit.setPackageDeclaration(properties.getClassPackage());
+                    mergeEnums(typeDeclaration, spec);
+
+                    var parse = enumParsed.get(getClassName(typeDeclaration));
+                    parse.setParsedName(spec.getNameAsString());
+                    parse.setProperties(properties);
+                    parse.setFiles(List.of(unit));
+                    enumGenerated.put(getClassName(spec), parse);
+
+                    notNull(properties.getMixInClass(), c ->
+                            notNull(getExternalClassName(typeDeclaration.findCompilationUnit().get(), c),
+                                    name -> notNull(enumParsed.get(name), p ->
+                                            mergeEnums(spec, p.getFiles().get(0).findFirst(EnumDeclaration.class).get()))));
+                });
+            } else {
+                log.error("Invalid type " + type.getNameAsString());
+            }
+        }
+    }
+
+    private static void mergeEnums(EnumDeclaration source, EnumDeclaration destination) {
+        mergeImports(source.findCompilationUnit().get(), destination.findCompilationUnit().get());
+
+        source.getEntries().forEach(entry -> condition(destination.getEntries().stream().noneMatch(e -> e.getNameAsString().equals(entry.getNameAsString())), () -> destination.addEntry(entry)));
+        source.getImplementedTypes().forEach(entry -> condition(destination.getImplementedTypes().stream().noneMatch(e -> e.getNameAsString().equals(entry.getNameAsString())), () -> destination.addImplementedType(entry)));
+        source.getMembers().forEach(member -> mergeEnumMember(member, destination));
+        source.getModifiers().forEach(m -> destination.addModifier(m.getKeyword()));
+        source.getAnnotations().stream().filter(a -> !"EnumPrototype".equals(a.getNameAsString())).forEach(destination::addAnnotation);
+        source.getComment().ifPresent(destination::setComment);
+        source.getOrphanComments().forEach(destination::addOrphanComment);
+    }
+
+    private static void mergeEnumMember(BodyDeclaration<?> member, EnumDeclaration destination) {
+        if (member.isConstructorDeclaration()) {
+            if (destination.getConstructors().isEmpty()) {
+                destination.addMember(member);
+            }
+        } else if (member.isFieldDeclaration()) {
+            if (destination.getFieldByName(member.asFieldDeclaration().getVariables().get(0).getNameAsString()).isEmpty()) {
+                destination.addMember(member);
+            }
+        } else if (member.isMethodDeclaration()) {
+             if (destination.getMethodsByName(member.asMethodDeclaration().getNameAsString()).isEmpty()) {
+                 destination.addMember(member);
+             }
+        } else {
+            throw new RuntimeException("TODO: Unhandled enum mix in type!");
+        }
+    }
+
+    private static PrototypeData getEnumProperties(AnnotationExpr prototype) {
+        var type = (EnumDeclaration) prototype.getParentNode().get();
+        var builder = PrototypeData.builder()
+                .className(defaultClassName(type))
+                .classPackage(defaultPackage(type, null));
+        prototype.getChildNodes().forEach(node -> {
+            if (node instanceof MemberValuePair) {
+                var pair = (MemberValuePair) node;
+                var name = pair.getNameAsString();
+                switch (name) {
+                    case "name":
+                        builder.name(pair.getValue().asStringLiteralExpr().asString());
+                        break;
+                    case "mixIn":
+                        builder.mixInClass(pair.getValue().asClassExpr().getTypeAsString());
+                        break;
+                    default:
+                }
+            }
+        });
+
+        return builder.build();
+    }
 
 }
