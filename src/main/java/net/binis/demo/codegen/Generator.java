@@ -841,7 +841,13 @@ public class Generator {
     private static void mergeEnumMember(BodyDeclaration<?> member, EnumDeclaration destination) {
         if (member.isConstructorDeclaration()) {
             if (destination.getConstructors().isEmpty()) {
-                destination.addMember(member);
+                var constructor = destination.addConstructor();
+                var source = member.asConstructorDeclaration();
+                constructor.setModifiers(source.getModifiers());
+                constructor.setParameters(source.getParameters());
+                constructor.setBody(source.getBody());
+                constructor.setAnnotations(source.getAnnotations());
+                destination.addMember(constructor);
             }
         } else if (member.isFieldDeclaration()) {
             if (destination.getFieldByName(member.asFieldDeclaration().getVariables().get(0).getNameAsString()).isEmpty()) {
