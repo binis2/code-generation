@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.demo.codegen.Structures.Parsed;
-import static net.binis.demo.tools.Tools.nullCheck;
+import static net.binis.demo.tools.Tools.*;
 
 @Slf4j
 public class Helpers {
@@ -29,6 +29,7 @@ public class Helpers {
     public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
     public static final Map<String, Parsed<EnumDeclaration>> enumParsed = new HashMap<>();
     public static final Map<String, Parsed<EnumDeclaration>> enumGenerated = new HashMap<>();
+    public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> constantParsed = new HashMap<>();
 
     public static final Method classSignature = initClassSignature();
     public static final Method methodSignature = initMethodSignature();
@@ -79,8 +80,13 @@ public class Helpers {
     }
 
     public static String defaultClassName(TypeDeclaration<?> type) {
-        return type.getNameAsString().replace("Prototype", "");
+        return defaultClassName(type.getNameAsString());
     }
+
+    public static String defaultClassName(String name) {
+        return name.replace("Prototype", "");
+    }
+
 
     public static String getGetterName(String name) {
         return "get" + name.substring(0, 1).toUpperCase() + name.substring(1);
@@ -176,11 +182,32 @@ public class Helpers {
     }
 
     public static void mergeImports(CompilationUnit source, CompilationUnit destination) {
-        source.getImports().stream().filter(i -> !i.getNameAsString().startsWith("net.binis.demo.annotation")).forEach(destination::addImport);
+        source.getImports().stream().filter(i -> !i.getNameAsString().startsWith("net.binis.demo.annotation")).forEach(i -> {
+            var enm = enumParsed.get(i.getNameAsString());
+            if (nonNull(enm)) {
+                if (isNull(enm.getProperties().getMixInClass())) {
+                    destination.addImport(enm.getParsedFullName());
+                } else {
+                    notNull(enumParsed.get(getExternalClassName(enm.getDeclaration().findCompilationUnit().get(), enm.getProperties().getMixInClass())), p ->
+                            destination.addImport(p.getParsedFullName()));
+                }
+            } else {
+                destination.addImport(i);
+            }
+        });
     }
 
     public static ClassOrInterfaceDeclaration findModifier(ClassOrInterfaceDeclaration intf) {
         return intf.findFirst(ClassOrInterfaceDeclaration.class, m -> nullCheck(m.getNameAsString(), name -> name.equals("Modify") || name.endsWith("ModifyImpl"))).orElseThrow();
+    }
+
+    public static String getEnumNameFromPrototype(TypeDeclaration<?> type, String prototype) {
+        var result = Holder.<String>blank();
+
+        notNull(enumParsed.get(getExternalClassName(type.findCompilationUnit().get(), prototype)), p ->
+                nullCheck(p.getProperties().getMixInClass(), m -> result.update(getEnumNameFromPrototype(p.getDeclaration(), m)), result.update(p.getParsedName())));
+
+        return result.get();
     }
 
     public static Parsed<ClassOrInterfaceDeclaration> getParsed(ClassOrInterfaceType type) {

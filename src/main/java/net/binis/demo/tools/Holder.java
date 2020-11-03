@@ -20,6 +20,12 @@ public class Holder<T> {
         this.object = object;
     }
 
+    public T update(T object) {
+        this.object = object;
+        return object;
+    }
+
+
     public static <T> Holder<T> of(T object) {
         return new Holder<>(object);
     }

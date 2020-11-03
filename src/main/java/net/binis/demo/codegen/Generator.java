@@ -5,7 +5,7 @@ import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.BlockComment;
-import com.github.javaparser.ast.comments.Comment;
+import com.github.javaparser.ast.comments.LineComment;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
@@ -13,6 +13,7 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.demo.annotation.CodeAnnotation;
+import net.binis.demo.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -29,6 +30,7 @@ import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.demo.codegen.Helpers.*;
+import static net.binis.demo.codegen.Helpers.defaultClassName;
 import static net.binis.demo.codegen.Structures.Parsed;
 import static net.binis.demo.codegen.Structures.PrototypeData;
 import static net.binis.demo.tools.Tools.*;
@@ -811,6 +813,7 @@ public class Generator {
 
                     var parse = enumParsed.get(getClassName(typeDeclaration));
                     parse.setParsedName(spec.getNameAsString());
+                    parse.setParsedFullName(spec.getFullyQualifiedName().get());
                     parse.setProperties(properties);
                     parse.setFiles(List.of(unit));
                     enumGenerated.put(getClassName(spec), parse);
@@ -853,9 +856,9 @@ public class Generator {
                 destination.addMember(member);
             }
         } else if (member.isMethodDeclaration()) {
-             if (destination.getMethodsByName(member.asMethodDeclaration().getNameAsString()).isEmpty()) {
-                 destination.addMember(member);
-             }
+            if (destination.getMethodsByName(member.asMethodDeclaration().getNameAsString()).isEmpty()) {
+                destination.addMember(member);
+            }
         } else {
             throw new RuntimeException("TODO: Unhandled enum mix in type!");
         }
@@ -885,4 +888,109 @@ public class Generator {
         return builder.build();
     }
 
+    private static PrototypeData getConstnatProperties(AnnotationExpr prototype) {
+        var type = (ClassOrInterfaceDeclaration) prototype.getParentNode().get();
+        var builder = PrototypeData.builder()
+                .className(defaultClassName(type))
+                .classPackage(defaultPackage(type, null));
+        prototype.getChildNodes().forEach(node -> {
+            if (node instanceof MemberValuePair) {
+                var pair = (MemberValuePair) node;
+                var name = pair.getNameAsString();
+                switch (name) {
+                    case "mixIn":
+                        builder.mixInClass(pair.getValue().asClassExpr().getTypeAsString());
+                        break;
+                    default:
+                }
+            }
+        });
+
+        return builder.build();
+    }
+
+    public static CompilationUnit generateCodeForConstants() {
+        if (!constantParsed.isEmpty()) {
+            var result = new CompilationUnit();
+            var parent = result.addClass("Constants");
+            parent.addConstructor(PRIVATE);
+
+            for (var entry : constantParsed.entrySet()) {
+                var type = entry.getValue().getDeclaration();
+                if (type.isClassOrInterfaceDeclaration()) {
+                    type.getAnnotationByName("ConstantPrototype").ifPresent(prototype -> {
+                        var typeDeclaration = type.asClassOrInterfaceDeclaration();
+
+                        log.info("Processing - {}", prototype.toString());
+
+                        var properties = getConstnatProperties(prototype);
+
+                        var name = Holder.of(defaultClassName(entry.getValue().getDeclaration()));
+                        if (nonNull(properties.getMixInClass())) {
+                            name.set(defaultClassName(properties.getMixInClass()));
+                        }
+
+                        var cls = (ClassOrInterfaceDeclaration) parent.getMembers().stream().filter(c -> c.isClassOrInterfaceDeclaration() && c.asClassOrInterfaceDeclaration().getNameAsString().equals(name.get())).findFirst().orElse(null);
+                        if (isNull(cls)) {
+                            cls = (new ClassOrInterfaceDeclaration()).setName(name.get()).setModifiers(PUBLIC, STATIC);
+                            cls.addConstructor(PRIVATE);
+                            parent.addMember(cls);
+                        }
+
+                        mergeConstants(typeDeclaration, cls);
+                    });
+                }
+            }
+
+            return result;
+        }
+        return null;
+    }
+
+    private static void mergeConstants(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination) {
+        mergeImports(source.findCompilationUnit().get(), destination.findCompilationUnit().get());
+
+        for (var member : source.getMembers()) {
+            if (member.isFieldDeclaration()) {
+                var type = member.asFieldDeclaration();
+                var field = new FieldDeclaration();
+                field.setModifiers(type.getModifiers());
+                type.getVariables().forEach(v -> {
+                    var variable = new VariableDeclarator().setName(v.getName());
+                    if (v.getType().isClassOrInterfaceType()) {
+                        var enm = getEnumNameFromPrototype(source, v.getType().asClassOrInterfaceType().getNameAsString());
+                        if (nonNull(enm)) {
+                            variable.setType(enm);
+                        } else {
+                            variable.setType(v.getType());
+                        }
+                    } else {
+                        variable.setType(v.getType());
+                    }
+
+                    v.getInitializer().ifPresent(i -> {
+                        if (i.isFieldAccessExpr()) {
+                            var expr = i.asFieldAccessExpr();
+                            if (expr.getScope().isNameExpr()) {
+                                var enm = getEnumNameFromPrototype(source, expr.getScope().asNameExpr().getNameAsString());
+                                if (nonNull(enm)) {
+                                    variable.setInitializer(new FieldAccessExpr().setName(expr.getName()).setScope(new NameExpr(enm)));
+                                } else {
+                                    variable.setInitializer(i);
+                                }
+                            } else {
+                                variable.setInitializer(i);
+                            }
+                        } else {
+                            variable.setInitializer(i);
+                        }
+                    });
+
+                    field.addVariable(variable);
+                });
+                destination.addMember(field);
+            }
+        }
+
+    }
 }

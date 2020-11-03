@@ -62,6 +62,11 @@ public class CodeGen {
             }
         });
 
+        var constants = Generator.generateCodeForConstants();
+        if (nonNull(constants)) {
+            saveFile(cmd.getOptionValue(DESTINATION), constants);
+        }
+
         for (var entry : parsed.entrySet()) {
             ifNull(entry.getValue().getFiles(), () ->
                     Generator.generateCodeForClass(entry.getValue().getDeclaration().findCompilationUnit().get()));
@@ -84,7 +89,11 @@ public class CodeGen {
         if (t.isEnumDeclaration()) {
             enumParsed.put(getClassName(t.asEnumDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).build());
         } else {
-            parsed.put(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).build());
+            if (t.getAnnotationByName("ConstantPrototype").isPresent()) {
+                constantParsed.put(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).build());
+            } else {
+                parsed.put(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).build());
+            }
         }
     }
 
