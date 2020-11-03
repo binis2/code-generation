@@ -847,7 +847,6 @@ public class Generator {
                 constructor.setParameters(source.getParameters());
                 constructor.setBody(source.getBody());
                 constructor.setAnnotations(source.getAnnotations());
-                destination.addMember(constructor);
             }
         } else if (member.isFieldDeclaration()) {
             if (destination.getFieldByName(member.asFieldDeclaration().getVariables().get(0).getNameAsString()).isEmpty()) {
