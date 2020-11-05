@@ -1,14 +1,13 @@
-package net.binis.demo.codegen;
+package net.binis.codegen.codegen;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithName;
-import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.demo.tools.Holder;
+import net.binis.codegen.tools.Holder;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -19,8 +18,8 @@ import java.util.regex.Pattern;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.demo.codegen.Structures.Parsed;
-import static net.binis.demo.tools.Tools.*;
+import static net.binis.codegen.codegen.Structures.Parsed;
+import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
 public class Helpers {

@@ -1,11 +1,11 @@
-package net.binis.demo;
+package net.binis.codegen;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.demo.codegen.CollectionsHandler;
-import net.binis.demo.codegen.Generator;
+import net.binis.codegen.codegen.CollectionsHandler;
+import net.binis.codegen.codegen.Generator;
 import org.apache.commons.cli.*;
 
 import java.io.BufferedWriter;
@@ -19,9 +19,9 @@ import java.util.Collection;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.demo.codegen.Helpers.*;
-import static net.binis.demo.codegen.Structures.Parsed;
-import static net.binis.demo.tools.Tools.*;
+import static net.binis.codegen.codegen.Helpers.*;
+import static net.binis.codegen.codegen.Structures.Parsed;
+import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
 public class CodeGen {
@@ -32,6 +32,14 @@ public class CodeGen {
     public static final String FILTER = "filter";
 
     public static void main(String[] args) throws IOException {
+
+        log.info("Class path: {}", System.getProperty("java.class.path"));
+
+        try {
+            log.info(Class.forName("net.binis.prototype.core.objects.types.ErrorTypePrototype").getName());
+        } catch (Exception e) {
+            log.error("nop");
+        }
 
         var cmd = handleArgs(args);
 

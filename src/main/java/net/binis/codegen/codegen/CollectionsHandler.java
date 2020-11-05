@@ -1,4 +1,4 @@
-package net.binis.demo.codegen;
+package net.binis.codegen.codegen;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
@@ -22,9 +22,9 @@ import java.lang.reflect.Method;
 import java.util.stream.Collectors;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
-import static net.binis.demo.codegen.Generator.getGenericsList;
-import static net.binis.demo.codegen.Helpers.getFieldName;
-import static net.binis.demo.codegen.Helpers.methodExists;
+import static net.binis.codegen.codegen.Generator.getGenericsList;
+import static net.binis.codegen.codegen.Helpers.getFieldName;
+import static net.binis.codegen.codegen.Helpers.methodExists;
 
 @Slf4j
 public class CollectionsHandler {

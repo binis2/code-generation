@@ -1,19 +1,18 @@
-package net.binis.demo.codegen;
+package net.binis.codegen.codegen;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.BlockComment;
-import com.github.javaparser.ast.comments.LineComment;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.demo.annotation.CodeAnnotation;
-import net.binis.demo.tools.Holder;
+import net.binis.codegen.annotation.CodeAnnotation;
+import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -29,11 +28,11 @@ import java.util.stream.Collectors;
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.demo.codegen.Helpers.*;
-import static net.binis.demo.codegen.Helpers.defaultClassName;
-import static net.binis.demo.codegen.Structures.Parsed;
-import static net.binis.demo.codegen.Structures.PrototypeData;
-import static net.binis.demo.tools.Tools.*;
+import static net.binis.codegen.codegen.Helpers.*;
+import static net.binis.codegen.codegen.Helpers.defaultClassName;
+import static net.binis.codegen.codegen.Structures.Parsed;
+import static net.binis.codegen.codegen.Structures.PrototypeData;
+import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
 public class Generator {
@@ -340,9 +339,9 @@ public class Generator {
     private static void handleModifierBaseImplementation(PrototypeData properties, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {
         notNull(findInheritanceProperty(spec, properties, (s, p) -> nullCheck(p.getBaseModifierClass(), prp -> getExternalClassName(s.findCompilationUnit().get(), prp))), baseClass ->
                 notNull(loadClass(baseClass), cls -> {
-                    if (net.binis.demo.modifier.Modifier.class.isAssignableFrom(cls)) {
+                    if (net.binis.codegen.modifier.Modifier.class.isAssignableFrom(cls)) {
                         modifierClass.addConstructor(PROTECTED).setBody(new BlockStmt().addStatement("((Modifier) this).setObject(" + properties.getClassName() + ".this);"));
-                        spec.findCompilationUnit().get().addImport(net.binis.demo.modifier.Modifier.class);
+                        spec.findCompilationUnit().get().addImport(net.binis.codegen.modifier.Modifier.class);
                     }
                     spec.findCompilationUnit().get().addImport(baseClass);
                     modifierClass.addExtendedType(cls.getSimpleName());

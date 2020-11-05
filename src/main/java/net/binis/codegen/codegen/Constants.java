@@ -1,4 +1,4 @@
-package net.binis.demo.codegen;
+package net.binis.codegen.codegen;
 
 public class Constants {
 

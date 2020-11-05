@@ -1,6 +1,5 @@
-package net.binis.demo.tools;
+package net.binis.codegen.tools;
 
-import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;

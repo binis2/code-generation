@@ -1,7 +1,6 @@
-package net.binis.demo.codegen;
+package net.binis.codegen.codegen;
 
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.Builder;
 import lombok.Data;

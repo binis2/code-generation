@@ -1,4 +1,4 @@
-package net.binis.demo.tools;
+package net.binis.codegen.tools;
 
 import lombok.ToString;
 
