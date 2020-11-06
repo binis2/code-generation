@@ -1,8 +1,10 @@
 package net.binis.codegen.codegen;
 
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
+import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.nodeTypes.NodeWithName;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
@@ -67,11 +69,11 @@ public class Helpers {
     }
 
     public static String defaultInterfacePackage(ClassOrInterfaceDeclaration type) {
-        return defaultPackage(type, "objects");
+        return defaultPackage(type, null);
     }
 
     public static String defaultClassPackage(ClassOrInterfaceDeclaration type) {
-        return defaultPackage(type, "entities");
+        return defaultPackage(type, null);
     }
 
     public static String defaultInterfaceName(ClassOrInterfaceDeclaration type) {
@@ -87,8 +89,12 @@ public class Helpers {
     }
 
 
-    public static String getGetterName(String name) {
-        return "get" + name.substring(0, 1).toUpperCase() + name.substring(1);
+    public static String getGetterName(String name, String type) {
+        if ("boolean".equals(type)) {
+            return "is" + name.substring(0, 1).toUpperCase() + name.substring(1);
+        } else {
+            return "get" + name.substring(0, 1).toUpperCase() + name.substring(1);
+        }
     }
 
     public static String getSetterName(String name) {
@@ -135,7 +141,14 @@ public class Helpers {
         }
 
         if (isNull(result)) {
-            result = unit.getPackageDeclaration().get().getNameAsString() + "." + type;
+            result = unit.getImports().stream().filter(ImportDeclaration::isAsterisk)
+                    .map(i -> i.getNameAsString() + "." + type)
+                    .filter(name ->parsed.containsKey(name) || classExists(name))
+                    .findFirst().orElse(null);
+
+            if (isNull(result)) {
+                result = unit.getPackageDeclaration().get().getNameAsString() + "." + type;
+            }
         }
 
         return result;
@@ -181,7 +194,7 @@ public class Helpers {
     }
 
     public static void mergeImports(CompilationUnit source, CompilationUnit destination) {
-        source.getImports().stream().filter(i -> !i.getNameAsString().startsWith("net.binis.demo.annotation")).forEach(i -> {
+        source.getImports().stream().filter(i -> !i.getNameAsString().startsWith("net.binis.codegen.annotation")).forEach(i -> {
             var enm = enumParsed.get(i.getNameAsString());
             if (nonNull(enm)) {
                 if (isNull(enm.getProperties().getMixInClass())) {
@@ -210,7 +223,11 @@ public class Helpers {
     }
 
     public static Parsed<ClassOrInterfaceDeclaration> getParsed(ClassOrInterfaceType type) {
-        return parsed.get(getClassName(type));
+        var result = parsed.get(getClassName(type));
+        if (isNull(result)) {
+            result = parsed.get(getExternalClassName(type.findCompilationUnit().get(), type.getNameAsString()));
+        }
+        return result;
     }
 
     public static Map<String, Type> processGenerics(Class<?> cls, NodeList<Type> generics) {
@@ -258,12 +275,68 @@ public class Helpers {
         return "Not Implemented";
     }
 
+    public static Structures.Ignores getIgnores(BodyDeclaration<?> member) {
+        var result = Structures.Ignores.builder();
+        member.getAnnotations().stream().filter(a -> "Ignore".equals(a.getNameAsString())).findFirst().ifPresent(annotation ->
+                annotation.getChildNodes().forEach(node -> {
+                    if (node instanceof MemberValuePair) {
+                        var pair = (MemberValuePair) node;
+                        var name = pair.getNameAsString();
+                        switch (name) {
+                            case "forField":
+                                result.forField(pair.getValue().asBooleanLiteralExpr().getValue());
+                                break;
+                            case "forClass":
+                                result.forClass(pair.getValue().asBooleanLiteralExpr().getValue());
+                                break;
+                            case "forInterface":
+                                result.forInterface(pair.getValue().asBooleanLiteralExpr().getValue());
+                                break;
+                            case "forModifier":
+                                result.forModifier(pair.getValue().asBooleanLiteralExpr().getValue());
+                                break;
+                            default:
+                        }
+                    }
+                }));
+        return result.build();
+    }
+
+    public static Structures.Constants getConstants(BodyDeclaration<?> member) {
+        var result = Structures.Constants.builder().forPublic(true);
+        member.getAnnotations().stream().filter(a -> "CodeConstant".equals(a.getNameAsString())).findFirst().ifPresent(annotation ->
+                annotation.getChildNodes().forEach(node -> {
+                    if (node instanceof MemberValuePair) {
+                        var pair = (MemberValuePair) node;
+                        var name = pair.getNameAsString();
+                        switch (name) {
+                            case "public":
+                                result.forPublic(pair.getValue().asBooleanLiteralExpr().getValue());
+                                break;
+                            case "forClass":
+                                result.forClass(pair.getValue().asBooleanLiteralExpr().getValue());
+                                break;
+                            case "forInterface":
+                                result.forInterface(pair.getValue().asBooleanLiteralExpr().getValue());
+                                break;
+                            default:
+                        }
+                    }
+                }));
+        return result.build();
+    }
+
+
     public static Class<?> loadClass(String className) {
         try {
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
             return null;
         }
+    }
+
+    public static boolean classExists(String className) {
+        return nonNull(loadClass(className));
     }
 
 }

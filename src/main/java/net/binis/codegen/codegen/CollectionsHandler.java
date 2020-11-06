@@ -172,8 +172,8 @@ public class CollectionsHandler {
             result.setClassType("Embedded" + result.getClassType());
         }
 
-        result.setInterfaceImport("net.binis.demo.collection." + result.getType());
-        result.setClassImport("net.binis.demo.collection." + result.getClassType());
+        result.setInterfaceImport("net.binis.codegen.collection." + result.getType());
+        result.setClassImport("net.binis.codegen.collection." + result.getClassType());
 
         return result;
     }
@@ -210,10 +210,10 @@ public class CollectionsHandler {
             spec.addMember(modifierClass);
             intf.addMember(modifier);
 
-            intf.findCompilationUnit().get().addImport("net.binis.demo.collection.EmbeddedCodeCollection");
+            intf.findCompilationUnit().get().addImport("net.binis.codegen.collection.EmbeddedCodeCollection");
             spec.findCompilationUnit().ifPresent(u -> {
-                u.addImport("net.binis.demo.factory.CodeFactory");
-                u.addImport("net.binis.demo.collection.EmbeddedCodeCollection");
+                u.addImport("net.binis.codegen.factory.CodeFactory");
+                u.addImport("net.binis.codegen.collection.EmbeddedCodeCollection");
             });
             spec.addStaticInitializer();
         }

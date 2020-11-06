@@ -29,17 +29,12 @@ public class CodeGen {
     public static final String NONE = "<none>";
     public static final String SOURCE = "source";
     public static final String DESTINATION = "destination";
+    public static final String IMPL_DESTINATION = "idestination";
     public static final String FILTER = "filter";
 
     public static void main(String[] args) throws IOException {
 
         log.info("Class path: {}", System.getProperty("java.class.path"));
-
-        try {
-            log.info(Class.forName("net.binis.prototype.core.objects.types.ErrorTypePrototype").getName());
-        } catch (Exception e) {
-            log.error("nop");
-        }
 
         var cmd = handleArgs(args);
 
@@ -80,14 +75,15 @@ public class CodeGen {
                     Generator.generateCodeForClass(entry.getValue().getDeclaration().findCompilationUnit().get()));
         }
 
+        var destination = cmd.getOptionValue(DESTINATION);
         parsed.values().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
             if (isNull(p.getProperties().getMixInClass())) {
                 var file = CollectionsHandler.finalizeEmbeddedModifier(p.getFiles().get(0));
-                saveFile(cmd.getOptionValue(DESTINATION), file);
+                saveFile(nullCheck(cmd.getOptionValue(IMPL_DESTINATION), destination), file);
             }
             if (p.getProperties().isGenerateInterface()) {
                 var file = CollectionsHandler.finalizeEmbeddedModifier(p.getFiles().get(1));
-                saveFile(cmd.getOptionValue(DESTINATION), file);
+                saveFile(destination, file);
             }
         });
     }
@@ -149,6 +145,10 @@ public class CodeGen {
         output.setRequired(true);
         options.addOption(output);
 
+        Option iOutput = new Option("id", IMPL_DESTINATION, true, "Implementations Destination folder");
+        iOutput.setRequired(false);
+        options.addOption(iOutput);
+
         Option filter = new Option("f", FILTER, true, "File pattern filter");
         filter.setRequired(false);
         options.addOption(filter);
@@ -162,6 +162,7 @@ public class CodeGen {
 
             log.info("source: " + nullCheck(cmd.getOptionValue(SOURCE), NONE));
             log.info("destination: " + nullCheck(cmd.getOptionValue(DESTINATION), NONE));
+            log.info("implementations destination: " + nullCheck(cmd.getOptionValue(IMPL_DESTINATION), "<destination>"));
             log.info("filter: " + nullCheck(cmd.getOptionValue(FILTER), NONE));
         } catch (ParseException e) {
             log.info(e.getMessage());

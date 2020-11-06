@@ -17,6 +17,7 @@ public class Structures {
         private String classPackage;
         private String interfaceName;
         private String interfacePackage;
+        private boolean interfaceSetters;
         private String modifierName;
         private String longModifierName;
         private String modifierPackage;
@@ -53,5 +54,23 @@ public class Structures {
         private List<CompilationUnit> files;
 
     }
+
+    @Data
+    @Builder
+    public static class Ignores {
+        private boolean forField;
+        private boolean forClass;
+        private boolean forInterface;
+        private boolean forModifier;
+    }
+
+    @Data
+    @Builder
+    public static class Constants {
+        private boolean forPublic;
+        private boolean forClass;
+        private boolean forInterface;
+    }
+
 
 }
