@@ -50,7 +50,7 @@ public class CollectionsHandler {
     }
 
     public static void addModifier(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String modifierName, String className, boolean isClass) {
-        if (!methodExists(spec, declaration)) {
+        if (!methodExists(spec, declaration, isClass)) {
             var type = declaration.getType().asClassOrInterfaceType();
             var collection = getCollectionType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), type);
             spec.findCompilationUnit().ifPresent(u -> {
@@ -82,7 +82,7 @@ public class CollectionsHandler {
 
     public static void addModifierFromSetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String modifierName, String className, boolean isClass) {
         var field = getFieldName(declaration.getNameAsString());
-        if (!methodExists(spec, declaration)) {
+        if (!methodExists(spec, declaration, isClass)) {
             var type = declaration.getParameter(0).getType().asClassOrInterfaceType();
             var collection = getCollectionType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), type);
             spec.findCompilationUnit().ifPresent(u -> {
@@ -107,7 +107,7 @@ public class CollectionsHandler {
     }
 
     public static void addModifier(ClassOrInterfaceDeclaration spec, Method declaration, String modifierName, String className, boolean isClass) {
-        if (!methodExists(spec, declaration)) {
+        if (!methodExists(spec, declaration, isClass)) {
             throw new NotImplementedException("addModifier");
 //            var type = declaration.getType().asClassOrInterfaceType();
 //            var collection = getCollectionType(type, modifierName);

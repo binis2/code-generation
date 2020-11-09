@@ -15,6 +15,8 @@ public class Structures {
         private String name;
         private String className;
         private String classPackage;
+        private boolean classGetters;
+        private boolean classSetters;
         private String interfaceName;
         private String interfacePackage;
         private boolean interfaceSetters;
@@ -72,5 +74,13 @@ public class Structures {
         private boolean forInterface;
     }
 
+    @Data
+    @Builder
+    public static class ProcessingType {
+        private String interfacePackage;
+        private String interfaceName;
+        private String classPackage;
+        private String className;
+    }
 
 }

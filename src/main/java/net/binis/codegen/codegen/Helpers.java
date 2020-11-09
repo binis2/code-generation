@@ -10,18 +10,17 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.tools.Holder;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.codegen.Structures.Parsed;
-import static net.binis.codegen.tools.Tools.*;
+import static net.binis.codegen.tools.Tools.notNull;
+import static net.binis.codegen.tools.Tools.nullCheck;
 
 @Slf4j
 public class Helpers {
@@ -31,6 +30,8 @@ public class Helpers {
     public static final Map<String, Parsed<EnumDeclaration>> enumParsed = new HashMap<>();
     public static final Map<String, Parsed<EnumDeclaration>> enumGenerated = new HashMap<>();
     public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> constantParsed = new HashMap<>();
+    public static final Map<String, List<Pair<String, String>>> declaredConstants = new HashMap<>();
+    public static final Map<String, Structures.ProcessingType> processingTypes = new HashMap<>();
 
     public static final Method classSignature = initClassSignature();
     public static final Method methodSignature = initMethodSignature();
@@ -124,17 +125,16 @@ public class Helpers {
     }
 
     public static String getExternalClassName(CompilationUnit unit, String type) {
-        var rType = Holder.of(type);
-        var idx = type.indexOf('.');
-        if (idx > -1) {
-            rType.set(type.substring(0, idx));
+        var result = getExternalClassNameIfExists(unit, type);
+        if (isNull(result)) {
+            result = unit.getPackageDeclaration().get().getNameAsString() + "." + type;
         }
-        var result = unit.getImports()
-                .stream()
-                .filter(i -> i.getNameAsString().endsWith("." + rType.get()))
-                .findFirst()
-                .map(NodeWithName::getNameAsString)
-                .orElse(null);
+        return result;
+    }
+
+    public static String getExternalClassNameIfExists(CompilationUnit unit, String type) {
+        var idx = type.indexOf('.');
+        var result = nullCheck(getClassImport(unit, type), NodeWithName::getNameAsString);
 
         if (nonNull(result) && idx > -1) {
             result += type.substring(idx).replace(".", "$");
@@ -145,40 +145,80 @@ public class Helpers {
                     .map(i -> i.getNameAsString() + "." + type)
                     .filter(name ->parsed.containsKey(name) || classExists(name))
                     .findFirst().orElse(null);
-
-            if (isNull(result)) {
-                result = unit.getPackageDeclaration().get().getNameAsString() + "." + type;
-            }
         }
 
         return result;
     }
 
-    public static boolean methodExists(ClassOrInterfaceDeclaration spec, Method declaration) {
+    public static ImportDeclaration getClassImport(CompilationUnit unit, String type) {
+        var rType = Holder.of(type);
+        var idx = type.indexOf('.');
+        if (idx > -1) {
+            rType.set(type.substring(0, idx));
+        }
+        return unit.getImports()
+                .stream()
+                .filter(i -> i.getNameAsString().endsWith("." + rType.get()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public static boolean methodExists(ClassOrInterfaceDeclaration spec, String name, Method declaration,boolean isClass) {
+        return spec.getMethods().stream()
+                .anyMatch(m -> m.getNameAsString().equals(name) &&
+                                m.getParameters().size() == declaration.getParameterCount() &&
+                                m.getType().asString().equals(declaration.getReturnType().getSimpleName())
+                        //TODO: Match parameter types also
+                ) || !isClass && ancestorMethodExists(spec, declaration);
+    }
+
+    public static boolean methodExists(ClassOrInterfaceDeclaration spec, Method declaration,boolean isClass) {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(declaration.getName()) &&
                                 m.getParameters().size() == declaration.getParameterCount() &&
                                 m.getType().asString().equals(declaration.getReturnType().getSimpleName())
                         //TODO: Match parameter types also
-                );
+                ) || !isClass && ancestorMethodExists(spec, declaration);
     }
 
-    public static boolean methodExists(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration) {
+    public static boolean methodExists(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass) {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(declaration.getNameAsString()) &&
                                 m.getParameters().size() == declaration.getParameters().size() &&
                                 m.getType().equals(declaration.getType())
                         //TODO: Match parameter types also
-                );
+                ) || !isClass && ancestorMethodExists(spec, declaration, declaration.getNameAsString());
     }
 
-    public static boolean methodExists(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String methodName) {
+    public static boolean methodExists(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String methodName, boolean isClass) {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(methodName) &&
                                 m.getParameters().size() == declaration.getParameters().size() &&
                                 m.getType().equals(declaration.getType())
                         //TODO: Match parameter types also
-                );
+                ) || !isClass && ancestorMethodExists(spec, declaration, methodName);
+    }
+
+    public static boolean ancestorMethodExists(ClassOrInterfaceDeclaration spec, Method declaration) {
+        //TODO: Check for params
+        var unit = spec.findCompilationUnit().get();
+        return spec.getExtendedTypes().stream()
+                .map(t -> loadClass(getExternalClassName(unit, t.getNameAsString())))
+                .filter(Objects::nonNull)
+                .anyMatch(c -> Arrays.stream(c.getMethods()).anyMatch(
+                        m -> m.getName().equals(declaration.getName()) && m.getReturnType().equals(declaration.getReturnType())
+                ));
+    }
+
+    public static boolean ancestorMethodExists(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String methodName) {
+        //TODO: Check for params and return type
+        var unit = spec.findCompilationUnit().get();
+        return spec.getExtendedTypes().stream()
+                .map(t -> loadClass(getExternalClassName(unit, t.getNameAsString())))
+                .filter(Objects::nonNull)
+                .anyMatch(c -> Arrays.stream(c.getMethods()).anyMatch(
+                        m -> m.getName().equals(methodName)
+                ));
     }
 
     public static boolean fieldExists(ClassOrInterfaceDeclaration spec, String field) {
@@ -310,7 +350,7 @@ public class Helpers {
                         var pair = (MemberValuePair) node;
                         var name = pair.getNameAsString();
                         switch (name) {
-                            case "public":
+                            case "isPublic":
                                 result.forPublic(pair.getValue().asBooleanLiteralExpr().getValue());
                                 break;
                             case "forClass":
@@ -326,6 +366,25 @@ public class Helpers {
         return result.build();
     }
 
+    public static void addDeclaredConstant(String namespace, String type, String constant) {
+        var decl = declaredConstants.get(namespace);
+        if (nonNull(decl)) {
+            decl.add(Pair.of(type, constant));
+        } else {
+            var list = new ArrayList<Pair<String, String>>();
+            list.add(Pair.of(type, constant));
+            declaredConstants.put(namespace, list);
+        }
+    }
+
+    public static void addProcessingType(String type, String interfacePackage, String interfaceName, String classPackage, String className) {
+        processingTypes.put(type, Structures.ProcessingType.builder()
+                .interfaceName(interfaceName)
+                .interfacePackage(interfacePackage)
+                .className(className)
+                .classPackage(classPackage)
+                .build());
+    }
 
     public static Class<?> loadClass(String className) {
         try {

@@ -3,6 +3,8 @@ package net.binis.codegen;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.printer.PrettyPrinter;
+import com.github.javaparser.printer.PrettyPrinterConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.codegen.CollectionsHandler;
 import net.binis.codegen.codegen.Generator;
@@ -102,7 +104,11 @@ public class CodeGen {
     }
 
     private static void saveFile(String baseDir, CompilationUnit file) {
-        System.out.println(file.toString());
+        var config = new PrettyPrinterConfiguration();
+        config.setOrderImports(true);
+        var printer = new PrettyPrinter(config);
+
+        System.out.println(printer.print(file));
 
         file.getPackageDeclaration().ifPresent(p -> {
             var fileName = baseDir + '/' + p.getNameAsString().replace(".", "/") + '/' + file.getType(0).getNameAsString() + ".java";
@@ -110,7 +116,7 @@ public class CodeGen {
             if (f.getParentFile().exists() || f.getParentFile().mkdirs()) {
                 try {
                     var writer = new BufferedWriter(new FileWriter(fileName));
-                    writer.write(file.toString());
+                    writer.write(printer.print(file));
                     writer.close();
                 } catch (IOException e) {
                     log.error("Unable to open for write file {}", fileName);
