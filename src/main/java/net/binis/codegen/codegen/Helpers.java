@@ -143,7 +143,7 @@ public class Helpers {
         if (isNull(result)) {
             result = unit.getImports().stream().filter(ImportDeclaration::isAsterisk)
                     .map(i -> i.getNameAsString() + "." + type)
-                    .filter(name ->parsed.containsKey(name) || classExists(name))
+                    .filter(name -> parsed.containsKey(name) || classExists(name))
                     .findFirst().orElse(null);
         }
 
@@ -163,7 +163,7 @@ public class Helpers {
                 .orElse(null);
     }
 
-    public static boolean methodExists(ClassOrInterfaceDeclaration spec, String name, Method declaration,boolean isClass) {
+    public static boolean methodExists(ClassOrInterfaceDeclaration spec, String name, Method declaration, boolean isClass) {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(name) &&
                                 m.getParameters().size() == declaration.getParameterCount() &&
@@ -172,7 +172,7 @@ public class Helpers {
                 ) || !isClass && ancestorMethodExists(spec, declaration);
     }
 
-    public static boolean methodExists(ClassOrInterfaceDeclaration spec, Method declaration,boolean isClass) {
+    public static boolean methodExists(ClassOrInterfaceDeclaration spec, Method declaration, boolean isClass) {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(declaration.getName()) &&
                                 m.getParameters().size() == declaration.getParameterCount() &&
@@ -272,22 +272,27 @@ public class Helpers {
 
     public static Map<String, Type> processGenerics(Class<?> cls, NodeList<Type> generics) {
         Map<String, Type> result = null;
+        var types = parseGenericClassSignature(cls);
+
+        if (types.size() != generics.size()) {
+            log.warn("Generic types miss match for {}", cls.getName());
+        }
+
+        result = new HashMap<>();
+
+        for (var i = 0; i < types.size(); i++) {
+            result.put(types.get(i), generics.get(i));
+        }
+        return result;
+    }
+
+    public static List<String> parseGenericClassSignature(Class<?> cls) {
         try {
-            var types = parseGenericClassSignature((String) classSignature.invoke(cls));
-
-            if (types.size() != generics.size()) {
-                log.warn("Generic types miss match for {}", cls.getName());
-            }
-
-            result = new HashMap<>();
-
-            for (var i = 0; i < types.size(); i++) {
-                result.put(types.get(i), generics.get(i));
-            }
+            return parseGenericClassSignature((String) classSignature.invoke(cls));
         } catch (Exception e) {
             log.error("Unable to get class signature for {}", cls.getName());
         }
-        return result;
+        return Collections.emptyList();
     }
 
     public static List<String> parseGenericClassSignature(String signature) {

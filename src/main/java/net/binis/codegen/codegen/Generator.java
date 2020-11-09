@@ -104,7 +104,7 @@ public class Generator {
                             addModifyMethod(intf, properties.getLongModifierName(), null, false, false);
                             addDoneMethod(modifierClass, properties.getInterfaceName(), properties.getClassName(), true, false);
                             addDoneMethod(modifier, properties.getInterfaceName(), null, false, false);
-                            handleModifierBaseImplementation(properties, spec, modifier, modifierClass);
+                            handleModifierBaseImplementation(properties, typeDeclaration, spec, intf, modifier, modifierClass);
                             spec.findCompilationUnit().get().addImport("net.binis.codegen.modifier.Modifiable");
                             spec.addImplementedType("Modifiable<" + intf.getNameAsString() + "." + modifier.getNameAsString() + ">");
                         }
@@ -169,9 +169,9 @@ public class Generator {
                     parse.setFiles(List.of(unit, iUnit));
                     generated.put(getClassName(spec), parse);
 
+                    handleClassAnnotations(typeDeclaration, spec);
                     checkForDeclaredConstants(spec);
                     checkForDeclaredConstants(intf);
-                    handleClassAnnotations(typeDeclaration, spec);
 
                     handleMixin(parse);
 
@@ -496,18 +496,24 @@ public class Generator {
         });
     }
 
-    private static void handleModifierBaseImplementation(PrototypeData properties, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {
-        notNull(findInheritanceProperty(spec, properties, (s, p) -> nullCheck(p.getBaseModifierClass(), prp -> getExternalClassName(s.findCompilationUnit().get(), prp))), baseClass ->
+    private static void handleModifierBaseImplementation(PrototypeData properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {
+        notNull(findInheritanceProperty(declaration, properties, (s, p) -> nullCheck(p.getBaseModifierClass(), prp -> getExternalClassName(s.findCompilationUnit().get(), prp))), baseClass ->
                 notNull(loadClass(baseClass), cls -> {
                     if (net.binis.codegen.modifier.Modifier.class.isAssignableFrom(cls)) {
                         modifierClass.addConstructor(PROTECTED).setBody(new BlockStmt().addStatement("setObject(" + properties.getClassName() + ".this);"));
                         spec.findCompilationUnit().get().addImport(net.binis.codegen.modifier.Modifier.class);
                     }
                     spec.findCompilationUnit().get().addImport(baseClass);
-                    modifierClass.addExtendedType(cls.getSimpleName());
+                    var intfName = intf.getNameAsString() + "." +  modifier.getNameAsString();
+                    var clsSignature = parseGenericClassSignature(cls);
+                    if (clsSignature.size() != 1) {
+                        log.error("BaseModifier ({}) should have only one generic!", cls.getCanonicalName());
+                    }
+                    modifierClass.addExtendedType(cls.getSimpleName() + "<" + intfName + ">");
+
                     for (var method : cls.getDeclaredMethods()) {
                         if (java.lang.reflect.Modifier.isPublic(method.getModifiers())) {
-                            addMethod(modifier, method);
+                            addMethod(modifier, method, clsSignature, intfName);
                         }
                     }
                 })
@@ -935,10 +941,10 @@ public class Generator {
         }
     }
 
-    private static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration) {
+    private static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, List<String> signature, String name) {
         if (!methodExists(spec, declaration, false)) {
             var method = spec.addMethod(declaration.getName());
-            method.setType(declaration.getReturnType());
+            method.setType(signature.contains(parseMethodSignature(declaration)) ? name : declaration.getReturnType().toString());
             for (var i = 0; i < declaration.getParameterCount(); i++) {
                 var param = declaration.getParameters()[i];
                 method.addParameter(param.getType().getCanonicalName(), param.getName());
