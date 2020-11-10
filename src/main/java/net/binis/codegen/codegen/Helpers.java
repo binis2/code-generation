@@ -2,8 +2,11 @@ package net.binis.codegen.codegen;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
+import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.ClassExpr;
 import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.nodeTypes.NodeWithName;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -14,6 +17,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import static java.util.Objects.isNull;
@@ -24,7 +28,10 @@ import static net.binis.codegen.tools.Tools.nullCheck;
 
 @Slf4j
 public class Helpers {
-
+    public static final Set<String> knownClassAnnotations = Set.of(
+            "javax.persistence.OneToOne",
+            "javax.persistence.ManyToOne",
+            "javax.persistence.OneToMany");
     public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> parsed = new HashMap<>();
     public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
     public static final Map<String, Parsed<EnumDeclaration>> enumParsed = new HashMap<>();
@@ -219,6 +226,30 @@ public class Helpers {
                 .anyMatch(c -> Arrays.stream(c.getMethods()).anyMatch(
                         m -> m.getName().equals(methodName)
                 ));
+    }
+
+    public static String findProperType(Parsed<ClassOrInterfaceDeclaration> parsed, CompilationUnit unit, ClassExpr expr) {
+        var parent = findParentClassOfType(expr, AnnotationExpr.class, a -> knownClassAnnotations.contains(getExternalClassName(unit, a.getNameAsString())));
+
+        if (isNull(parent)) {
+            return parsed.getFiles().get(1).getType(0).getNameAsString();
+        } else {
+            var type = parsed.getFiles().get(0).getType(0);
+            expr.findCompilationUnit().ifPresent(u -> u.addImport(type.getFullyQualifiedName().get()));
+            return type.getNameAsString();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends Node> T findParentClassOfType(Node node, Class<T> cls, Predicate<T> predicate) {
+        var parent = node.getParentNode();
+        if (parent.isEmpty()) {
+            return null;
+        } else if (cls.isAssignableFrom(parent.get().getClass()) && predicate.test((T) parent.get())) {
+            return (T) parent.get();
+        } else {
+            return findParentClassOfType(parent.get(), cls, predicate);
+        }
     }
 
     public static boolean fieldExists(ClassOrInterfaceDeclaration spec, String field) {

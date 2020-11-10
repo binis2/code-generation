@@ -11,6 +11,7 @@ import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.CodeAnnotation;
 import net.binis.codegen.annotation.CodeFieldAnnotations;
+import net.binis.codegen.annotation.Final;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
@@ -169,9 +170,12 @@ public class Generator {
                     parse.setFiles(List.of(unit, iUnit));
                     generated.put(getClassName(spec), parse);
 
+                    cleanUpInterface(typeDeclaration, intf);
                     handleClassAnnotations(typeDeclaration, spec);
                     checkForDeclaredConstants(spec);
                     checkForDeclaredConstants(intf);
+                    checkForClassExpressions(spec, typeDeclaration);
+                    checkForClassExpressions(intf, typeDeclaration);
 
                     handleMixin(parse);
 
@@ -184,6 +188,27 @@ public class Generator {
                 log.error("Invalid type " + type.getNameAsString());
             }
         }
+    }
+
+    private static void cleanUpInterface(Class<?> cls, ClassOrInterfaceDeclaration intf) {
+        var toRemove = new ArrayList<MethodDeclaration>();
+
+        Arrays.stream(cls.getInterfaces()).forEach(i -> cleanUpInterface(i, intf));
+        Arrays.stream(cls.getDeclaredMethods()).forEach(mtd ->
+                intf.getMethods().stream().filter(m ->
+                        m.getNameAsString().equals(mtd.getName()) &&
+                                m.getParameters().size() == mtd.getParameterCount()).forEach(toRemove::add));
+        //TODO: check parameter types as well
+
+        toRemove.forEach(intf::remove);
+    }
+
+    private static void cleanUpInterface(ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration intf) {
+        declaration.findCompilationUnit().ifPresent(unit ->
+                intf.getExtendedTypes().forEach(t ->
+                        notNull(getExternalClassName(unit, t.getNameAsString()), className ->
+                                notNull(loadClass(className), cls ->
+                                        cleanUpInterface(cls, intf)))));
     }
 
     private static void handleDefaultMethod(ClassOrInterfaceDeclaration typeDeclaration, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration) {
@@ -213,7 +238,6 @@ public class Generator {
     }
 
     private static void handleImports(ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration type) {
-        System.out.println("Imports for: " + declaration.getNameAsString());
         declaration.findCompilationUnit().ifPresent(decl ->
                 type.findCompilationUnit().ifPresent(unit -> {
                     findUsedTypes(type).stream().map(t -> getClassImport(decl, t)).filter(Objects::nonNull).forEach(unit::addImport);
@@ -224,9 +248,6 @@ public class Generator {
     private static Set<String> findUsedTypes(ClassOrInterfaceDeclaration type) {
         var result = new HashSet<String>();
         findUsedTypesInternal(result, type);
-
-        result.forEach(t -> System.out.println(t));
-
         return result;
     }
 
@@ -237,7 +258,10 @@ public class Generator {
             types.add(((AnnotationExpr) node).getNameAsString());
         } else if (node instanceof NameExpr) {
             types.add(((NameExpr) node).getNameAsString());
+        } else if (node instanceof SimpleName) {
+            Arrays.stream(((SimpleName) node).asString().split("[.()\\s]")).filter(s -> !"".equals(s)).forEach(types::add);
         }
+
         node.getChildNodes().forEach(n -> findUsedTypesInternal(types, n));
     }
 
@@ -260,6 +284,18 @@ public class Generator {
             }
             checkForDeclaredConstants(node);
         }
+    }
+
+    private static void checkForClassExpressions(Node type, ClassOrInterfaceDeclaration declaration) {
+        declaration.findCompilationUnit().ifPresent(unit -> {
+            for (var node : type.getChildNodes()) {
+                if (node instanceof ClassExpr) {
+                    var expr = (ClassExpr) node;
+                    notNull(parsed.get(getExternalClassName(unit, expr.getTypeAsString())), p -> expr.setType(findProperType(p, unit, expr)));
+                }
+                checkForClassExpressions(node, declaration);
+            }
+        });
     }
 
     private static void processConstant(ClassOrInterfaceDeclaration prototype, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, FieldDeclaration field) {
@@ -504,16 +540,21 @@ public class Generator {
                         spec.findCompilationUnit().get().addImport(net.binis.codegen.modifier.Modifier.class);
                     }
                     spec.findCompilationUnit().get().addImport(baseClass);
-                    var intfName = intf.getNameAsString() + "." +  modifier.getNameAsString();
+                    var intfName = intf.getNameAsString();
+                    var modName = intfName + "." + modifier.getNameAsString();
                     var clsSignature = parseGenericClassSignature(cls);
-                    if (clsSignature.size() != 1) {
-                        log.error("BaseModifier ({}) should have only one generic!", cls.getCanonicalName());
+                    if (clsSignature.size() != 2) {
+                        log.error("BaseModifier ({}) should have two generic params!", cls.getCanonicalName());
                     }
-                    modifierClass.addExtendedType(cls.getSimpleName() + "<" + intfName + ">");
+                    modifierClass.addExtendedType(cls.getSimpleName() + "<" + modName + ", " + intfName + ">");
 
                     for (var method : cls.getDeclaredMethods()) {
-                        if (java.lang.reflect.Modifier.isPublic(method.getModifiers())) {
-                            addMethod(modifier, method, clsSignature, intfName);
+                        if (java.lang.reflect.Modifier.isPublic(method.getModifiers()) && !"setObject".equals(method.getName())) {
+                            if (nonNull(method.getAnnotation(Final.class))) {
+                                addMethod(modifier, method, clsSignature, intfName);
+                            } else {
+                                addMethod(modifier, method, clsSignature, modName);
+                            }
                         }
                     }
                 })
@@ -749,7 +790,6 @@ public class Generator {
     }
 
     private static void addFieldFromGetter(ClassOrInterfaceDeclaration spec, Method method, Map<String, Type> generic) {
-        System.out.println(spec.getNameAsString() + " - " + method.getName());
         var field = getFieldName(method.getName());
         if (!fieldExists(spec, field)) {
             if (nonNull(generic)) {
