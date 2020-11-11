@@ -77,6 +77,16 @@ public class CodeGen {
                     Generator.generateCodeForClass(entry.getValue().getDeclaration().findCompilationUnit().get()));
         }
 
+        recursiveExpr.forEach(pair->
+                pair.getRight().setType(findProperType(pair.getLeft(), pair.getMiddle(), pair.getRight())));
+
+        recursiveEmbeddedModifiers.forEach((type, unit) ->
+                notNull(parsed.get(getExternalClassName(unit, type)), parse ->
+                        condition(parse.getProperties().isGenerateModifier(), () ->
+                                CollectionsHandler.handleEmbeddedModifier(
+                                        parse.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration(),
+                                        parse.getFiles().get(1).getType(0).asClassOrInterfaceDeclaration()))));
+
         var destination = cmd.getOptionValue(DESTINATION);
         parsed.values().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
             if (isNull(p.getProperties().getMixInClass())) {

@@ -14,6 +14,7 @@ import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -39,6 +40,9 @@ public class Helpers {
     public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> constantParsed = new HashMap<>();
     public static final Map<String, List<Pair<String, String>>> declaredConstants = new HashMap<>();
     public static final Map<String, Structures.ProcessingType> processingTypes = new HashMap<>();
+    public static final List<Triple<Parsed<ClassOrInterfaceDeclaration>, CompilationUnit, ClassExpr>> recursiveExpr = new LinkedList<>();
+    public static final Map<String, CompilationUnit> recursiveEmbeddedModifiers = new HashMap<>();
+
 
     public static final Method classSignature = initClassSignature();
     public static final Method methodSignature = initMethodSignature();
@@ -234,9 +238,15 @@ public class Helpers {
         if (isNull(parent)) {
             return parsed.getFiles().get(1).getType(0).getNameAsString();
         } else {
-            var type = parsed.getFiles().get(0).getType(0);
-            expr.findCompilationUnit().ifPresent(u -> u.addImport(type.getFullyQualifiedName().get()));
-            return type.getNameAsString();
+            var files = parsed.getFiles();
+            if (nonNull(files)) {
+                var type = files.get(0).getType(0);
+                expr.findCompilationUnit().ifPresent(u -> u.addImport(type.getFullyQualifiedName().get()));
+                return type.getNameAsString();
+            } else {
+                recursiveExpr.add(Triple.of(parsed, unit, expr));
+                return expr.getTypeAsString();
+            }
         }
     }
 

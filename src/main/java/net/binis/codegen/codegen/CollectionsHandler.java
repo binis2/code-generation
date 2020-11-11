@@ -4,6 +4,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.InitializerDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
@@ -59,14 +60,14 @@ public class CollectionsHandler {
             });
             var method = spec
                     .addMethod(declaration.getNameAsString())
-                    .setType(collection.getType() + "<" + (collection.isPrototypeParam() ? collection.getGeneric() + ".EmbeddedModify<Modify>, ": "") + collection.getGeneric() + ", " + modifierName + ">");
+                    .setType(collection.getType() + "<" + (collection.isPrototypeParam() ? collection.getGeneric() + ".EmbeddedModify<Modify>, " : "") + collection.getGeneric() + ", " + modifierName + ">");
             if (isClass) {
                 var parent = className + ".this." + declaration.getName();
                 var block = new BlockStmt()
                         .addStatement(new IfStmt().setCondition(new NameExpr().setName(parent + " == null")).setThenStmt(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName(parent)).setValue(new NameExpr().setName("new " + collection.getImplementor() + "<>()")))));
                 if (collection.isPrototypeParam()) {
                     block
-                        .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection.getClassType() + "<>(this, " + parent + ", " + collection.getGeneric() +".class)")));
+                            .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection.getClassType() + "<>(this, " + parent + ", " + collection.getGeneric() + ".class)")));
                 } else {
                     block.addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection.getClassType() + "<>(this, " + parent + ")")));
                 }
@@ -178,13 +179,13 @@ public class CollectionsHandler {
         return result;
     }
 
-    public static void handleEmbeddedModifier(String type, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf) {
+    public static void handleEmbeddedModifier(ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf) {
         var list = intf.getMembers().stream().filter(BodyDeclaration::isClassOrInterfaceDeclaration).map(BodyDeclaration::asClassOrInterfaceDeclaration).collect(Collectors.toList());
         if (list.size() == 1) {
             var actualModifier = list.get(0);
             var actualModifierClass = spec.getMembers().stream().filter(BodyDeclaration::isClassOrInterfaceDeclaration).map(BodyDeclaration::asClassOrInterfaceDeclaration).findFirst().get();
             var modifier = new ClassOrInterfaceDeclaration(
-                    Modifier.createModifierList(PUBLIC), false, "Embedded" + actualModifier.getNameAsString())
+                    Modifier.createModifierList(), false, "Embedded" + actualModifier.getNameAsString())
                     .addTypeParameter("T")
                     .setInterface(true);
             modifier.addMethod("and")
@@ -215,7 +216,6 @@ public class CollectionsHandler {
                 u.addImport("net.binis.codegen.factory.CodeFactory");
                 u.addImport("net.binis.codegen.collection.EmbeddedCodeCollection");
             });
-            spec.addStaticInitializer();
         }
     }
 
@@ -234,10 +234,10 @@ public class CollectionsHandler {
                 eIntf = embedded.getImplementedTypes(0).toString();
             }
 
-            var intfName = "<void>";
+            var intfName = unit.getType(0).asClassOrInterfaceDeclaration().isInterface() ? unit.getType(0).getNameAsString() : "void";
 
             for (var old : modifier.getMethods()) {
-                if (!"done".equals(old.getNameAsString())) {
+                if ("Modify".equals(old.getType().toString()) || (old.getType().toString().endsWith(".Modify")) || old.getTypeAsString().startsWith("EmbeddedCodeCollection<")) {
                     var method = embedded.addMethod(old.getNameAsString())
                             .setModifiers(old.getModifiers())
                             .setParameters(old.getParameters());
@@ -263,6 +263,22 @@ public class CollectionsHandler {
                         } else {
                             method.setBody(null);
                         }
+                    } else if (old.getTypeAsString().startsWith("EmbeddedCodeCollection<")) {
+                        if (old.getBody().isPresent()) {
+                            method.setType(old.getType().toString().replace(intf, eIntf));
+                            var split = ((NameExpr) old.getBody().get().getChildNodes().get(1).getChildNodes().get(0)).getNameAsString().split("[\\s<.]");
+                            var collection = split[1];
+                            var cls = split[6];
+                            var collectionType = old.getBody().get().getChildNodes().get(0).getChildNodes().get(1).getChildNodes().get(0).toString().split("[\\s<]")[3];
+                            var parent = "entity." + method.getNameAsString();
+
+                            method.setBody(new BlockStmt()
+                                    .addStatement(new IfStmt().setCondition(new NameExpr().setName(parent + " != null")).setThenStmt(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName(parent)).setValue(new NameExpr().setName("new " + collectionType + "<>()")))))
+                                    .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection + "<>(this, " + parent + ", " + cls +".class)"))));
+                        } else {
+                            method.setType(old.getType().toString().replace(", Modify>", ", " + intfName + ".EmbeddedModify<T>>"));
+                            method.setBody(null);
+                        }
                     } else {
                         method.setType(old.getType());
                         method.setBody(old.getBody().orElse(null));
@@ -272,15 +288,13 @@ public class CollectionsHandler {
                 }
             }
 
-            var initilizer = unit.getType(0).getMembers().stream().filter(BodyDeclaration::isInitializerDeclaration).map(BodyDeclaration::asInitializerDeclaration).findFirst().orElse(null);
-            if (initilizer != null) {
-                initilizer.getBody()
-                        .addStatement(new MethodCallExpr()
-                                .setName("CodeFactory.registerEmbeddableType")
-                                .addArgument(intfName + ".class")
-                                .addArgument(unit.getType(0).asClassOrInterfaceDeclaration().getNameAsString() + ".class")
-                                .addArgument(embedded.getNameAsString() + ".class"));
-            }
+            var initializer = unit.getType(0).getMembers().stream().filter(BodyDeclaration::isInitializerDeclaration).map(BodyDeclaration::asInitializerDeclaration).findFirst().orElse(new InitializerDeclaration());
+            initializer.getBody()
+                    .addStatement(new MethodCallExpr()
+                            .setName("CodeFactory.registerEmbeddableType")
+                            .addArgument(intfName + ".class")
+                            .addArgument(unit.getType(0).asClassOrInterfaceDeclaration().getNameAsString() + ".class")
+                            .addArgument(embedded.getNameAsString() + ".class"));
         }
         return unit;
     }
