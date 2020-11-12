@@ -55,6 +55,8 @@ public class Structures {
         private TypeDeclaration<T> declaration;
         private List<CompilationUnit> files;
 
+        private Parsed<T> base;
+        private Parsed<T> mixIn;
     }
 
     @Data

@@ -23,6 +23,8 @@ import java.util.regex.Pattern;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.codegen.Constants.MODIFIER_CLASS_NAME_SUFFIX;
+import static net.binis.codegen.codegen.Constants.MODIFIER_INTERFACE_NAME;
 import static net.binis.codegen.codegen.Structures.Parsed;
 import static net.binis.codegen.tools.Tools.notNull;
 import static net.binis.codegen.tools.Tools.nullCheck;
@@ -291,7 +293,7 @@ public class Helpers {
     }
 
     public static ClassOrInterfaceDeclaration findModifier(ClassOrInterfaceDeclaration intf) {
-        return intf.findFirst(ClassOrInterfaceDeclaration.class, m -> nullCheck(m.getNameAsString(), name -> name.equals("Modify") || name.endsWith("ModifyImpl"))).orElseThrow();
+        return intf.findFirst(ClassOrInterfaceDeclaration.class, m -> nullCheck(m.getNameAsString(), name -> name.equals(MODIFIER_INTERFACE_NAME) || name.endsWith(MODIFIER_CLASS_NAME_SUFFIX))).orElseThrow();
     }
 
     public static String getEnumNameFromPrototype(TypeDeclaration<?> type, String prototype) {

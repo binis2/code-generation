@@ -237,7 +237,7 @@ public class CollectionsHandler {
             var intfName = unit.getType(0).asClassOrInterfaceDeclaration().isInterface() ? unit.getType(0).getNameAsString() : "void";
 
             for (var old : modifier.getMethods()) {
-                if ("Modify".equals(old.getType().toString()) || (old.getType().toString().endsWith(".Modify")) || old.getTypeAsString().startsWith("EmbeddedCodeCollection<")) {
+                if (Constants.MODIFIER_INTERFACE_NAME.equals(old.getType().toString()) || (old.getType().toString().endsWith(".Modify")) || old.getTypeAsString().startsWith("EmbeddedCodeCollection<")) {
                     var method = embedded.addMethod(old.getNameAsString())
                             .setModifiers(old.getModifiers())
                             .setParameters(old.getParameters());
