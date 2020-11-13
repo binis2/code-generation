@@ -34,7 +34,8 @@ public class Helpers {
     public static final Set<String> knownClassAnnotations = Set.of(
             "javax.persistence.OneToOne",
             "javax.persistence.ManyToOne",
-            "javax.persistence.OneToMany");
+            "javax.persistence.OneToMany",
+            "javax.persistence.ManyToMany");
     public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> parsed = new HashMap<>();
     public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
     public static final Map<String, Parsed<EnumDeclaration>> enumParsed = new HashMap<>();

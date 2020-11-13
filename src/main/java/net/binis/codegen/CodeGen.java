@@ -83,18 +83,18 @@ public class CodeGen {
         recursiveEmbeddedModifiers.forEach((type, unit) ->
                 notNull(parsed.get(getExternalClassName(unit, type)), parse ->
                         condition(parse.getProperties().isGenerateModifier(), () ->
-                                CollectionsHandler.handleEmbeddedModifier(
+                                CollectionsHandler.handleEmbeddedModifier(parse,
                                         parse.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration(),
                                         parse.getFiles().get(1).getType(0).asClassOrInterfaceDeclaration()))));
 
         var destination = cmd.getOptionValue(DESTINATION);
         parsed.values().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
             if (isNull(p.getProperties().getMixInClass())) {
-                var file = CollectionsHandler.finalizeEmbeddedModifier(p.getFiles().get(0));
+                var file = CollectionsHandler.finalizeEmbeddedModifier(p, true);
                 saveFile(nullCheck(cmd.getOptionValue(IMPL_DESTINATION), destination), file);
             }
             if (p.getProperties().isGenerateInterface()) {
-                var file = CollectionsHandler.finalizeEmbeddedModifier(p.getFiles().get(1));
+                var file = CollectionsHandler.finalizeEmbeddedModifier(p, false);
                 saveFile(destination, file);
             }
         });

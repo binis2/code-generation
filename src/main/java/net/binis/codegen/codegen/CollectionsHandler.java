@@ -23,6 +23,8 @@ import java.lang.reflect.Method;
 import java.util.stream.Collectors;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static net.binis.codegen.codegen.Generator.getGenericsList;
 import static net.binis.codegen.codegen.Helpers.getFieldName;
 import static net.binis.codegen.codegen.Helpers.methodExists;
@@ -179,11 +181,10 @@ public class CollectionsHandler {
         return result;
     }
 
-    public static void handleEmbeddedModifier(ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf) {
-        var list = intf.getMembers().stream().filter(BodyDeclaration::isClassOrInterfaceDeclaration).map(BodyDeclaration::asClassOrInterfaceDeclaration).collect(Collectors.toList());
-        if (list.size() == 1) {
-            var actualModifier = list.get(0);
-            var actualModifierClass = spec.getMembers().stream().filter(BodyDeclaration::isClassOrInterfaceDeclaration).map(BodyDeclaration::asClassOrInterfaceDeclaration).findFirst().get();
+    public static void handleEmbeddedModifier(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf) {
+        var actualModifier = parse.getModifierIntf();
+        if (nonNull(actualModifier) && isNull(parse.getEmbeddedModifierIntf())) {
+            var actualModifierClass = parse.getModifier();
             var modifier = new ClassOrInterfaceDeclaration(
                     Modifier.createModifierList(), false, "Embedded" + actualModifier.getNameAsString())
                     .addTypeParameter("T")
@@ -211,6 +212,9 @@ public class CollectionsHandler {
             spec.addMember(modifierClass);
             intf.addMember(modifier);
 
+            parse.setEmbeddedModifier(modifierClass);
+            parse.setEmbeddedModifierIntf(modifier);
+
             intf.findCompilationUnit().get().addImport("net.binis.codegen.collection.EmbeddedCodeCollection");
             spec.findCompilationUnit().ifPresent(u -> {
                 u.addImport("net.binis.codegen.factory.CodeFactory");
@@ -219,12 +223,18 @@ public class CollectionsHandler {
         }
     }
 
-    public static CompilationUnit finalizeEmbeddedModifier(CompilationUnit unit) {
-        var list = unit.getType(0).getMembers().stream().filter(BodyDeclaration::isClassOrInterfaceDeclaration).map(BodyDeclaration::asClassOrInterfaceDeclaration).collect(Collectors.toList());
-        if (list.size() == 2) {
+    public static CompilationUnit finalizeEmbeddedModifier(Structures.Parsed<ClassOrInterfaceDeclaration> parse, boolean isClass) {
+        var unit = parse.getFiles().get(isClass ? 0 : 1);
+        var modifier = parse.getModifierIntf();
+        var embedded = parse.getEmbeddedModifierIntf();
+        if (isClass) {
+            modifier = parse.getModifier();
+            embedded = parse.getEmbeddedModifier();
+        }
+
+        if (nonNull(embedded)) {
+
             //var prefix = unit.getType(0).asClassOrInterfaceDeclaration().getFullyQualifiedName();
-            var modifier = list.get(0).asClassOrInterfaceDeclaration();
-            var embedded = list.get(1).asClassOrInterfaceDeclaration();
             embedded.setExtendedTypes(modifier.getExtendedTypes());
 
             var intf = modifier.getNameAsString();

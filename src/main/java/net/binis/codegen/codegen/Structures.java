@@ -1,6 +1,7 @@
 package net.binis.codegen.codegen;
 
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.Builder;
 import lombok.Data;
@@ -57,6 +58,11 @@ public class Structures {
 
         private Parsed<T> base;
         private Parsed<T> mixIn;
+
+        private ClassOrInterfaceDeclaration modifier;
+        private ClassOrInterfaceDeclaration embeddedModifier;
+        private ClassOrInterfaceDeclaration modifierIntf;
+        private ClassOrInterfaceDeclaration embeddedModifierIntf;
     }
 
     @Data
