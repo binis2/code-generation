@@ -67,6 +67,7 @@ public class Generator {
                     iUnit.setPackageDeclaration(properties.getInterfacePackage());
                     intf.addModifier(PUBLIC);
 
+
                     var modifier = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, properties.getModifierName()).setInterface(true);
                     var modifierClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, properties.getClassName() + "ModifyImpl");
                     if (properties.isGenerateModifier()) {
@@ -133,9 +134,15 @@ public class Generator {
                         }
                     });
 
+                    if (isNull(properties.getBaseClassName())) {
+                        addAsMethod(spec, true, false);
+                    }
                     if (properties.isGenerateInterface()) {
                         spec.addImplementedType(properties.getInterfaceName());
                         unit.addImport(getClassName(intf));
+                        if (isNull(properties.getBaseClassName())) {
+                            addAsMethod(intf, false, false);
+                        }
                         if (properties.isGenerateModifier()) {
                             var methodName = isNull(properties.getMixInClass()) ? MODIFIER_METHOD_NAME : MIXIN_MODIFYING_METHOD_PREFIX + intf.getNameAsString();
                             addModifyMethod(methodName, spec, properties.getLongModifierName(), modifierClass.getNameAsString(), true, false);
@@ -657,10 +664,10 @@ public class Generator {
                                                 spec.stream().filter(n -> n instanceof ClassOrInterfaceDeclaration && ((ClassOrInterfaceDeclaration) n).getNameAsString().equals(spec.getNameAsString() + MODIFIER_CLASS_NAME_SUFFIX)).map(n -> (ClassOrInterfaceDeclaration) n).findFirst().ifPresent(smod -> {
                                                     mergeTypes(pmod, mod, m -> !m.isMethodDeclaration() || !MODIFIER_DONE_METHOD_NAME.equals(m.asMethodDeclaration().getNameAsString()), a -> a);
                                                     mergeTypes(spmod, smod, m -> !m.isMethodDeclaration() || !MODIFIER_DONE_METHOD_NAME.equals(m.asMethodDeclaration().getNameAsString()), a -> {
-                                                            if (parent.getInterfaceName().equals(getScope(a.getType()))) {
-                                                                    setScope(a.getType(), intf.getNameAsString());
-                                                            }
-                                                            return a;
+                                                        if (parent.getInterfaceName().equals(getScope(a.getType()))) {
+                                                            setScope(a.getType(), intf.getNameAsString());
+                                                        }
+                                                        return a;
                                                     });
                                                     CollectionsHandler.finalizeEmbeddedModifier(parse, true);
                                                     CollectionsHandler.finalizeEmbeddedModifier(parse, false);
@@ -864,6 +871,25 @@ public class Generator {
             method.setBody(null);
         }
     }
+
+    private static void addAsMethod(ClassOrInterfaceDeclaration spec, boolean isClass, boolean isAbstract) {
+        var method = spec
+                .addMethod(MIXIN_MODIFYING_METHOD_PREFIX)
+                .setType("T")
+                .addParameter("Class<T>", "cls")
+                .addTypeParameter("T");
+        if (isClass) {
+            method
+                    .addModifier(PUBLIC)
+                    .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("cls.cast(this)"))));
+        } else {
+            if (isAbstract) {
+                method.addModifier(ABSTRACT).addModifier(PUBLIC);
+            }
+            method.setBody(null);
+        }
+    }
+
 
     private static void addDoneMethod(ClassOrInterfaceDeclaration spec, String parentName, String parentClassName, boolean isClass, boolean isAbstract) {
         var method = spec
