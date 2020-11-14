@@ -38,6 +38,12 @@ public class Helpers {
             "javax.persistence.ManyToOne",
             "javax.persistence.OneToMany",
             "javax.persistence.ManyToMany");
+    public static final Map<String, String> knownTypes = Map.of(
+            "CodeList",
+            "net.binis.codegen.collection.CodeList",
+            "CodeListImpl",
+            "net.binis.codegen.collection.CodeListImpl");
+
     public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> parsed = new HashMap<>();
     public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
     public static final Map<String, Parsed<EnumDeclaration>> enumParsed = new HashMap<>();
@@ -167,6 +173,11 @@ public class Helpers {
     }
 
     public static ImportDeclaration getClassImport(CompilationUnit unit, String type) {
+        var known = knownTypes.get(type);
+        if (nonNull(known)) {
+            return new ImportDeclaration(known, false, false);
+        }
+
         var rType = Holder.of(type);
         var idx = type.indexOf('.');
         if (idx > -1) {

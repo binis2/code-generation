@@ -115,7 +115,6 @@ public class CodeGen {
 
     private static void saveFile(String baseDir, CompilationUnit file) {
         var config = new PrettyPrinterConfiguration();
-        config.setOrderImports(true);
         var printer = new PrettyPrinter(config);
 
         sortImports(file);

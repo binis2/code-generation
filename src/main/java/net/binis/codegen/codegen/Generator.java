@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.CodeAnnotation;
 import net.binis.codegen.annotation.CodeFieldAnnotations;
 import net.binis.codegen.annotation.Final;
+import net.binis.codegen.annotation.Ignore;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
@@ -258,6 +259,7 @@ public class Generator {
 
         if (!ignores.isForClass()) {
             var method = declaration.clone().removeModifier(DEFAULT).addModifier(PUBLIC);
+            method.getAnnotationByClass(Ignore.class).ifPresent(method::remove);
 
             declaration.getBody().ifPresent(b -> {
                 var body = b.clone();
