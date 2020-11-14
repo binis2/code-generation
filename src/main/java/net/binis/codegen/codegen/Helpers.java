@@ -9,6 +9,8 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.ClassExpr;
 import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.nodeTypes.NodeWithName;
+import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
+import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
@@ -433,6 +435,51 @@ public class Helpers {
                 .className(className)
                 .classPackage(classPackage)
                 .build());
+    }
+
+    public static void sortImports(CompilationUnit unit) {
+        unit.getImports().sort((i1, i2) -> i2.getNameAsString().compareTo(i1.getNameAsString()));
+    }
+
+    public static void sortClass(ClassOrInterfaceDeclaration cls) {
+        cls.getMembers().sort(Helpers::compareMembers);
+        cls.getMembers().stream().filter(BodyDeclaration::isClassOrInterfaceDeclaration).map(BodyDeclaration::asClassOrInterfaceDeclaration).forEach(Helpers::sortClass);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static int compareMembers(BodyDeclaration<?> m1, BodyDeclaration<?> m2) {
+        var result = memberIndex(m2) - memberIndex(m1);
+        if (result == 0) {
+            if (m1 instanceof NodeWithSimpleName) {
+                return ((NodeWithSimpleName) m1).getNameAsString().compareTo(((NodeWithSimpleName) m2).getNameAsString());
+            } else if (m1 instanceof NodeWithVariables) {
+                return ((NodeWithVariables) m1).getVariable(0).getNameAsString().compareTo(((NodeWithVariables) m2).getVariable(0).getNameAsString());
+            }
+        }
+        return result;
+    }
+
+    private static int memberIndex(BodyDeclaration<?> member) {
+        if (member.isFieldDeclaration()) {
+            var field = member.asFieldDeclaration();
+            if (field.isStatic() && field.isFinal()) {
+                return 1000;
+            } else if (field.isStatic()) {
+                return 999;
+            } else {
+                return 998;
+            }
+        } else if (member.isInitializerDeclaration()) {
+            return 997;
+        } else if (member.isConstructorDeclaration()) {
+            return 996;
+        } else if (member.isMethodDeclaration()) {
+            return 995;
+        } else if (member.isClassOrInterfaceDeclaration()) {
+            return 994;
+        }
+
+        return 0;
     }
 
     public static Class<?> loadClass(String className) {

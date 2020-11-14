@@ -118,6 +118,11 @@ public class CodeGen {
         config.setOrderImports(true);
         var printer = new PrettyPrinter(config);
 
+        sortImports(file);
+        if (file.getType(0).isClassOrInterfaceDeclaration()) {
+            sortClass(file.getType(0).asClassOrInterfaceDeclaration());
+        }
+
         System.out.println(printer.print(file));
 
         file.getPackageDeclaration().ifPresent(p -> {
