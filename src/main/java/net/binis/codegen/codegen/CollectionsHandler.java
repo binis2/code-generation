@@ -18,16 +18,17 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.codegen.Generator.getGenericsList;
-import static net.binis.codegen.codegen.Helpers.getFieldName;
-import static net.binis.codegen.codegen.Helpers.methodExists;
+import static net.binis.codegen.codegen.Helpers.*;
 
 @Slf4j
 public class CollectionsHandler {
@@ -56,20 +57,20 @@ public class CollectionsHandler {
         if (!methodExists(spec, declaration, isClass)) {
             var type = declaration.getType().asClassOrInterfaceType();
             var collection = getCollectionType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), type);
+            var generic = collection.getGeneric().stream().map(Pair::getLeft).collect(Collectors.joining(", "));
             spec.findCompilationUnit().ifPresent(u -> {
                 u.addImport(collection.getInterfaceImport());
                 u.addImport(collection.getImplementorInterface());
             });
             var method = spec
                     .addMethod(declaration.getNameAsString())
-                    .setType(collection.getType() + "<" + (collection.isPrototypeParam() ? collection.getGeneric() + ".EmbeddedModify<Modify>, " : "") + collection.getGeneric() + ", " + modifierName + ">");
+                    .setType(collection.getType() + "<" + (collection.isPrototypeParam() ? generic + ".EmbeddedModify<" + generic + ".Modify>, " : "") + generic + ", " + modifierName + ">");
             if (isClass) {
                 var parent = className + ".this." + declaration.getName();
                 var block = new BlockStmt()
                         .addStatement(new IfStmt().setCondition(new NameExpr().setName(parent + " == null")).setThenStmt(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName(parent)).setValue(new NameExpr().setName("new " + collection.getImplementor() + "<>()")))));
                 if (collection.isPrototypeParam()) {
-                    block
-                            .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection.getClassType() + "<>(this, " + parent + ", " + collection.getGeneric() + ".class)")));
+                    block.addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection.getClassType() + "<>(this, " + parent + ", " + generic + ".class)")));
                 } else {
                     block.addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection.getClassType() + "<>(this, " + parent + ")")));
                 }
@@ -94,7 +95,7 @@ public class CollectionsHandler {
             });
             var method = spec
                     .addMethod(field)
-                    .setType(collection.getType() + "<" + collection.getGeneric() + ", " + modifierName + ">");
+                    .setType(collection.getType() + "<" + collection.getGeneric().stream().map(Pair::getLeft).collect(Collectors.joining(", ")) + ", " + modifierName + ">");
             if (isClass) {
                 var parent = className + ".this." + field;
                 method
@@ -134,6 +135,7 @@ public class CollectionsHandler {
 
     private static CollectionType getCollectionType(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type) {
         var generic = getGenericsList(source, destination, type, true);
+
         var builder = CollectionType.builder().generic(generic);
         switch (type.getNameAsString()) {
             case "List":
@@ -143,7 +145,7 @@ public class CollectionsHandler {
                         .classType("CodeListImpl")
                         .implementor("java.util.ArrayList")
                         .implementorInterface("java.util.List")
-                        .prototypeParam(!type.getTypeArguments().get().get(0).toString().equals(generic));
+                        .prototypeParam(!type.getTypeArguments().get().get(0).toString().equals(generic.get(0).getKey()));
                 break;
             case "Set":
             case "CodeSet":
@@ -152,7 +154,7 @@ public class CollectionsHandler {
                         .classType("CodeSetImpl")
                         .implementor("java.util.HashSet")
                         .implementorInterface("java.util.Set")
-                        .prototypeParam(!type.getTypeArguments().get().get(0).toString().equals(generic));
+                        .prototypeParam(!type.getTypeArguments().get().get(0).toString().equals(generic.get(0).getKey()));
                 break;
             case "Map":
             case "CodeMap":
@@ -184,6 +186,10 @@ public class CollectionsHandler {
     public static void handleEmbeddedModifier(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf) {
         var actualModifier = parse.getModifierIntf();
         if (nonNull(actualModifier) && isNull(parse.getEmbeddedModifierIntf())) {
+            if (nonNull(parse.getProperties().getMixInClass())) {
+                spec = parse.getMixIn().getSpec();
+            }
+
             var actualModifierClass = parse.getModifier();
             var modifier = new ClassOrInterfaceDeclaration(
                     Modifier.createModifierList(), false, "Embedded" + actualModifier.getNameAsString())
@@ -206,7 +212,7 @@ public class CollectionsHandler {
                             .addStatement(new AssignExpr().setTarget(new NameExpr().setName("this.parent")).setValue(new NameExpr().setName("parent")))
                             .addStatement(new AssignExpr().setTarget(new NameExpr().setName("this.entity")).setValue(new NameExpr().setName("entity"))));
             modifierClass.addMethod("and", PUBLIC)
-                    .setType("EmbeddedCodeCollection<EmbeddedModify<T>, " + intf.getNameAsString() + ", T>")
+                    .setType("EmbeddedCodeCollection<" + intf.getNameAsString() + ".EmbeddedModify<T>, " + intf.getNameAsString() + ", T>")
                     .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("(EmbeddedCodeCollection) parent"))));
 
             spec.addMember(modifierClass);
@@ -231,6 +237,12 @@ public class CollectionsHandler {
             modifier = parse.getModifier();
             embedded = parse.getEmbeddedModifier();
         }
+        var intfName = unit.getType(0).asClassOrInterfaceDeclaration().isInterface() ? unit.getType(0).getNameAsString() : "void";
+
+        if (isNull(embedded) && recursiveEmbeddedModifiers.containsKey(parse.getIntf().getNameAsString())) {
+            handleEmbeddedModifier(parse, parse.getSpec(), parse.getIntf());
+            embedded = isClass ? parse.getEmbeddedModifier() : parse.getEmbeddedModifierIntf();
+        }
 
         if (nonNull(embedded)) {
 
@@ -243,8 +255,6 @@ public class CollectionsHandler {
                 intf = modifier.getImplementedTypes(0).toString();
                 eIntf = embedded.getImplementedTypes(0).toString();
             }
-
-            var intfName = unit.getType(0).asClassOrInterfaceDeclaration().isInterface() ? unit.getType(0).getNameAsString() : "void";
 
             for (var old : modifier.getMethods()) {
                 if (Constants.MODIFIER_INTERFACE_NAME.equals(old.getType().toString()) || (old.getType().toString().endsWith(".Modify")) || old.getTypeAsString().startsWith("EmbeddedCodeCollection<")) {
@@ -275,7 +285,7 @@ public class CollectionsHandler {
                         }
                     } else if (old.getTypeAsString().startsWith("EmbeddedCodeCollection<")) {
                         if (old.getBody().isPresent()) {
-                            method.setType(old.getType().toString().replace(intf, eIntf));
+                            method.setType(old.getType().toString().replace(", " + intf, ", " + eIntf));
                             var split = ((NameExpr) old.getBody().get().getChildNodes().get(1).getChildNodes().get(0)).getNameAsString().split("[\\s<.]");
                             var collection = split[1];
                             var cls = split[6];
@@ -297,15 +307,18 @@ public class CollectionsHandler {
                     intfName = old.getType().asClassOrInterfaceType().getNameAsString();
                 }
             }
-
-            var initializer = unit.getType(0).getMembers().stream().filter(BodyDeclaration::isInitializerDeclaration).map(BodyDeclaration::asInitializerDeclaration).findFirst().orElse(new InitializerDeclaration());
-            initializer.getBody()
-                    .addStatement(new MethodCallExpr()
-                            .setName("CodeFactory.registerEmbeddableType")
-                            .addArgument(intfName + ".class")
-                            .addArgument(unit.getType(0).asClassOrInterfaceDeclaration().getNameAsString() + ".class")
-                            .addArgument(embedded.getNameAsString() + ".class"));
         }
+
+        if (isClass && !"void".equals(intfName)) {
+            var typeName = unit.getType(0).asClassOrInterfaceDeclaration().getNameAsString();
+            unit.getType(0).addInitializer()
+                    .addStatement(new MethodCallExpr()
+                            .setName("CodeFactory.registerType")
+                            .addArgument(intfName + ".class")
+                            .addArgument(typeName + "::new")
+                            .addArgument(nonNull(embedded) ? "(p, v) -> new " + embedded.getNameAsString() + "<>(p, (" + typeName + ") v)" : "null"));
+        }
+
         return unit;
     }
 
@@ -316,7 +329,7 @@ public class CollectionsHandler {
         private String classType;
         private String classImport;
         private String interfaceImport;
-        private String generic;
+        private List<Pair<String, Boolean>> generic;
         private String implementor;
         private String implementorInterface;
         private boolean prototypeParam;

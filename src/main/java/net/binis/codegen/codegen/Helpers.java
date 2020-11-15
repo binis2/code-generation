@@ -42,7 +42,11 @@ public class Helpers {
             "CodeList",
             "net.binis.codegen.collection.CodeList",
             "CodeListImpl",
-            "net.binis.codegen.collection.CodeListImpl");
+            "net.binis.codegen.collection.CodeListImpl",
+            "EmbeddedCodeListImpl",
+            "net.binis.codegen.collection.EmbeddedCodeListImpl",
+            "EmbeddedCodeSetImpl",
+            "net.binis.codegen.collection.EmbeddedCodeSetImpl");
 
     public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> parsed = new HashMap<>();
     public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
@@ -52,7 +56,7 @@ public class Helpers {
     public static final Map<String, List<Pair<String, String>>> declaredConstants = new HashMap<>();
     public static final Map<String, Structures.ProcessingType> processingTypes = new HashMap<>();
     public static final List<Triple<Parsed<ClassOrInterfaceDeclaration>, CompilationUnit, ClassExpr>> recursiveExpr = new LinkedList<>();
-    public static final Map<String, CompilationUnit> recursiveEmbeddedModifiers = new HashMap<>();
+    public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> recursiveEmbeddedModifiers = new HashMap<>();
 
 
     public static final Method classSignature = initClassSignature();

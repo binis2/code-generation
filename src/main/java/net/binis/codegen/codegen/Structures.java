@@ -59,6 +59,8 @@ public class Structures {
         private Parsed<T> base;
         private Parsed<T> mixIn;
 
+        private ClassOrInterfaceDeclaration spec;
+        private ClassOrInterfaceDeclaration intf;
         private ClassOrInterfaceDeclaration modifier;
         private ClassOrInterfaceDeclaration embeddedModifier;
         private ClassOrInterfaceDeclaration modifierIntf;

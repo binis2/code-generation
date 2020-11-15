@@ -21,6 +21,7 @@ import java.util.Collection;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.codegen.Generator.handleImports;
 import static net.binis.codegen.codegen.Helpers.*;
 import static net.binis.codegen.codegen.Structures.Parsed;
 import static net.binis.codegen.tools.Tools.*;
@@ -77,15 +78,24 @@ public class CodeGen {
                     Generator.generateCodeForClass(entry.getValue().getDeclaration().findCompilationUnit().get()));
         }
 
-        recursiveExpr.forEach(pair->
+        recursiveExpr.forEach(pair ->
                 pair.getRight().setType(findProperType(pair.getLeft(), pair.getMiddle(), pair.getRight())));
 
-        recursiveEmbeddedModifiers.forEach((type, unit) ->
-                notNull(parsed.get(getExternalClassName(unit, type)), parse ->
+        recursiveEmbeddedModifiers.forEach((type, p) -> {
+            if (nonNull(p)) {
+                notNull(parsed.get(getExternalClassName(p.getDeclaration().findCompilationUnit().get(), type)), parse ->
                         condition(parse.getProperties().isGenerateModifier(), () ->
                                 CollectionsHandler.handleEmbeddedModifier(parse,
-                                        parse.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration(),
-                                        parse.getFiles().get(1).getType(0).asClassOrInterfaceDeclaration()))));
+                                        parse.getSpec(),
+                                        parse.getIntf())));
+            } else {
+                parsed.values().stream().filter(parse -> type.equals(parse.getInterfaceName())).findFirst().ifPresent(
+                        parse ->
+                                CollectionsHandler.handleEmbeddedModifier(parse,
+                                        parse.getSpec(),
+                                        parse.getIntf()));
+            }
+        });
 
         var destination = cmd.getOptionValue(DESTINATION);
         parsed.values().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {

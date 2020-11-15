@@ -16,12 +16,12 @@ import net.binis.codegen.annotation.Ignore;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -87,6 +87,8 @@ public class Generator {
                     parse.setModifierClassName(modifierClass.getNameAsString());
                     parse.setProperties(properties);
                     parse.setFiles(List.of(unit, iUnit));
+                    parse.setSpec(spec);
+                    parse.setIntf(intf);
                     parse.setModifier(modifierClass);
                     parse.setModifierIntf(modifier);
 
@@ -308,7 +310,7 @@ public class Generator {
         }
     }
 
-    private static void handleImports(ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration type) {
+    public static void handleImports(ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration type) {
         declaration.findCompilationUnit().ifPresent(decl ->
                 type.findCompilationUnit().ifPresent(unit -> {
                     findUsedTypes(type).stream().map(t -> getClassImport(decl, t)).filter(Objects::nonNull).forEach(unit::addImport);
@@ -330,7 +332,7 @@ public class Generator {
         } else if (node instanceof NameExpr) {
             types.add(((NameExpr) node).getNameAsString());
         } else if (node instanceof SimpleName) {
-            Arrays.stream(((SimpleName) node).asString().split("[.()\\s]")).filter(s -> !"".equals(s)).forEach(types::add);
+            Arrays.stream(((SimpleName) node).asString().split("[.()<\\s]")).filter(s -> !"".equals(s)).forEach(types::add);
         }
 
         node.getChildNodes().forEach(n -> findUsedTypesInternal(types, n));
@@ -600,9 +602,6 @@ public class Generator {
     private static void handleCreatorBaseImplementation(PrototypeData properties, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration modifier) {
         notNull(properties.getCreatorClass(), creatorClass -> {
             spec.findCompilationUnit().get().addImport(creatorClass);
-            spec.addInitializer().addStatement(creatorClass + ".register(" + intf.getNameAsString() + ".class, " + spec.getNameAsString() + "::new);");
-
-            intf.findCompilationUnit().get().addImport(creatorClass);
 
             if (properties.isGenerateModifier() && properties.isCreatorModifier()) {
                 var type = intf.getNameAsString() + "." + modifier.getNameAsString();
@@ -650,10 +649,10 @@ public class Generator {
         if (nonNull(parse.getProperties().getMixInClass())) {
             var parent = parsed.get(getExternalClassName(parse.getDeclaration().findCompilationUnit().get(), parse.getProperties().getMixInClass()));
             if (parent != null) {
-                var spec = parse.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration();
-                var intf = parse.getFiles().get(1).getType(0).asClassOrInterfaceDeclaration();
-                var parentSpec = parent.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration();
-                var parentIntf = parent.getFiles().get(1).getType(0).asClassOrInterfaceDeclaration();
+                var spec = parse.getSpec();
+                var intf = parse.getIntf();
+                var parentSpec = parent.getSpec();
+                var parentIntf = parent.getIntf();
                 intf.findCompilationUnit().get().addImport(parentIntf.getFullyQualifiedName().get());
                 parentSpec.findCompilationUnit().get().addImport(intf.getFullyQualifiedName().get());
                 parentSpec.addImplementedType(intf.getNameAsString());
@@ -671,8 +670,9 @@ public class Generator {
                                                         }
                                                         return a;
                                                     });
+
+                                                    recursiveEmbeddedModifiers.put(parse.getInterfaceName(), parse);
                                                     CollectionsHandler.finalizeEmbeddedModifier(parse, true);
-                                                    CollectionsHandler.finalizeEmbeddedModifier(parse, false);
                                                 }))));
                     }
                     spec.getChildNodes().stream().filter(n -> n instanceof ClassOrInterfaceDeclaration).map(n -> (ClassOrInterfaceDeclaration) n).forEach(m ->
@@ -730,12 +730,13 @@ public class Generator {
         }
     }
 
-    public static String getGenericsList(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type, boolean isCollection) {
+    public static List<Pair<String, Boolean>> getGenericsList(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type, boolean isCollection) {
         var arguments = type.getTypeArguments();
         if (arguments.isEmpty() || arguments.get().isEmpty()) {
-            return "Object";
+            return Collections.singletonList(Pair.of("Object", false));
         } else {
-            return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), isCollection)).collect(Collectors.joining(", "));
+            return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), isCollection)).map(t ->
+                    Pair.of(t, parsed.values().stream().anyMatch(p -> getExternalClassName(destination, t).equals(p.getInterfaceFullName())))).collect(Collectors.toList());
         }
     }
 
@@ -753,22 +754,18 @@ public class Generator {
                 var intf = parse.getFiles().get(1).getType(0);
                 destination.addImport(intf.getFullyQualifiedName().get());
 
-                if (isCollection && parse.getProperties().isGenerateModifier()) {
+                if (parse.getProperties().isGenerateModifier()) {
                     CollectionsHandler.handleEmbeddedModifier(parse, parse.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration(), intf.asClassOrInterfaceDeclaration());
                 }
 
                 return intf.getNameAsString();
             } else {
-                if (isCollection) {
-                    recursiveEmbeddedModifiers.putIfAbsent(type, source);
-                }
+                recursiveEmbeddedModifiers.putIfAbsent(type, parse);
                 destination.addImport(processing.getInterfacePackage() + "." + processing.getInterfaceName());
                 return processing.getInterfaceName();
             }
         } else {
-            if (isCollection) {
-                recursiveEmbeddedModifiers.putIfAbsent(type, source);
-            }
+            recursiveEmbeddedModifiers.putIfAbsent(type, null);
             return type;
         }
     }
