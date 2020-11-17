@@ -68,7 +68,6 @@ public class Generator {
                     iUnit.setPackageDeclaration(properties.getInterfacePackage());
                     intf.addModifier(PUBLIC);
 
-
                     var modifier = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, properties.getModifierName()).setInterface(true);
                     var modifierClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, properties.getClassName() + "ModifyImpl");
                     if (properties.isGenerateModifier()) {
@@ -577,10 +576,15 @@ public class Generator {
         Arrays.stream(cls.getInterfaces()).forEach(i -> handleExternalInterface(properties, declaration, spec, i, modifier, modifierClass, generics));
 
         for (var method : cls.getDeclaredMethods()) {
-            if (!java.lang.reflect.Modifier.isStatic(method.getModifiers()) && !methodExists(declaration, method, false)) {
+            if (!java.lang.reflect.Modifier.isStatic(method.getModifiers())) {
+                var exists = methodExists(declaration, method, false);
                 if (method.getName().startsWith("get")) {
-                    addFieldFromGetter(spec, method, generic);
-                    addGetterFromGetter(spec, method, true, generic);
+                    if (!exists) {
+                        addFieldFromGetter(spec, method, generic);
+                    }
+                    if (properties.isClassGetters()) {
+                        addGetterFromGetter(spec, method, true, generic);
+                    }
                 } else if (method.getName().startsWith("set")) {
                     addSetterFromSetter(spec, method, true, generic);
                     if (properties.isGenerateModifier() && nonNull(modifierClass) && nonNull(modifier)) {
