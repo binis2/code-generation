@@ -609,9 +609,15 @@ public class Generator {
 
             if (properties.isGenerateModifier() && properties.isCreatorModifier()) {
                 var type = intf.getNameAsString() + "." + modifier.getNameAsString();
-                intf.addMethod("create", STATIC)
-                        .setType(type)
-                        .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + type + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class).with()")));
+                if (isNull(properties.getMixInClass())) {
+                    intf.addMethod("create", STATIC)
+                            .setType(type)
+                            .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + type + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class).with()")));
+                } else {
+                    intf.addMethod("create", STATIC)
+                            .setType(type)
+                            .setBody(new BlockStmt().addStatement(new ReturnStmt("((" + intf.getNameAsString() + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class)).as" + intf.getNameAsString() + "()")));
+                }
             } else {
                 intf.addMethod("create", STATIC)
                         .setType(intf.getNameAsString())
