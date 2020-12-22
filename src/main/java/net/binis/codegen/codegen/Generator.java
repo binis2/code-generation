@@ -311,10 +311,8 @@ public class Generator {
 
     public static void handleImports(ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration type) {
         declaration.findCompilationUnit().ifPresent(decl ->
-                type.findCompilationUnit().ifPresent(unit -> {
-                    findUsedTypes(type).stream().map(t -> getClassImport(decl, t)).filter(Objects::nonNull).forEach(unit::addImport);
-                    decl.getImports().stream().filter(ImportDeclaration::isAsterisk).forEach(unit::addImport);
-                }));
+                type.findCompilationUnit().ifPresent(unit ->
+                    findUsedTypes(type).stream().map(t -> getClassImport(decl, t)).filter(Objects::nonNull).forEach(unit::addImport)));
     }
 
     private static Set<String> findUsedTypes(ClassOrInterfaceDeclaration type) {

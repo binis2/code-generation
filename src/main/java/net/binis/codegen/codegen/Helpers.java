@@ -28,8 +28,7 @@ import static java.util.Objects.nonNull;
 import static net.binis.codegen.codegen.Constants.MODIFIER_CLASS_NAME_SUFFIX;
 import static net.binis.codegen.codegen.Constants.MODIFIER_INTERFACE_NAME;
 import static net.binis.codegen.codegen.Structures.Parsed;
-import static net.binis.codegen.tools.Tools.notNull;
-import static net.binis.codegen.tools.Tools.nullCheck;
+import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
 public class Helpers {
@@ -160,7 +159,7 @@ public class Helpers {
 
     public static String getExternalClassNameIfExists(CompilationUnit unit, String type) {
         var idx = type.indexOf('.');
-        var result = nullCheck(getClassImport(unit, type), NodeWithName::getNameAsString);
+        var result = nullCheck(getClassImport(unit, type), i -> i.isAsterisk() ? i.getNameAsString() + "." + type : i.getNameAsString());
 
         if (nonNull(result) && idx > -1) {
             result += type.substring(idx).replace(".", "$");
@@ -187,11 +186,22 @@ public class Helpers {
         if (idx > -1) {
             rType.set(type.substring(0, idx));
         }
-        return unit.getImports()
+
+        var result = unit.getImports()
                 .stream()
                 .filter(i -> i.getNameAsString().endsWith("." + rType.get()))
                 .findFirst()
                 .orElse(null);
+        if (nonNull(result)) {
+            return result;
+        } else {
+            return forceGetClassImport(unit, type);
+        }
+    }
+
+    private static ImportDeclaration forceGetClassImport(CompilationUnit unit, String type) {
+        return unit.getImports().stream().filter(ImportDeclaration::isAsterisk).filter(i ->
+            nonNull(loadClass(i.getNameAsString() + "." + type))).findFirst().orElse(null);
     }
 
     public static boolean methodExists(ClassOrInterfaceDeclaration spec, String name, Method declaration, boolean isClass) {
