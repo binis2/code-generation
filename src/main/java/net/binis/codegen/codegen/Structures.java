@@ -36,6 +36,7 @@ public class Structures {
         private String creatorClass;
         private boolean creatorModifier;
         private String mixInClass;
+        private String basePath;
     }
 
     @Data

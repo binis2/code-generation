@@ -8,6 +8,7 @@ import com.github.javaparser.printer.PrettyPrinterConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.codegen.CollectionsHandler;
 import net.binis.codegen.codegen.Generator;
+import net.binis.codegen.codegen.Structures;
 import org.apache.commons.cli.*;
 
 import java.io.BufferedWriter;
@@ -25,6 +26,7 @@ import static net.binis.codegen.codegen.Generator.handleImports;
 import static net.binis.codegen.codegen.Helpers.*;
 import static net.binis.codegen.codegen.Structures.Parsed;
 import static net.binis.codegen.tools.Tools.*;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Slf4j
 public class CodeGen {
@@ -64,7 +66,7 @@ public class CodeGen {
 
         enumParsed.values().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
             if (isNull(p.getProperties().getMixInClass())) {
-                saveFile(cmd.getOptionValue(DESTINATION), p.getFiles().get(0));
+                saveFile(getBasePath(cmd.getOptionValue(DESTINATION), p.getProperties()), p.getFiles().get(0));
             }
         });
 
@@ -101,11 +103,11 @@ public class CodeGen {
         parsed.values().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
             if (isNull(p.getProperties().getMixInClass())) {
                 var file = CollectionsHandler.finalizeEmbeddedModifier(p, true);
-                saveFile(nullCheck(cmd.getOptionValue(IMPL_DESTINATION), destination), file);
+                saveFile(nullCheck(getBasePath(cmd.getOptionValue(IMPL_DESTINATION), p.getProperties()), destination), file);
             }
             if (p.getProperties().isGenerateInterface()) {
                 var file = CollectionsHandler.finalizeEmbeddedModifier(p, false);
-                saveFile(destination, file);
+                saveFile(getBasePath(destination, p.getProperties()), file);
             }
         });
     }
@@ -136,6 +138,7 @@ public class CodeGen {
 
         file.getPackageDeclaration().ifPresent(p -> {
             var fileName = baseDir + '/' + p.getNameAsString().replace(".", "/") + '/' + file.getType(0).getNameAsString() + ".java";
+            log.info("Writing file - {}", fileName);
             var f = new File(fileName);
             if (f.getParentFile().exists() || f.getParentFile().mkdirs()) {
                 try {
@@ -202,6 +205,13 @@ public class CodeGen {
         }
 
         return cmd;
+    }
+
+    private static String getBasePath(String defaultPath, Structures.PrototypeData properties) {
+        if (isNotBlank(properties.getBasePath())) {
+            return properties.getBasePath();
+        }
+        return defaultPath;
     }
 
 }

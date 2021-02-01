@@ -457,6 +457,9 @@ public class Generator {
                     case "implementationPackage":
                         builder.classPackage(pair.getValue().asStringLiteralExpr().asString());
                         break;
+                    case "basePath":
+                        builder.basePath(pair.getValue().asStringLiteralExpr().asString());
+                        break;
                     default:
                 }
             }
