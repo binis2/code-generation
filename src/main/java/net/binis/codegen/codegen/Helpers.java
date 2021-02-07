@@ -14,6 +14,8 @@ import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.codegen.interfaces.PrototypeDescription;
+import net.binis.codegen.enrich.PrototypeLookup;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -47,15 +49,14 @@ public class Helpers {
             "EmbeddedCodeSetImpl",
             "net.binis.codegen.collection.EmbeddedCodeSetImpl");
 
-    public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> parsed = new HashMap<>();
-    public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
-    public static final Map<String, Parsed<EnumDeclaration>> enumParsed = new HashMap<>();
-    public static final Map<String, Parsed<EnumDeclaration>> enumGenerated = new HashMap<>();
-    public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> constantParsed = new HashMap<>();
+    public static final PrototypeLookup lookup = new PrototypeLookupHandler();
+    public static final Map<String, PrototypeDescription<EnumDeclaration>> enumParsed = new HashMap<>();
+    public static final Map<String, PrototypeDescription<EnumDeclaration>> enumGenerated = new HashMap<>();
+    public static final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> constantParsed = new HashMap<>();
     public static final Map<String, List<Pair<String, String>>> declaredConstants = new HashMap<>();
     public static final Map<String, Structures.ProcessingType> processingTypes = new HashMap<>();
-    public static final List<Triple<Parsed<ClassOrInterfaceDeclaration>, CompilationUnit, ClassExpr>> recursiveExpr = new LinkedList<>();
-    public static final Map<String, Parsed<ClassOrInterfaceDeclaration>> recursiveEmbeddedModifiers = new HashMap<>();
+    public static final List<Triple<PrototypeDescription<ClassOrInterfaceDeclaration>, CompilationUnit, ClassExpr>> recursiveExpr = new LinkedList<>();
+    public static final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> recursiveEmbeddedModifiers = new HashMap<>();
 
 
     public static final Method classSignature = initClassSignature();
@@ -168,7 +169,7 @@ public class Helpers {
         if (isNull(result)) {
             result = unit.getImports().stream().filter(ImportDeclaration::isAsterisk)
                     .map(i -> i.getNameAsString() + "." + type)
-                    .filter(name -> parsed.containsKey(name) || classExists(name))
+                    .filter(name -> lookup.isParsed(name) || classExists(name))
                     .findFirst().orElse(null);
         }
 
@@ -262,7 +263,7 @@ public class Helpers {
                 ));
     }
 
-    public static String findProperType(Parsed<ClassOrInterfaceDeclaration> parsed, CompilationUnit unit, ClassExpr expr) {
+    public static String findProperType(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, CompilationUnit unit, ClassExpr expr) {
         var parent = findParentClassOfType(expr, AnnotationExpr.class, a -> knownClassAnnotations.contains(getExternalClassName(unit, a.getNameAsString())));
 
         if (isNull(parent)) {
@@ -333,10 +334,10 @@ public class Helpers {
         return result.get();
     }
 
-    public static Parsed<ClassOrInterfaceDeclaration> getParsed(ClassOrInterfaceType type) {
-        var result = parsed.get(getClassName(type));
+    public static PrototypeDescription<ClassOrInterfaceDeclaration> getParsed(ClassOrInterfaceType type) {
+        var result = lookup.findParsed(getClassName(type));
         if (isNull(result)) {
-            result = parsed.get(getExternalClassName(type.findCompilationUnit().get(), type.getNameAsString()));
+            result = lookup.findParsed(getExternalClassName(type.findCompilationUnit().get(), type.getNameAsString()));
         }
         return result;
     }

@@ -13,6 +13,8 @@ import net.binis.codegen.annotation.CodeAnnotation;
 import net.binis.codegen.annotation.CodeFieldAnnotations;
 import net.binis.codegen.annotation.Final;
 import net.binis.codegen.annotation.Ignore;
+import net.binis.codegen.codegen.interfaces.PrototypeData;
+import net.binis.codegen.codegen.interfaces.PrototypeDescription;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
@@ -32,7 +34,7 @@ import static java.util.Objects.nonNull;
 import static net.binis.codegen.codegen.Constants.*;
 import static net.binis.codegen.codegen.Helpers.*;
 import static net.binis.codegen.codegen.Structures.Parsed;
-import static net.binis.codegen.codegen.Structures.PrototypeData;
+import static net.binis.codegen.codegen.Structures.PrototypeDataHandler;
 import static net.binis.codegen.tools.Tools.*;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
@@ -76,7 +78,7 @@ public class Generator {
                         modifierClass.addImplementedType(properties.getLongModifierName());
                     }
 
-                    var parse = parsed.get(getClassName(typeDeclaration));
+                    var parse = (Parsed) lookup.findParsed(getClassName(typeDeclaration));
 
                     parse.setParsedName(spec.getNameAsString());
                     parse.setParsedFullName(spec.getFullyQualifiedName().get());
@@ -97,7 +99,7 @@ public class Generator {
                         if (nonNull(parsed) && parsed.getProperties().isBase()) {
                             properties.setBaseClassName(parsed.getParsedName());
                             if (isNull(parse.getBase())) {
-                                parse.setBase(parsed);
+                                parse.setBase((Parsed) parsed);
                             } else {
                                 throw new GenericCodeGenException(parse.getDeclaration().getNameAsString() + " can't have more that one base class!");
                             }
@@ -129,7 +131,7 @@ public class Generator {
                                     }
                                 }
                             } else {
-                                parse.setMixIn(parsed);
+                                parse.setMixIn((Parsed) parsed);
                             }
                         } else {
                             handleExternalInterface(properties, typeDeclaration, spec, intf, t, modifier, modifierClass);
@@ -204,7 +206,7 @@ public class Generator {
                     unit.setComment(new BlockComment("Generated code by Binis' code generator."));
                     iUnit.setComment(new BlockComment("Generated code by Binis' code generator."));
 
-                    generated.put(getClassName(spec), parse);
+                    lookup.registerGenerated(getClassName(spec), parse);
 
                     cleanUpInterface(typeDeclaration, intf);
                     handleClassAnnotations(typeDeclaration, spec);
@@ -272,7 +274,7 @@ public class Generator {
         }
     }
 
-    private static void handleDefaultMethodBody(Parsed<ClassOrInterfaceDeclaration> parse, Node node, boolean isGetter) {
+    private static void handleDefaultMethodBody(PrototypeDescription<ClassOrInterfaceDeclaration> parse, Node node, boolean isGetter) {
         var typeDeclaration = parse.getDeclaration();
         if (isGetter && node.getParentNode().get().getChildNodes().size() == 2 && node.getParentNode().get().getChildNodes().get(1) instanceof SimpleName) {
             var name = (SimpleName) node.getParentNode().get().getChildNodes().get(1);
@@ -294,7 +296,7 @@ public class Generator {
                     }
 
                     if (parent.isPresent()) {
-                        notNull(parsed.get(getExternalClassName(typeDeclaration.findCompilationUnit().get(), parent.get().asMethodDeclaration().getTypeAsString())), p ->
+                        notNull(lookup.findParsed(getExternalClassName(typeDeclaration.findCompilationUnit().get(), parent.get().asMethodDeclaration().getTypeAsString())), p ->
                                 handleDefaultMethodBody(p, n, true));
 
                         node.replace(method, new FieldAccessExpr().setName(method.getName()));
@@ -361,7 +363,7 @@ public class Generator {
             for (var node : type.getChildNodes()) {
                 if (node instanceof ClassExpr) {
                     var expr = (ClassExpr) node;
-                    notNull(parsed.get(getExternalClassName(unit, expr.getTypeAsString())), p -> {
+                    notNull(lookup.findParsed(getExternalClassName(unit, expr.getTypeAsString())), p -> {
                         if (isNull(p.getMixIn())) {
                             expr.setType(findProperType(p, unit, expr));
                         } else {
@@ -388,12 +390,12 @@ public class Generator {
         }
     }
 
-    private static PrototypeData getProperties(AnnotationExpr prototype) {
+    private static PrototypeDataHandler getProperties(AnnotationExpr prototype) {
         var type = (ClassOrInterfaceDeclaration) prototype.getParentNode().get();
         var iName = Holder.of(defaultInterfaceName(type));
         var cName = defaultClassName(type);
 
-        var builder = PrototypeData.builder()
+        var builder = PrototypeDataHandler.builder()
                 .generateConstructor(true)
                 .generateInterface(true)
                 .classGetters(true)
@@ -479,7 +481,7 @@ public class Generator {
         return result;
     }
 
-    private static void ensureParsedParents(ClassOrInterfaceDeclaration declaration, PrototypeData properties) {
+    private static void ensureParsedParents(ClassOrInterfaceDeclaration declaration, PrototypeDataHandler properties) {
         for (var extended : declaration.getExtendedTypes()) {
             notNull(getParsed(extended), parse ->
                     ifNull(parse.getFiles(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get())));
@@ -487,11 +489,11 @@ public class Generator {
 
         notNull(properties.getMixInClass(), c ->
                 notNull(getExternalClassName(declaration.findCompilationUnit().get(), c),
-                        name -> notNull(parsed.get(name), parse ->
+                        name -> notNull(lookup.findParsed(name), parse ->
                                 ifNull(parse.getFiles(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get())))));
     }
 
-    private static void ensureParsedParents(EnumDeclaration declaration, PrototypeData properties) {
+    private static void ensureParsedParents(EnumDeclaration declaration, PrototypeDataHandler properties) {
         notNull(properties.getMixInClass(), c ->
                 notNull(getExternalClassName(declaration.findCompilationUnit().get(), c),
                         name -> notNull(enumParsed.get(name), parse ->
@@ -542,7 +544,7 @@ public class Generator {
         }
     }
 
-    private static void handleExternalInterface(PrototypeData properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceType type, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {
+    private static void handleExternalInterface(PrototypeDataHandler properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceType type, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {
         var className = getExternalClassName(declaration.findCompilationUnit().get(), type.getNameAsString());
         if (nonNull(className)) {
             var cls = loadClass(className);
@@ -568,7 +570,7 @@ public class Generator {
         }
     }
 
-    private static void handleExternalInterface(PrototypeData properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, NodeList<Type> generics) {
+    private static void handleExternalInterface(PrototypeDataHandler properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, NodeList<Type> generics) {
         Map<String, Type> generic = null;
         if (nonNull(generics)) {
             generic = processGenerics(cls, generics);
@@ -604,7 +606,7 @@ public class Generator {
         }
     }
 
-    private static void handleCreatorBaseImplementation(PrototypeData properties, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration modifier) {
+    private static void handleCreatorBaseImplementation(PrototypeDataHandler properties, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration modifier) {
         notNull(properties.getCreatorClass(), creatorClass -> {
             spec.findCompilationUnit().get().addImport(creatorClass);
 
@@ -658,7 +660,7 @@ public class Generator {
 
     private static void handleMixin(Parsed<ClassOrInterfaceDeclaration> parse) {
         if (nonNull(parse.getProperties().getMixInClass())) {
-            var parent = parsed.get(getExternalClassName(parse.getDeclaration().findCompilationUnit().get(), parse.getProperties().getMixInClass()));
+            var parent = lookup.findParsed(getExternalClassName(parse.getDeclaration().findCompilationUnit().get(), parse.getProperties().getMixInClass()));
             if (parent != null) {
                 var spec = parse.getSpec();
                 var intf = parse.getIntf();
@@ -747,12 +749,12 @@ public class Generator {
             return Collections.singletonList(Pair.of("Object", false));
         } else {
             return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), isCollection)).map(t ->
-                    Pair.of(t, parsed.values().stream().anyMatch(p -> getExternalClassName(destination, t).equals(p.getInterfaceFullName())))).collect(Collectors.toList());
+                    Pair.of(t, lookup.parsed().stream().anyMatch(p -> getExternalClassName(destination, t).equals(p.getInterfaceFullName())))).collect(Collectors.toList());
         }
     }
 
     public static String handleType(CompilationUnit source, CompilationUnit destination, String type, boolean isCollection) {
-        var parse = parsed.get(getExternalClassName(source, type));
+        var parse = lookup.findParsed(getExternalClassName(source, type));
 
         if (nonNull(parse)) {
             var processing = processingTypes.get(type);
@@ -842,7 +844,7 @@ public class Generator {
         var data = func.apply(spec, properties);
         if (isNull(data)) {
             for (var type : spec.getExtendedTypes()) {
-                var parse = generated.get(getClassName(type));
+                var parse = lookup.findGenerated(getClassName(type));
                 if (nonNull(parse)) {
                     data = findInheritanceProperty(parse.getDeclaration().asClassOrInterfaceDeclaration(), parse.getProperties(), func);
                     if (nonNull(data)) {
@@ -854,7 +856,7 @@ public class Generator {
         return data;
     }
 
-    private static void processInnerClass(PrototypeData properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration cls) {
+    private static void processInnerClass(PrototypeDataHandler properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration cls) {
         cls.getImplementedTypes().forEach(t ->
                 handleExternalInterface(properties, declaration, spec, null, t, null, null));
         notNull(spec.getAnnotationByName("CodeClassAnnotations"), a ->
@@ -1173,7 +1175,7 @@ public class Generator {
         log.warn("Merging annotations is not implemented yet!");
     }
 
-    private static void mergeModifierTypes(Parsed parsed, PrototypeData parentProperties, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration parentModifier, ClassOrInterfaceDeclaration parentModifierClass) {
+    private static void mergeModifierTypes(Parsed parsed, PrototypeDataHandler parentProperties, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration parentModifier, ClassOrInterfaceDeclaration parentModifierClass) {
         for (var member : modifier.getMembers()) {
             if (member.isMethodDeclaration()) {
                 var method = member.asMethodDeclaration();
@@ -1205,7 +1207,7 @@ public class Generator {
                     unit.setPackageDeclaration(properties.getClassPackage());
                     mergeEnums(typeDeclaration, spec);
 
-                    var parse = enumParsed.get(getClassName(typeDeclaration));
+                    var parse = (Parsed) enumParsed.get(getClassName(typeDeclaration));
                     parse.setParsedName(spec.getNameAsString());
                     parse.setParsedFullName(spec.getFullyQualifiedName().get());
                     parse.setProperties(properties);
@@ -1258,9 +1260,9 @@ public class Generator {
         }
     }
 
-    private static PrototypeData getEnumProperties(AnnotationExpr prototype) {
+    private static PrototypeDataHandler getEnumProperties(AnnotationExpr prototype) {
         var type = (EnumDeclaration) prototype.getParentNode().get();
-        var builder = PrototypeData.builder()
+        var builder = PrototypeDataHandler.builder()
                 .className(defaultClassName(type))
                 .classPackage(defaultPackage(type, null));
         prototype.getChildNodes().forEach(node -> {
@@ -1282,9 +1284,9 @@ public class Generator {
         return builder.build();
     }
 
-    private static PrototypeData getConstnatProperties(AnnotationExpr prototype) {
+    private static PrototypeDataHandler getConstnatProperties(AnnotationExpr prototype) {
         var type = (ClassOrInterfaceDeclaration) prototype.getParentNode().get();
-        var builder = PrototypeData.builder()
+        var builder = PrototypeDataHandler.builder()
                 .className(defaultClassName(type))
                 .classPackage(defaultPackage(type, null));
         prototype.getChildNodes().forEach(node -> {

@@ -2,7 +2,6 @@ package net.binis.codegen.codegen;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
-import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.InitializerDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -17,6 +16,7 @@ import com.github.javaparser.ast.type.Type;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.codegen.interfaces.PrototypeDescription;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -183,7 +183,7 @@ public class CollectionsHandler {
         return result;
     }
 
-    public static void handleEmbeddedModifier(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf) {
+    public static void handleEmbeddedModifier(PrototypeDescription<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf) {
         var actualModifier = parse.getModifierIntf();
         if (nonNull(actualModifier) && isNull(parse.getEmbeddedModifierIntf())) {
             if (nonNull(parse.getProperties().getMixInClass())) {
@@ -218,8 +218,8 @@ public class CollectionsHandler {
             spec.addMember(modifierClass);
             intf.addMember(modifier);
 
-            parse.setEmbeddedModifier(modifierClass);
-            parse.setEmbeddedModifierIntf(modifier);
+            ((Structures.Parsed) parse).setEmbeddedModifier(modifierClass);
+            ((Structures.Parsed) parse).setEmbeddedModifierIntf(modifier);
 
             intf.findCompilationUnit().get().addImport("net.binis.codegen.collection.EmbeddedCodeCollection");
             spec.findCompilationUnit().ifPresent(u -> {
@@ -229,7 +229,7 @@ public class CollectionsHandler {
         }
     }
 
-    public static CompilationUnit finalizeEmbeddedModifier(Structures.Parsed<ClassOrInterfaceDeclaration> parse, boolean isClass) {
+    public static CompilationUnit finalizeEmbeddedModifier(PrototypeDescription<ClassOrInterfaceDeclaration> parse, boolean isClass) {
         var unit = parse.getFiles().get(isClass ? 0 : 1);
         var modifier = parse.getModifierIntf();
         var embedded = parse.getEmbeddedModifierIntf();

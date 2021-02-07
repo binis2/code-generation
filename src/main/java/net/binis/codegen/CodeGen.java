@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.codegen.CollectionsHandler;
 import net.binis.codegen.codegen.Generator;
 import net.binis.codegen.codegen.Structures;
+import net.binis.codegen.codegen.interfaces.PrototypeData;
 import org.apache.commons.cli.*;
 
 import java.io.BufferedWriter;
@@ -22,7 +23,6 @@ import java.util.Collection;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.codegen.Generator.handleImports;
 import static net.binis.codegen.codegen.Helpers.*;
 import static net.binis.codegen.codegen.Structures.Parsed;
 import static net.binis.codegen.tools.Tools.*;
@@ -75,9 +75,9 @@ public class CodeGen {
             saveFile(cmd.getOptionValue(DESTINATION), constants);
         }
 
-        for (var entry : parsed.entrySet()) {
-            ifNull(entry.getValue().getFiles(), () ->
-                    Generator.generateCodeForClass(entry.getValue().getDeclaration().findCompilationUnit().get()));
+        for (var entry : lookup.parsed()) {
+            ifNull(entry.getFiles(), () ->
+                    Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get()));
         }
 
         recursiveExpr.forEach(pair ->
@@ -85,13 +85,13 @@ public class CodeGen {
 
         recursiveEmbeddedModifiers.forEach((type, p) -> {
             if (nonNull(p)) {
-                notNull(parsed.get(getExternalClassName(p.getDeclaration().findCompilationUnit().get(), type)), parse ->
+                notNull(lookup.findParsed(getExternalClassName(p.getDeclaration().findCompilationUnit().get(), type)), parse ->
                         condition(parse.getProperties().isGenerateModifier(), () ->
                                 CollectionsHandler.handleEmbeddedModifier(parse,
                                         parse.getSpec(),
                                         parse.getIntf())));
             } else {
-                parsed.values().stream().filter(parse -> type.equals(parse.getInterfaceName())).findFirst().ifPresent(
+                lookup.parsed().stream().filter(parse -> type.equals(parse.getInterfaceName())).findFirst().ifPresent(
                         parse ->
                                 CollectionsHandler.handleEmbeddedModifier(parse,
                                         parse.getSpec(),
@@ -100,7 +100,7 @@ public class CodeGen {
         });
 
         var destination = cmd.getOptionValue(DESTINATION);
-        parsed.values().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
+        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
             if (isNull(p.getProperties().getMixInClass())) {
                 var file = CollectionsHandler.finalizeEmbeddedModifier(p, true);
                 saveFile(nullCheck(getBasePath(cmd.getOptionValue(IMPL_DESTINATION), p.getProperties()), destination), file);
@@ -120,7 +120,7 @@ public class CodeGen {
             if (t.getAnnotationByName("ConstantPrototype").isPresent()) {
                 constantParsed.put(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).build());
             } else {
-                parsed.put(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).build());
+                lookup.registerParsed(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).build());
             }
         }
     }
@@ -207,7 +207,7 @@ public class CodeGen {
         return cmd;
     }
 
-    private static String getBasePath(String defaultPath, Structures.PrototypeData properties) {
+    private static String getBasePath(String defaultPath, PrototypeData properties) {
         if (isNotBlank(properties.getBasePath())) {
             return properties.getBasePath();
         }

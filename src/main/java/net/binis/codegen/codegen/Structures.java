@@ -5,6 +5,8 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.Builder;
 import lombok.Data;
+import net.binis.codegen.codegen.interfaces.PrototypeData;
+import net.binis.codegen.codegen.interfaces.PrototypeDescription;
 
 import java.util.List;
 
@@ -12,7 +14,7 @@ public class Structures {
 
     @Data
     @Builder
-    public static class PrototypeData {
+    public static class PrototypeDataHandler implements PrototypeData {
         private String name;
         private String className;
         private String classPackage;
@@ -41,9 +43,9 @@ public class Structures {
 
     @Data
     @Builder
-    public static class Parsed<T extends TypeDeclaration<T>> {
+    public static class Parsed<T extends TypeDeclaration<T>> implements PrototypeDescription<T> {
 
-        private PrototypeData properties;
+        private PrototypeDataHandler properties;
 
         private String parsedName;
         private String parsedFullName;

@@ -1,0 +1,35 @@
+package net.binis.codegen.codegen.interfaces;
+
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
+
+import java.util.List;
+
+public interface PrototypeDescription<T extends TypeDeclaration<T>> {
+
+    PrototypeData getProperties();
+
+    String getParsedName();
+    String getParsedFullName();
+
+    String getInterfaceName();
+    String getInterfaceFullName();
+
+    String getModifierName();
+    String getModifierClassName();
+
+    TypeDeclaration<T> getDeclaration();
+    List<CompilationUnit> getFiles();
+
+    PrototypeDescription<T> getBase();
+    PrototypeDescription<T> getMixIn();
+
+    ClassOrInterfaceDeclaration getSpec();
+    ClassOrInterfaceDeclaration getIntf();
+    ClassOrInterfaceDeclaration getModifier();
+    ClassOrInterfaceDeclaration getEmbeddedModifier();
+    ClassOrInterfaceDeclaration getModifierIntf();
+    ClassOrInterfaceDeclaration getEmbeddedModifierIntf();
+
+}
