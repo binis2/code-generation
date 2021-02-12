@@ -8,7 +8,6 @@ import com.github.javaparser.printer.PrettyPrinterConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.codegen.CollectionsHandler;
 import net.binis.codegen.codegen.Generator;
-import net.binis.codegen.codegen.Structures;
 import net.binis.codegen.codegen.interfaces.PrototypeData;
 import org.apache.commons.cli.*;
 
@@ -113,7 +112,7 @@ public class CodeGen {
     }
 
     @SuppressWarnings("unchecked")
-    private static void handleType(TypeDeclaration<?> t) {
+    public static void handleType(TypeDeclaration<?> t) {
         if (t.isEnumDeclaration()) {
             enumParsed.put(getClassName(t.asEnumDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).build());
         } else {

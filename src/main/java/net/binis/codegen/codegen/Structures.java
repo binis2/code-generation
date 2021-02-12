@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import net.binis.codegen.codegen.interfaces.PrototypeData;
 import net.binis.codegen.codegen.interfaces.PrototypeDescription;
+import net.binis.codegen.enrich.PrototypeEnricher;
 
 import java.util.List;
 
@@ -39,6 +40,8 @@ public class Structures {
         private boolean creatorModifier;
         private String mixInClass;
         private String basePath;
+
+        private List<PrototypeEnricher> enrichers;
     }
 
     @Data

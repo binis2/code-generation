@@ -1,5 +1,9 @@
 package net.binis.codegen.codegen.interfaces;
 
+import net.binis.codegen.enrich.PrototypeEnricher;
+
+import java.util.List;
+
 public interface PrototypeData {
     String getName();
     String getClassName();
@@ -26,4 +30,5 @@ public interface PrototypeData {
     String getMixInClass();
     String getBasePath();
 
+    List<PrototypeEnricher> getEnrichers();
 }

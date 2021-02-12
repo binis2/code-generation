@@ -1,7 +1,11 @@
 package net.binis.codegen.enrich;
 
-public interface PrototypeEnricher extends Enricher {
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import net.binis.codegen.codegen.interfaces.PrototypeDescription;
+
+public interface PrototypeEnricher {
 
     void init(PrototypeLookup lookup);
+    void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description);
 
 }

@@ -1,6 +1,9 @@
 package net.binis.codegen.codegen;
 
-import com.github.javaparser.ast.*;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Modifier;
+import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.BlockComment;
 import com.github.javaparser.ast.expr.*;
@@ -15,8 +18,10 @@ import net.binis.codegen.annotation.Final;
 import net.binis.codegen.annotation.Ignore;
 import net.binis.codegen.codegen.interfaces.PrototypeData;
 import net.binis.codegen.codegen.interfaces.PrototypeDescription;
+import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.tools.Holder;
+import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -138,15 +143,9 @@ public class Generator {
                         }
                     });
 
-                    if (isNull(properties.getBaseClassName())) {
-                        addAsMethod(spec, true, false);
-                    }
                     if (properties.isGenerateInterface()) {
                         spec.addImplementedType(properties.getInterfaceName());
                         unit.addImport(getClassName(intf));
-                        if (isNull(properties.getBaseClassName())) {
-                            addAsMethod(intf, false, false);
-                        }
                         if (properties.isGenerateModifier()) {
                             var methodName = isNull(properties.getMixInClass()) ? MODIFIER_METHOD_NAME : MIXIN_MODIFYING_METHOD_PREFIX + intf.getNameAsString();
                             addModifyMethod(methodName, spec, properties.getLongModifierName(), modifierClass.getNameAsString(), true, false);
@@ -220,12 +219,19 @@ public class Generator {
                     handleImports(typeDeclaration, spec);
                     handleImports(typeDeclaration, intf);
 
+                    handleEnrichers(parse);
+
                     processingTypes.remove(typeDeclaration.getNameAsString());
                 });
             } else {
                 log.error("Invalid type " + type.getNameAsString());
             }
         }
+    }
+
+    private static void handleEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        notNull(parsed.getProperties().getEnrichers(), enrichers ->
+                enrichers.forEach(e -> e.enrich(parsed)));
     }
 
     private static void cleanUpInterface(Class<?> cls, ClassOrInterfaceDeclaration intf) {
@@ -314,7 +320,7 @@ public class Generator {
     public static void handleImports(ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration type) {
         declaration.findCompilationUnit().ifPresent(decl ->
                 type.findCompilationUnit().ifPresent(unit ->
-                    findUsedTypes(type).stream().map(t -> getClassImport(decl, t)).filter(Objects::nonNull).forEach(unit::addImport)));
+                        findUsedTypes(type).stream().map(t -> getClassImport(decl, t)).filter(Objects::nonNull).forEach(unit::addImport)));
     }
 
     private static Set<String> findUsedTypes(ClassOrInterfaceDeclaration type) {
@@ -462,6 +468,8 @@ public class Generator {
                     case "basePath":
                         builder.basePath(pair.getValue().asStringLiteralExpr().asString());
                         break;
+                    case "enrichers":
+                        checkEnrichers(builder, pair.getValue().asArrayInitializerExpr());
                     default:
                 }
             }
@@ -481,7 +489,23 @@ public class Generator {
         return result;
     }
 
-    private static void ensureParsedParents(ClassOrInterfaceDeclaration declaration, PrototypeDataHandler properties) {
+    private static void checkEnrichers(PrototypeDataHandler.PrototypeDataHandlerBuilder builder, ArrayInitializerExpr expression) {
+        var list = new ArrayList<PrototypeEnricher>();
+        expression.getValues().stream()
+                .filter(Expression::isClassExpr)
+                .map(e -> loadClass(getExternalClassName(expression.findCompilationUnit().get(), e.asClassExpr().getType().asString())))
+                .filter(Objects::nonNull)
+                .filter(PrototypeEnricher.class::isAssignableFrom)
+                .map(Reflection::instantiate)
+                .forEach(e ->
+                    with(((PrototypeEnricher) e), enricher -> {
+                        enricher.init(lookup);
+                        list.add(enricher);
+                    }));
+        builder.enrichers(list);
+    }
+
+    private static void ensureParsedParents(ClassOrInterfaceDeclaration declaration, PrototypeData properties) {
         for (var extended : declaration.getExtendedTypes()) {
             notNull(getParsed(extended), parse ->
                     ifNull(parse.getFiles(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get())));
@@ -493,7 +517,7 @@ public class Generator {
                                 ifNull(parse.getFiles(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get())))));
     }
 
-    private static void ensureParsedParents(EnumDeclaration declaration, PrototypeDataHandler properties) {
+    private static void ensureParsedParents(EnumDeclaration declaration, PrototypeData properties) {
         notNull(properties.getMixInClass(), c ->
                 notNull(getExternalClassName(declaration.findCompilationUnit().get(), c),
                         name -> notNull(enumParsed.get(name), parse ->
@@ -544,7 +568,7 @@ public class Generator {
         }
     }
 
-    private static void handleExternalInterface(PrototypeDataHandler properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceType type, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {
+    private static void handleExternalInterface(PrototypeData properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceType type, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {
         var className = getExternalClassName(declaration.findCompilationUnit().get(), type.getNameAsString());
         if (nonNull(className)) {
             var cls = loadClass(className);
@@ -570,7 +594,7 @@ public class Generator {
         }
     }
 
-    private static void handleExternalInterface(PrototypeDataHandler properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, NodeList<Type> generics) {
+    private static void handleExternalInterface(PrototypeData properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, NodeList<Type> generics) {
         Map<String, Type> generic = null;
         if (nonNull(generics)) {
             generic = processGenerics(cls, generics);
@@ -606,7 +630,7 @@ public class Generator {
         }
     }
 
-    private static void handleCreatorBaseImplementation(PrototypeDataHandler properties, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration modifier) {
+    private static void handleCreatorBaseImplementation(PrototypeData properties, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration modifier) {
         notNull(properties.getCreatorClass(), creatorClass -> {
             spec.findCompilationUnit().get().addImport(creatorClass);
 
@@ -658,7 +682,7 @@ public class Generator {
         );
     }
 
-    private static void handleMixin(Parsed<ClassOrInterfaceDeclaration> parse) {
+    private static void handleMixin(PrototypeDescription<ClassOrInterfaceDeclaration> parse) {
         if (nonNull(parse.getProperties().getMixInClass())) {
             var parent = lookup.findParsed(getExternalClassName(parse.getDeclaration().findCompilationUnit().get(), parse.getProperties().getMixInClass()));
             if (parent != null) {
@@ -856,7 +880,7 @@ public class Generator {
         return data;
     }
 
-    private static void processInnerClass(PrototypeDataHandler properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration cls) {
+    private static void processInnerClass(PrototypeData properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration cls) {
         cls.getImplementedTypes().forEach(t ->
                 handleExternalInterface(properties, declaration, spec, null, t, null, null));
         notNull(spec.getAnnotationByName("CodeClassAnnotations"), a ->
@@ -883,25 +907,6 @@ public class Generator {
             method.setBody(null);
         }
     }
-
-    private static void addAsMethod(ClassOrInterfaceDeclaration spec, boolean isClass, boolean isAbstract) {
-        var method = spec
-                .addMethod(MIXIN_MODIFYING_METHOD_PREFIX)
-                .setType("T")
-                .addParameter("Class<T>", "cls")
-                .addTypeParameter("T");
-        if (isClass) {
-            method
-                    .addModifier(PUBLIC)
-                    .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("cls.cast(this)"))));
-        } else {
-            if (isAbstract) {
-                method.addModifier(ABSTRACT).addModifier(PUBLIC);
-            }
-            method.setBody(null);
-        }
-    }
-
 
     private static void addDoneMethod(ClassOrInterfaceDeclaration spec, String parentName, String parentClassName, boolean isClass, boolean isAbstract) {
         var method = spec
@@ -1175,7 +1180,7 @@ public class Generator {
         log.warn("Merging annotations is not implemented yet!");
     }
 
-    private static void mergeModifierTypes(Parsed parsed, PrototypeDataHandler parentProperties, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration parentModifier, ClassOrInterfaceDeclaration parentModifierClass) {
+    private static void mergeModifierTypes(Parsed parsed, PrototypeData parentProperties, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration parentModifier, ClassOrInterfaceDeclaration parentModifierClass) {
         for (var member : modifier.getMembers()) {
             if (member.isMethodDeclaration()) {
                 var method = member.asMethodDeclaration();
@@ -1284,7 +1289,7 @@ public class Generator {
         return builder.build();
     }
 
-    private static PrototypeDataHandler getConstnatProperties(AnnotationExpr prototype) {
+    private static PrototypeDataHandler getConstantProperties(AnnotationExpr prototype) {
         var type = (ClassOrInterfaceDeclaration) prototype.getParentNode().get();
         var builder = PrototypeDataHandler.builder()
                 .className(defaultClassName(type))
@@ -1319,7 +1324,7 @@ public class Generator {
 
                         log.info("Processing - {}", prototype.toString());
 
-                        var properties = getConstnatProperties(prototype);
+                        var properties = getConstantProperties(prototype);
 
                         var name = Holder.of(defaultClassName(entry.getValue().getDeclaration()));
                         if (nonNull(properties.getMixInClass())) {
