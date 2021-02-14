@@ -2,14 +2,17 @@ package net.binis.codegen;
 
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.base.BaseTest;
+import net.binis.codegen.codegen.Helpers;
+import org.junit.Before;
 import org.junit.Test;
-
-import static net.binis.codegen.codegen.Helpers.lookup;
-import static org.junit.Assert.assertEquals;
-import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
 public class BasicsTest extends BaseTest {
+
+    @Before
+    public void cleanUp() {
+        Helpers.cleanUp();
+    }
 
     @Test
     public void test() {

@@ -14,6 +14,7 @@ import org.apache.lucene.search.MultiCollectorManager;
 import javax.tools.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +81,36 @@ public abstract class BaseTest {
         });
     }
 
+    protected void testSingleWithBase(String basePrototype, String baseClassName, String prototype, String className, String baseClass, String baseInterface, String resClass, String resInterface) {
+        load(basePrototype);
+        load(prototype);
+        generate();
+
+        assertEquals(2, lookup.parsed().size());
+
+        var list = new ArrayList<Pair<String, String>>();
+
+        with(lookup.findGenerated(baseClassName), parsed -> {
+            compare(parsed.getFiles().get(0), baseClass);
+            compare(parsed.getFiles().get(1), baseInterface);
+
+            list.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+            list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+        });
+
+        with(lookup.findGenerated(className), parsed -> {
+            compare(parsed.getFiles().get(0), resClass);
+            compare(parsed.getFiles().get(1), resInterface);
+
+            list.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+            list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+        });
+
+        var loader = new TestClassLoader();
+        assertTrue(compile(loader, list));
+    }
+
+
     @SneakyThrows
     protected boolean compile(TestClassLoader loader, List<Pair<String, String>> files) {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -104,7 +135,9 @@ public abstract class BaseTest {
         }
         fileManager.close();
 
-        objects.forEach(loader::define);
+        files.forEach(f ->
+                with(objects.get(f.getKey()), o ->
+                        loader.define(f.getKey(), o)));
 
         return true;
     }
