@@ -8,7 +8,6 @@ import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.ClassExpr;
 import com.github.javaparser.ast.expr.MemberValuePair;
-import com.github.javaparser.ast.nodeTypes.NodeWithName;
 import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -29,7 +28,6 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.codegen.Constants.MODIFIER_CLASS_NAME_SUFFIX;
 import static net.binis.codegen.codegen.Constants.MODIFIER_INTERFACE_NAME;
-import static net.binis.codegen.codegen.Structures.Parsed;
 import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
@@ -113,6 +111,13 @@ public class Helpers {
 
     public static String defaultClassName(String name) {
         return name.replace("Prototype", "");
+    }
+
+    public static String defaultModifierClassName(String className) {
+        if (className.endsWith("Impl")) {
+            className = className.substring(0, className.length() - 4);
+        }
+        return className + "ModifyImpl";
     }
 
 
@@ -520,4 +525,15 @@ public class Helpers {
         return nonNull(loadClass(className));
     }
 
+    public static void cleanUp() {
+        with((PrototypeLookupHandler) lookup, PrototypeLookupHandler::clean);
+        enumParsed.clear();
+        enumGenerated.clear();
+        constantParsed.clear();
+        declaredConstants.clear();
+        processingTypes.clear();
+        recursiveExpr.clear();
+        recursiveEmbeddedModifiers.clear();
+
+    }
 }

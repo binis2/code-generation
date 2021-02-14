@@ -25,10 +25,9 @@ public interface PrototypeData {
     boolean isBase();
 
     String getBaseModifierClass();
-    String getCreatorClass();
-    boolean isCreatorModifier();
     String getMixInClass();
     String getBasePath();
 
     List<PrototypeEnricher> getEnrichers();
+    List<PrototypeEnricher> getInheritedEnrichers();
 }

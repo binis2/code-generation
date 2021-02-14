@@ -309,25 +309,6 @@ public class CollectionsHandler {
             }
         }
 
-        if (!parse.getProperties().isBase() && isClass) {
-            var type = unit.getType(0).asClassOrInterfaceDeclaration();
-            if (nonNull(parse.getProperties().getMixInClass())) {
-                type = parse.getMixIn().getSpec();
-            }
-            if ("void".equals(intfName)) {
-                intfName = parse.getInterfaceName();
-            }
-            type.findCompilationUnit().get().addImport("net.binis.codegen.factory.CodeFactory");
-            var typeName = type.getNameAsString();
-            var initializer = type.getChildNodes().stream().filter(n -> n instanceof InitializerDeclaration).map(n -> ((InitializerDeclaration) n).asInitializerDeclaration().getBody()).findFirst().orElseGet(type::addInitializer);
-            initializer
-                    .addStatement(new MethodCallExpr()
-                            .setName("CodeFactory.registerType")
-                            .addArgument(intfName + ".class")
-                            .addArgument(typeName + "::new")
-                            .addArgument(nonNull(embedded) ? "(p, v) -> new " + embedded.getNameAsString() + "<>(p, (" + typeName + ") v)" : "null"));
-        }
-
         return unit;
     }
 

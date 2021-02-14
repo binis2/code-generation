@@ -29,6 +29,7 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -76,7 +77,7 @@ public class Generator {
                     intf.addModifier(PUBLIC);
 
                     var modifier = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, properties.getModifierName()).setInterface(true);
-                    var modifierClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, properties.getClassName() + "ModifyImpl");
+                    var modifierClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, defaultModifierClassName(properties.getClassName()));
                     if (properties.isGenerateModifier()) {
                         spec.addMember(modifierClass);
                         intf.addMember(modifier);
@@ -156,7 +157,6 @@ public class Generator {
                             spec.findCompilationUnit().get().addImport("net.binis.codegen.modifier.Modifiable");
                             spec.addImplementedType("Modifiable<" + intf.getNameAsString() + "." + modifier.getNameAsString() + ">");
                         }
-                        handleCreatorBaseImplementation(properties, spec, intf, modifier);
                     }
 
                     for (var member : type.getMembers()) {
@@ -230,6 +230,9 @@ public class Generator {
     }
 
     private static void handleEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        notNull(parsed.getBase(), base ->
+                notNull(base.getProperties().getInheritedEnrichers(), enrichers ->
+                        enrichers.forEach(e -> e.enrich(parsed))));
         notNull(parsed.getProperties().getEnrichers(), enrichers ->
                 enrichers.forEach(e -> e.enrich(parsed)));
     }
@@ -450,12 +453,6 @@ public class Generator {
                     case "base":
                         builder.base(pair.getValue().asBooleanLiteralExpr().getValue());
                         break;
-                    case "creatorClass":
-                        builder.creatorClass(pair.getValue().asClassExpr().getTypeAsString());
-                        break;
-                    case "creatorModifier":
-                        builder.creatorModifier(pair.getValue().asBooleanLiteralExpr().getValue());
-                        break;
                     case "baseModifierClass":
                         builder.baseModifierClass(pair.getValue().asClassExpr().getTypeAsString());
                         break;
@@ -469,7 +466,11 @@ public class Generator {
                         builder.basePath(pair.getValue().asStringLiteralExpr().asString());
                         break;
                     case "enrichers":
-                        checkEnrichers(builder, pair.getValue().asArrayInitializerExpr());
+                        checkEnrichers(builder::enrichers, pair.getValue().asArrayInitializerExpr());
+                        break;
+                    case "inheritedEnrichers":
+                        checkEnrichers(builder::inheritedEnrichers, pair.getValue().asArrayInitializerExpr());
+                        break;
                     default:
                 }
             }
@@ -489,7 +490,7 @@ public class Generator {
         return result;
     }
 
-    private static void checkEnrichers(PrototypeDataHandler.PrototypeDataHandlerBuilder builder, ArrayInitializerExpr expression) {
+    private static void checkEnrichers(Consumer<List<PrototypeEnricher>> consumer, ArrayInitializerExpr expression) {
         var list = new ArrayList<PrototypeEnricher>();
         expression.getValues().stream()
                 .filter(Expression::isClassExpr)
@@ -502,7 +503,7 @@ public class Generator {
                         enricher.init(lookup);
                         list.add(enricher);
                     }));
-        builder.enrichers(list);
+        consumer.accept(list);
     }
 
     private static void ensureParsedParents(ClassOrInterfaceDeclaration declaration, PrototypeData properties) {
@@ -628,29 +629,6 @@ public class Generator {
                 }
             }
         }
-    }
-
-    private static void handleCreatorBaseImplementation(PrototypeData properties, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration modifier) {
-        notNull(properties.getCreatorClass(), creatorClass -> {
-            spec.findCompilationUnit().get().addImport(creatorClass);
-
-            if (properties.isGenerateModifier() && properties.isCreatorModifier()) {
-                var type = intf.getNameAsString() + "." + modifier.getNameAsString();
-                if (isNull(properties.getMixInClass())) {
-                    intf.addMethod("create", STATIC)
-                            .setType(type)
-                            .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + type + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class).with()")));
-                } else {
-                    intf.addMethod("create", STATIC)
-                            .setType(type)
-                            .setBody(new BlockStmt().addStatement(new ReturnStmt("((" + intf.getNameAsString() + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class)).as" + intf.getNameAsString() + "()")));
-                }
-            } else {
-                intf.addMethod("create", STATIC)
-                        .setType(intf.getNameAsString())
-                        .setBody(new BlockStmt().addStatement(new ReturnStmt(creatorClass + ".create(" + intf.getNameAsString() + ".class)")));
-            }
-        });
     }
 
     private static void handleModifierBaseImplementation(Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {

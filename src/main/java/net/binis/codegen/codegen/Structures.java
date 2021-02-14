@@ -36,12 +36,11 @@ public class Structures {
         private boolean base;
 
         private String baseModifierClass;
-        private String creatorClass;
-        private boolean creatorModifier;
         private String mixInClass;
         private String basePath;
 
         private List<PrototypeEnricher> enrichers;
+        private List<PrototypeEnricher> inheritedEnrichers;
     }
 
     @Data

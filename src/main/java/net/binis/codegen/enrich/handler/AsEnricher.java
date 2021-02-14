@@ -15,8 +15,8 @@ public class AsEnricher extends BaseEnricher {
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        addAsMethod(description.getFiles().get(0).findFirst(ClassOrInterfaceDeclaration.class).get(), true, false);
-        addAsMethod(description.getFiles().get(1).findFirst(ClassOrInterfaceDeclaration.class).get(), false, false);
+        addAsMethod(getImplementation(description), true, false);
+        addAsMethod(getInterface(description), false, false);
     }
 
     private static void addAsMethod(ClassOrInterfaceDeclaration spec, boolean isClass, boolean isAbstract) {

@@ -53,4 +53,9 @@ public class PrototypeLookupHandler implements PrototypeLookup {
         return generated.values();
     }
 
+    public void clean() {
+        parsed.clear();
+        generated.clear();
+    }
+
 }
