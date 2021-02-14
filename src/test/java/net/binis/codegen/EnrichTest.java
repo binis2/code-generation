@@ -32,5 +32,13 @@ public class EnrichTest extends BaseTest {
         testSingle("enrich/enrichCreatorModifier2.java", "enrich/enrichCreatorModifier2-0.java", "enrich/enrichCreatorModifier2-1.java");
     }
 
+    @Test
+    public void enrichWithBaseWithModifier() {
+        testSingleWithBase("enrich/enrichBase1.java", "net.binis.codegen.BaseImpl",
+                "enrich/enrichBaseTest1.java", "net.binis.codegen.TestImpl",
+                "enrich/enrichBase1-0.java", "enrich/enrichBase1-1.java",
+                "enrich/enrichBaseTest1-0.java", "enrich/enrichBaseTest1-1.java");
+    }
+
 
 }
