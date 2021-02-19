@@ -43,7 +43,6 @@ public class CreatorEnricher extends BaseEnricher {
                             .addArgument(typeName + "::new")
                             .addArgument(nonNull(embedded) ? "(p, v) -> new " + embedded.getNameAsString() + "<>(p, (" + typeName + ") v)" : "null"));
         }
-
     }
 
 }

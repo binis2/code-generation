@@ -12,10 +12,7 @@ import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.annotation.CodeAnnotation;
-import net.binis.codegen.annotation.CodeFieldAnnotations;
-import net.binis.codegen.annotation.Final;
-import net.binis.codegen.annotation.Ignore;
+import net.binis.codegen.annotation.*;
 import net.binis.codegen.codegen.interfaces.PrototypeData;
 import net.binis.codegen.codegen.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.PrototypeEnricher;
@@ -59,8 +56,10 @@ public class Generator {
                     log.info("Processing - {}", typeDeclaration.getNameAsString());
 
                     var properties = getProperties(prototype);
+                    properties.setPrototypeName(typeDeclaration.getNameAsString());
                     addProcessingType(typeDeclaration.getNameAsString(), properties.getInterfacePackage(), properties.getInterfaceName(), properties.getClassPackage(), properties.getClassName());
                     ensureParsedParents(typeDeclaration, properties);
+                    handleEnrichersSetup(properties);
 
                     var unit = new CompilationUnit();
                     var spec = unit.addClass(properties.getClassName());
@@ -76,8 +75,9 @@ public class Generator {
                     iUnit.setPackageDeclaration(properties.getInterfacePackage());
                     intf.addModifier(PUBLIC);
 
-                    var modifier = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, properties.getModifierName()).setInterface(true);
+                    var modifier = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, properties.getModifierName());
                     var modifierClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, defaultModifierClassName(properties.getClassName()));
+
                     if (properties.isGenerateModifier()) {
                         spec.addMember(modifierClass);
                         intf.addMember(modifier);
@@ -219,22 +219,12 @@ public class Generator {
                     handleImports(typeDeclaration, spec);
                     handleImports(typeDeclaration, intf);
 
-                    handleEnrichers(parse);
-
                     processingTypes.remove(typeDeclaration.getNameAsString());
                 });
             } else {
                 log.error("Invalid type " + type.getNameAsString());
             }
         }
-    }
-
-    private static void handleEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
-        notNull(parsed.getBase(), base ->
-                notNull(base.getProperties().getInheritedEnrichers(), enrichers ->
-                        enrichers.forEach(e -> e.enrich(parsed))));
-        notNull(parsed.getProperties().getEnrichers(), enrichers ->
-                enrichers.forEach(e -> e.enrich(parsed)));
     }
 
     private static void cleanUpInterface(Class<?> cls, ClassOrInterfaceDeclaration intf) {
@@ -800,7 +790,13 @@ public class Generator {
                                 a.getChildNodes().stream().filter(n -> n instanceof ArrayInitializerExpr).findFirst().ifPresent(e ->
                                         e.getChildNodes().forEach(n ->
                                                 field.addAnnotation(((StringLiteralExpr) n).asStringLiteralExpr().asString())));
+                            } else
+                            if (Default.class.isAssignableFrom(ann)) {
+                                if (a.isSingleMemberAnnotationExpr()) {
+                                    field.getVariables().iterator().next().setInitializer(a.asSingleMemberAnnotationExpr().getMemberValue().asStringLiteralExpr().asString());
+                                }
                             }
+
                         }
                     } else {
                         log.warn("Can't process annotation {}", name);

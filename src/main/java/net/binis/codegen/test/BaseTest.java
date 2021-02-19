@@ -1,25 +1,28 @@
-package net.binis.codegen.base;
+package net.binis.codegen.test;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.printer.PrettyPrinter;
 import com.github.javaparser.printer.PrettyPrinterConfiguration;
 import lombok.SneakyThrows;
 import net.binis.codegen.CodeGen;
+import net.binis.codegen.codegen.CollectionsHandler;
 import net.binis.codegen.codegen.Generator;
 import net.binis.codegen.codegen.Helpers;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.lucene.search.MultiCollectorManager;
+import org.checkerframework.checker.units.qual.A;
 
 import javax.tools.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static net.binis.codegen.codegen.Helpers.*;
 import static net.binis.codegen.tools.Tools.ifNull;
 import static net.binis.codegen.tools.Tools.with;
@@ -46,6 +49,13 @@ public abstract class BaseTest {
         for (var entry : lookup.parsed()) {
             ifNull(entry.getFiles(), () ->
                     Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get()));
+            if (isNull(entry.getProperties().getMixInClass())) {
+                CollectionsHandler.finalizeEmbeddedModifier(entry, true);
+            }
+            if (entry.getProperties().isGenerateInterface()) {
+                CollectionsHandler.finalizeEmbeddedModifier(entry, false);
+            }
+            Helpers.handleEnrichers(entry);
         }
     }
 
@@ -53,9 +63,13 @@ public abstract class BaseTest {
         Helpers.cleanUp();
     }
 
-
-    protected void load(String resource) {
-        var parse = parser.parse(getClass().getClassLoader().getResourceAsStream(resource));
+    protected void load(List<Pair<String, String>> list, String resource) {
+        var source = resourceAsString(resource);
+        var parse = parser.parse(source);
+        assertTrue(parse.isSuccessful());
+        if (nonNull(list)) {
+            list.add(Pair.of(parse.getResult().get().findFirst(ClassOrInterfaceDeclaration.class).get().getFullyQualifiedName().get(), source));
+        }
         parse.getResult().ifPresent(u ->
                 u.getTypes().forEach(CodeGen::handleType));
     }
@@ -65,7 +79,9 @@ public abstract class BaseTest {
     }
 
     protected void testSingle(String prototype, String resClass, String resInterface) {
-        load(prototype);
+        var list = newList();
+        load(list, prototype);
+        assertTrue(compile(new TestClassLoader(), list));
         generate();
 
         assertEquals(1, lookup.parsed().size());
@@ -82,13 +98,15 @@ public abstract class BaseTest {
     }
 
     protected void testSingleWithBase(String basePrototype, String baseClassName, String prototype, String className, String baseClass, String baseInterface, String resClass, String resInterface) {
-        load(basePrototype);
-        load(prototype);
+        var src = newList();
+        load(src, basePrototype);
+        load(src, prototype);
+        assertTrue(compile(new TestClassLoader(), src));
         generate();
 
         assertEquals(2, lookup.parsed().size());
 
-        var list = new ArrayList<Pair<String, String>>();
+        var list = newList();
 
         with(lookup.findGenerated(baseClassName), parsed -> {
             compare(parsed.getFiles().get(0), baseClass);
@@ -106,8 +124,7 @@ public abstract class BaseTest {
             list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
         });
 
-        var loader = new TestClassLoader();
-        assertTrue(compile(loader, list));
+        assertTrue(compile(new TestClassLoader(), list));
     }
 
 
@@ -162,6 +179,10 @@ public abstract class BaseTest {
 
     public static Iterable<? extends JavaFileObject> getCompilationUnits(List<Pair<String, String>> files) {
         return files.stream().map(f -> new JavaSourceObject(f.getKey(), f.getValue())).collect(Collectors.toList());
+    }
+
+    protected List<Pair<String, String>> newList() {
+        return new ArrayList<>();
     }
 
 }

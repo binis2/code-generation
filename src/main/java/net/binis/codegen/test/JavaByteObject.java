@@ -1,4 +1,4 @@
-package net.binis.codegen.base;
+package net.binis.codegen.test;
 
 import javax.tools.SimpleJavaFileObject;
 import java.io.ByteArrayOutputStream;

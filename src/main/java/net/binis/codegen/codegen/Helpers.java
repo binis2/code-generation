@@ -13,6 +13,7 @@ import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.codegen.interfaces.PrototypeData;
 import net.binis.codegen.codegen.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.PrototypeLookup;
 import net.binis.codegen.tools.Holder;
@@ -55,7 +56,6 @@ public class Helpers {
     public static final Map<String, Structures.ProcessingType> processingTypes = new HashMap<>();
     public static final List<Triple<PrototypeDescription<ClassOrInterfaceDeclaration>, CompilationUnit, ClassExpr>> recursiveExpr = new LinkedList<>();
     public static final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> recursiveEmbeddedModifiers = new HashMap<>();
-
 
     public static final Method classSignature = initClassSignature();
     public static final Method methodSignature = initMethodSignature();
@@ -424,6 +424,15 @@ public class Helpers {
         return result.build();
     }
 
+    public static String getDefaultValue(BodyDeclaration<?> member) {
+        var result = new Holder<String>();
+        member.getAnnotations().stream().filter(a -> "Default".equals(a.getNameAsString())).findFirst().ifPresent(annotation ->
+                result.set(annotation.getNameAsString())
+                );
+        return result.get();
+    }
+
+
     public static Structures.Constants getConstants(BodyDeclaration<?> member) {
         var result = Structures.Constants.builder().forPublic(true);
         member.getAnnotations().stream().filter(a -> "CodeConstant".equals(a.getNameAsString())).findFirst().ifPresent(annotation ->
@@ -536,4 +545,23 @@ public class Helpers {
         recursiveEmbeddedModifiers.clear();
 
     }
+
+    public static void handleEnrichersSetup(PrototypeData properties) {
+        notNull(properties.getEnrichers(), enrichers ->
+                enrichers.forEach(e -> e.setup(properties)));
+    }
+
+    public static void handleInheritedEnrichersSetup(PrototypeData properties) {
+        notNull(properties.getInheritedEnrichers(), enrichers ->
+                enrichers.forEach(e -> e.setup(properties)));
+    }
+
+    public static void handleEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        notNull(parsed.getBase(), base ->
+                notNull(base.getProperties().getInheritedEnrichers(), enrichers ->
+                        enrichers.forEach(e -> e.enrich(parsed))));
+        notNull(parsed.getProperties().getEnrichers(), enrichers ->
+                enrichers.forEach(e -> e.enrich(parsed)));
+    }
+
 }

@@ -1,6 +1,6 @@
 package net.binis.codegen;
 
-import net.binis.codegen.base.BaseTest;
+import net.binis.codegen.test.BaseTest;
 import net.binis.codegen.codegen.Helpers;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +31,12 @@ public class EnrichTest extends BaseTest {
     public void enrichCreatorModifierWithoutModifier() {
         testSingle("enrich/enrichCreatorModifier2.java", "enrich/enrichCreatorModifier2-0.java", "enrich/enrichCreatorModifier2-1.java");
     }
+
+    @Test
+    public void enrichQuery() {
+        testSingle("enrich/enrichQuery.java", "enrich/enrichQuery-0.java", "enrich/enrichQuery-1.java");
+    }
+
 
     @Test
     public void enrichWithBaseWithModifier() {

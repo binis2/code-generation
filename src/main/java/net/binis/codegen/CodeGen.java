@@ -8,6 +8,7 @@ import com.github.javaparser.printer.PrettyPrinterConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.codegen.CollectionsHandler;
 import net.binis.codegen.codegen.Generator;
+import net.binis.codegen.codegen.Helpers;
 import net.binis.codegen.codegen.interfaces.PrototypeData;
 import org.apache.commons.cli.*;
 
@@ -100,13 +101,20 @@ public class CodeGen {
 
         var destination = cmd.getOptionValue(DESTINATION);
         lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
+            CompilationUnit intf = null;
+            CompilationUnit cls = null;
             if (isNull(p.getProperties().getMixInClass())) {
-                var file = CollectionsHandler.finalizeEmbeddedModifier(p, true);
-                saveFile(nullCheck(getBasePath(cmd.getOptionValue(IMPL_DESTINATION), p.getProperties()), destination), file);
+                cls = CollectionsHandler.finalizeEmbeddedModifier(p, true);
             }
             if (p.getProperties().isGenerateInterface()) {
-                var file = CollectionsHandler.finalizeEmbeddedModifier(p, false);
-                saveFile(getBasePath(destination, p.getProperties()), file);
+                intf = CollectionsHandler.finalizeEmbeddedModifier(p, false);
+            }
+            Helpers.handleEnrichers(p);
+            if (isNull(p.getProperties().getMixInClass())) {
+                saveFile(nullCheck(getBasePath(cmd.getOptionValue(IMPL_DESTINATION), p.getProperties()), destination), cls);
+            }
+            if (p.getProperties().isGenerateInterface()) {
+                saveFile(getBasePath(destination, p.getProperties()), intf);
             }
         });
     }

@@ -1,17 +1,18 @@
 package net.binis.codegen.codegen;
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import net.binis.codegen.codegen.interfaces.PrototypeData;
 import net.binis.codegen.codegen.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.PrototypeLookup;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class PrototypeLookupHandler implements PrototypeLookup {
 
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> parsed = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
+    private final Set<String> requestedEmbeddedModifiers = new HashSet<>();
+
 
     @Override
     public void registerParsed(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
@@ -53,9 +54,20 @@ public class PrototypeLookupHandler implements PrototypeLookup {
         return generated.values();
     }
 
+    @Override
+    public void generateEmbeddedModifier(PrototypeData properties) {
+        requestedEmbeddedModifiers.add(properties.getPrototypeName());
+    }
+
+    @Override
+    public boolean embeddedModifierRequested(String prototype) {
+        return requestedEmbeddedModifiers.contains(prototype);
+    }
+
     public void clean() {
         parsed.clear();
         generated.clear();
+        requestedEmbeddedModifiers.clear();
     }
 
 }

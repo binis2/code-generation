@@ -7,6 +7,10 @@ public class Holder<T> {
 
     private T object;
 
+    public <R> Holder() {
+        new Holder<R>(null);
+    }
+
     public Holder(T object) {
         super();
         this.object = object;

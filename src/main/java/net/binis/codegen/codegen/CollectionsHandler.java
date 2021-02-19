@@ -239,7 +239,7 @@ public class CollectionsHandler {
         }
         var intfName = unit.getType(0).asClassOrInterfaceDeclaration().isInterface() ? unit.getType(0).getNameAsString() : "void";
 
-        if (isNull(embedded) && recursiveEmbeddedModifiers.containsKey(parse.getIntf().getNameAsString())) {
+        if (isNull(embedded) && recursiveEmbeddedModifiers.containsKey(parse.getIntf().getNameAsString()) || lookup.embeddedModifierRequested(parse.getProperties().getPrototypeName())) {
             handleEmbeddedModifier(parse, parse.getSpec(), parse.getIntf());
             embedded = isClass ? parse.getEmbeddedModifier() : parse.getEmbeddedModifierIntf();
         }

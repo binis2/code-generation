@@ -5,6 +5,7 @@ import net.binis.codegen.enrich.PrototypeEnricher;
 import java.util.List;
 
 public interface PrototypeData {
+    String getPrototypeName();
     String getName();
     String getClassName();
     String getClassPackage();
@@ -30,4 +31,11 @@ public interface PrototypeData {
 
     List<PrototypeEnricher> getEnrichers();
     List<PrototypeEnricher> getInheritedEnrichers();
+
+    void setClassGetters(boolean value);
+    void setClassSetters(boolean value);
+    void setInterfaceSetters(boolean value);
+    void setGenerateConstructor(boolean value);
+    void setGenerateInterface(boolean value);
+    void setGenerateModifier(boolean value);
 }
