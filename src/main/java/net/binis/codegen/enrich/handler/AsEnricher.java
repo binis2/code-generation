@@ -4,12 +4,12 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
-import net.binis.codegen.codegen.interfaces.PrototypeDescription;
+import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 
 import static com.github.javaparser.ast.Modifier.Keyword.ABSTRACT;
 import static com.github.javaparser.ast.Modifier.Keyword.PUBLIC;
-import static net.binis.codegen.codegen.Constants.MIXIN_MODIFYING_METHOD_PREFIX;
+import static net.binis.codegen.generation.core.Constants.MIXIN_MODIFYING_METHOD_PREFIX;
 
 public class AsEnricher extends BaseEnricher {
 

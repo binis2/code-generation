@@ -6,10 +6,10 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.printer.PrettyPrinter;
 import com.github.javaparser.printer.PrettyPrinterConfiguration;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.codegen.CollectionsHandler;
-import net.binis.codegen.codegen.Generator;
-import net.binis.codegen.codegen.Helpers;
-import net.binis.codegen.codegen.interfaces.PrototypeData;
+import net.binis.codegen.generation.core.CollectionsHandler;
+import net.binis.codegen.generation.core.Generator;
+import net.binis.codegen.generation.core.Helpers;
+import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import org.apache.commons.cli.*;
 
 import java.io.BufferedWriter;
@@ -23,8 +23,8 @@ import java.util.Collection;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.codegen.Helpers.*;
-import static net.binis.codegen.codegen.Structures.Parsed;
+import static net.binis.codegen.generation.core.Helpers.*;
+import static net.binis.codegen.generation.core.Structures.Parsed;
 import static net.binis.codegen.tools.Tools.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 

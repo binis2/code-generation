@@ -7,13 +7,14 @@ import com.github.javaparser.printer.PrettyPrinter;
 import com.github.javaparser.printer.PrettyPrinterConfiguration;
 import lombok.SneakyThrows;
 import net.binis.codegen.CodeGen;
-import net.binis.codegen.codegen.CollectionsHandler;
-import net.binis.codegen.codegen.Generator;
-import net.binis.codegen.codegen.Helpers;
+import net.binis.codegen.generation.core.CollectionsHandler;
+import net.binis.codegen.generation.core.Generator;
+import net.binis.codegen.generation.core.Helpers;
 import org.apache.commons.lang3.tuple.Pair;
-import org.checkerframework.checker.units.qual.A;
 
 import javax.tools.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.codegen.Helpers.*;
+import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Tools.ifNull;
 import static net.binis.codegen.tools.Tools.with;
 import static org.junit.Assert.assertEquals;
@@ -79,13 +80,24 @@ public abstract class BaseTest {
     }
 
     protected void testSingle(String prototype, String resClass, String resInterface) {
+        testSingle(prototype, resClass, resInterface, null);
+    }
+
+    protected void testSingle(String prototype, String resClass, String resInterface, String pathToSave) {
         var list = newList();
         load(list, prototype);
         assertTrue(compile(new TestClassLoader(), list));
         generate();
 
         assertEquals(1, lookup.parsed().size());
+
+
         with(lookup.generated().iterator().next(), parsed -> {
+            if (nonNull(pathToSave)) {
+                save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
+                save(parsed.getProperties().getInterfaceName(), parsed.getFiles().get(1), pathToSave);
+            }
+
             compare(parsed.getFiles().get(0), resClass);
             compare(parsed.getFiles().get(1), resInterface);
 
@@ -95,6 +107,14 @@ public abstract class BaseTest {
                             Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))),
                             Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))))));
         });
+    }
+
+    @SneakyThrows
+    protected void save(String name, CompilationUnit unit, String pathToSave) {
+        var fileName = pathToSave + "/" + name + ".java";
+        BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+        writer.write(getAsString(unit));
+        writer.close();
     }
 
     protected void testSingleWithBase(String basePrototype, String baseClassName, String prototype, String className, String baseClass, String baseInterface, String resClass, String resInterface) {
@@ -123,6 +143,31 @@ public abstract class BaseTest {
             list.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
             list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
         });
+
+        assertTrue(compile(new TestClassLoader(), list));
+    }
+
+    protected void testSingleWithMixIn(String basePrototype, String baseClassName, String prototype, String className, String baseClass, String baseInterface, String mixInInterface) {
+        var src = newList();
+        load(src, basePrototype);
+        load(src, prototype);
+        assertTrue(compile(new TestClassLoader(), src));
+        generate();
+
+        assertEquals(2, lookup.parsed().size());
+
+        var list = newList();
+
+        with(lookup.findGenerated(baseClassName), parsed ->
+                with(lookup.findGenerated(className), parsedMixIn -> {
+                    compare(parsed.getFiles().get(1), baseInterface);
+                    compare(parsedMixIn.getFiles().get(1), mixInInterface);
+                    compare(parsed.getFiles().get(0), baseClass);
+
+                    list.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+                    list.add(Pair.of(parsedMixIn.getInterfaceFullName(), getAsString(parsedMixIn.getFiles().get(1))));
+                    list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+                }));
 
         assertTrue(compile(new TestClassLoader(), list));
     }

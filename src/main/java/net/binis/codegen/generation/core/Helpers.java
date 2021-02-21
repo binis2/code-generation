@@ -1,4 +1,4 @@
-package net.binis.codegen.codegen;
+package net.binis.codegen.generation.core;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
@@ -13,8 +13,8 @@ import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.codegen.interfaces.PrototypeData;
-import net.binis.codegen.codegen.interfaces.PrototypeDescription;
+import net.binis.codegen.generation.core.interfaces.PrototypeData;
+import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.PrototypeLookup;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.tuple.Pair;
@@ -27,8 +27,6 @@ import java.util.regex.Pattern;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.codegen.Constants.MODIFIER_CLASS_NAME_SUFFIX;
-import static net.binis.codegen.codegen.Constants.MODIFIER_INTERFACE_NAME;
 import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
@@ -327,7 +325,7 @@ public class Helpers {
     }
 
     public static ClassOrInterfaceDeclaration findModifier(ClassOrInterfaceDeclaration intf) {
-        return intf.findFirst(ClassOrInterfaceDeclaration.class, m -> nullCheck(m.getNameAsString(), name -> name.equals(MODIFIER_INTERFACE_NAME) || name.endsWith(MODIFIER_CLASS_NAME_SUFFIX))).orElseThrow();
+        return intf.findFirst(ClassOrInterfaceDeclaration.class, m -> nullCheck(m.getNameAsString(), name -> name.equals(Constants.MODIFIER_INTERFACE_NAME) || name.endsWith(Constants.MODIFIER_CLASS_NAME_SUFFIX))).orElseThrow();
     }
 
     public static String getEnumNameFromPrototype(TypeDeclaration<?> type, String prototype) {
@@ -560,6 +558,12 @@ public class Helpers {
         notNull(parsed.getBase(), base ->
                 notNull(base.getProperties().getInheritedEnrichers(), enrichers ->
                         enrichers.forEach(e -> e.enrich(parsed))));
+
+        notNull(parsed.getMixIn(), mixIn ->
+                notNull(mixIn.getBase(), base ->
+                        notNull(base.getProperties().getInheritedEnrichers(), enrichers ->
+                                enrichers.forEach(e -> e.enrich(parsed)))));
+
         notNull(parsed.getProperties().getEnrichers(), enrichers ->
                 enrichers.forEach(e -> e.enrich(parsed)));
     }

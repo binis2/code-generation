@@ -1,4 +1,4 @@
-package net.binis.codegen.codegen.interfaces;
+package net.binis.codegen.generation.core.interfaces;
 
 import net.binis.codegen.enrich.PrototypeEnricher;
 

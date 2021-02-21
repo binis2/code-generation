@@ -1,12 +1,10 @@
-package net.binis.codegen.codegen;
+package net.binis.codegen.generation.core;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.InitializerDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.AssignExpr;
-import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
@@ -16,7 +14,7 @@ import com.github.javaparser.ast.type.Type;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.codegen.interfaces.PrototypeDescription;
+import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -27,8 +25,8 @@ import java.util.stream.Collectors;
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.codegen.Generator.getGenericsList;
-import static net.binis.codegen.codegen.Helpers.*;
+import static net.binis.codegen.generation.core.Generator.getGenericsList;
+import static net.binis.codegen.generation.core.Helpers.*;
 
 @Slf4j
 public class CollectionsHandler {

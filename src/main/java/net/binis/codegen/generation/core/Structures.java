@@ -1,12 +1,12 @@
-package net.binis.codegen.codegen;
+package net.binis.codegen.generation.core;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.Builder;
 import lombok.Data;
-import net.binis.codegen.codegen.interfaces.PrototypeData;
-import net.binis.codegen.codegen.interfaces.PrototypeDescription;
+import net.binis.codegen.generation.core.interfaces.PrototypeData;
+import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.PrototypeEnricher;
 
 import java.util.List;

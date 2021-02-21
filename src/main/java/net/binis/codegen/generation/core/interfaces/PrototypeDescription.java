@@ -1,4 +1,4 @@
-package net.binis.codegen.codegen.interfaces;
+package net.binis.codegen.generation.core.interfaces;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
