@@ -137,7 +137,7 @@ public class Generator {
                                 parse.setMixIn((Structures.Parsed) parsed);
                             }
                         } else {
-                            handleExternalInterface(properties, typeDeclaration, spec, intf, t, modifier, modifierClass);
+                            handleExternalInterface(parse, typeDeclaration, spec, intf, t, modifier, modifierClass);
                         }
                     });
 
@@ -167,7 +167,7 @@ public class Generator {
                             if (!declaration.isDefault()) {
                                 var ignore = getIgnores(member);
                                 if (!ignore.isForField()) {
-                                    addField(typeDeclaration, spec, declaration, null);
+                                    addField(parse, typeDeclaration, spec, declaration, null);
                                 }
                                 if (!ignore.isForClass()) {
                                     if (properties.isClassGetters()) {
@@ -195,7 +195,7 @@ public class Generator {
                                 handleDefaultMethod(parse, spec, intf, declaration);
                             }
                         } else if (member.isClassOrInterfaceDeclaration()) {
-                            processInnerClass(properties, typeDeclaration, spec, member.asClassOrInterfaceDeclaration());
+                            processInnerClass(parse, typeDeclaration, spec, member.asClassOrInterfaceDeclaration());
                         } else if (member.isFieldDeclaration()) {
                             processConstant(typeDeclaration, spec, intf, member.asFieldDeclaration());
                         } else {
@@ -543,7 +543,7 @@ public class Generator {
         var properties = parse.getProperties();
         for (var method : declaration.getMethods()) {
             if (method.getNameAsString().startsWith("get")) {
-                addFieldFromGetter(spec, method, null);
+                addFieldFromGetter(parse, spec, method, null);
                 addGetterFromGetter(spec, method, true);
             } else if (method.getNameAsString().startsWith("set")) {
                 addSetterFromSetter(spec, method, true);
@@ -560,16 +560,16 @@ public class Generator {
         }
     }
 
-    private static void handleExternalInterface(PrototypeData properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceType type, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {
+    private static void handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceType type, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {
         var className = getExternalClassName(declaration.findCompilationUnit().get(), type.getNameAsString());
         if (nonNull(className)) {
             var cls = loadClass(className);
             if (nonNull(cls)) {
                 if (cls.isInterface()) {
                     for (var i : cls.getInterfaces()) {
-                        handleExternalInterface(properties, declaration, spec, i, modifier, modifierClass, type.getTypeArguments().orElse(null));
+                        handleExternalInterface(parsed, declaration, spec, i, modifier, modifierClass, type.getTypeArguments().orElse(null));
                     }
-                    handleExternalInterface(properties, declaration, spec, cls, modifier, modifierClass, type.getTypeArguments().orElse(null));
+                    handleExternalInterface(parsed, declaration, spec, cls, modifier, modifierClass, type.getTypeArguments().orElse(null));
                     if (nonNull(intf)) {
                         intf.addExtendedType(type);
                     } else {
@@ -586,20 +586,22 @@ public class Generator {
         }
     }
 
-    private static void handleExternalInterface(PrototypeData properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, NodeList<Type> generics) {
+    private static void handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, NodeList<Type> generics) {
         Map<String, Type> generic = null;
         if (nonNull(generics)) {
             generic = processGenerics(cls, generics);
         }
 
-        Arrays.stream(cls.getInterfaces()).forEach(i -> handleExternalInterface(properties, declaration, spec, i, modifier, modifierClass, generics));
+        Arrays.stream(cls.getInterfaces()).forEach(i -> handleExternalInterface(parsed, declaration, spec, i, modifier, modifierClass, generics));
+
+        var properties = parsed.getProperties();
 
         for (var method : cls.getDeclaredMethods()) {
             if (!java.lang.reflect.Modifier.isStatic(method.getModifiers())) {
                 var exists = methodExists(declaration, method, false);
                 if (method.getName().startsWith("get")) {
                     if (!exists) {
-                        addFieldFromGetter(spec, method, generic);
+                        addFieldFromGetter(parsed, spec, method, generic);
                     }
                     if (properties.isClassGetters()) {
                         addGetterFromGetter(spec, method, true, generic);
@@ -855,9 +857,9 @@ public class Generator {
         return data;
     }
 
-    private static void processInnerClass(PrototypeData properties, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration cls) {
+    private static void processInnerClass(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration cls) {
         cls.getImplementedTypes().forEach(t ->
-                handleExternalInterface(properties, declaration, spec, null, t, null, null));
+                handleExternalInterface(parsed, declaration, spec, null, t, null, null));
         notNull(spec.getAnnotationByName("CodeClassAnnotations"), a ->
                 cls.getAnnotations().forEach(ann -> {
                     if (!"CodeClassAnnotations".equals(ann.getNameAsString())) {
@@ -900,7 +902,7 @@ public class Generator {
     }
 
 
-    private static void addField(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Type generic) {
+    private static void addField(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Type generic) {
         var fieldName = method.getNameAsString();
         var field = findField(spec, fieldName);
         if (isNull(field)) {
@@ -909,32 +911,52 @@ public class Generator {
             } else {
                 field = spec.addField(handleType(type, spec, method.getType(), false), fieldName, PROTECTED);
             }
+            parsed.getFields().add(Structures.FieldData.builder()
+                    .name(fieldName)
+                    .declaration(field)
+                    .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
+                    .prototype(lookup.findParsed(type.getFullyQualifiedName().get()))
+                    .build());
         }
         handleFieldAnnotations(type.findCompilationUnit().get(), field, method);
     }
 
-    private static void addFieldFromGetter(ClassOrInterfaceDeclaration spec, MethodDeclaration method, Map<String, Type> generic) {
-        var field = getFieldName(method.getNameAsString());
-        if (!fieldExists(spec, field)) {
+    private static void addFieldFromGetter(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Map<String, Type> generic) {
+        var fieldName = getFieldName(method.getNameAsString());
+        if (!fieldExists(spec, fieldName)) {
+            FieldDeclaration field;
             if (nonNull(generic)) {
-                spec.addField(generic.get(parseMethodSignature(method)), getFieldName(method.getNameAsString()), PROTECTED);
+                field = spec.addField(generic.get(parseMethodSignature(method)), getFieldName(method.getNameAsString()), PROTECTED);
             } else {
-                spec.addField(method.getType(), getFieldName(method.getNameAsString()), PROTECTED);
+                field = spec.addField(method.getType(), getFieldName(method.getNameAsString()), PROTECTED);
             }
+            parsed.getFields().add(Structures.FieldData.builder()
+                    .name(fieldName)
+                    .declaration(field)
+                    .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
+                    //TODO: enable prototypes
+                    .build());
         }
     }
 
-    private static void addFieldFromGetter(ClassOrInterfaceDeclaration spec, Method method, Map<String, Type> generic) {
-        var field = getFieldName(method.getName());
-        if (!fieldExists(spec, field)) {
+    private static void addFieldFromGetter(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, Method method, Map<String, Type> generic) {
+        var fieldName = getFieldName(method.getName());
+        if (!fieldExists(spec, fieldName)) {
+            FieldDeclaration field;
             if (nonNull(generic)) {
-                spec.addField(generic.get(parseMethodSignature(method)), field, PROTECTED);
+                field = spec.addField(generic.get(parseMethodSignature(method)), fieldName, PROTECTED);
             } else {
-                spec.addField(method.getReturnType(), field, PROTECTED);
+                field = spec.addField(method.getReturnType(), fieldName, PROTECTED);
             }
             if (!method.getReturnType().isPrimitive() && !method.getReturnType().getCanonicalName().startsWith("java.lang.")) {
                 spec.findCompilationUnit().get().addImport(method.getReturnType().getCanonicalName());
             }
+            parsed.getFields().add(Structures.FieldData.builder()
+                    .name(fieldName)
+                    .declaration(field)
+                    .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
+                    //TODO: enable prototypes
+                    .build());
         }
     }
 

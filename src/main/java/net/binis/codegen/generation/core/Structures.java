@@ -2,13 +2,17 @@ package net.binis.codegen.generation.core;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Singular;
+import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
-import net.binis.codegen.enrich.PrototypeEnricher;
+import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Structures {
@@ -46,6 +50,15 @@ public class Structures {
 
     @Data
     @Builder
+    public static class FieldData implements PrototypeField {
+        private String name;
+        private FieldDeclaration declaration;
+        private boolean collection;
+        private PrototypeDescription<ClassOrInterfaceDeclaration> prototype;
+    }
+
+    @Data
+    @Builder
     public static class Parsed<T extends TypeDeclaration<T>> implements PrototypeDescription<T> {
 
         private PrototypeDataHandler properties;
@@ -64,6 +77,9 @@ public class Structures {
 
         private Parsed<T> base;
         private Parsed<T> mixIn;
+
+        @Builder.Default
+        private List<PrototypeField> fields = new ArrayList<>();
 
         private ClassOrInterfaceDeclaration spec;
         private ClassOrInterfaceDeclaration intf;

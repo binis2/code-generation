@@ -4,8 +4,12 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.PrototypeLookup;
+import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
 import java.util.*;
+
+import static net.binis.codegen.tools.Tools.nullCheck;
+import static net.binis.codegen.tools.Tools.with;
 
 public class PrototypeLookupHandler implements PrototypeLookup {
 
@@ -32,6 +36,12 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     @Override
     public PrototypeDescription<ClassOrInterfaceDeclaration> findGenerated(String prototype) {
         return generated.get(prototype);
+    }
+
+    @Override
+    public PrototypeField findField(String prototype, String name) {
+        return nullCheck(findParsed(prototype), parsed ->
+                parsed.getFields().stream().filter(n -> n.getName().equals(name)).findFirst().orElse(null));
     }
 
     @Override

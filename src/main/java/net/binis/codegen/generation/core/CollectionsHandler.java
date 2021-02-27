@@ -310,6 +310,18 @@ public class CollectionsHandler {
         return unit;
     }
 
+    public static String getCollectionType(Type type) {
+        if (type.isClassOrInterfaceType()) {
+            var args = type.asClassOrInterfaceType().getTypeArguments();
+            if (args.isPresent()) {
+                if (args.get().size() == 1) {
+                    return args.get().get(0).asString();
+                }
+            }
+        }
+        return "Object";
+    }
+
     @Data
     @Builder
     private static class CollectionType {

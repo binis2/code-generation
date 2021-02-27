@@ -25,6 +25,8 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     PrototypeDescription<T> getBase();
     PrototypeDescription<T> getMixIn();
 
+    List<PrototypeField> getFields();
+
     ClassOrInterfaceDeclaration getSpec();
     ClassOrInterfaceDeclaration getIntf();
     ClassOrInterfaceDeclaration getModifier();
