@@ -7,6 +7,7 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Singular;
+import lombok.ToString;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
@@ -48,12 +49,14 @@ public class Structures {
         private List<PrototypeEnricher> inheritedEnrichers;
     }
 
+    @ToString
     @Data
     @Builder
     public static class FieldData implements PrototypeField {
         private String name;
         private FieldDeclaration declaration;
         private boolean collection;
+        @ToString.Exclude
         private PrototypeDescription<ClassOrInterfaceDeclaration> prototype;
     }
 

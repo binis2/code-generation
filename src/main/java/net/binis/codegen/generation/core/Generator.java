@@ -478,6 +478,14 @@ public class Generator {
             result.setGenerateModifier(false);
         }
 
+        if (isNull(result.getEnrichers())) {
+            result.setEnrichers(Collections.emptyList());
+        }
+
+        if (isNull(result.getInheritedEnrichers())) {
+            result.setInheritedEnrichers(Collections.emptyList());
+        }
+
         return result;
     }
 
@@ -915,7 +923,7 @@ public class Generator {
                     .name(fieldName)
                     .declaration(field)
                     .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
-                    .prototype(lookup.findParsed(type.getFullyQualifiedName().get()))
+                    .prototype(isNull(generic) ? lookup.findParsed(getExternalClassName(type.findCompilationUnit().get(), method.getType().asString())) : null)
                     .build());
         }
         handleFieldAnnotations(type.findCompilationUnit().get(), field, method);
