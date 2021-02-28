@@ -99,22 +99,25 @@ public class CodeGen {
             }
         });
 
-        var destination = cmd.getOptionValue(DESTINATION);
         lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
-            CompilationUnit intf = null;
-            CompilationUnit cls = null;
             if (isNull(p.getProperties().getMixInClass())) {
-                cls = CollectionsHandler.finalizeEmbeddedModifier(p, true);
+                CollectionsHandler.finalizeEmbeddedModifier(p, true);
             }
             if (p.getProperties().isGenerateInterface()) {
-                intf = CollectionsHandler.finalizeEmbeddedModifier(p, false);
+                CollectionsHandler.finalizeEmbeddedModifier(p, false);
             }
             Helpers.handleEnrichers(p);
+        });
+
+
+        var destination = cmd.getOptionValue(DESTINATION);
+        var impl_destination = cmd.getOptionValue(IMPL_DESTINATION);
+        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
             if (isNull(p.getProperties().getMixInClass())) {
-                saveFile(nullCheck(getBasePath(cmd.getOptionValue(IMPL_DESTINATION), p.getProperties()), destination), cls);
+                saveFile(nullCheck(getBasePath(impl_destination, p.getProperties()), destination), p.getFiles().get(0));
             }
             if (p.getProperties().isGenerateInterface()) {
-                saveFile(getBasePath(destination, p.getProperties()), intf);
+                saveFile(getBasePath(destination, p.getProperties()), p.getFiles().get(1));
             }
         });
     }

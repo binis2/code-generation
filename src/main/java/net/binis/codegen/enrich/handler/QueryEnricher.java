@@ -46,6 +46,7 @@ public class QueryEnricher extends BaseEnricher {
                     .addImport("net.binis.codegen.factory.CodeFactory")
                     .addImport("net.binis.codegen.spring.query.QueryOrderOperation")
                     .addImport("net.binis.codegen.spring.query.QuerySelectOperation")
+                    .addImport("net.binis.codegen.spring.query.QueryExecute")
                     .addImport("net.binis.codegen.spring.query.executor.QueryExecutor")
                     .addImport("net.binis.codegen.spring.query.executor.QueryOrderer")
                     .addImport("java.util.Optional");
@@ -114,6 +115,19 @@ public class QueryEnricher extends BaseEnricher {
         start.addMethod("by").setType(entity + "." + QUERY_SELECT + "<Optional<" + intf.getNameAsString() + ">>").setBody(null);
         start.addMethod("all").setType(entity + "." + QUERY_SELECT + "<List<" + intf.getNameAsString() + ">>").setBody(null);
         start.addMethod("count").setType(entity + "." + QUERY_SELECT + "<Long>").setBody(null);
+        start.addMethod("nativeQuery").setType(QUERY_EXECUTE + "<List<" + QUERY_GENERIC + ">>")
+                .addTypeParameter(QUERY_GENERIC)
+                .addParameter("String", "query")
+                .addParameter("Class<" + QUERY_GENERIC + ">", "cls")
+                .setBody(null);
+        start.addMethod("query").setType(QUERY_EXECUTE + "<List<" + QUERY_GENERIC + ">>")
+                .addTypeParameter(QUERY_GENERIC)
+                .addParameter("String", "query")
+                .addParameter("Class<" + QUERY_GENERIC + ">", "cls")
+                .setBody(null);
+        start.addMethod("top").setType(entity + "." + QUERY_SELECT + "<List<" + intf.getNameAsString() + ">>")
+                .addParameter("long", "records")
+                .setBody(null);
 
         var startImpl = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + QUERY_START + QUERY_IMPL)
                 .addModifier(PROTECTED)
@@ -133,6 +147,23 @@ public class QueryEnricher extends BaseEnricher {
                 .setType(entity + "." + QUERY_SELECT + "<Long>")
                 .addModifier(PUBLIC)
                 .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + entity + "." + QUERY_SELECT + ") new " + QUERY_EXECUTOR + QUERY_IMPL + "(" + intf.getNameAsString() + ".class).count()")));
+        startImpl.addMethod("nativeQuery").setType(QUERY_EXECUTE + "<List<" + QUERY_GENERIC + ">>")
+                .addTypeParameter(QUERY_GENERIC)
+                .addParameter("String", "query")
+                .addParameter("Class<" + QUERY_GENERIC + ">", "cls")
+                .addModifier(PUBLIC)
+                .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + entity + "." + QUERY_SELECT + ") new " + QUERY_EXECUTOR + QUERY_IMPL + "(" + intf.getNameAsString() + ".class).nativeQuery(query, cls)")));
+        startImpl.addMethod("query").setType(QUERY_EXECUTE + "<List<" + QUERY_GENERIC + ">>")
+                .addTypeParameter(QUERY_GENERIC)
+                .addParameter("String", "query")
+                .addParameter("Class<" + QUERY_GENERIC + ">", "cls")
+                .addModifier(PUBLIC)
+                .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + entity + "." + QUERY_SELECT + ") new " + QUERY_EXECUTOR + QUERY_IMPL + "(" + intf.getNameAsString() + ".class).query(query, cls)")));
+        startImpl.addMethod("top").setType(entity + "." + QUERY_SELECT + "<List<" + intf.getNameAsString() + ">>")
+                .addParameter("long", "records")
+                .addModifier(PUBLIC)
+                .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + entity + "." + QUERY_SELECT + ") new " + QUERY_EXECUTOR + QUERY_IMPL + "(" + intf.getNameAsString() + ".class).top(records)")));
+
 
         var initializer = spec.getChildNodes().stream().filter(n -> n instanceof InitializerDeclaration).map(n -> ((InitializerDeclaration) n).asInitializerDeclaration().getBody()).findFirst().orElseGet(spec::addInitializer);
         initializer
@@ -215,8 +246,7 @@ public class QueryEnricher extends BaseEnricher {
         var entity = prototype.getProperties().getInterfaceName();
 
         with(spec.findCompilationUnit().get(), unit -> unit
-                .addImport("net.binis.codegen.spring.query.QueryEmbed")
-                .addImport("net.binis.codegen.creator.EntityCreator"));
+                .addImport("net.binis.codegen.spring.query.QueryEmbed"));
 
         var qName = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_NAME)
                 .addTypeParameter(QUERY_GENERIC);
@@ -284,6 +314,11 @@ public class QueryEnricher extends BaseEnricher {
                 if (getInterface(lookup.findGenerated(desc.getPrototype().getParsedFullName())).stream().noneMatch(n -> n instanceof ClassOrInterfaceDeclaration && QUERY_NAME.equals(((ClassOrInterfaceDeclaration) n).getNameAsString()))) {
                     declareQueryName(desc.getPrototype());
                 }
+
+                with(desc.getDeclaration().findCompilationUnit().get(), unit -> unit
+                        .addImport("net.binis.codegen.spring.query.QueryEmbed")
+                        .addImport("net.binis.codegen.creator.EntityCreator"));
+
                 return true;
             }
         }
