@@ -259,7 +259,8 @@ public class QueryEnricher extends BaseEnricher {
                 qNameImpl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">")
                         .setBody(new BlockStmt()
                                 .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class);")
-                                .addStatement("((QueryEmbed) result).setParent(\"" + name + "\", this);")
+                                .addStatement("((QueryEmbed) result).setParent(\"" + name + "\", executor);")
+                                .addStatement("executor.embedded(\"" + name + "\");")
                                 .addStatement(new ReturnStmt("result")));
 
             } else {
