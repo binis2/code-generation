@@ -541,7 +541,14 @@ public class Helpers {
         processingTypes.clear();
         recursiveExpr.clear();
         recursiveEmbeddedModifiers.clear();
+    }
 
+    public static String handleGenericPrimitiveType(Type type) {
+        if (type.isPrimitiveType()) {
+            return type.asPrimitiveType().toBoxedType().asString();
+        } else {
+            return type.asString();
+        }
     }
 
     public static void handleEnrichersSetup(PrototypeData properties) {

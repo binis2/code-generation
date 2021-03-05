@@ -98,8 +98,8 @@ public abstract class BaseTest {
                 save(parsed.getProperties().getInterfaceName(), parsed.getFiles().get(1), pathToSave);
             }
 
-            compare(parsed.getFiles().get(0), resClass);
             compare(parsed.getFiles().get(1), resInterface);
+            compare(parsed.getFiles().get(0), resClass);
 
             var loader = new TestClassLoader();
             assertTrue(compile(loader,
