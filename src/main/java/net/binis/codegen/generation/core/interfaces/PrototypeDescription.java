@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
+    String getPrototypeFileName();
+
     PrototypeData getProperties();
 
     String getParsedName();

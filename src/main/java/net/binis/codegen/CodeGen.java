@@ -53,7 +53,8 @@ public class CodeGen {
                 var parse = parser.parse(file);
                 log.info("Parsed {} - {}", fileName, parse.toString());
                 parse.getResult().ifPresent(u ->
-                        u.getTypes().forEach(CodeGen::handleType));
+                        u.getTypes().forEach(t ->
+                                handleType(t, fileName)));
             } catch (IOException e) {
                 log.error("Unable to parse {}", file.getFileName(), e);
             }
@@ -123,14 +124,14 @@ public class CodeGen {
     }
 
     @SuppressWarnings("unchecked")
-    public static void handleType(TypeDeclaration<?> t) {
+    public static void handleType(TypeDeclaration<?> t, String fileName) {
         if (t.isEnumDeclaration()) {
-            enumParsed.put(getClassName(t.asEnumDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).build());
+            enumParsed.put(getClassName(t.asEnumDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).build());
         } else {
             if (t.getAnnotationByName("ConstantPrototype").isPresent()) {
-                constantParsed.put(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).build());
+                constantParsed.put(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).build());
             } else {
-                lookup.registerParsed(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).build());
+                lookup.registerParsed(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).build());
             }
         }
     }

@@ -64,6 +64,8 @@ public class Structures {
     @Builder
     public static class Parsed<T extends TypeDeclaration<T>> implements PrototypeDescription<T> {
 
+        private String prototypeFileName;
+
         private PrototypeDataHandler properties;
 
         private String parsedName;

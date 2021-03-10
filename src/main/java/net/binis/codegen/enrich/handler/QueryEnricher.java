@@ -134,7 +134,8 @@ public class QueryEnricher extends BaseEnricher {
                 .addParameter("Object", "executor")
                 .setBody(new BlockStmt()
                         .addStatement("this.name = name;")
-                        .addStatement("this.executor = (" + QUERY_EXECUTOR + ") executor;"));
+                        .addStatement("this.executor = (" + QUERY_EXECUTOR + ") executor;")
+                        .addStatement("this.executor.embedded(name);"));
 
         var initializer = spec.getChildNodes().stream().filter(n -> n instanceof InitializerDeclaration).map(n -> ((InitializerDeclaration) n).asInitializerDeclaration().getBody()).findFirst().orElseGet(spec::addInitializer);
         initializer
@@ -260,7 +261,6 @@ public class QueryEnricher extends BaseEnricher {
                         .setBody(new BlockStmt()
                                 .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class);")
                                 .addStatement("((QueryEmbed) result).setParent(\"" + name + "\", executor);")
-                                .addStatement("executor.embedded(\"" + name + "\");")
                                 .addStatement(new ReturnStmt("result")));
 
             } else {
@@ -278,7 +278,7 @@ public class QueryEnricher extends BaseEnricher {
                         .setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + ", " + QUERY_SELECT + "Operation<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">>")
                         .addModifier(PUBLIC)
                         .setBody(new BlockStmt()
-                                .addStatement("executor.identifier(name + \"." + name + "\");")
+                                .addStatement("executor.identifier(\"" + name + "\");")
                                 .addStatement(new ReturnStmt("(" + QUERY_FUNCTIONS + ") executor")));
             }
 
@@ -292,7 +292,7 @@ public class QueryEnricher extends BaseEnricher {
                     .addModifier(PUBLIC)
                     .addParameter(field.getCommonType(), name)
                     .setBody(new BlockStmt()
-                            .addStatement("executor.identifier(name + \"." + name + "\", " + name + ");")
+                            .addStatement("executor.identifier(\"" + name + "\", " + name + ");")
                             .addStatement(new ReturnStmt("(" + QUERY_SELECT + "Operation) executor")));
 
         }

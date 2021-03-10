@@ -6,6 +6,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
 import java.util.Collection;
+import java.util.List;
 
 public interface PrototypeLookup {
 
@@ -18,6 +19,8 @@ public interface PrototypeLookup {
     boolean isGenerated(String prototype);
     Collection<PrototypeDescription<ClassOrInterfaceDeclaration>> parsed();
     Collection<PrototypeDescription<ClassOrInterfaceDeclaration>> generated();
+
+    List<PrototypeDescription<ClassOrInterfaceDeclaration>> findGeneratedByFileName(String fileName);
 
     void generateEmbeddedModifier(PrototypeData properties);
     boolean embeddedModifierRequested(String prototype);

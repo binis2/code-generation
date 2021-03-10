@@ -11,6 +11,7 @@ import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 import javax.tools.*;
 import java.io.BufferedWriter;
@@ -72,7 +73,8 @@ public abstract class BaseTest {
             list.add(Pair.of(parse.getResult().get().findFirst(ClassOrInterfaceDeclaration.class).get().getFullyQualifiedName().get(), source));
         }
         parse.getResult().ifPresent(u ->
-                u.getTypes().forEach(CodeGen::handleType));
+                u.getTypes().forEach(t ->
+                        CodeGen.handleType(t, resource)));
     }
 
     protected void compare(CompilationUnit unit, String resource) {
@@ -107,6 +109,40 @@ public abstract class BaseTest {
                             Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))),
                             Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))))));
         });
+    }
+
+    protected void testMulti(List<Triple<String, String, String>> files) {
+        testMulti(files, null);
+    }
+
+    protected void testMulti(List<Triple<String, String, String>> files, String pathToSave) {
+        var list = newList();
+        files.forEach(t ->
+                load(list, t.getLeft()));
+        assertTrue(compile(new TestClassLoader(), list));
+        generate();
+
+        assertEquals(files.size(), lookup.parsed().size());
+
+
+        var compileList = new ArrayList<Pair<String, String>>();
+        files.forEach(f -> {
+            lookup.findGeneratedByFileName(f.getLeft()).forEach(parsed -> {
+                if (nonNull(pathToSave)) {
+                    save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
+                    save(parsed.getProperties().getInterfaceName(), parsed.getFiles().get(1), pathToSave);
+                }
+
+                compare(parsed.getFiles().get(1), f.getRight());
+                compare(parsed.getFiles().get(0), f.getMiddle());
+
+                compileList.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+                compileList.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+            });
+        });
+
+        var loader = new TestClassLoader();
+        assertTrue(compile(loader, compileList));
     }
 
     @SneakyThrows

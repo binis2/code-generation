@@ -7,6 +7,7 @@ import net.binis.codegen.enrich.PrototypeLookup;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static net.binis.codegen.tools.Tools.nullCheck;
 import static net.binis.codegen.tools.Tools.with;
@@ -72,6 +73,11 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     @Override
     public boolean embeddedModifierRequested(String prototype) {
         return requestedEmbeddedModifiers.contains(prototype);
+    }
+
+    @Override
+    public List<PrototypeDescription<ClassOrInterfaceDeclaration>> findGeneratedByFileName(String fileName) {
+        return generated.values().stream().filter(g -> fileName.equals(g.getPrototypeFileName())).collect(Collectors.toList());
     }
 
     public void clean() {
