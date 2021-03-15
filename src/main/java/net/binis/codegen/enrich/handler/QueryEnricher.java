@@ -6,10 +6,10 @@ import com.github.javaparser.ast.body.InitializerDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
+import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
-import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
@@ -39,21 +39,14 @@ public class QueryEnricher extends BaseEnricher {
         with(intf.findCompilationUnit().get(), unit -> {
             unit.addImport("java.util.List")
                     .addImport("net.binis.codegen.creator.EntityCreator")
-                    .addImport("net.binis.codegen.spring.query.QueryExecute")
-                    .addImport("net.binis.codegen.spring.query.QueryFunctions")
-                    .addImport("net.binis.codegen.spring.query.QueryOrderOperation")
-                    .addImport("net.binis.codegen.spring.query.QuerySelectOperation")
+                    .addImport("net.binis.codegen.spring.query.*")
                     .addImport("java.util.Optional");
         });
         with(spec.findCompilationUnit().get(), unit -> {
             unit.addImport("java.util.List")
                     .addImport("net.binis.codegen.factory.CodeFactory")
                     .addImport("net.binis.codegen.creator.EntityCreator")
-                    .addImport("net.binis.codegen.spring.query.QueryOrderOperation")
-                    .addImport("net.binis.codegen.spring.query.QuerySelectOperation")
-                    .addImport("net.binis.codegen.spring.query.QueryExecute")
-                    .addImport("net.binis.codegen.spring.query.QueryEmbed")
-                    .addImport("net.binis.codegen.spring.query.QueryFunctions")
+                    .addImport("net.binis.codegen.spring.query.*")
                     .addImport("net.binis.codegen.spring.query.executor.QueryExecutor")
                     .addImport("net.binis.codegen.spring.query.executor.QueryOrderer")
                     .addImport("java.util.Optional");
@@ -68,6 +61,7 @@ public class QueryEnricher extends BaseEnricher {
         var entity = description.getProperties().getInterfaceName();
         var select = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_SELECT)
                 .addExtendedType(QUERY_EXECUTE + "<" + QUERY_GENERIC + ">")
+                .addExtendedType("QueryModifiers<" + entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
                 .addTypeParameter(QUERY_GENERIC);
         select.addMethod("order").setType(entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">").setBody(null);
         intf.addMember(select);
@@ -90,10 +84,23 @@ public class QueryEnricher extends BaseEnricher {
                         .addStatement(new ReturnStmt("order")));
         spec.addMember(impl);
 
-        select.addMethod("not").setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">").setBody(null);
         impl.addMethod("not", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
                 .setBody(new BlockStmt()
                         .addStatement("doNot();")
+                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
+                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
+
+        impl.addMethod("lower", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
+                .setBody(new BlockStmt()
+                        .addStatement("doLower();")
+                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
+                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
+
+        impl.addMethod("upper", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
+                .setBody(new BlockStmt()
+                        .addStatement("doUpper();")
                         .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
                         .addStatement("result.setParent(\"u\", this);")
                         .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
