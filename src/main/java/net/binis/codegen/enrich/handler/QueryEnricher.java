@@ -105,6 +105,46 @@ public class QueryEnricher extends BaseEnricher {
                         .addStatement("result.setParent(\"u\", this);")
                         .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
 
+        impl.addMethod("trim", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
+                .setBody(new BlockStmt()
+                        .addStatement("doTrim();")
+                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
+                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
+
+        impl.addMethod("substring", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
+                .addParameter("int", "start")
+                .setBody(new BlockStmt()
+                        .addStatement("doSubstring(start);")
+                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
+                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
+
+        impl.addMethod("substring", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
+                .addParameter("int", "start")
+                .addParameter("int", "len")
+                .setBody(new BlockStmt()
+                        .addStatement("doSubstring(start, len);")
+                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
+                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
+
+        impl.addMethod("length", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
+                .setBody(new BlockStmt()
+                        .addStatement("doLen();")
+                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
+                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
+
+        impl.addMethod("replace", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
+                .addParameter("String", "what")
+                .addParameter("String", "withWhat")
+                .setBody(new BlockStmt()
+                        .addStatement("doReplace(what, withWhat);")
+                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
+                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
+
         var orderImpl = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + QUERY_ORDER + QUERY_IMPL)
                 .addTypeParameter(QUERY_GENERIC)
                 .addModifier(PROTECTED)
