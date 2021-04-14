@@ -129,13 +129,6 @@ public class QueryEnricher extends BaseEnricher {
                         .addStatement("result.setParent(\"u\", this);")
                         .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
 
-        impl.addMethod("length", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
-                .setBody(new BlockStmt()
-                        .addStatement("doLen();")
-                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
-                        .addStatement("result.setParent(\"u\", this);")
-                        .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
-
         impl.addMethod("replace", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
                 .addParameter("String", "what")
                 .addParameter("String", "withWhat")
