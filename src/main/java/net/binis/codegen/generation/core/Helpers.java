@@ -132,7 +132,11 @@ public class Helpers {
     }
 
     public static String getFieldName(String name) {
-        return name.substring(3, 4).toLowerCase() + name.substring(4);
+        if (name.startsWith("is")) {
+            return name.substring(2, 3).toLowerCase() + name.substring(3);
+        } else {
+            return name.substring(3, 4).toLowerCase() + name.substring(4);
+        }
     }
 
     public static String getClassName(TypeDeclaration<?> type) {
@@ -265,6 +269,17 @@ public class Helpers {
                         m -> m.getName().equals(methodName)
                 ));
     }
+
+    public static boolean defaultMethodExists(ClassOrInterfaceDeclaration spec, Method method) {
+        return spec.getMethods().stream()
+                .anyMatch(m -> m.isDefault() &&
+                                m.getNameAsString().equals(method.getName()) &&
+                                m.getParameters().size() == method.getParameterCount() &&
+                                m.getTypeAsString().equals(method.getReturnType().getSimpleName())
+                        //TODO: Match parameter types also
+                );
+    }
+
 
     public static String findProperType(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, CompilationUnit unit, ClassExpr expr) {
         var parent = findParentClassOfType(expr, AnnotationExpr.class, a -> knownClassAnnotations.contains(getExternalClassName(unit, a.getNameAsString())));

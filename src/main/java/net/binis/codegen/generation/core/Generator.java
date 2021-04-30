@@ -17,6 +17,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
+import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Holder;
 import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.StringUtils;
@@ -398,6 +399,7 @@ public class Generator {
         var builder = Structures.PrototypeDataHandler.builder()
                 .generateConstructor(true)
                 .generateInterface(true)
+                .generateImplementation(true)
                 .classGetters(true)
                 .classSetters(true)
                 .interfaceSetters(true)
@@ -422,6 +424,9 @@ public class Generator {
                         break;
                     case "generateConstructor":
                         builder.generateConstructor(pair.getValue().asBooleanLiteralExpr().getValue());
+                        break;
+                    case "generateImplementation":
+                        builder.generateImplementation(pair.getValue().asBooleanLiteralExpr().getValue());
                         break;
                     case "generateInterface":
                         builder.generateInterface(pair.getValue().asBooleanLiteralExpr().getValue());
@@ -498,10 +503,10 @@ public class Generator {
                 .filter(PrototypeEnricher.class::isAssignableFrom)
                 .map(Reflection::instantiate)
                 .forEach(e ->
-                    with(((PrototypeEnricher) e), enricher -> {
-                        enricher.init(lookup);
-                        list.add(enricher);
-                    }));
+                        with(((PrototypeEnricher) e), enricher -> {
+                            enricher.init(lookup);
+                            list.add(enricher);
+                        }));
         consumer.accept(list);
     }
 
@@ -606,27 +611,39 @@ public class Generator {
 
         for (var method : cls.getDeclaredMethods()) {
             if (!java.lang.reflect.Modifier.isStatic(method.getModifiers())) {
-                var exists = methodExists(declaration, method, false);
-                if (method.getName().startsWith("get")) {
-                    if (!exists) {
+                if (!defaultMethodExists(declaration, method)) {
+                    if (method.getParameterCount() == 0 && method.getName().startsWith("get") || method.getName().startsWith("is") && method.getReturnType().getCanonicalName().equals("boolean")) {
                         addFieldFromGetter(parsed, spec, method, generic);
-                    }
-                    if (properties.isClassGetters()) {
-                        addGetterFromGetter(spec, method, true, generic);
-                    }
-                } else if (method.getName().startsWith("set")) {
-                    addSetterFromSetter(spec, method, true, generic);
-                    if (properties.isGenerateModifier() && nonNull(modifierClass) && nonNull(modifier)) {
-                        if (CollectionsHandler.isCollection(method.getParameterTypes()[0])) {
-                            CollectionsHandler.addModifier(modifierClass, method, properties.getLongModifierName(), properties.getClassName(), true);
-                            CollectionsHandler.addModifier(modifier, method, properties.getModifierName(), null, false);
-                        } else {
-                            addModifierFromSetter(modifierClass, method, properties.getClassName(), properties.getLongModifierName(), true, generic);
-                            addModifierFromSetter(modifier, method, null, properties.getModifierName(), false, generic);
+                        if (properties.isClassGetters()) {
+                            addGetterFromGetter(spec, method, true, generic);
                         }
+                        if (properties.isGenerateModifier() && nonNull(modifierClass) && nonNull(modifier)) {
+                            if (CollectionsHandler.isCollection(method.getReturnType())) {
+                                CollectionsHandler.addModifier(modifierClass, method, properties.getLongModifierName(), properties.getClassName(), true);
+                                CollectionsHandler.addModifier(modifier, method, properties.getModifierName(), null, false);
+                            } else {
+                                addModifierFromGetter(modifierClass, method, properties.getClassName(), properties.getLongModifierName(), true, generic);
+                                addModifierFromGetter(modifier, method, null, properties.getModifierName(), false, generic);
+                            }
+                        }
+                    } else if (method.getParameterCount() == 1 && method.getName().startsWith("set") && method.getReturnType().getCanonicalName().equals("void")) {
+                        addFieldFromGetter(parsed, spec, method, generic);
+                        if (properties.isClassSetters()) {
+                            addSetterFromSetter(spec, method, true, generic);
+                        }
+                        if (properties.isGenerateModifier() && nonNull(modifierClass) && nonNull(modifier)) {
+                            if (CollectionsHandler.isCollection(method.getParameterTypes()[0])) {
+                                CollectionsHandler.addModifier(modifierClass, method, properties.getLongModifierName(), properties.getClassName(), true);
+                                CollectionsHandler.addModifier(modifier, method, properties.getModifierName(), null, false);
+                            } else {
+                                addModifierFromSetter(modifierClass, method, properties.getClassName(), properties.getLongModifierName(), true, generic);
+                                addModifierFromSetter(modifier, method, null, properties.getModifierName(), false, generic);
+                            }
+                        }
+                    } else {
+                        log.error("Method {} of {} is nor getter or setter. Not implemented!", method.getName(), cls.getCanonicalName());
+                        continue;
                     }
-                } else {
-                    log.error("Method {} of {} is nor getter or setter. Not implemented!", method.getName(), cls.getCanonicalName());
                 }
             }
         }
@@ -801,8 +818,7 @@ public class Generator {
                                 a.getChildNodes().stream().filter(n -> n instanceof ArrayInitializerExpr).findFirst().ifPresent(e ->
                                         e.getChildNodes().forEach(n ->
                                                 field.addAnnotation(((StringLiteralExpr) n).asStringLiteralExpr().asString())));
-                            } else
-                            if (Default.class.isAssignableFrom(ann)) {
+                            } else if (Default.class.isAssignableFrom(ann)) {
                                 if (a.isSingleMemberAnnotationExpr()) {
                                     field.getVariables().iterator().next().setInitializer(a.asSingleMemberAnnotationExpr().getMemberValue().asStringLiteralExpr().asString());
                                 }
@@ -1020,10 +1036,12 @@ public class Generator {
 
     private static void addSetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass) {
         var name = getSetterName(declaration.getNameAsString());
-        if (!methodExists(spec, declaration, name, isClass)) {
-            var method = spec
-                    .addMethod(name)
-                    .addParameter(new Parameter().setName(declaration.getName()).setType(handleType(type, spec, declaration.getType(), false)));
+        var method = new MethodDeclaration()
+                .setName(name)
+                .setType("void")
+                .addParameter(new Parameter().setName(declaration.getName()).setType(handleType(type, spec, declaration.getType(), false)));
+        if (!methodExists(spec, method, name, isClass)) {
+            spec.addMember(method);
             if (isClass) {
                 method
                         .addModifier(PUBLIC)
@@ -1104,13 +1122,38 @@ public class Generator {
         }
     }
 
+    private static void addModifierFromGetter(ClassOrInterfaceDeclaration spec, Method declaration, String modifierClassName, String modifierName, boolean isClass, Map<String, Type> generic) {
+        var field = getFieldName(declaration.getName());
+        var method = new MethodDeclaration()
+                .setName(field)
+                .setType(modifierName);
+        if (nonNull(generic)) {
+            method.addParameter(new Parameter().setName(field).setType(generic.get(parseMethodSignature(declaration))));
+        } else {
+            method.addParameter(new Parameter().setName(field).setType(declaration.getReturnType()));
+        }
+        if (!methodExists(spec, method, field, isClass)) {
+            spec.addMember(method);
+            if (isClass) {
+                method
+                        .addModifier(PUBLIC)
+                        .setBody(new BlockStmt()
+                                .addStatement(new AssignExpr().setTarget(new NameExpr().setName(modifierClassName + ".this." + field)).setValue(new NameExpr().setName(field)))
+                                .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("this"))));
+            } else {
+                method.setBody(null);
+            }
+        }
+    }
+
     private static void addModifierFromSetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String modifierClassName, String modifierName, boolean isClass) {
         var field = getFieldName(declaration.getNameAsString());
-        if (!methodExists(spec, declaration, isClass)) {
-            var method = spec
-                    .addMethod(field)
-                    .setType(modifierName)
-                    .addParameter(new Parameter().setName(field).setType(declaration.getParameter(0).getType()));
+        var method = new MethodDeclaration()
+                .setName(field)
+                .setType(modifierName)
+                .addParameter(new Parameter().setName(field).setType(declaration.getParameter(0).getType()));
+        if (!methodExists(spec, method, isClass)) {
+            spec.addMember(method);
             if (isClass) {
                 method
                         .addModifier(PUBLIC)
@@ -1125,15 +1168,17 @@ public class Generator {
 
     private static void addModifierFromSetter(ClassOrInterfaceDeclaration spec, Method declaration, String modifierClassName, String modifierName, boolean isClass, Map<String, Type> generic) {
         var field = getFieldName(declaration.getName());
-        if (!methodExists(spec, field, declaration, isClass)) {
-            var method = spec
-                    .addMethod(field)
-                    .setType(modifierName);
-            if (nonNull(generic)) {
-                method.addParameter(new Parameter().setName(field).setType(generic.get(parseMethodSignature(declaration))));
-            } else {
-                method.addParameter(new Parameter().setName(field).setType(declaration.getParameterTypes()[0]));
-            }
+        var method = new MethodDeclaration()
+                .setName(field)
+                .setType(modifierName);
+        if (nonNull(generic)) {
+            method.addParameter(new Parameter().setName(field).setType(generic.get(parseMethodSignature(declaration))));
+        } else {
+            method.addParameter(new Parameter().setName(field).setType(declaration.getParameterTypes()[0]));
+        }
+
+        if (!methodExists(spec, method, field, isClass)) {
+            spec.addMember(method);
             if (isClass) {
                 method
                         .addModifier(PUBLIC)

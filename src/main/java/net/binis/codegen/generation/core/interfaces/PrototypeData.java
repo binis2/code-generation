@@ -21,6 +21,7 @@ public interface PrototypeData {
     String getBaseClassName();
 
     boolean isGenerateConstructor();
+    boolean isGenerateImplementation();
     boolean isGenerateInterface();
     boolean isGenerateModifier();
     boolean isBase();
@@ -36,6 +37,7 @@ public interface PrototypeData {
     void setClassSetters(boolean value);
     void setInterfaceSetters(boolean value);
     void setGenerateConstructor(boolean value);
+    void setGenerateImplementation(boolean value);
     void setGenerateInterface(boolean value);
     void setGenerateModifier(boolean value);
 }

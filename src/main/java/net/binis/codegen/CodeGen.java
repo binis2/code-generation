@@ -114,7 +114,7 @@ public class CodeGen {
         var destination = cmd.getOptionValue(DESTINATION);
         var impl_destination = cmd.getOptionValue(IMPL_DESTINATION);
         lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
-            if (isNull(p.getProperties().getMixInClass())) {
+            if (p.getProperties().isGenerateImplementation() && isNull(p.getProperties().getMixInClass())) {
                 saveFile(nullCheck(getBasePath(impl_destination, p.getProperties()), destination), p.getFiles().get(0));
             }
             if (p.getProperties().isGenerateInterface()) {

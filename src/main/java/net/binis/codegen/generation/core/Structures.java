@@ -38,6 +38,7 @@ public class Structures {
 
         private boolean generateConstructor;
         private boolean generateInterface;
+        private boolean generateImplementation;
         private boolean generateModifier;
         private boolean base;
 
