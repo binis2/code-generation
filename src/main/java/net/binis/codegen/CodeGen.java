@@ -145,7 +145,7 @@ public class CodeGen {
             sortClass(file.getType(0).asClassOrInterfaceDeclaration());
         }
 
-        System.out.println(printer.print(file));
+        //System.out.println(printer.print(file));
 
         file.getPackageDeclaration().ifPresent(p -> {
             var fileName = baseDir + '/' + p.getNameAsString().replace(".", "/") + '/' + file.getType(0).getNameAsString() + ".java";

@@ -333,6 +333,11 @@ public class Generator {
             types.add(((NameExpr) node).getNameAsString());
         } else if (node instanceof SimpleName) {
             Arrays.stream(((SimpleName) node).asString().split("[.()<\\s]")).filter(s -> !"".equals(s)).forEach(types::add);
+        } else if (node instanceof VariableDeclarator) {
+            var declarator = (VariableDeclarator) node;
+            if (declarator.getType() instanceof ClassOrInterfaceType) {
+                types.add(((ClassOrInterfaceType) declarator.getType()).getNameAsString());
+            }
         }
 
         node.getChildNodes().forEach(n -> findUsedTypesInternal(types, n));
@@ -557,9 +562,13 @@ public class Generator {
         for (var method : declaration.getMethods()) {
             if (method.getNameAsString().startsWith("get")) {
                 addFieldFromGetter(parse, spec, method, null);
-                addGetterFromGetter(spec, method, true);
+                if (properties.isClassGetters()) {
+                    addGetterFromGetter(spec, method, true);
+                }
             } else if (method.getNameAsString().startsWith("set")) {
-                addSetterFromSetter(spec, method, true);
+                if (properties.isClassSetters()) {
+                    addSetterFromSetter(spec, method, true);
+                }
                 if (properties.isGenerateModifier()) {
                     if (CollectionsHandler.isCollection(method.getType())) {
                         CollectionsHandler.addModifier(modifierClass, method, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : parse.getMixIn().getParsedName(), true);
@@ -941,6 +950,9 @@ public class Generator {
                     .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
                     .prototype(isNull(generic) ? lookup.findParsed(getExternalClassName(type.findCompilationUnit().get(), method.getType().asString())) : null)
                     .build());
+        } else {
+            parsed.getFields().stream().filter(d -> d.getName().equals(fieldName)).findFirst().ifPresent(d ->
+                    ((Structures.FieldData) d).setPrototype(isNull(generic) ? lookup.findParsed(getExternalClassName(type.findCompilationUnit().get(), method.getType().asString())) : null));
         }
         handleFieldAnnotations(type.findCompilationUnit().get(), field, method);
     }
@@ -950,9 +962,9 @@ public class Generator {
         if (!fieldExists(spec, fieldName)) {
             FieldDeclaration field;
             if (nonNull(generic)) {
-                field = spec.addField(generic.get(parseMethodSignature(method)), getFieldName(method.getNameAsString()), PROTECTED);
+                field = spec.addField(generic.get(parseMethodSignature(method)), fieldName, PROTECTED);
             } else {
-                field = spec.addField(method.getType(), getFieldName(method.getNameAsString()), PROTECTED);
+                field = spec.addField(method.getType(), fieldName, PROTECTED);
             }
             parsed.getFields().add(Structures.FieldData.builder()
                     .name(fieldName)
@@ -1055,8 +1067,8 @@ public class Generator {
     private static void addSetterFromSetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass) {
         if (!methodExists(spec, declaration, isClass)) {
             var method = spec
-                    .addMethod(getSetterName(declaration.getNameAsString()))
-                    .addParameter(new Parameter().setName(declaration.getName()).setType(declaration.getParameter(0).getType()));
+                    .addMethod(declaration.getNameAsString())
+                    .addParameter(new Parameter().setName(getFieldName(declaration.getNameAsString())).setType(declaration.getParameter(0).getType()));
             if (isClass) {
                 method
                         .addModifier(PUBLIC)
