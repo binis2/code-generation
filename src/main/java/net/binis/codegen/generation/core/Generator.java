@@ -619,7 +619,7 @@ public class Generator {
         var properties = parsed.getProperties();
 
         for (var method : cls.getDeclaredMethods()) {
-            if (!java.lang.reflect.Modifier.isStatic(method.getModifiers())) {
+            if (!java.lang.reflect.Modifier.isStatic(method.getModifiers()) && !method.isDefault()) {
                 if (!defaultMethodExists(declaration, method)) {
                     if (method.getParameterCount() == 0 && method.getName().startsWith("get") || method.getName().startsWith("is") && method.getReturnType().getCanonicalName().equals("boolean")) {
                         addFieldFromGetter(parsed, spec, method, generic);
