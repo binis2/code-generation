@@ -6,6 +6,7 @@ import com.github.javaparser.ast.body.InitializerDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
+import com.spiralbank.core.objects.Test;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.Helpers;
@@ -21,6 +22,7 @@ public class QueryEnricher extends BaseEnricher {
     private static final String QUERY_START = "QueryStart";
     private static final String QUERY_SELECT = "QuerySelect";
     private static final String QUERY_ORDER = "QueryOrder";
+    private static final String QUERY_PARAM = "QueryParam";
     private static final String QUERY_EXECUTE = "QueryExecute";
     private static final String QUERY_EXECUTOR = "QueryExecutor";
     private static final String QUERY_GENERIC = "QR";
@@ -202,13 +204,7 @@ public class QueryEnricher extends BaseEnricher {
         var start = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_START);
         intf.addMember(start);
 
-        start.addMethod("by").setType(entity + "." + QUERY_SELECT + "<" + intf.getNameAsString() + ">").setBody(null);
-        start.addMethod("nativeQuery").setType(QUERY_EXECUTE + "<" + intf.getNameAsString() + ">")
-                .addParameter("String", "query")
-                .setBody(null);
-        start.addMethod("query").setType(QUERY_EXECUTE + "<" + intf.getNameAsString() + ">")
-                .addParameter("String", "query")
-                .setBody(null);
+        start.addExtendedType(QUERY_START + "er<" + intf.getNameAsString() + ", " + intf.getNameAsString() + "." + QUERY_SELECT + "<" + intf.getNameAsString() + ">>");
 
         var startImpl = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + QUERY_START + QUERY_IMPL)
                 .addModifier(PROTECTED)
@@ -220,14 +216,14 @@ public class QueryEnricher extends BaseEnricher {
                 .setType(entity + "." + QUERY_SELECT + "<" + intf.getNameAsString() + ">")
                 .addModifier(PUBLIC)
                 .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + entity + "." + QUERY_SELECT + ") new " + QUERY_EXECUTOR + QUERY_IMPL + "(" + intf.getNameAsString() + ".class).by()")));
-        startImpl.addMethod("nativeQuery").setType(QUERY_EXECUTE + "<" + intf.getNameAsString() + ">")
+        startImpl.addMethod("nativeQuery").setType(QUERY_PARAM + "<" + intf.getNameAsString() + ">")
                 .addParameter("String", "query")
                 .addModifier(PUBLIC)
-                .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + entity + "." + QUERY_SELECT + ") new " + QUERY_EXECUTOR + QUERY_IMPL + "(" + intf.getNameAsString() + ".class).nativeQuery(query)")));
-        startImpl.addMethod("query").setType(QUERY_EXECUTE + "<" + intf.getNameAsString() + ">")
+                .setBody(new BlockStmt().addStatement(new ReturnStmt("new " + QUERY_EXECUTOR + QUERY_IMPL + "(" + intf.getNameAsString() + ".class).nativeQuery(query)")));
+        startImpl.addMethod("query").setType(QUERY_PARAM + "<" + intf.getNameAsString() + ">")
                 .addParameter("String", "query")
                 .addModifier(PUBLIC)
-                .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + entity + "." + QUERY_SELECT + ") new " + QUERY_EXECUTOR + QUERY_IMPL + "(" + intf.getNameAsString() + ".class).query(query)")));
+                .setBody(new BlockStmt().addStatement(new ReturnStmt("new " + QUERY_EXECUTOR + QUERY_IMPL + "(" + intf.getNameAsString() + ".class).query(query)")));
 
         var initializer = spec.getChildNodes().stream().filter(n -> n instanceof InitializerDeclaration).map(n -> ((InitializerDeclaration) n).asInitializerDeclaration().getBody()).findFirst().orElseGet(spec::addInitializer);
         initializer
