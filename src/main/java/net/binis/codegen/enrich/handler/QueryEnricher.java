@@ -21,6 +21,7 @@ public class QueryEnricher extends BaseEnricher {
 
     private static final String QUERY_START = "QueryStart";
     private static final String QUERY_SELECT = "QuerySelect";
+    private static final String QUERY_SELECT_OPERATION = QUERY_SELECT + "Operation";
     private static final String QUERY_ORDER = "QueryOrder";
     private static final String QUERY_PARAM = "QueryParam";
     private static final String QUERY_EXECUTE = "QueryExecute";
@@ -29,6 +30,8 @@ public class QueryEnricher extends BaseEnricher {
     private static final String QUERY_SELECT_GENERIC = "QS";
     private static final String QUERY_ORDER_GENERIC = "QO";
     private static final String QUERY_FUNCTIONS = "QueryFunctions";
+    private static final String QUERY_FIELDS = "QueryFields";
+    private static final String QUERY_FUNCS = "QueryFuncs";
     private static final String QUERY_NAME = "QueryName";
     private static final String QUERY_IMPL = "Impl";
 
@@ -51,6 +54,7 @@ public class QueryEnricher extends BaseEnricher {
                     .addImport("net.binis.codegen.spring.query.*")
                     .addImport("net.binis.codegen.spring.query.executor.QueryExecutor")
                     .addImport("net.binis.codegen.spring.query.executor.QueryOrderer")
+                    .addImport("net.binis.codegen.spring.query.base.BaseQueryNameImpl")
                     .addImport("java.util.Optional");
         });
 
@@ -64,6 +68,8 @@ public class QueryEnricher extends BaseEnricher {
         var select = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_SELECT)
                 .addExtendedType(QUERY_EXECUTE + "<" + QUERY_GENERIC + ">")
                 .addExtendedType("QueryModifiers<" + entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
+                .addExtendedType(entity + "." + QUERY_FIELDS + "<" + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
+                .addExtendedType(entity + "." + QUERY_FUNCS + "<" + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
                 .addTypeParameter(QUERY_GENERIC);
         select.addMethod("order").setType(entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">").setBody(null);
         intf.addMember(select);
@@ -155,12 +161,15 @@ public class QueryEnricher extends BaseEnricher {
         var qName = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_NAME)
                 .addTypeParameter(QUERY_SELECT_GENERIC)
                 .addTypeParameter(QUERY_ORDER_GENERIC)
-                .addTypeParameter(QUERY_GENERIC);
+                .addTypeParameter(QUERY_GENERIC)
+                .addExtendedType(entity + "." + QUERY_FIELDS + "<" + QUERY_SELECT_OPERATION + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">>")
+                .addExtendedType(entity + "." + QUERY_FUNCS + "<" + QUERY_SELECT_OPERATION + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">>");
         intf.addMember(qName);
 
         var qNameImpl = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + QUERY_NAME + QUERY_IMPL)
                 .addModifier(PROTECTED)
                 .addModifier(STATIC)
+                .addExtendedType("BaseQueryNameImpl")
                 .addImplementedType(entity + "." + QUERY_NAME + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">")
                 .addImplementedType("QueryEmbed")
                 .addTypeParameter(QUERY_SELECT_GENERIC)
@@ -168,16 +177,13 @@ public class QueryEnricher extends BaseEnricher {
                 .addTypeParameter(QUERY_GENERIC);
         spec.addMember(qNameImpl);
 
-        qNameImpl.addField("String", "name", PRIVATE);
-        qNameImpl.addField(QUERY_EXECUTOR + "<Object, " + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">", "executor", PRIVATE);
+        var qFields = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_FIELDS)
+                .addTypeParameter(QUERY_GENERIC);
+        intf.addMember(qFields);
 
-        qNameImpl.addMethod("setParent", PUBLIC)
-                .addParameter("String", "name")
-                .addParameter("Object", "executor")
-                .setBody(new BlockStmt()
-                        .addStatement("this.name = name;")
-                        .addStatement("this.executor = (" + QUERY_EXECUTOR + ") executor;")
-                        .addStatement("this.executor.embedded(name);"));
+        var qFuncs = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_FUNCS)
+                .addTypeParameter(QUERY_GENERIC);
+        intf.addMember(qFuncs);
 
         var initializer = spec.getChildNodes().stream().filter(n -> n instanceof InitializerDeclaration).map(n -> ((InitializerDeclaration) n).asInitializerDeclaration().getBody()).findFirst().orElseGet(spec::addInitializer);
         initializer
@@ -194,10 +200,10 @@ public class QueryEnricher extends BaseEnricher {
 
         with(description.getBase(), base ->
                 base.getFields().forEach(desc ->
-                        declareField(entity, desc, select, impl, orderImpl, order, qName, qNameImpl)));
+                        declareField(entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qFuncs)));
 
         description.getFields().forEach(desc ->
-                declareField(entity, desc, select, impl, orderImpl, order, qName, qNameImpl));
+                declareField(entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qFuncs));
     }
 
     private void addQueryStart(String entity, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration spec) {
@@ -240,33 +246,36 @@ public class QueryEnricher extends BaseEnricher {
                 .setBody(new BlockStmt().addStatement(new ReturnStmt("EntityCreator.create(" + intf.getNameAsString() + "." + QUERY_START + ".class)")));
     }
 
-    private void declareField(String entity, PrototypeField desc, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration impl, ClassOrInterfaceDeclaration orderImpl, ClassOrInterfaceDeclaration order, ClassOrInterfaceDeclaration qName, ClassOrInterfaceDeclaration qNameImpl) {
+    private void declareField(String entity, PrototypeField desc, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration impl, ClassOrInterfaceDeclaration orderImpl, ClassOrInterfaceDeclaration order, ClassOrInterfaceDeclaration qName, ClassOrInterfaceDeclaration qNameImpl, ClassOrInterfaceDeclaration fields, ClassOrInterfaceDeclaration funcs) {
         var field = desc.getDeclaration();
         var name = field.getVariable(0).getNameAsString();
 
         if (desc.isCollection()) {
             var subType = CollectionsHandler.getCollectionType(field.getCommonType());
 
-            select.addMethod(name)
-                    .setType(QUERY_SELECT + "Operation<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
+            fields.addMethod(name)
+                    .setType(QUERY_GENERIC)
                     .setBody(null)
                     .addParameter(subType, "in");
 
             impl.addMethod(name)
-                    .setType(QUERY_SELECT + "Operation<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
+                    .setType(QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
                     .addModifier(PUBLIC)
                     .addParameter(subType, "in")
                     .setBody(new BlockStmt()
                             .addStatement("collection(\"" + name + "\", in);")
                             .addStatement(new ReturnStmt("this")));
-        } else {
-            select.addMethod(name)
-                    .setType(QUERY_SELECT + "Operation<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
-                    .setBody(null)
-                    .addParameter(field.getCommonType(), name);
 
+            qNameImpl.addMethod(name)
+                    .setType(QUERY_SELECT_OPERATION + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">")
+                    .addModifier(PUBLIC)
+                    .addParameter(subType, "in")
+                    .setBody(new BlockStmt()
+                            .addStatement("executor.collection(\"" + name + "\", in);")
+                            .addStatement(new ReturnStmt("(" + QUERY_SELECT_OPERATION + ") executor")));
+        } else {
             impl.addMethod(name)
-                    .setType(QUERY_SELECT + "Operation<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
+                    .setType(QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
                     .addModifier(PUBLIC)
                     .addParameter(field.getCommonType(), name)
                     .setBody(new BlockStmt()
@@ -300,26 +309,22 @@ public class QueryEnricher extends BaseEnricher {
                                 .addStatement(new ReturnStmt("result")));
 
             } else {
-                select.addMethod(name).setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + "," + QUERY_SELECT + "Operation<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>").setBody(null);
-                impl.addMethod(name, PUBLIC).setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + "," + QUERY_SELECT + "Operation<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
+                funcs.addMethod(name).setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + "," + QUERY_GENERIC + ">").setBody(null);
+                impl.addMethod(name, PUBLIC).setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + "," + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
                         .setBody(new BlockStmt()
                                 .addStatement("identifier(\"" + name + "\");")
                                 .addStatement(new ReturnStmt("(" + QUERY_FUNCTIONS + ") this")));
 
-                qName.addMethod(name)
-                        .setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + ", " + QUERY_SELECT + "Operation<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">>")
-                        .setBody(null);
-
                 qNameImpl.addMethod(name)
-                        .setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + ", " + QUERY_SELECT + "Operation<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">>")
+                        .setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + ", " + QUERY_SELECT_OPERATION + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">>")
                         .addModifier(PUBLIC)
                         .setBody(new BlockStmt()
                                 .addStatement("executor.identifier(\"" + name + "\");")
                                 .addStatement(new ReturnStmt("(" + QUERY_FUNCTIONS + ") executor")));
             }
 
-            qName.addMethod(name)
-                    .setType(QUERY_SELECT + "Operation<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">")
+            fields.addMethod(name)
+                    .setType(QUERY_GENERIC)
                     .setBody(null)
                     .addParameter(field.getCommonType(), name);
 
