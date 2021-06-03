@@ -76,12 +76,6 @@ public class Generator {
                     var modifier = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, properties.getModifierName());
                     var modifierClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, defaultModifierClassName(properties.getClassName()));
 
-                    if (properties.isGenerateModifier()) {
-                        spec.addMember(modifierClass);
-                        intf.addMember(modifier);
-                        modifierClass.addImplementedType(properties.getLongModifierName());
-                    }
-
                     var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
 
                     parse.setParsedName(spec.getNameAsString());
@@ -94,8 +88,6 @@ public class Generator {
                     parse.setFiles(List.of(unit, iUnit));
                     parse.setSpec(spec);
                     parse.setIntf(intf);
-                    parse.setModifier(modifierClass);
-                    parse.setModifierIntf(modifier);
 
                     typeDeclaration.getExtendedTypes().forEach(t -> {
                         var parsed = getParsed(t);
@@ -108,7 +100,6 @@ public class Generator {
                                 throw new GenericCodeGenException(parse.getDeclaration().getNameAsString() + " can't have more that one base class!");
                             }
                             spec.addExtendedType(parsed.getParsedName());
-                            implementModifier(parse, modifier, modifierClass, parsed.getDeclaration().asClassOrInterfaceDeclaration());
 
                             if (parsed.getProperties().isGenerateConstructor() && properties.isGenerateConstructor()) {
                                 spec.findFirst(ConstructorDeclaration.class).ifPresent(c ->
@@ -149,16 +140,6 @@ public class Generator {
                     if (properties.isGenerateInterface()) {
                         spec.addImplementedType(properties.getInterfaceName());
                         unit.addImport(getClassName(intf));
-                        if (properties.isGenerateModifier()) {
-                            var methodName = isNull(properties.getMixInClass()) ? Constants.MODIFIER_METHOD_NAME : Constants.MIXIN_MODIFYING_METHOD_PREFIX + intf.getNameAsString();
-                            addModifyMethod(methodName, spec, properties.getLongModifierName(), modifierClass.getNameAsString(), true, false);
-                            addModifyMethod(methodName, intf, properties.getLongModifierName(), null, false, false);
-                            addDoneMethod(modifierClass, properties.getInterfaceName(), isNull(properties.getMixInClass()) ? properties.getClassName() : parse.getMixIn().getParsedName(), true, false);
-                            addDoneMethod(modifier, properties.getInterfaceName(), null, false, false);
-                            handleModifierBaseImplementation(isNull(properties.getMixInClass()) ? parse : parse.getMixIn(), spec, intf, modifier, modifierClass);
-                            spec.findCompilationUnit().get().addImport("net.binis.codegen.modifier.Modifiable");
-                            spec.addImplementedType("Modifiable<" + intf.getNameAsString() + "." + modifier.getNameAsString() + ">");
-                        }
                     }
 
                     for (var member : type.getMembers()) {
@@ -182,14 +163,6 @@ public class Generator {
                                     addGetter(typeDeclaration, intf, declaration, false);
                                     if (properties.isInterfaceSetters()) {
                                         addSetter(typeDeclaration, intf, declaration, false);
-                                    }
-                                }
-                                if (properties.isGenerateModifier() && !ignore.isForModifier()) {
-                                    addModifier(modifierClass, declaration, isNull(properties.getMixInClass()) ? properties.getClassName() : parse.getMixIn().getParsedName(), properties.getLongModifierName(), true);
-                                    addModifier(modifier, declaration, null, properties.getModifierName(), false);
-                                    if (CollectionsHandler.isCollection(declaration.getType())) {
-                                        CollectionsHandler.addModifier(modifierClass, declaration, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : parse.getMixIn().getParsedName(), true);
-                                        CollectionsHandler.addModifier(modifier, declaration, properties.getModifierName(), null, false);
                                     }
                                 }
                             } else {
@@ -448,9 +421,6 @@ public class Generator {
                     case "interfaceSetters":
                         builder.interfaceSetters(pair.getValue().asBooleanLiteralExpr().getValue());
                         break;
-                    case "generateModifier":
-                        builder.generateModifier(pair.getValue().asBooleanLiteralExpr().getValue());
-                        break;
                     case "base":
                         builder.base(pair.getValue().asBooleanLiteralExpr().getValue());
                         break;
@@ -484,9 +454,6 @@ public class Generator {
         builder.className(cName).interfaceName(iName.get()).longModifierName(iName.get() + ".Modify");
 
         var result = builder.build();
-        if (result.isBase() && result.isGenerateModifier()) {
-            result.setGenerateModifier(false);
-        }
 
         if (isNull(result.getEnrichers())) {
             result.setEnrichers(Collections.emptyList());
@@ -534,29 +501,6 @@ public class Generator {
                                 ifNull(parse.getFiles(), () -> generateCodeForEnum(parse.getDeclaration().findCompilationUnit().get())))));
     }
 
-
-    private static void implementModifier(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration declaration) {
-        var properties = parse.getProperties();
-        if (properties.isGenerateModifier()) {
-            declaration.findCompilationUnit().ifPresent(unit -> {
-                for (var method : declaration.getMethods()) {
-                    if (!method.isDefault() && !getIgnores(method).isForModifier()) {
-                        notNull(getClassImport(unit, method.getType().asString()), i -> {
-                            modifierClass.findCompilationUnit().get().addImport(i);
-                            modifier.findCompilationUnit().get().addImport(i);
-                        });
-                        addModifier(modifierClass, method, properties.getClassName(), properties.getLongModifierName(), true);
-                        addModifier(modifier, method, null, properties.getModifierName(), false);
-                        if (CollectionsHandler.isCollection(method.getType())) {
-                            CollectionsHandler.addModifier(modifierClass, method, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : parse.getMixIn().getParsedName(), true);
-                            CollectionsHandler.addModifier(modifier, method, properties.getModifierName(), null, false);
-                        }
-                    }
-                }
-            });
-        }
-    }
-
     private static void implementInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration declaration) {
         var properties = parse.getProperties();
         for (var method : declaration.getMethods()) {
@@ -568,15 +512,6 @@ public class Generator {
             } else if (method.getNameAsString().startsWith("set")) {
                 if (properties.isClassSetters()) {
                     addSetterFromSetter(spec, method, true);
-                }
-                if (properties.isGenerateModifier()) {
-                    if (CollectionsHandler.isCollection(method.getType())) {
-                        CollectionsHandler.addModifier(modifierClass, method, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : parse.getMixIn().getParsedName(), true);
-                        CollectionsHandler.addModifier(modifier, method, properties.getModifierName(), null, false);
-                    } else {
-                        addModifierFromSetter(modifierClass, method, properties.getClassName(), properties.getLongModifierName(), true);
-                        addModifierFromSetter(modifier, method, null, properties.getModifierName(), false);
-                    }
                 }
             }
         }
@@ -626,32 +561,13 @@ public class Generator {
                         if (properties.isClassGetters()) {
                             addGetterFromGetter(spec, method, true, generic);
                         }
-                        if (properties.isGenerateModifier() && nonNull(modifierClass) && nonNull(modifier)) {
-                            if (CollectionsHandler.isCollection(method.getReturnType())) {
-                                CollectionsHandler.addModifier(modifierClass, method, properties.getLongModifierName(), properties.getClassName(), true);
-                                CollectionsHandler.addModifier(modifier, method, properties.getModifierName(), null, false);
-                            } else {
-                                addModifierFromGetter(modifierClass, method, properties.getClassName(), properties.getLongModifierName(), true, generic);
-                                addModifierFromGetter(modifier, method, null, properties.getModifierName(), false, generic);
-                            }
-                        }
                     } else if (method.getParameterCount() == 1 && method.getName().startsWith("set") && method.getReturnType().getCanonicalName().equals("void")) {
                         addFieldFromGetter(parsed, spec, method, generic);
                         if (properties.isClassSetters()) {
                             addSetterFromSetter(spec, method, true, generic);
                         }
-                        if (properties.isGenerateModifier() && nonNull(modifierClass) && nonNull(modifier)) {
-                            if (CollectionsHandler.isCollection(method.getParameterTypes()[0])) {
-                                CollectionsHandler.addModifier(modifierClass, method, properties.getLongModifierName(), properties.getClassName(), true);
-                                CollectionsHandler.addModifier(modifier, method, properties.getModifierName(), null, false);
-                            } else {
-                                addModifierFromSetter(modifierClass, method, properties.getClassName(), properties.getLongModifierName(), true, generic);
-                                addModifierFromSetter(modifier, method, null, properties.getModifierName(), false, generic);
-                            }
-                        }
                     } else {
                         log.error("Method {} of {} is nor getter or setter. Not implemented!", method.getName(), cls.getCanonicalName());
-                        continue;
                     }
                 }
             }
@@ -699,27 +615,6 @@ public class Generator {
                 parentSpec.findCompilationUnit().get().addImport(intf.getFullyQualifiedName().get());
                 parentSpec.addImplementedType(intf.getNameAsString());
                 mergeTypes(spec, parentSpec, m -> true, a -> a);
-                if (parse.getProperties().isGenerateModifier()) {
-                    if (parent.getProperties().isGenerateModifier()) {
-                        parentIntf.stream().filter(n -> n instanceof ClassOrInterfaceDeclaration && ((ClassOrInterfaceDeclaration) n).getNameAsString().equals(Constants.MODIFIER_INTERFACE_NAME)).map(n -> (ClassOrInterfaceDeclaration) n).findFirst().ifPresent(pmod ->
-                                intf.stream().filter(n -> n instanceof ClassOrInterfaceDeclaration && ((ClassOrInterfaceDeclaration) n).getNameAsString().equals(Constants.MODIFIER_INTERFACE_NAME)).map(n -> (ClassOrInterfaceDeclaration) n).findFirst().ifPresent(mod ->
-                                        parentSpec.stream().filter(n -> n instanceof ClassOrInterfaceDeclaration && ((ClassOrInterfaceDeclaration) n).getNameAsString().equals(parentSpec.getNameAsString() + Constants.MODIFIER_CLASS_NAME_SUFFIX)).map(n -> (ClassOrInterfaceDeclaration) n).findFirst().ifPresent(spmod ->
-                                                spec.stream().filter(n -> n instanceof ClassOrInterfaceDeclaration && ((ClassOrInterfaceDeclaration) n).getNameAsString().equals(spec.getNameAsString() + Constants.MODIFIER_CLASS_NAME_SUFFIX)).map(n -> (ClassOrInterfaceDeclaration) n).findFirst().ifPresent(smod -> {
-                                                    mergeTypes(pmod, mod, m -> !m.isMethodDeclaration() || !Constants.MODIFIER_DONE_METHOD_NAME.equals(m.asMethodDeclaration().getNameAsString()), a -> a);
-                                                    mergeTypes(spmod, smod, m -> !m.isMethodDeclaration() || !Constants.MODIFIER_DONE_METHOD_NAME.equals(m.asMethodDeclaration().getNameAsString()), a -> {
-                                                        if (parent.getInterfaceName().equals(getScope(a.getType()))) {
-                                                            setScope(a.getType(), intf.getNameAsString());
-                                                        }
-                                                        return a;
-                                                    });
-
-                                                    recursiveEmbeddedModifiers.put(parse.getInterfaceName(), parse);
-                                                    CollectionsHandler.finalizeEmbeddedModifier(parse, true);
-                                                }))));
-                    }
-                    spec.getChildNodes().stream().filter(n -> n instanceof ClassOrInterfaceDeclaration).map(n -> (ClassOrInterfaceDeclaration) n).forEach(m ->
-                            parentSpec.addMember(m.clone()));
-                }
                 intf.getExtendedTypes().forEach(t -> condition(t.getNameAsString().endsWith(MIX_IN_EXTENSION), () -> t.setName(t.getNameAsString().replace(MIX_IN_EXTENSION, ""))));
                 if (intf.getExtendedTypes().stream().noneMatch(t -> t.getNameAsString().equals(parentIntf.getNameAsString()))) {
                     intf.addExtendedType(parentIntf.getNameAsString());
@@ -759,7 +654,7 @@ public class Generator {
             }
         }
 
-        return handleType(source, destination, result, isCollection);
+        return handleType(source, destination, result, false);
     }
 
     public static List<String> handleGenericTypes(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type) {
@@ -768,7 +663,7 @@ public class Generator {
         if (arguments.isEmpty() || arguments.get().isEmpty()) {
             return result;
         } else {
-            return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), false)).collect(Collectors.toList());
+            return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), true)).collect(Collectors.toList());
         }
     }
 
@@ -777,16 +672,21 @@ public class Generator {
         if (arguments.isEmpty() || arguments.get().isEmpty()) {
             return Collections.singletonList(Pair.of("Object", false));
         } else {
-            return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), isCollection)).map(t ->
+            return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), true)).map(t ->
                     Pair.of(t, lookup.parsed().stream().anyMatch(p -> getExternalClassName(destination, t).equals(p.getInterfaceFullName())))).collect(Collectors.toList());
         }
     }
 
-    public static String handleType(CompilationUnit source, CompilationUnit destination, String type, boolean isCollection) {
-        var parse = lookup.findParsed(getExternalClassName(source, type));
+    public static String handleType(CompilationUnit source, CompilationUnit destination, String type, boolean embedded) {
+        var full = getExternalClassName(source, type);
+        var parse = lookup.findParsed(full);
 
         if (nonNull(parse)) {
             var processing = processingTypes.get(type);
+
+            if (embedded) {
+                lookup.generateEmbeddedModifier(parse);
+            }
 
             if (isNull(processing)) {
                 if (isNull(parse.getFiles())) {
@@ -796,18 +696,15 @@ public class Generator {
                 var intf = parse.getFiles().get(1).getType(0);
                 destination.addImport(intf.getFullyQualifiedName().get());
 
-                if (parse.getProperties().isGenerateModifier()) {
-                    CollectionsHandler.handleEmbeddedModifier(parse, parse.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration(), intf.asClassOrInterfaceDeclaration());
-                }
-
                 return intf.getNameAsString();
             } else {
-                recursiveEmbeddedModifiers.putIfAbsent(type, parse);
                 destination.addImport(processing.getInterfacePackage() + "." + processing.getInterfaceName());
                 return processing.getInterfaceName();
             }
         } else {
-            recursiveEmbeddedModifiers.putIfAbsent(type, null);
+            if (!isJavaType(type)) {
+                destination.findCompilationUnit().ifPresent(u -> u.addImport(full));
+            }
             return type;
         }
     }
@@ -874,7 +771,7 @@ public class Generator {
                 ));
     }
 
-    private static <T> T findInheritanceProperty(ClassOrInterfaceDeclaration spec, PrototypeData properties, BiFunction<ClassOrInterfaceDeclaration, PrototypeData, T> func) {
+    public static <T> T findInheritanceProperty(ClassOrInterfaceDeclaration spec, PrototypeData properties, BiFunction<ClassOrInterfaceDeclaration, PrototypeData, T> func) {
         var data = func.apply(spec, properties);
         if (isNull(data)) {
             for (var type : spec.getExtendedTypes()) {
@@ -946,8 +843,11 @@ public class Generator {
             }
             parsed.getFields().add(Structures.FieldData.builder()
                     .name(fieldName)
+                    .description(method)
                     .declaration(field)
                     .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
+                    .ignores(getIgnores(method))
+                    .generics(nonNull(generic) ? Map.of(generic.asString(), generic) : null)
                     .prototype(isNull(generic) ? lookup.findParsed(getExternalClassName(type.findCompilationUnit().get(), method.getType().asString())) : null)
                     .build());
         } else {
@@ -968,8 +868,11 @@ public class Generator {
             }
             parsed.getFields().add(Structures.FieldData.builder()
                     .name(fieldName)
+                    .description(method)
                     .declaration(field)
+                    .ignores(getIgnores(method))
                     .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
+                    .generics(generic)
                     //TODO: enable prototypes
                     .build());
         }
@@ -991,6 +894,9 @@ public class Generator {
                     .name(fieldName)
                     .declaration(field)
                     .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
+                    .ignores(Structures.Ignores.builder().build())
+                    .generics(generic)
+                    //TODO: enable ignores
                     //TODO: enable prototypes
                     .build());
         }
@@ -1098,112 +1004,7 @@ public class Generator {
         }
     }
 
-    private static void addModifier(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String modifierClassName, String modifierName, boolean isClass) {
-        var method = new MethodDeclaration().setName(declaration.getNameAsString())
-                .setType(modifierName)
-                .addParameter(new Parameter().setName(declaration.getName()).setType(handleType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getType(), false)));
-        if (isClass) {
-            method
-                    .addModifier(PUBLIC)
-                    .setBody(new BlockStmt()
-                            .addStatement(new AssignExpr().setTarget(new NameExpr().setName(modifierClassName + ".this." + declaration.getName())).setValue(new NameExpr().setName(declaration.getName())))
-                            .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("this"))));
-        } else {
-            method.setBody(null);
-        }
-        if (!methodExists(spec, method, isClass)) {
-            spec.addMember(method);
-        }
-    }
-
-    private static void addModifierFromModifier(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String modifierClassName, String modifierName, boolean isClass) {
-        if (!methodExists(spec, declaration, isClass) && declaration.getParameters().isNonEmpty()) {
-            var method = spec
-                    .addMethod(declaration.getNameAsString())
-                    .setType(modifierName)
-                    .addParameter(new Parameter().setName(declaration.getName()).setType(handleType(type, spec, declaration.getParameter(0).getType(), false)));
-            if (isClass) {
-                method
-                        .addModifier(PUBLIC)
-                        .setBody(new BlockStmt()
-                                .addStatement(new AssignExpr().setTarget(new NameExpr().setName(modifierClassName + ".this." + declaration.getName())).setValue(new NameExpr().setName(declaration.getName())))
-                                .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("this"))));
-            } else {
-                method.setBody(null);
-            }
-        }
-    }
-
-    private static void addModifierFromGetter(ClassOrInterfaceDeclaration spec, Method declaration, String modifierClassName, String modifierName, boolean isClass, Map<String, Type> generic) {
-        var field = getFieldName(declaration.getName());
-        var method = new MethodDeclaration()
-                .setName(field)
-                .setType(modifierName);
-        if (nonNull(generic)) {
-            method.addParameter(new Parameter().setName(field).setType(generic.get(parseMethodSignature(declaration))));
-        } else {
-            method.addParameter(new Parameter().setName(field).setType(declaration.getReturnType()));
-        }
-        if (!methodExists(spec, method, field, isClass)) {
-            spec.addMember(method);
-            if (isClass) {
-                method
-                        .addModifier(PUBLIC)
-                        .setBody(new BlockStmt()
-                                .addStatement(new AssignExpr().setTarget(new NameExpr().setName(modifierClassName + ".this." + field)).setValue(new NameExpr().setName(field)))
-                                .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("this"))));
-            } else {
-                method.setBody(null);
-            }
-        }
-    }
-
-    private static void addModifierFromSetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String modifierClassName, String modifierName, boolean isClass) {
-        var field = getFieldName(declaration.getNameAsString());
-        var method = new MethodDeclaration()
-                .setName(field)
-                .setType(modifierName)
-                .addParameter(new Parameter().setName(field).setType(declaration.getParameter(0).getType()));
-        if (!methodExists(spec, method, isClass)) {
-            spec.addMember(method);
-            if (isClass) {
-                method
-                        .addModifier(PUBLIC)
-                        .setBody(new BlockStmt()
-                                .addStatement(new AssignExpr().setTarget(new NameExpr().setName(modifierClassName + ".this." + field)).setValue(new NameExpr().setName(field)))
-                                .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("this"))));
-            } else {
-                method.setBody(null);
-            }
-        }
-    }
-
-    private static void addModifierFromSetter(ClassOrInterfaceDeclaration spec, Method declaration, String modifierClassName, String modifierName, boolean isClass, Map<String, Type> generic) {
-        var field = getFieldName(declaration.getName());
-        var method = new MethodDeclaration()
-                .setName(field)
-                .setType(modifierName);
-        if (nonNull(generic)) {
-            method.addParameter(new Parameter().setName(field).setType(generic.get(parseMethodSignature(declaration))));
-        } else {
-            method.addParameter(new Parameter().setName(field).setType(declaration.getParameterTypes()[0]));
-        }
-
-        if (!methodExists(spec, method, field, isClass)) {
-            spec.addMember(method);
-            if (isClass) {
-                method
-                        .addModifier(PUBLIC)
-                        .setBody(new BlockStmt()
-                                .addStatement(new AssignExpr().setTarget(new NameExpr().setName(modifierClassName + ".this." + field)).setValue(new NameExpr().setName(field)))
-                                .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("this"))));
-            } else {
-                method.setBody(null);
-            }
-        }
-    }
-
-    private static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, List<String> signature, String name) {
+    public static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, List<String> signature, String name) {
         if (!methodExists(spec, declaration, false)) {
             var method = spec.addMethod(declaration.getName());
             method.setType(signature.contains(parseMethodSignature(declaration)) ? name : declaration.getReturnType().toString());
@@ -1240,22 +1041,6 @@ public class Generator {
 
     private static void mergeAnnotations(BodyDeclaration<?> source, BodyDeclaration<?> destination) {
         log.warn("Merging annotations is not implemented yet!");
-    }
-
-    private static void mergeModifierTypes(Structures.Parsed parsed, PrototypeData parentProperties, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration parentModifier, ClassOrInterfaceDeclaration parentModifierClass) {
-        for (var member : modifier.getMembers()) {
-            if (member.isMethodDeclaration()) {
-                var method = member.asMethodDeclaration();
-                if (CollectionsHandler.isCollection(method.getType())) {
-                    method.getType().asClassOrInterfaceType().getTypeArguments().get().removeLast();
-                    CollectionsHandler.addModifier(parentModifierClass, method, parentProperties.getLongModifierName(), parentProperties.getClassName(), true);
-                    CollectionsHandler.addModifier(parentModifier, method, parentProperties.getModifierName(), null, false);
-                } else {
-                    addModifierFromModifier(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parentModifierClass, method, parentProperties.getClassName(), parentProperties.getLongModifierName(), true);
-                    addModifierFromModifier(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parentModifier, method, null, parentProperties.getModifierName(), false);
-                }
-            }
-        }
     }
 
     public static void generateCodeForEnum(CompilationUnit parser) {

@@ -13,14 +13,18 @@ import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.PrototypeLookup;
+import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -46,6 +50,8 @@ public class Helpers {
             "EmbeddedCodeSetImpl",
             "net.binis.codegen.collection.EmbeddedCodeSetImpl");
 
+    public static final Set<String> primitiveTypes = Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char");
+
     public static final PrototypeLookup lookup = new PrototypeLookupHandler();
     public static final Map<String, PrototypeDescription<EnumDeclaration>> enumParsed = new HashMap<>();
     public static final Map<String, PrototypeDescription<EnumDeclaration>> enumGenerated = new HashMap<>();
@@ -53,7 +59,6 @@ public class Helpers {
     public static final Map<String, List<Pair<String, String>>> declaredConstants = new HashMap<>();
     public static final Map<String, Structures.ProcessingType> processingTypes = new HashMap<>();
     public static final List<Triple<PrototypeDescription<ClassOrInterfaceDeclaration>, CompilationUnit, ClassExpr>> recursiveExpr = new LinkedList<>();
-    public static final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> recursiveEmbeddedModifiers = new HashMap<>();
 
     public static final Method classSignature = initClassSignature();
     public static final Method methodSignature = initMethodSignature();
@@ -165,8 +170,11 @@ public class Helpers {
         return result;
     }
 
-    public static String getExternalClassNameIfExists(CompilationUnit unit, String type) {
-        var idx = type.indexOf('.');
+    public static String getExternalClassNameIfExists(CompilationUnit unit, String t) {
+        var idx = t.indexOf('<');
+        var type = idx == -1 ? t : t.substring(0, idx);
+
+        idx = type.indexOf('.');
         var result = nullCheck(getClassImport(unit, type), i -> i.isAsterisk() ? i.getNameAsString() + "." + type : i.getNameAsString());
 
         if (nonNull(result) && idx > -1) {
@@ -248,6 +256,26 @@ public class Helpers {
                 ) || !isClass && ancestorMethodExists(spec, declaration, methodName);
     }
 
+    public static boolean methodExists(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String methodName, boolean isClass) {
+        return spec.getMethods().stream()
+                .anyMatch(m -> m.getNameAsString().equals(methodName) &&
+                                m.getParameters().size() == 1 &&
+                                m.getType().equals(declaration.getDeclaration().getVariable(0).getType())
+                        //TODO: Match parameter types also
+                ) || !isClass && ancestorMethodExists(spec, declaration, methodName);
+    }
+
+    public static boolean methodExists(ClassOrInterfaceDeclaration spec, PrototypeField declaration, boolean isClass) {
+        return spec.getMethods().stream()
+                .anyMatch(m -> m.getNameAsString().equals(declaration.getName()) &&
+                                m.getParameters().size() == 1 &&
+                                m.getType().equals(declaration.getDeclaration().getVariable(0).getType())
+                        //TODO: Match parameter types also
+                ) || !isClass && ancestorMethodExists(spec, declaration, declaration.getName());
+    }
+
+
+
     public static boolean ancestorMethodExists(ClassOrInterfaceDeclaration spec, Method declaration) {
         //TODO: Check for params
         var unit = spec.findCompilationUnit().get();
@@ -269,6 +297,18 @@ public class Helpers {
                         m -> m.getName().equals(methodName)
                 ));
     }
+
+    public static boolean ancestorMethodExists(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String methodName) {
+        //TODO: Check for params and return type
+        var unit = spec.findCompilationUnit().get();
+        return spec.getExtendedTypes().stream()
+                .map(t -> loadClass(getExternalClassName(unit, t.getNameAsString())))
+                .filter(Objects::nonNull)
+                .anyMatch(c -> Arrays.stream(c.getMethods()).anyMatch(
+                        m -> m.getName().equals(methodName)
+                ));
+    }
+
 
     public static boolean defaultMethodExists(ClassOrInterfaceDeclaration spec, Method method) {
         return spec.getMethods().stream()
@@ -555,7 +595,6 @@ public class Helpers {
         declaredConstants.clear();
         processingTypes.clear();
         recursiveExpr.clear();
-        recursiveEmbeddedModifiers.clear();
     }
 
     public static String handleGenericPrimitiveType(Type type) {
@@ -576,18 +615,33 @@ public class Helpers {
                 enrichers.forEach(e -> e.setup(properties)));
     }
 
-    public static void handleEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+    private static List<PrototypeEnricher> getEnrichersList(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        var list = new ArrayList<PrototypeEnricher>();
+
         notNull(parsed.getBase(), base ->
-                notNull(base.getProperties().getInheritedEnrichers(), enrichers ->
-                        enrichers.forEach(e -> e.enrich(parsed))));
+                notNull(base.getProperties().getInheritedEnrichers(), list::addAll));
 
         notNull(parsed.getMixIn(), mixIn ->
                 notNull(mixIn.getBase(), base ->
-                        notNull(base.getProperties().getInheritedEnrichers(), enrichers ->
-                                enrichers.forEach(e -> e.enrich(parsed)))));
+                        notNull(base.getProperties().getInheritedEnrichers(), list::addAll)));
 
-        notNull(parsed.getProperties().getEnrichers(), enrichers ->
-                enrichers.forEach(e -> e.enrich(parsed)));
+        notNull(parsed.getProperties().getEnrichers(), list::addAll);
+
+        list.sort(Comparator.comparingInt(PrototypeEnricher::order).reversed());
+        return list;
     }
+
+    public static void handleEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        getEnrichersList(parsed).forEach(e -> e.enrich(parsed));
+    }
+
+    public static void finalizeEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        getEnrichersList(parsed).forEach(e -> e.finalize(parsed));
+    }
+
+    public static boolean isJavaType(String type) {
+        return primitiveTypes.contains(type) || classExists("java.lang." + type);
+    }
+
 
 }

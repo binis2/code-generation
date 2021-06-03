@@ -1,6 +1,7 @@
 package net.binis.codegen.generation.core;
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.PrototypeLookup;
@@ -9,14 +10,15 @@ import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static net.binis.codegen.tools.Tools.nullCheck;
-import static net.binis.codegen.tools.Tools.with;
+import static java.util.Objects.nonNull;
+import static net.binis.codegen.tools.Tools.*;
 
+@Slf4j
 public class PrototypeLookupHandler implements PrototypeLookup {
 
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> parsed = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
-    private final Set<String> requestedEmbeddedModifiers = new HashSet<>();
+    private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> requestedEmbeddedModifiers = new HashMap<>();
 
 
     @Override
@@ -66,18 +68,32 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     }
 
     @Override
-    public void generateEmbeddedModifier(PrototypeData properties) {
-        requestedEmbeddedModifiers.add(properties.getPrototypeName());
+    public void generateEmbeddedModifier(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        requestedEmbeddedModifiers.putIfAbsent(parsed.getDeclaration().getFullyQualifiedName().get(), parsed);
     }
 
     @Override
-    public boolean embeddedModifierRequested(String prototype) {
-        return requestedEmbeddedModifiers.contains(prototype);
+    public boolean embeddedModifierRequested(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        return requestedEmbeddedModifiers.containsKey(parsed.getDeclaration().getFullyQualifiedName().get());
     }
 
     @Override
     public List<PrototypeDescription<ClassOrInterfaceDeclaration>> findGeneratedByFileName(String fileName) {
         return generated.values().stream().filter(g -> fileName.equals(g.getPrototypeFileName())).collect(Collectors.toList());
+    }
+
+    @Override
+    public void generateEmbeddedModifier(String type, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        if (!Helpers.isJavaType(type)) {
+            var full = Helpers.getExternalClassName(parsed.getDeclaration().findCompilationUnit().get(), type);
+            var p = findParsed(full);
+            if (nonNull(p)) {
+                generateEmbeddedModifier(p);
+            } else {
+                parsed.getSpec().findCompilationUnit().ifPresent(u -> u.addImport(full));
+                parsed.getIntf().findCompilationUnit().ifPresent(u -> u.addImport(full));
+            }
+        }
     }
 
     public void clean() {

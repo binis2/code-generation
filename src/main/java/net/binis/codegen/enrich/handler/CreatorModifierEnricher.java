@@ -5,6 +5,7 @@ import com.github.javaparser.ast.body.InitializerDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
+import net.binis.codegen.generation.core.Constants;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 
@@ -16,16 +17,20 @@ public class CreatorModifierEnricher extends BaseEnricher {
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+    }
+
+    @Override
+    public void finalize(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         var properties = description.getProperties();
-        var spec = getImplementation(description);
-        var intf = getInterface(description);
-        var modifier = description.getModifierIntf();
+        var spec = description.getSpec();
+        var intf = description.getIntf();
+        var modifier = description.getRegisteredClass(Constants.MODIFIER_INTF_KEY);
 
         var creatorClass = "EntityCreatorModifier";
 
         spec.findCompilationUnit().get().addImport(creatorClass);
 
-        if (properties.isGenerateModifier()) {
+        if (nonNull(modifier)) {
             var type = intf.getNameAsString() + "." + modifier.getNameAsString();
             if (isNull(properties.getMixInClass())) {
                 intf.addMethod("create", STATIC)
@@ -46,10 +51,10 @@ public class CreatorModifierEnricher extends BaseEnricher {
         intf.findCompilationUnit().get().addImport("net.binis.codegen.creator." + creatorClass);
 
         if (!properties.isBase()) {
-            var embedded = description.getEmbeddedModifier();
+            var embedded = description.getRegisteredClass("EmbeddedModifier");
 
             var type = spec;
-            if (nonNull(properties.getMixInClass())) {
+            if (nonNull(description.getMixIn())) {
                 type = description.getMixIn().getSpec();
             }
             type.findCompilationUnit().get().addImport("net.binis.codegen.factory.CodeFactory");
@@ -62,6 +67,11 @@ public class CreatorModifierEnricher extends BaseEnricher {
                             .addArgument(typeName + "::new")
                             .addArgument(nonNull(embedded) ? "(p, v) -> new " + embedded.getNameAsString() + "<>(p, (" + typeName + ") v)" : "null"));
         }
+    }
+
+    @Override
+    public int order() {
+        return 1000;
     }
 
 }

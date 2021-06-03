@@ -15,11 +15,16 @@ public class AsEnricher extends BaseEnricher {
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        addAsMethod(getImplementation(description), true, false);
-        addAsMethod(getInterface(description), false, false);
+        addAsMethod(description.getSpec(), true);
+        addAsMethod(description.getIntf(), false);
     }
 
-    private static void addAsMethod(ClassOrInterfaceDeclaration spec, boolean isClass, boolean isAbstract) {
+    @Override
+    public int order() {
+        return 0;
+    }
+
+    private static void addAsMethod(ClassOrInterfaceDeclaration spec, boolean isClass) {
         var method = spec
                 .addMethod(MIXIN_MODIFYING_METHOD_PREFIX)
                 .setType("T")
@@ -30,9 +35,6 @@ public class AsEnricher extends BaseEnricher {
                     .addModifier(PUBLIC)
                     .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("cls.cast(this)"))));
         } else {
-            if (isAbstract) {
-                method.addModifier(ABSTRACT).addModifier(PUBLIC);
-            }
             method.setBody(null);
         }
     }

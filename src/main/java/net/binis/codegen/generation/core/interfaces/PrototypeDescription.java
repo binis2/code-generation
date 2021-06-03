@@ -31,9 +31,8 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     ClassOrInterfaceDeclaration getSpec();
     ClassOrInterfaceDeclaration getIntf();
-    ClassOrInterfaceDeclaration getModifier();
-    ClassOrInterfaceDeclaration getEmbeddedModifier();
-    ClassOrInterfaceDeclaration getModifierIntf();
-    ClassOrInterfaceDeclaration getEmbeddedModifierIntf();
+
+    void registerClass(String key, ClassOrInterfaceDeclaration declaration);
+    ClassOrInterfaceDeclaration getRegisteredClass(String key);
 
 }

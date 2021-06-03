@@ -5,19 +5,25 @@ import com.github.javaparser.ast.body.InitializerDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
+import net.binis.codegen.generation.core.Constants;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 
 import static com.github.javaparser.ast.Modifier.Keyword.STATIC;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.Constants.EMBEDDED_MODIFIER_KEY;
 
 public class CreatorEnricher extends BaseEnricher {
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+    }
+
+    @Override
+    public void finalize(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         var properties = description.getProperties();
-        var spec = getImplementation(description);
-        var intf = getInterface(description);
+        var spec = description.getSpec();
+        var intf = description.getIntf();
         var creatorClass = "EntityCreator";
 
         intf.findCompilationUnit().get().addImport("net.binis.codegen.creator." + creatorClass);
@@ -27,10 +33,10 @@ public class CreatorEnricher extends BaseEnricher {
                 .setBody(new BlockStmt().addStatement(new ReturnStmt(creatorClass + ".create(" + intf.getNameAsString() + ".class)")));
 
         if (!properties.isBase()) {
-            var embedded = description.getEmbeddedModifier();
+            var embedded = description.getRegisteredClass(EMBEDDED_MODIFIER_KEY);
 
             var type = spec;
-            if (nonNull(properties.getMixInClass())) {
+            if (nonNull(description.getMixIn())) {
                 type = description.getMixIn().getSpec();
             }
             type.findCompilationUnit().get().addImport("net.binis.codegen.factory.CodeFactory");
@@ -43,6 +49,11 @@ public class CreatorEnricher extends BaseEnricher {
                             .addArgument(typeName + "::new")
                             .addArgument(nonNull(embedded) ? "(p, v) -> new " + embedded.getNameAsString() + "<>(p, (" + typeName + ") v)" : "null"));
         }
+    }
+
+    @Override
+    public int order() {
+        return 0;
     }
 
 }

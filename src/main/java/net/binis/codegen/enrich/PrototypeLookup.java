@@ -22,7 +22,8 @@ public interface PrototypeLookup {
 
     List<PrototypeDescription<ClassOrInterfaceDeclaration>> findGeneratedByFileName(String fileName);
 
-    void generateEmbeddedModifier(PrototypeData properties);
-    boolean embeddedModifierRequested(String prototype);
+    void generateEmbeddedModifier(String type, PrototypeDescription<ClassOrInterfaceDeclaration> parsed);
+    void generateEmbeddedModifier(PrototypeDescription<ClassOrInterfaceDeclaration> parsed);
+    boolean embeddedModifierRequested(PrototypeDescription<ClassOrInterfaceDeclaration> parsed);
 
 }

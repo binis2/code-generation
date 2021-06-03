@@ -4,7 +4,7 @@ package net.binis.codegen;
 import net.binis.codegen.modifier.Modifiable;
 import net.binis.codegen.factory.CodeFactory;
 
-public class TestImpl implements Test, Modifiable<Test.Modify>, MixIn {
+public class TestImpl implements Test, MixIn, Modifiable<Test.Modify> {
 
     protected String subtitle;
 
@@ -50,6 +50,11 @@ public class TestImpl implements Test, Modifiable<Test.Modify>, MixIn {
 
         public MixIn.Modify subtitle(String subtitle) {
             TestImpl.this.subtitle = subtitle;
+            return this;
+        }
+
+        public MixIn.Modify title(String title) {
+            TestImpl.this.title = title;
             return this;
         }
     }

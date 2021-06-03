@@ -23,7 +23,6 @@ public interface PrototypeData {
     boolean isGenerateConstructor();
     boolean isGenerateImplementation();
     boolean isGenerateInterface();
-    boolean isGenerateModifier();
     boolean isBase();
 
     String getBaseModifierClass();
@@ -39,5 +38,4 @@ public interface PrototypeData {
     void setGenerateConstructor(boolean value);
     void setGenerateImplementation(boolean value);
     void setGenerateInterface(boolean value);
-    void setGenerateModifier(boolean value);
 }

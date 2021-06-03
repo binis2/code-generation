@@ -15,6 +15,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
+import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -51,17 +52,20 @@ public class CollectionsHandler {
         return isListOrSet(type) || "Map".equals(type) || "CodeMap".equals(type);
     }
 
-    public static void addModifier(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String modifierName, String className, boolean isClass) {
+    public static void addModifier(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierName, String className, boolean isClass) {
         if (!methodExists(spec, declaration, isClass)) {
-            var type = declaration.getType().asClassOrInterfaceType();
-            var collection = getCollectionType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), type);
+            var type = declaration.getDeclaration().getVariables().get(0).getType().asClassOrInterfaceType();
+            var collection = isNull(declaration.getDescription()) ?
+                    getCollectionType(declaration.getDeclaration().findCompilationUnit().get(), spec.findCompilationUnit().get(), type) :
+                    getCollectionType(declaration.getDescription().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDescription().getType().asClassOrInterfaceType());
             var generic = collection.getGeneric().stream().map(Pair::getLeft).collect(Collectors.joining(", "));
             spec.findCompilationUnit().ifPresent(u -> {
                 u.addImport(collection.getInterfaceImport());
                 u.addImport(collection.getImplementorInterface());
             });
+
             var method = spec
-                    .addMethod(declaration.getNameAsString())
+                    .addMethod(declaration.getName())
                     .setType(collection.getType() + "<" + (collection.isPrototypeParam() ? generic + ".EmbeddedModify<" + generic + ".Modify>, " : "") + generic + ", " + modifierName + ">");
             if (isClass) {
                 var parent = className + ".this." + declaration.getName();
@@ -82,56 +86,7 @@ public class CollectionsHandler {
         }
     }
 
-    public static void addModifierFromSetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String modifierName, String className, boolean isClass) {
-        var field = getFieldName(declaration.getNameAsString());
-        if (!methodExists(spec, declaration, isClass)) {
-            var type = declaration.getParameter(0).getType().asClassOrInterfaceType();
-            var collection = getCollectionType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), type);
-            spec.findCompilationUnit().ifPresent(u -> {
-                u.addImport(collection.getInterfaceImport());
-                u.addImport(collection.getImplementorInterface());
-            });
-            var method = spec
-                    .addMethod(field)
-                    .setType(collection.getType() + "<" + collection.getGeneric().stream().map(Pair::getLeft).collect(Collectors.joining(", ")) + ", " + modifierName + ">");
-            if (isClass) {
-                var parent = className + ".this." + field;
-                method
-                        .addModifier(PUBLIC)
-                        .setBody(new BlockStmt()
-                                .addStatement(new IfStmt().setCondition(new NameExpr().setName(parent + " != null")).setThenStmt(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName(parent)).setValue(new NameExpr().setName("new " + collection.getImplementor() + "<>()")))))
-                                .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection.getClassType() + "<>(this, " + parent + ")"))));
-                spec.findCompilationUnit().get().addImport(collection.getClassImport());
-            } else {
-                method.setBody(null);
-            }
-        }
-    }
-
-    public static void addModifier(ClassOrInterfaceDeclaration spec, Method declaration, String modifierName, String className, boolean isClass) {
-        if (!methodExists(spec, declaration, isClass)) {
-            throw new NotImplementedException("addModifier");
-//            var type = declaration.getType().asClassOrInterfaceType();
-//            var collection = getCollectionType(type, modifierName);
-//            spec.findCompilationUnit().get().addImport(collection.getInterfaceImport());
-//            var method = spec
-//                    .addMethod(declaration.getName())
-//                    .setType(collection.getType() + "<" + collection.getGeneric() + ", " + modifierName + ">");
-//            if (isClass) {
-//                var parent = className + ".this." + declaration.getName();
-//                method
-//                        .addModifier(PUBLIC)
-//                        .setBody(new BlockStmt()
-//                                .addStatement(new IfStmt().setCondition(new NameExpr().setName(parent + " != null")).setThenStmt(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName(parent)).setValue(new NameExpr().setName("new " + collection.getImplementor() + "<>()")))))
-//                                .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection.getClassType() + "<>(this, " + parent + ")"))));
-//                spec.findCompilationUnit().get().addImport(collection.getClassImport());
-//            } else {
-//                method.setBody(null);
-//            }
-        }
-    }
-
-    private static CollectionType getCollectionType(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type) {
+    public static CollectionType getCollectionType(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type) {
         var generic = getGenericsList(source, destination, type, true);
 
         var builder = CollectionType.builder().generic(generic);
@@ -181,135 +136,6 @@ public class CollectionsHandler {
         return result;
     }
 
-    public static void handleEmbeddedModifier(PrototypeDescription<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf) {
-        var actualModifier = parse.getModifierIntf();
-        if (nonNull(actualModifier) && isNull(parse.getEmbeddedModifierIntf())) {
-            if (nonNull(parse.getProperties().getMixInClass())) {
-                spec = parse.getMixIn().getSpec();
-            }
-
-            var actualModifierClass = parse.getModifier();
-            var modifier = new ClassOrInterfaceDeclaration(
-                    Modifier.createModifierList(), false, "Embedded" + actualModifier.getNameAsString())
-                    .addTypeParameter("T")
-                    .setInterface(true);
-            modifier.addMethod("and")
-                    .setType("EmbeddedCodeCollection<EmbeddedModify<T>, " + intf.getNameAsString() + ", T>")
-                    .setBody(null);
-
-            var modifierClass = new ClassOrInterfaceDeclaration(
-                    Modifier.createModifierList(PROTECTED, STATIC), false, "Embedded" + actualModifierClass.getNameAsString())
-                    .addTypeParameter("T")
-                    .addImplementedType(intf.getNameAsString() + "." + modifier.getNameAsString() + "<T>");
-            modifierClass.addField("T", "parent", PROTECTED);
-            modifierClass.addField(spec.getNameAsString(), "entity", PROTECTED);
-            modifierClass.addConstructor(PROTECTED)
-                    .addParameter("T", "parent")
-                    .addParameter(spec.getNameAsString(), "entity")
-                    .setBody(new BlockStmt()
-                            .addStatement(new AssignExpr().setTarget(new NameExpr().setName("this.parent")).setValue(new NameExpr().setName("parent")))
-                            .addStatement(new AssignExpr().setTarget(new NameExpr().setName("this.entity")).setValue(new NameExpr().setName("entity"))));
-            modifierClass.addMethod("and", PUBLIC)
-                    .setType("EmbeddedCodeCollection<" + intf.getNameAsString() + ".EmbeddedModify<T>, " + intf.getNameAsString() + ", T>")
-                    .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("(EmbeddedCodeCollection) parent"))));
-
-            spec.addMember(modifierClass);
-            intf.addMember(modifier);
-
-            ((Structures.Parsed) parse).setEmbeddedModifier(modifierClass);
-            ((Structures.Parsed) parse).setEmbeddedModifierIntf(modifier);
-
-            intf.findCompilationUnit().get().addImport("net.binis.codegen.collection.EmbeddedCodeCollection");
-            spec.findCompilationUnit().ifPresent(u -> {
-                u.addImport("net.binis.codegen.factory.CodeFactory");
-                u.addImport("net.binis.codegen.collection.EmbeddedCodeCollection");
-            });
-        }
-    }
-
-    public static CompilationUnit finalizeEmbeddedModifier(PrototypeDescription<ClassOrInterfaceDeclaration> parse, boolean isClass) {
-        var unit = parse.getFiles().get(isClass ? 0 : 1);
-        var modifier = parse.getModifierIntf();
-        var embedded = parse.getEmbeddedModifierIntf();
-        if (isClass) {
-            modifier = parse.getModifier();
-            embedded = parse.getEmbeddedModifier();
-        }
-        var intfName = unit.getType(0).asClassOrInterfaceDeclaration().isInterface() ? unit.getType(0).getNameAsString() : "void";
-
-        if (isNull(embedded) && recursiveEmbeddedModifiers.containsKey(parse.getIntf().getNameAsString()) || lookup.embeddedModifierRequested(parse.getProperties().getPrototypeName())) {
-            handleEmbeddedModifier(parse, parse.getSpec(), parse.getIntf());
-            embedded = isClass ? parse.getEmbeddedModifier() : parse.getEmbeddedModifierIntf();
-        }
-
-        if (nonNull(embedded)) {
-
-            //var prefix = unit.getType(0).asClassOrInterfaceDeclaration().getFullyQualifiedName();
-            embedded.setExtendedTypes(modifier.getExtendedTypes());
-
-            var intf = modifier.getNameAsString();
-            var eIntf = embedded.getNameAsString() + "<T>";
-            if (modifier.getImplementedTypes().isNonEmpty()) {
-                intf = modifier.getImplementedTypes(0).toString();
-                eIntf = embedded.getImplementedTypes(0).toString();
-            }
-
-            for (var old : modifier.getMethods()) {
-                if (Constants.MODIFIER_INTERFACE_NAME.equals(old.getType().toString()) || (old.getType().toString().endsWith(".Modify")) || old.getTypeAsString().startsWith("EmbeddedCodeCollection<")) {
-                    var method = embedded.addMethod(old.getNameAsString())
-                            .setModifiers(old.getModifiers())
-                            .setParameters(old.getParameters());
-
-                    if (old.getType().asString().equals(intf)) {
-                        method.setType(eIntf);
-                        if (old.getBody().isPresent()) {
-                            method.setBody(new BlockStmt()
-                                    .addStatement(new AssignExpr().setTarget(new NameExpr().setName("entity." + method.getNameAsString())).setValue(new NameExpr().setName(method.getNameAsString())))
-                                    .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("this"))));
-                        } else {
-                            method.setBody(null);
-                        }
-                    } else if (isCollection(old.getType())) {
-                        method.setType(old.getType().toString().replace(intf, eIntf));
-                        if (old.getBody().isPresent()) {
-                            var collection = getCollectionType(unit, unit, old.getType().asClassOrInterfaceType());
-                            var parent = "entity." + method.getNameAsString();
-
-                            method.setBody(new BlockStmt()
-                                    .addStatement(new IfStmt().setCondition(new NameExpr().setName(parent + " != null")).setThenStmt(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName(parent)).setValue(new NameExpr().setName("new " + collection.getImplementor() + "<>()")))))
-                                    .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection.getClassType() + "<>(this, " + parent + ")"))));
-                        } else {
-                            method.setBody(null);
-                        }
-                    } else if (old.getTypeAsString().startsWith("EmbeddedCodeCollection<")) {
-                        if (old.getBody().isPresent()) {
-                            method.setType(old.getType().toString().replace(", " + intf, ", " + eIntf));
-                            var split = ((NameExpr) old.getBody().get().getChildNodes().get(1).getChildNodes().get(0)).getNameAsString().split("[\\s<.]");
-                            var collection = split[1];
-                            var cls = split[6];
-                            var collectionType = old.getBody().get().getChildNodes().get(0).getChildNodes().get(1).getChildNodes().get(0).toString().split("[\\s<]")[3];
-                            var parent = "entity." + method.getNameAsString();
-
-                            method.setBody(new BlockStmt()
-                                    .addStatement(new IfStmt().setCondition(new NameExpr().setName(parent + " != null")).setThenStmt(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName(parent)).setValue(new NameExpr().setName("new " + collectionType + "<>()")))))
-                                    .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection + "<>(this, " + parent + ", " + cls +".class)"))));
-                        } else {
-                            method.setType(old.getType().toString().replace(", Modify>", ", " + intfName + ".EmbeddedModify<T>>"));
-                            method.setBody(null);
-                        }
-                    } else {
-                        method.setType(old.getType());
-                        method.setBody(old.getBody().orElse(null));
-                    }
-                } else {
-                    intfName = old.getType().asClassOrInterfaceType().getNameAsString();
-                }
-            }
-        }
-
-        return unit;
-    }
-
     public static String getCollectionType(Type type) {
         if (type.isClassOrInterfaceType()) {
             var args = type.asClassOrInterfaceType().getTypeArguments();
@@ -322,9 +148,14 @@ public class CollectionsHandler {
         return "Object";
     }
 
+    public static String getFullCollectionType(Type type) {
+        return getExternalClassName(type.findCompilationUnit().get(), getCollectionType(type));
+    }
+
+
     @Data
     @Builder
-    private static class CollectionType {
+    public static class CollectionType {
         private String type;
         private String classType;
         private String classImport;

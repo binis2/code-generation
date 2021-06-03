@@ -20,13 +20,9 @@ public abstract class BaseEnricher implements PrototypeEnricher {
         //Do nothing
     }
 
-    protected ClassOrInterfaceDeclaration getImplementation(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        return description.getFiles().get(0).findFirst(ClassOrInterfaceDeclaration.class).get();
+    @Override
+    public void finalize(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+        //Do nothing
     }
-
-    protected ClassOrInterfaceDeclaration getInterface(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        return description.getFiles().get(1).findFirst(ClassOrInterfaceDeclaration.class).get();
-    }
-
 
 }

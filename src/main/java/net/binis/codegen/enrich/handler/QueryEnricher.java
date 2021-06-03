@@ -39,8 +39,8 @@ public class QueryEnricher extends BaseEnricher {
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        var spec = getImplementation(description);
-        var intf = getInterface(description);
+        var spec = description.getSpec();
+        var intf = description.getIntf();
         var entity = description.getProperties().getInterfaceName();
 
         with(intf.findCompilationUnit().get(), unit -> unit
@@ -61,11 +61,13 @@ public class QueryEnricher extends BaseEnricher {
         );
 
         addFindMethod(intf);
-
         addQueryStart(entity, intf, spec);
-
         addQuerySelectOrderName(description, intf, spec);
+    }
 
+    @Override
+    public int order() {
+        return 500;
     }
 
     private void addQuerySelectOrderName(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration spec) {

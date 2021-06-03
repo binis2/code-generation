@@ -84,32 +84,8 @@ public class CodeGen {
         recursiveExpr.forEach(pair ->
                 pair.getRight().setType(findProperType(pair.getLeft(), pair.getMiddle(), pair.getRight())));
 
-        recursiveEmbeddedModifiers.forEach((type, p) -> {
-            if (nonNull(p)) {
-                notNull(lookup.findParsed(getExternalClassName(p.getDeclaration().findCompilationUnit().get(), type)), parse ->
-                        condition(parse.getProperties().isGenerateModifier(), () ->
-                                CollectionsHandler.handleEmbeddedModifier(parse,
-                                        parse.getSpec(),
-                                        parse.getIntf())));
-            } else {
-                lookup.parsed().stream().filter(parse -> type.equals(parse.getInterfaceName())).findFirst().ifPresent(
-                        parse ->
-                                CollectionsHandler.handleEmbeddedModifier(parse,
-                                        parse.getSpec(),
-                                        parse.getIntf()));
-            }
-        });
-
-        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
-            if (isNull(p.getProperties().getMixInClass())) {
-                CollectionsHandler.finalizeEmbeddedModifier(p, true);
-            }
-            if (p.getProperties().isGenerateInterface()) {
-                CollectionsHandler.finalizeEmbeddedModifier(p, false);
-            }
-            Helpers.handleEnrichers(p);
-        });
-
+        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(Helpers::handleEnrichers);
+        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(Helpers::finalizeEnrichers);
 
         var destination = cmd.getOptionValue(DESTINATION);
         var impl_destination = cmd.getOptionValue(IMPL_DESTINATION);

@@ -3,22 +3,24 @@ package net.binis.codegen.generation.core;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Singular;
-import lombok.ToString;
+import com.github.javaparser.ast.type.Type;
+import lombok.*;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Structures {
 
-    @Data
+    @Getter
+    @Setter
     @Builder
     public static class PrototypeDataHandler implements PrototypeData {
         private String prototypeName;
@@ -39,7 +41,6 @@ public class Structures {
         private boolean generateConstructor;
         private boolean generateInterface;
         private boolean generateImplementation;
-        private boolean generateModifier;
         private boolean base;
 
         private String baseModifierClass;
@@ -56,9 +57,13 @@ public class Structures {
     public static class FieldData implements PrototypeField {
         private String name;
         private FieldDeclaration declaration;
+        private MethodDeclaration description;
         private boolean collection;
+        private Structures.Ignores ignores;
         @ToString.Exclude
         private PrototypeDescription<ClassOrInterfaceDeclaration> prototype;
+        @ToString.Exclude
+        private Map<String, Type> generics;
     }
 
     @Data
@@ -84,15 +89,24 @@ public class Structures {
         private Parsed<T> base;
         private Parsed<T> mixIn;
 
+        @EqualsAndHashCode.Exclude
+        @Builder.Default
+        private Map<String, ClassOrInterfaceDeclaration> classes = new HashMap<>();
+
+        @EqualsAndHashCode.Exclude
         @Builder.Default
         private List<PrototypeField> fields = new ArrayList<>();
 
         private ClassOrInterfaceDeclaration spec;
         private ClassOrInterfaceDeclaration intf;
-        private ClassOrInterfaceDeclaration modifier;
-        private ClassOrInterfaceDeclaration embeddedModifier;
-        private ClassOrInterfaceDeclaration modifierIntf;
-        private ClassOrInterfaceDeclaration embeddedModifierIntf;
+
+        public void registerClass(String key, ClassOrInterfaceDeclaration declaration) {
+            classes.put(key, declaration);
+        }
+
+        public ClassOrInterfaceDeclaration getRegisteredClass(String key) {
+            return classes.get(key);
+        }
     }
 
     @Data

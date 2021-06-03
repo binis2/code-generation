@@ -20,5 +20,7 @@ public interface MixIn extends Test {
         MixIn done();
 
         Modify subtitle(String subtitle);
+
+        Modify title(String title);
     }
 }

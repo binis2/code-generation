@@ -6,6 +6,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.printer.PrettyPrinter;
 import com.github.javaparser.printer.PrettyPrinterConfiguration;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.CodeGen;
 import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.Generator;
@@ -31,6 +32,7 @@ import static net.binis.codegen.tools.Tools.with;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Slf4j
 public abstract class BaseTest {
 
     protected JavaParser parser = new JavaParser();
@@ -51,14 +53,10 @@ public abstract class BaseTest {
         for (var entry : lookup.parsed()) {
             ifNull(entry.getFiles(), () ->
                     Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get()));
-            if (isNull(entry.getProperties().getMixInClass())) {
-                CollectionsHandler.finalizeEmbeddedModifier(entry, true);
-            }
-            if (entry.getProperties().isGenerateInterface()) {
-                CollectionsHandler.finalizeEmbeddedModifier(entry, false);
-            }
-            Helpers.handleEnrichers(entry);
         }
+
+        lookup.parsed().forEach(Helpers::handleEnrichers);
+        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(Helpers::finalizeEnrichers);
     }
 
     protected void cleanUp() {
@@ -242,7 +240,12 @@ public abstract class BaseTest {
 
     @SneakyThrows
     private String resourceAsString(String resource) {
-        return new String(Files.readAllBytes(Paths.get(getClass().getClassLoader().getResource(resource).toURI())));
+        try {
+            return new String(Files.readAllBytes(Paths.get(getClass().getClassLoader().getResource(resource).toURI())));
+        } catch (Exception e) {
+            log.error("Unable to load resource: {}!", resource);
+            throw e;
+        }
     }
 
     private static JavaFileManager createFileManager(ClassLoader loader, StandardJavaFileManager fileManager, Map<String, JavaByteObject> files) {
