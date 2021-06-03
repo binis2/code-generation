@@ -1,7 +1,6 @@
 package net.binis.codegen.generation.core;
 
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
@@ -13,11 +12,10 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
-import net.binis.codegen.generation.core.interfaces.PrototypeData;
-import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
-import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.generation.core.interfaces.PrototypeData;
+import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.tools.Holder;
 import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.StringUtils;
@@ -73,17 +71,12 @@ public class Generator {
                     iUnit.setPackageDeclaration(properties.getInterfacePackage());
                     intf.addModifier(PUBLIC);
 
-                    var modifier = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, properties.getModifierName());
-                    var modifierClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, defaultModifierClassName(properties.getClassName()));
-
                     var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
 
                     parse.setParsedName(spec.getNameAsString());
                     parse.setParsedFullName(spec.getFullyQualifiedName().get());
                     parse.setInterfaceName(intf.getNameAsString());
                     parse.setInterfaceFullName(intf.getFullyQualifiedName().get());
-                    parse.setModifierName(modifier.getNameAsString());
-                    parse.setModifierClassName(modifierClass.getNameAsString());
                     parse.setProperties(properties);
                     parse.setFiles(List.of(unit, iUnit));
                     parse.setSpec(spec);
@@ -115,7 +108,7 @@ public class Generator {
                         if (nonNull(parsed)) {
                             if (isNull(properties.getMixInClass()) || !properties.getMixInClass().equals(t.toString())) {
                                 if (!parsed.getProperties().isBase()) {
-                                    implementInterface(parse, spec, modifier, modifierClass, parsed.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration());
+                                    implementInterface(parse, spec, parsed.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration());
                                 }
                                 if (StringUtils.isNotBlank(parsed.getInterfaceName())) {
                                     iUnit.addImport(parsed.getInterfaceFullName());
@@ -129,7 +122,7 @@ public class Generator {
                                 parse.setMixIn((Structures.Parsed) parsed);
                             }
                         } else {
-                            handleExternalInterface(parse, typeDeclaration, spec, intf, t, modifier, modifierClass);
+                            handleExternalInterface(parse, typeDeclaration, spec, intf, t);
                         }
                     });
 
@@ -501,7 +494,7 @@ public class Generator {
                                 ifNull(parse.getFiles(), () -> generateCodeForEnum(parse.getDeclaration().findCompilationUnit().get())))));
     }
 
-    private static void implementInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration declaration) {
+    private static void implementInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration declaration) {
         var properties = parse.getProperties();
         for (var method : declaration.getMethods()) {
             if (method.getNameAsString().startsWith("get")) {
@@ -517,16 +510,16 @@ public class Generator {
         }
     }
 
-    private static void handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceType type, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {
+    private static void handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceType type) {
         var className = getExternalClassName(declaration.findCompilationUnit().get(), type.getNameAsString());
         if (nonNull(className)) {
             var cls = loadClass(className);
             if (nonNull(cls)) {
                 if (cls.isInterface()) {
                     for (var i : cls.getInterfaces()) {
-                        handleExternalInterface(parsed, declaration, spec, i, modifier, modifierClass, type.getTypeArguments().orElse(null));
+                        handleExternalInterface(parsed, declaration, spec, i, type.getTypeArguments().orElse(null));
                     }
-                    handleExternalInterface(parsed, declaration, spec, cls, modifier, modifierClass, type.getTypeArguments().orElse(null));
+                    handleExternalInterface(parsed, declaration, spec, cls, type.getTypeArguments().orElse(null));
                     if (nonNull(intf)) {
                         intf.addExtendedType(type);
                     } else {
@@ -543,13 +536,13 @@ public class Generator {
         }
     }
 
-    private static void handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, NodeList<Type> generics) {
+    private static void handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, NodeList<Type> generics) {
         Map<String, Type> generic = null;
         if (nonNull(generics)) {
             generic = processGenerics(cls, generics);
         }
 
-        Arrays.stream(cls.getInterfaces()).forEach(i -> handleExternalInterface(parsed, declaration, spec, i, modifier, modifierClass, generics));
+        Arrays.stream(cls.getInterfaces()).forEach(i -> handleExternalInterface(parsed, declaration, spec, i, generics));
 
         var properties = parsed.getProperties();
 
@@ -789,7 +782,7 @@ public class Generator {
 
     private static void processInnerClass(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration cls) {
         cls.getImplementedTypes().forEach(t ->
-                handleExternalInterface(parsed, declaration, spec, null, t, null, null));
+                handleExternalInterface(parsed, declaration, spec, null, t));
         notNull(spec.getAnnotationByName("CodeClassAnnotations"), a ->
                 cls.getAnnotations().forEach(ann -> {
                     if (!"CodeClassAnnotations".equals(ann.getNameAsString())) {

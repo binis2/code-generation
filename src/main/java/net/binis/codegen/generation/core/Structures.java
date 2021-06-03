@@ -80,9 +80,6 @@ public class Structures {
         private String interfaceName;
         private String interfaceFullName;
 
-        private String modifierName;
-        private String modifierClassName;
-
         private TypeDeclaration<T> declaration;
         private List<CompilationUnit> files;
 

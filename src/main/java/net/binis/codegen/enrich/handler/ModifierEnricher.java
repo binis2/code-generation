@@ -1,9 +1,7 @@
 package net.binis.codegen.enrich.handler;
 
-import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AssignExpr;
@@ -17,7 +15,6 @@ import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.Constants;
 import net.binis.codegen.generation.core.Generator;
-import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
@@ -27,7 +24,6 @@ import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.*;
 import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.generation.core.Helpers.*;
-import static net.binis.codegen.generation.core.Helpers.parseGenericClassSignature;
 import static net.binis.codegen.tools.Tools.notNull;
 import static net.binis.codegen.tools.Tools.nullCheck;
 
