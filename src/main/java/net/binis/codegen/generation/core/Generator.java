@@ -278,37 +278,6 @@ public class Generator {
         }
     }
 
-    public static void handleImports(ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration type) {
-        declaration.findCompilationUnit().ifPresent(decl ->
-                type.findCompilationUnit().ifPresent(unit ->
-                        findUsedTypes(type).stream().map(t -> getClassImport(decl, t)).filter(Objects::nonNull).forEach(unit::addImport)));
-    }
-
-    private static Set<String> findUsedTypes(ClassOrInterfaceDeclaration type) {
-        var result = new HashSet<String>();
-        findUsedTypesInternal(result, type);
-        return result;
-    }
-
-    private static void findUsedTypesInternal(Set<String> types, Node node) {
-        if (node instanceof ClassOrInterfaceType) {
-            types.add(((ClassOrInterfaceType) node).getNameAsString());
-        } else if (node instanceof AnnotationExpr) {
-            types.add(((AnnotationExpr) node).getNameAsString());
-        } else if (node instanceof NameExpr) {
-            types.add(((NameExpr) node).getNameAsString());
-        } else if (node instanceof SimpleName) {
-            Arrays.stream(((SimpleName) node).asString().split("[.()<\\s]")).filter(s -> !"".equals(s)).forEach(types::add);
-        } else if (node instanceof VariableDeclarator) {
-            var declarator = (VariableDeclarator) node;
-            if (declarator.getType() instanceof ClassOrInterfaceType) {
-                types.add(((ClassOrInterfaceType) declarator.getType()).getNameAsString());
-            }
-        }
-
-        node.getChildNodes().forEach(n -> findUsedTypesInternal(types, n));
-    }
-
     private static void checkForDeclaredConstants(Node type) {
         //TODO: Handle more cases
         for (var node : type.getChildNodes()) {

@@ -28,5 +28,14 @@ public class WithBaseTest extends BaseTest {
                 "base/baseTest2-0.java", "base/baseTest2-1.java");
     }
 
+    @Test
+    public void baseWithInheritedModifier() {
+        testSingleWithBase("base/base2.java", "net.binis.codegen.BaseImpl",
+                "base/baseTest3.java", "net.binis.codegen.TestImpl",
+                "base/base2-0.java", "base/base2-1.java",
+                "base/baseTest3-0.java", "base/baseTest3-1.java");
+    }
+
+
 
 }

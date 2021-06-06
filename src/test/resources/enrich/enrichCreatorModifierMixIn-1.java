@@ -15,10 +15,13 @@ public interface Test {
 
     Test.Modify with();
 
-    interface Modify {
+    interface Fields<T> {
+
+        T title(String title);
+    }
+
+    interface Modify extends Test.Fields<Test.Modify> {
 
         Test done();
-
-        Modify title(String title);
     }
 }

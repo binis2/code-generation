@@ -5,9 +5,7 @@ import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
-import com.github.javaparser.ast.expr.AnnotationExpr;
-import com.github.javaparser.ast.expr.ClassExpr;
-import com.github.javaparser.ast.expr.MemberValuePair;
+import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -19,6 +17,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.PrototypeLookup;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Holder;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.data.jpa.domain.Specification;
@@ -28,6 +27,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -274,7 +274,32 @@ public class Helpers {
                 ) || !isClass && ancestorMethodExists(spec, declaration, declaration.getName());
     }
 
+    public static boolean methodSignatureExists(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String methodName) {
+        var result = spec.getMethods().stream()
+                .anyMatch(m -> m.getNameAsString().equals(methodName) &&
+                        m.getParameters().size() == 1 &&
+                        m.getParameter(0).getType().equals(declaration.getDeclaration().getVariable(0).getType())
+                );
 
+        if (!result) {
+            for (var type : spec.getExtendedTypes()) {
+                if (type.getScope().isPresent()) {
+                    var parsed = lookup.findByInterfaceName(type.getScope().get().getNameAsString());
+                    if (nonNull(parsed)) {
+                        var intf = parsed.getIntf().findAll(ClassOrInterfaceDeclaration.class).stream().filter(c -> c.getNameAsString().equals(type.getNameAsString())).findFirst();
+                        if (intf.isPresent()) {
+                            result = methodSignatureExists(intf.get(), declaration, methodName);
+                            if (result) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
 
     public static boolean ancestorMethodExists(ClassOrInterfaceDeclaration spec, Method declaration) {
         //TODO: Check for params
@@ -301,12 +326,27 @@ public class Helpers {
     public static boolean ancestorMethodExists(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String methodName) {
         //TODO: Check for params and return type
         var unit = spec.findCompilationUnit().get();
-        return spec.getExtendedTypes().stream()
+        var result = spec.getExtendedTypes().stream()
                 .map(t -> loadClass(getExternalClassName(unit, t.getNameAsString())))
                 .filter(Objects::nonNull)
                 .anyMatch(c -> Arrays.stream(c.getMethods()).anyMatch(
                         m -> m.getName().equals(methodName)
                 ));
+        if (!result) {
+            var parent = spec.findAncestor(ClassOrInterfaceDeclaration.class);
+            if (parent.isPresent()) {
+                for (var type : spec.getExtendedTypes()) {
+                    var inner = parent.get().findAll(ClassOrInterfaceDeclaration.class).stream().filter(c -> c.getNameAsString().equals(type.getNameAsString())).findFirst();
+                    if (inner.isPresent() && (type.getScope().isEmpty() || type.getScope().get().getNameAsString().equals(parent.get().getNameAsString()))) {
+                        result = methodSignatureExists(inner.get(), declaration, methodName);
+                        if (result) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return result;
     }
 
 
@@ -637,11 +677,54 @@ public class Helpers {
 
     public static void finalizeEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
         getEnrichersList(parsed).forEach(e -> e.finalize(parsed));
+        Helpers.handleImports(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getIntf());
+        Helpers.handleImports(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getSpec());
     }
 
     public static boolean isJavaType(String type) {
         return primitiveTypes.contains(type) || classExists("java.lang." + type);
     }
 
+    public static void handleImports(ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration type) {
+        declaration.findCompilationUnit().ifPresent(decl ->
+                type.findCompilationUnit().ifPresent(unit ->
+                        findUsedTypes(type).stream().map(t -> getClassImport(decl, t)).filter(Objects::nonNull).forEach(unit::addImport)));
+    }
+
+    public static Set<String> findUsedTypes(ClassOrInterfaceDeclaration type) {
+        var result = new HashSet<String>();
+        findUsedTypesInternal(result, type);
+        return result;
+    }
+
+    private static void findUsedTypesInternal(Set<String> types, Node node) {
+        if (node instanceof ClassOrInterfaceType) {
+            types.add(((ClassOrInterfaceType) node).getNameAsString());
+        } else if (node instanceof AnnotationExpr) {
+            types.add(((AnnotationExpr) node).getNameAsString());
+        } else if (node instanceof NameExpr) {
+            types.add(((NameExpr) node).getNameAsString());
+        } else if (node instanceof SimpleName) {
+            Arrays.stream(((SimpleName) node).asString().split("[.()<\\s]")).filter(s -> !"".equals(s)).forEach(types::add);
+        } else if (node instanceof VariableDeclarator) {
+            var declarator = (VariableDeclarator) node;
+            if (declarator.getType() instanceof ClassOrInterfaceType) {
+                types.add(((ClassOrInterfaceType) declarator.getType()).getNameAsString());
+            }
+        }
+
+        node.getChildNodes().forEach(n -> findUsedTypesInternal(types, n));
+    }
+
+    public static void importType(Type type, CompilationUnit destination) {
+        if (!type.isPrimitiveType()) {
+            var full = Helpers.getExternalClassNameIfExists(type.findCompilationUnit().get(), type.asClassOrInterfaceType().getNameAsString());
+
+            if (nonNull(full)) {
+                destination.addImport(full);
+            }
+        }
+
+    }
 
 }

@@ -84,8 +84,10 @@ public class CodeGen {
         recursiveExpr.forEach(pair ->
                 pair.getRight().setType(findProperType(pair.getLeft(), pair.getMiddle(), pair.getRight())));
 
-        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(Helpers::handleEnrichers);
-        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(Helpers::finalizeEnrichers);
+        lookup.parsed().stream().filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
+        lookup.parsed().stream().filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
+        lookup.parsed().stream().filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
+        lookup.parsed().stream().filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
 
         var destination = cmd.getOptionValue(DESTINATION);
         var impl_destination = cmd.getOptionValue(IMPL_DESTINATION);

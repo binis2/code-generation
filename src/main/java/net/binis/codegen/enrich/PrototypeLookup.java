@@ -14,6 +14,7 @@ public interface PrototypeLookup {
     void registerGenerated(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> generated);
     PrototypeDescription<ClassOrInterfaceDeclaration> findParsed(String prototype);
     PrototypeDescription<ClassOrInterfaceDeclaration> findGenerated(String prototype);
+    PrototypeDescription<ClassOrInterfaceDeclaration> findByInterfaceName(String name);
     PrototypeField findField(String prototype, String name);
     boolean isParsed(String prototype);
     boolean isGenerated(String prototype);

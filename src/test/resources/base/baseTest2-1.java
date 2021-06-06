@@ -9,12 +9,15 @@ public interface Test extends Base {
 
     Test.Modify with();
 
-    interface Modify {
+    interface Fields<T> {
+
+        T id(Long id);
+
+        T title(String title);
+    }
+
+    interface Modify extends Test.Fields<Test.Modify> {
 
         Test done();
-
-        Modify id(Long id);
-
-        Modify title(String title);
     }
 }

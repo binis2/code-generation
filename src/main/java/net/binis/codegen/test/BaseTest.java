@@ -55,8 +55,10 @@ public abstract class BaseTest {
                     Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get()));
         }
 
-        lookup.parsed().forEach(Helpers::handleEnrichers);
-        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(Helpers::finalizeEnrichers);
+        lookup.parsed().stream().filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
+        lookup.parsed().stream().filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
+        lookup.parsed().stream().filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
+        lookup.parsed().stream().filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
     }
 
     protected void cleanUp() {
@@ -76,7 +78,9 @@ public abstract class BaseTest {
     }
 
     protected void compare(CompilationUnit unit, String resource) {
-        assertEquals(resourceAsString(resource), getAsString(unit));
+        if (nonNull(resource)) {
+            assertEquals(resourceAsString(resource), getAsString(unit));
+        }
     }
 
     protected void testSingle(String prototype, String resClass, String resInterface) {
@@ -134,8 +138,17 @@ public abstract class BaseTest {
                 compare(parsed.getFiles().get(1), f.getRight());
                 compare(parsed.getFiles().get(0), f.getMiddle());
 
-                compileList.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
-                compileList.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+                if (isNull(parsed.getMixIn())) {
+                    compileList.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+                    compileList.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+                } else {
+                    for (var i = 0; i < compileList.size(); i++) {
+                        if (compileList.get(i).getKey().equals(parsed.getMixIn().getParsedFullName())) {
+                            compileList.add(i, Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+                            break;
+                        }
+                    }
+                }
             });
         });
 

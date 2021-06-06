@@ -15,6 +15,7 @@ import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.Constants;
 import net.binis.codegen.generation.core.Generator;
+import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
@@ -24,8 +25,7 @@ import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.*;
 import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.generation.core.Helpers.*;
-import static net.binis.codegen.tools.Tools.notNull;
-import static net.binis.codegen.tools.Tools.nullCheck;
+import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
 public class ModifierEnricher extends BaseEnricher {
@@ -41,60 +41,109 @@ public class ModifierEnricher extends BaseEnricher {
         var entity = description.getProperties().getInterfaceName();
 
         var modifier = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, properties.getModifierName());
-        var modifierClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, defaultModifierClassName(properties.getClassName()));
-
-        description.registerClass(MODIFIER_KEY, modifierClass);
+        ClassOrInterfaceDeclaration modifierClass = null;
+        var modifierFields = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, "Fields")
+                .addTypeParameter(MODIFIER_FIELD_GENERIC);
         description.registerClass(MODIFIER_INTF_KEY, modifier);
 
-        spec.addMember(modifierClass);
-        intf.addMember(modifier);
-        modifierClass.addImplementedType(properties.getLongModifierName());
-
         var methodName = isNull(properties.getMixInClass()) ? Constants.MODIFIER_METHOD_NAME : Constants.MIXIN_MODIFYING_METHOD_PREFIX + intf.getNameAsString();
-        addModifyMethod(methodName, spec, properties.getLongModifierName(), modifierClass.getNameAsString(), true);
-        addModifyMethod(methodName, intf, properties.getLongModifierName(), null, false);
-        addDoneMethod(modifierClass, properties.getInterfaceName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true);
-        addDoneMethod(modifier, properties.getInterfaceName(), null, false);
-        handleModifierBaseImplementation(isNull(properties.getMixInClass()) ? description : description.getMixIn(), spec, intf, modifier, modifierClass);
-        spec.findCompilationUnit().get().addImport("net.binis.codegen.modifier.Modifiable");
-        if (isNull(description.getMixIn())) {
+        if (!description.getProperties().isBase()) {
+            modifierClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, defaultModifierClassName(properties.getClassName()));
+            modifierClass.addImplementedType(properties.getLongModifierName());
+            description.registerClass(MODIFIER_KEY, modifierClass);
+            spec.addMember(modifierClass);
+            intf.addMember(modifier);
+            addModifyMethod(methodName, spec, properties.getLongModifierName(), modifierClass.getNameAsString(), true);
+            addModifyMethod(methodName, intf, properties.getLongModifierName(), null, false);
+            addDoneMethod(modifierClass, properties.getInterfaceName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true);
+            addDoneMethod(modifier, properties.getInterfaceName(), null, false);
+            handleModifierBaseImplementation(isNull(properties.getMixInClass()) ? description : description.getMixIn(), spec, intf, modifier, modifierClass);
+            spec.findCompilationUnit().get().addImport("net.binis.codegen.modifier.Modifiable");
+        }
+        if (isNull(description.getMixIn()) && !description.getProperties().isBase()) {
             spec.addImplementedType("Modifiable<" + intf.getNameAsString() + "." + modifier.getNameAsString() + ">");
         }
 
         for (var field : description.getFields()) {
-            declare(description, properties, modifier, modifierClass, field);
+            declare(description, properties, modifier, modifierClass, modifierFields, field);
         }
 
         if (nonNull(description.getBase())) {
-            for (var field : description.getBase().getFields()) {
-                declare(description, properties, modifier, modifierClass, field);
+            var fields = description.getBase().getRegisteredClass(MODIFIER_FIELDS_KEY);
+            if (nonNull(fields)) {
+                modifierFields.addExtendedType(description.getBase().getInterfaceName() + "." + fields.getNameAsString() + "<" + MODIFIER_FIELD_GENERIC + ">");
+                for (var field : description.getBase().getFields()) {
+                    declare(description, properties, modifier, modifierClass, null, field);
+                }
+            } else {
+                for (var field : description.getBase().getFields()) {
+                    declare(description, properties, modifier, modifierClass, modifierFields, field);
+                }
             }
         }
 
         if (nonNull(description.getMixIn())) {
-            for (var field : description.getMixIn().getFields()) {
-                declare(description, properties, modifier, modifierClass, field);
+            var fields = description.getMixIn().getRegisteredClass(MODIFIER_FIELDS_KEY);
+            if (nonNull(fields)) {
+                modifierFields.addExtendedType(description.getMixIn().getInterfaceName() + "." + fields.getNameAsString() + "<" + MODIFIER_FIELD_GENERIC + ">");
+                for (var field : description.getMixIn().getFields()) {
+                    declare(description, properties, modifier, modifierClass, null, field);
+                }
+            } else {
+                for (var field : description.getMixIn().getFields()) {
+                    declare(description, properties, modifier, modifierClass, modifierFields, field);
+                }
             }
 
             if (nonNull(description.getMixIn().getBase())) {
-                for (var field : description.getMixIn().getBase().getFields()) {
-                    declare(description, properties, modifier, modifierClass, field);
+                var flds = description.getMixIn().getBase().getRegisteredClass(MODIFIER_FIELDS_KEY);
+                if (nonNull(flds)) {
+                    var type = description.getMixIn().getBase().getInterfaceName() + "." + flds.getNameAsString() + "<" + MODIFIER_FIELD_GENERIC + ">";
+                    if (fields.getExtendedTypes().stream().noneMatch(t -> t.toString().equals(type))) {
+                        modifierFields.addExtendedType(type);
+                    }
+                    for (var field : description.getMixIn().getBase().getFields()) {
+                        declare(description, properties, modifier, modifierClass, null, field);
+                    }
+                } else {
+                    for (var field : description.getMixIn().getBase().getFields()) {
+                        declare(description, properties, modifier, modifierClass, modifierFields, field);
+                    }
                 }
             }
         }
+
+        if (!modifierFields.isEmpty()) {
+            intf.addMember(modifierFields);
+            description.registerClass(MODIFIER_FIELDS_KEY, modifierFields);
+            modifier.addExtendedType(intf.getNameAsString() + "." + modifierFields.getNameAsString() + "<" + intf.getNameAsString() + "." + modifier.getNameAsString() + ">");
+        }
     }
 
-    private void declare(PrototypeDescription<ClassOrInterfaceDeclaration> description, net.binis.codegen.generation.core.interfaces.PrototypeData properties, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, PrototypeField field) {
+    private void declare(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeData properties, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration modifierFields, PrototypeField field) {
         if (!field.getIgnores().isForModifier()) {
-            var type = field.getDeclaration().getVariables().get(0).getType();
-            addModifier(modifierClass, field, isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), properties.getLongModifierName(), true);
-            addModifier(modifier, field, null, properties.getModifierName(), false);
+            var type = isNull(field.getDescription()) ? field.getDeclaration().getVariables().get(0).getType() : field.getDescription().getType();
+            if (nonNull(modifierClass)) {
+                addModifier(modifierClass, field, isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), properties.getLongModifierName(), true);
+            }
             if (CollectionsHandler.isCollection(type)) {
+                addModifier(modifier, field, null, properties.getModifierName(), false);
                 CollectionsHandler.addModifier(modifierClass, field, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true);
                 CollectionsHandler.addModifier(modifier, field, properties.getModifierName(), null, false);
                 notNull(lookup.findParsed(CollectionsHandler.getFullCollectionType(type)), parsed ->
                         lookup.generateEmbeddedModifier(parsed));
+            } else {
+                addField(field, modifierFields);
             }
+        }
+    }
+
+    private void addField(PrototypeField field, ClassOrInterfaceDeclaration modifierFields) {
+        if (nonNull(modifierFields)) {
+            modifierFields.addMethod(field.getName())
+                    .setType(MODIFIER_FIELD_GENERIC)
+                    .addParameter(field.getDeclaration().getVariable(0).getType(), field.getName())
+                    .setBody(null);
         }
     }
 
@@ -182,8 +231,11 @@ public class ModifierEnricher extends BaseEnricher {
         }
 
         if (nonNull(embedded)) {
-            //var prefix = unit.getType(0).asClassOrInterfaceDeclaration().getFullyQualifiedName();
-            embedded.setExtendedTypes(modifier.getExtendedTypes());
+            if (isClass) {
+                embedded.setExtendedTypes(modifier.getExtendedTypes());
+            } else {
+                embedded.addExtendedType(parse.getIntf().getNameAsString() + ".Fields<" + parse.getIntf().getNameAsString() + ".EmbeddedModify<" + MODIFIER_FIELD_GENERIC + ">>");
+            }
 
             var intf = modifier.getNameAsString();
             var eIntf = embedded.getNameAsString() + "<T>";

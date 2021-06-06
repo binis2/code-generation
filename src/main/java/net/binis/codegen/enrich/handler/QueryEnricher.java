@@ -9,6 +9,7 @@ import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.spiralbank.core.objects.Test;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.CollectionsHandler;
+import net.binis.codegen.generation.core.Constants;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
@@ -197,6 +198,11 @@ public class QueryEnricher extends BaseEnricher {
                 .addTypeParameter(QUERY_GENERIC);
         intf.addMember(qFields);
 
+        var mFields = description.getRegisteredClass(Constants.MODIFIER_FIELDS_KEY);
+        if (nonNull(mFields)) {
+            qFields.addExtendedType(intf.getNameAsString() + "." + mFields.getNameAsString() + "<" + QUERY_GENERIC + ">");
+        }
+
         var qFuncs = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_FUNCS)
                 .addTypeParameter(QUERY_GENERIC);
         intf.addMember(qFuncs);
@@ -291,6 +297,8 @@ public class QueryEnricher extends BaseEnricher {
                             .addStatement("executor.collection(\"" + name + "\", in);")
                             .addStatement(new ReturnStmt("(" + QUERY_SELECT_OPERATION + ") executor")));
         } else {
+            Helpers.importType(field.getCommonType(), fields.findCompilationUnit().get());
+
             impl.addMethod(name)
                     .setType(QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
                     .addModifier(PUBLIC)
@@ -338,10 +346,12 @@ public class QueryEnricher extends BaseEnricher {
                                 .addStatement(new ReturnStmt("(" + QUERY_FUNCTIONS + ") executor.identifier(\"" + name + "\")")));
             }
 
-            fields.addMethod(name)
-                    .setType(QUERY_GENERIC)
-                    .setBody(null)
-                    .addParameter(field.getCommonType(), name);
+            if (!Helpers.methodExists(fields, desc, false)) {
+                fields.addMethod(name)
+                        .setType(QUERY_GENERIC)
+                        .setBody(null)
+                        .addParameter(field.getCommonType(), name);
+            }
 
             qNameImpl.addMethod(name)
                     .setType(QUERY_SELECT_OPERATION + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">")

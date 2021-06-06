@@ -15,12 +15,13 @@ public interface MixIn extends Test {
 
     void setSubtitle(String subtitle);
 
-    interface Modify {
+    interface Fields<T> extends Test.Fields<T> {
+
+        T subtitle(String subtitle);
+    }
+
+    interface Modify extends MixIn.Fields<MixIn.Modify> {
 
         MixIn done();
-
-        Modify subtitle(String subtitle);
-
-        Modify title(String title);
     }
 }

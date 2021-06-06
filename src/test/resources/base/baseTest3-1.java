@@ -1,13 +1,7 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.codegen;
 
-import net.binis.codegen.creator.EntityCreatorModifier;
-
-public interface Test {
-
-    static Test.Modify create() {
-        return (Test.Modify) EntityCreatorModifier.create(Test.class).with();
-    }
+public interface Test extends Base {
 
     String getTitle();
 
@@ -15,7 +9,7 @@ public interface Test {
 
     Test.Modify with();
 
-    interface Fields<T> {
+    interface Fields<T> extends Base.Fields<T> {
 
         T title(String title);
     }
