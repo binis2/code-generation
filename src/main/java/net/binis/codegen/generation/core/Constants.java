@@ -16,5 +16,12 @@ public class Constants {
     public static final String EMBEDDED_MODIFIER_KEY = "Embedded" + MODIFIER_KEY;
     public static final String EMBEDDED_MODIFIER_INTF_KEY = EMBEDDED_MODIFIER_KEY + "Intf";
 
+    public static final String QUERY_KEY = "Query";
+    public static final String QUERY_EXECUTOR_KEY = QUERY_KEY + "Executor";
+    public static final String QUERY_ORDER_KEY = QUERY_KEY + "Order";
+    public static final String QUERY_NAME_KEY = QUERY_KEY + "Name";
+    public static final String QUERY_NAME_INTF_KEY = QUERY_KEY + "NameIntf";
+    public static final String QUERY_START_KEY = QUERY_KEY + "Start";
+
 
 }

@@ -11,6 +11,7 @@ import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -96,6 +97,10 @@ public class Structures {
 
         private ClassOrInterfaceDeclaration spec;
         private ClassOrInterfaceDeclaration intf;
+
+        @Builder.Default
+        @EqualsAndHashCode.Exclude
+        private List<Triple<ClassOrInterfaceDeclaration, ClassOrInterfaceDeclaration, ClassOrInterfaceDeclaration>> initializers = new ArrayList<>();
 
         public void registerClass(String key, ClassOrInterfaceDeclaration declaration) {
             classes.put(key, declaration);

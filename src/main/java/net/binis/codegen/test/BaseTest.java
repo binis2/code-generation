@@ -131,7 +131,9 @@ public abstract class BaseTest {
         files.forEach(f -> {
             lookup.findGeneratedByFileName(f.getLeft()).forEach(parsed -> {
                 if (nonNull(pathToSave)) {
-                    save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
+                    if (isNull(parsed.getMixIn())) {
+                        save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
+                    }
                     save(parsed.getProperties().getInterfaceName(), parsed.getFiles().get(1), pathToSave);
                 }
 

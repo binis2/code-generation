@@ -8,6 +8,7 @@ import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
+import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
@@ -217,7 +218,7 @@ public class Helpers {
 
     private static ImportDeclaration forceGetClassImport(CompilationUnit unit, String type) {
         return unit.getImports().stream().filter(ImportDeclaration::isAsterisk).filter(i ->
-            nonNull(loadClass(i.getNameAsString() + "." + type))).findFirst().orElse(null);
+                nonNull(loadClass(i.getNameAsString() + "." + type))).findFirst().orElse(null);
     }
 
     public static boolean methodExists(ClassOrInterfaceDeclaration spec, String name, Method declaration, boolean isClass) {
@@ -521,7 +522,7 @@ public class Helpers {
         var result = new Holder<String>();
         member.getAnnotations().stream().filter(a -> "Default".equals(a.getNameAsString())).findFirst().ifPresent(annotation ->
                 result.set(annotation.getNameAsString())
-                );
+        );
         return result.get();
     }
 
@@ -677,8 +678,21 @@ public class Helpers {
 
     public static void finalizeEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
         getEnrichersList(parsed).forEach(e -> e.finalize(parsed));
+
+        parsed.getInitializers().forEach(i -> {
+            getInitializer(isNull(parsed.getMixIn()) ? parsed.getSpec() : parsed.getMixIn().getSpec()).addStatement(new MethodCallExpr()
+                    .setName("CodeFactory.registerType")
+                    .addArgument((i.getLeft().getParentNode().get() instanceof ClassOrInterfaceDeclaration ? ((ClassOrInterfaceDeclaration) i.getLeft().getParentNode().get()).getNameAsString() + "." : "") + i.getLeft().getNameAsString() + ".class")
+                    .addArgument(i.getMiddle().getNameAsString() + "::new")
+                    .addArgument(nonNull(i.getRight()) ? "(p, v) -> new " + i.getRight().getNameAsString() + "<>(p, (" + i.getMiddle().getNameAsString() + ") v)" : "null"));
+        });
+
         Helpers.handleImports(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getIntf());
         Helpers.handleImports(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getSpec());
+    }
+
+    public static BlockStmt getInitializer(ClassOrInterfaceDeclaration type) {
+        return type.getChildNodes().stream().filter(n -> n instanceof InitializerDeclaration).map(n -> ((InitializerDeclaration) n).asInitializerDeclaration().getBody()).findFirst().orElseGet(type::addInitializer);
     }
 
     public static boolean isJavaType(String type) {
@@ -725,6 +739,22 @@ public class Helpers {
             }
         }
 
+    }
+
+    public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration embedded) {
+        type.findCompilationUnit().get().addImport("net.binis.codegen.factory.CodeFactory");
+
+        var list = description.getInitializers();
+        for (var i = 0; i < list.size(); i++) {
+            if (list.get(i).getLeft().getFullyQualifiedName().get().equals(intf.getFullyQualifiedName().get())) {
+                if (isNull(list.get(i).getRight()) && nonNull(embedded)) {
+                    list.set(i, Triple.of(intf, type, embedded));
+                }
+                return;
+            }
+        }
+
+        list.add(Triple.of(intf, type, embedded));
     }
 
 }
