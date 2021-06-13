@@ -18,6 +18,7 @@ import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import org.apache.commons.lang3.StringUtils;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
@@ -191,8 +192,13 @@ public class ModifierEnricher extends BaseEnricher {
 
                     for (var method : cls.getDeclaredMethods()) {
                         if (java.lang.reflect.Modifier.isPublic(method.getModifiers()) && !"setObject".equals(method.getName())) {
-                            if (nonNull(method.getAnnotation(Final.class))) {
-                                Generator.addMethod(modifier, method, clsSignature, intfName);
+                            var ann = method.getAnnotation(Final.class);
+                            if (nonNull(ann)) {
+                                if (StringUtils.isBlank(ann.description())) {
+                                    Generator.addMethod(modifier, method, clsSignature, intfName);
+                                } else {
+                                    Generator.addMethod(modifier, method, clsSignature, modName, intfName, ann);
+                                }
                             } else {
                                 Generator.addMethod(modifier, method, clsSignature, modName);
                             }

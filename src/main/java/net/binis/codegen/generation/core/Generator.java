@@ -978,6 +978,30 @@ public class Generator {
         }
     }
 
+    public static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, List<String> signature, String modName, String intfName, Final ann) {
+        if (!methodExists(spec, declaration, false)) {
+            spec.findCompilationUnit().ifPresent(u -> Arrays.stream(ann.imports()).forEach(u::addImport));
+            var method = spec.addMethod(declaration.getName());
+            method.setType(signature.contains(parseMethodSignature(declaration)) ? intfName : declaration.getReturnType().toString());
+            var params = ann.description().split(";");
+            for (var i = 0; i < declaration.getParameterCount(); i++) {
+                var param = declaration.getParameters()[i];
+                if (i < params.length && StringUtils.isNotBlank(params[i])) {
+                    var desc = params[i].replace("{T}", intfName).replace("{R}", modName);
+                    var idx = desc.lastIndexOf(" ");
+                    if (idx > -1) {
+                        method.addParameter(desc.substring(0, idx), desc.substring(idx + 1));
+                    } else {
+                        method.addParameter(param.getType().getCanonicalName(), param.getName());
+                    }
+                } else {
+                    method.addParameter(param.getType().getCanonicalName(), param.getName());
+                }
+            }
+            method.setBody(null);
+        }
+    }
+
     private static void mergeTypes(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Predicate<BodyDeclaration<?>> filter, Function<MethodDeclaration, MethodDeclaration> adjuster) {
         for (var member : source.getMembers()) {
             if (filter.test(member)) {
@@ -1201,6 +1225,6 @@ public class Generator {
                 destination.addMember(field);
             }
         }
-
     }
+
 }

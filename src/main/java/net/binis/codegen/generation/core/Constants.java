@@ -21,7 +21,6 @@ public class Constants {
     public static final String QUERY_ORDER_KEY = QUERY_KEY + "Order";
     public static final String QUERY_NAME_KEY = QUERY_KEY + "Name";
     public static final String QUERY_NAME_INTF_KEY = QUERY_KEY + "NameIntf";
-    public static final String QUERY_START_KEY = QUERY_KEY + "Start";
 
 
 }
