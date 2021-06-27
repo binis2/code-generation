@@ -13,18 +13,15 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.enrich.PrototypeEnricher;
+import net.binis.codegen.enrich.PrototypeLookup;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
-import net.binis.codegen.enrich.PrototypeLookup;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Holder;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.lang.reflect.Method;
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -657,17 +654,21 @@ public class Helpers {
     }
 
     private static List<PrototypeEnricher> getEnrichersList(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
-        var list = new ArrayList<PrototypeEnricher>();
+        var map = new HashMap<Class<?>, PrototypeEnricher>();
 
         notNull(parsed.getBase(), base ->
-                notNull(base.getProperties().getInheritedEnrichers(), list::addAll));
+                notNull(base.getProperties().getInheritedEnrichers(), l ->
+                        l.forEach( e -> map.put(e.getClass(), e))));
 
         notNull(parsed.getMixIn(), mixIn ->
                 notNull(mixIn.getBase(), base ->
-                        notNull(base.getProperties().getInheritedEnrichers(), list::addAll)));
+                        notNull(base.getProperties().getInheritedEnrichers(), l ->
+                                l.forEach( e -> map.put(e.getClass(), e)))));
 
-        notNull(parsed.getProperties().getEnrichers(), list::addAll);
+        notNull(parsed.getProperties().getEnrichers(), l ->
+                l.forEach( e -> map.put(e.getClass(), e)));
 
+        var list = new ArrayList<>(map.values());
         list.sort(Comparator.comparingInt(PrototypeEnricher::order).reversed());
         return list;
     }
@@ -713,7 +714,9 @@ public class Helpers {
 
     private static void findUsedTypesInternal(Set<String> types, Node node) {
         if (node instanceof ClassOrInterfaceType) {
-            types.add(((ClassOrInterfaceType) node).getNameAsString());
+            var type = (ClassOrInterfaceType) node;
+            types.add(type.getNameAsString());
+            type.getTypeArguments().ifPresent(a -> a.forEach(n -> findUsedTypesInternal(types, n)));
         } else if (node instanceof AnnotationExpr) {
             types.add(((AnnotationExpr) node).getNameAsString());
         } else if (node instanceof NameExpr) {

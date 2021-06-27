@@ -20,6 +20,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -45,7 +46,32 @@ public class CodeGen {
 
         var files = new ArrayList<Path>();
         addTree(Paths.get(cmd.getOptionValue(SOURCE)), files, cmd.getOptionValue(FILTER));
+        processFiles(files);
 
+        enumParsed.values().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
+            if (isNull(p.getProperties().getMixInClass())) {
+                saveFile(getBasePath(cmd.getOptionValue(DESTINATION), p.getProperties()), p.getFiles().get(0));
+            }
+        });
+
+        var constants = Generator.generateCodeForConstants();
+        if (nonNull(constants)) {
+            saveFile(cmd.getOptionValue(DESTINATION), constants);
+        }
+
+        var destination = cmd.getOptionValue(DESTINATION);
+        var impl_destination = cmd.getOptionValue(IMPL_DESTINATION);
+        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
+            if (p.getProperties().isGenerateImplementation() && isNull(p.getProperties().getMixInClass())) {
+                saveFile(nullCheck(getBasePath(impl_destination, p.getProperties()), destination), p.getFiles().get(0));
+            }
+            if (p.getProperties().isGenerateInterface()) {
+                saveFile(getBasePath(destination, p.getProperties()), p.getFiles().get(1));
+            }
+        });
+    }
+
+    public static void processFiles(List<Path> files) {
         var parser = new JavaParser();
         for (var file : files) {
             try {
@@ -65,17 +91,6 @@ public class CodeGen {
                     Generator.generateCodeForEnum(entry.getValue().getDeclaration().findCompilationUnit().get()));
         }
 
-        enumParsed.values().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
-            if (isNull(p.getProperties().getMixInClass())) {
-                saveFile(getBasePath(cmd.getOptionValue(DESTINATION), p.getProperties()), p.getFiles().get(0));
-            }
-        });
-
-        var constants = Generator.generateCodeForConstants();
-        if (nonNull(constants)) {
-            saveFile(cmd.getOptionValue(DESTINATION), constants);
-        }
-
         for (var entry : lookup.parsed()) {
             ifNull(entry.getFiles(), () ->
                     Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get()));
@@ -88,17 +103,6 @@ public class CodeGen {
         lookup.parsed().stream().filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
         lookup.parsed().stream().filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
         lookup.parsed().stream().filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
-
-        var destination = cmd.getOptionValue(DESTINATION);
-        var impl_destination = cmd.getOptionValue(IMPL_DESTINATION);
-        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
-            if (p.getProperties().isGenerateImplementation() && isNull(p.getProperties().getMixInClass())) {
-                saveFile(nullCheck(getBasePath(impl_destination, p.getProperties()), destination), p.getFiles().get(0));
-            }
-            if (p.getProperties().isGenerateInterface()) {
-                saveFile(getBasePath(destination, p.getProperties()), p.getFiles().get(1));
-            }
-        });
     }
 
     @SuppressWarnings("unchecked")
