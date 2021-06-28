@@ -9,7 +9,6 @@ import net.binis.codegen.generation.core.Structures;
 import java.util.Map;
 
 public interface PrototypeField {
-
     String getName();
     MethodDeclaration getDescription();
     FieldDeclaration getDeclaration();

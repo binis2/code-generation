@@ -490,10 +490,10 @@ public class Generator {
                     }
                     handleExternalInterface(parsed, declaration, spec, cls, type.getTypeArguments().orElse(null));
                     if (nonNull(intf)) {
-                        intf.addExtendedType(type);
+                        intf.addExtendedType(handleType(declaration.findCompilationUnit().get(), intf.findCompilationUnit().get(), type, false));
                     } else {
                         if (spec.getImplementedTypes().stream().noneMatch(type::equals)) {
-                            spec.addImplementedType(type);
+                            spec.addImplementedType(handleType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), type, false));
                         }
                     }
                 } else {
@@ -592,7 +592,6 @@ public class Generator {
         if (type.isClassOrInterfaceType() && type.asClassOrInterfaceType().getScope().isPresent()) {
             type.asClassOrInterfaceType().getScope().get().setName(scope);
         }
-
     }
 
     private static String getScope(Type type) {
@@ -940,7 +939,7 @@ public class Generator {
             if (isClass) {
                 method
                         .addModifier(PUBLIC)
-                        .setBody(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName("this." + getFieldName(declaration.getNameAsString()))).setValue(new NameExpr().setName(declaration.getName()))));
+                        .setBody(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName("this." + getFieldName(declaration.getNameAsString()))).setValue(new NameExpr().setName(getFieldName(declaration.getNameAsString())))));
             } else {
                 method.setBody(null);
             }

@@ -449,7 +449,14 @@ public class Helpers {
         result = new HashMap<>();
 
         for (var i = 0; i < types.size(); i++) {
-            result.put(types.get(i), generics.get(i));
+            var generic = generics.get(i);
+            if (generic.isClassOrInterfaceType()) {
+                var parsed = getParsed(generic.asClassOrInterfaceType());
+                if (nonNull(parsed)) {
+                    generic = new ClassOrInterfaceType().setName(parsed.getIntf().getNameAsString());
+                }
+            }
+            result.put(types.get(i), generic);
         }
         return result;
     }

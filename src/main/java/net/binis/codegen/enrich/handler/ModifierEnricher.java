@@ -136,19 +136,20 @@ public class ModifierEnricher extends BaseEnricher {
                         lookup.generateEmbeddedModifier(parsed));
             } else {
                 addField(field, modifierFields);
-                classDeclaration.findCompilationUnit().ifPresent(source ->
-                        modifier.findCompilationUnit().ifPresent(destination ->
-                                handleType(source, destination, type, false)));
             }
         }
     }
 
     private void addField(PrototypeField field, ClassOrInterfaceDeclaration modifierFields) {
         if (nonNull(modifierFields)) {
+            var type = field.getDeclaration().getVariable(0).getType();
             modifierFields.addMethod(field.getName())
                     .setType(MODIFIER_FIELD_GENERIC)
-                    .addParameter(field.getDeclaration().getVariable(0).getType(), field.getName())
+                    .addParameter(type, field.getName())
                     .setBody(null);
+            field.getDeclaration().findCompilationUnit().ifPresent(source ->
+                    modifierFields.findCompilationUnit().ifPresent(dest ->
+                            dest.addImport(getExternalClassName(source, type.asString()))));
         }
     }
 
