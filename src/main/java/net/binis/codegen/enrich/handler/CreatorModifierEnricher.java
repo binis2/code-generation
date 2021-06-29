@@ -1,15 +1,12 @@
 package net.binis.codegen.enrich.handler;
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.InitializerDeclaration;
-import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
+import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.Constants;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
-import net.binis.codegen.enrich.handler.base.BaseEnricher;
-import org.apache.commons.lang3.tuple.Triple;
 
 import static com.github.javaparser.ast.Modifier.Keyword.STATIC;
 import static java.util.Objects.isNull;

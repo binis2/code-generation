@@ -84,33 +84,43 @@ public abstract class BaseTest {
     }
 
     protected void testSingle(String prototype, String resClass, String resInterface) {
-        testSingle(prototype, resClass, resInterface, null);
+        testSingle(prototype, resClass, resInterface, null, 1);
     }
 
     protected void testSingle(String prototype, String resClass, String resInterface, String pathToSave) {
+        testSingle(prototype, resClass, resInterface, pathToSave, 1);
+    }
+
+    protected void testSingle(String prototype, String resClass, String resInterface, int expected) {
+        testSingle(prototype, resClass, resInterface, null, expected);
+    }
+
+    protected void testSingle(String prototype, String resClass, String resInterface, String pathToSave, int expected) {
         var list = newList();
         load(list, prototype);
         assertTrue(compile(new TestClassLoader(), list));
         generate();
 
-        assertEquals(1, lookup.parsed().size());
+        assertEquals(expected, lookup.parsed().size());
 
+        list = newList();
+        for (var parsed : lookup.generated()) {
+            if (isNull(parsed.getCompiled())) {
+                if (nonNull(pathToSave)) {
+                    save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
+                    save(parsed.getProperties().getInterfaceName(), parsed.getFiles().get(1), pathToSave);
+                }
 
-        with(lookup.generated().iterator().next(), parsed -> {
-            if (nonNull(pathToSave)) {
-                save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
-                save(parsed.getProperties().getInterfaceName(), parsed.getFiles().get(1), pathToSave);
+                compare(parsed.getFiles().get(1), resInterface);
+                compare(parsed.getFiles().get(0), resClass);
             }
 
-            compare(parsed.getFiles().get(1), resInterface);
-            compare(parsed.getFiles().get(0), resClass);
+            list.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+            list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
 
-            var loader = new TestClassLoader();
-            assertTrue(compile(loader,
-                    List.of(
-                            Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))),
-                            Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))))));
-        });
+        }
+        var loader = new TestClassLoader();
+        assertTrue(compile(loader, list));
     }
 
     protected void testMulti(List<Triple<String, String, String>> files) {

@@ -9,6 +9,8 @@ import java.util.List;
 
 public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
+    Class<?> getCompiled();
+
     String getPrototypeFileName();
 
     PrototypeData getProperties();

@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledPrototype;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Tools.*;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
@@ -92,6 +93,7 @@ public class Generator {
                             } else {
                                 throw new GenericCodeGenException(parse.getDeclaration().getNameAsString() + " can't have more that one base class!");
                             }
+                            unit.addImport(parsed.getParsedFullName());
                             spec.addExtendedType(parsed.getParsedName());
 
                             if (parsed.getProperties().isGenerateConstructor() && properties.isGenerateConstructor()) {
@@ -353,14 +355,13 @@ public class Generator {
                 switch (name) {
                     case "name":
                         var value = pair.getValue().asStringLiteralExpr().asString();
-                        var intf = value.replace("Entity", "");
-                        builder.name(value)
-                                .className(value)
-                                .classPackage("net.binis.codegen.entities")
-                                .interfaceName(intf)
-                                .interfacePackage("net.binis.codegen.objects")
-                                .modifierName(Constants.MODIFIER_INTERFACE_NAME)
-                                .longModifierName(intf + "." + Constants.MODIFIER_INTERFACE_NAME);
+                        if (StringUtils.isNotBlank(value)) {
+                            var intf = value.replace("Entity", "");
+                            builder.name(value)
+                                    .className(value)
+                                    .interfaceName(intf)
+                                    .longModifierName(intf + "." + Constants.MODIFIER_INTERFACE_NAME);
+                        }
                         break;
                     case "generateConstructor":
                         builder.generateConstructor(pair.getValue().asBooleanLiteralExpr().getValue());
@@ -372,7 +373,10 @@ public class Generator {
                         builder.generateInterface(pair.getValue().asBooleanLiteralExpr().getValue());
                         break;
                     case "interfaceName":
-                        iName.set(pair.getValue().asStringLiteralExpr().asString());
+                        value = pair.getValue().asStringLiteralExpr().asString();
+                        if (StringUtils.isNotBlank(value)) {
+                            iName.set(pair.getValue().asStringLiteralExpr().asString());
+                        }
                         break;
                     case "classGetters":
                         builder.classGetters(pair.getValue().asBooleanLiteralExpr().getValue());
@@ -387,16 +391,28 @@ public class Generator {
                         builder.base(pair.getValue().asBooleanLiteralExpr().getValue());
                         break;
                     case "baseModifierClass":
-                        builder.baseModifierClass(pair.getValue().asClassExpr().getTypeAsString());
+                        value = pair.getValue().asClassExpr().getTypeAsString();
+                        if (StringUtils.isNotBlank(value) && !"void".equals(value)) {
+                            builder.baseModifierClass(value);
+                        }
                         break;
                     case "mixInClass":
-                        builder.mixInClass(pair.getValue().asClassExpr().getTypeAsString());
+                        value = pair.getValue().asClassExpr().getTypeAsString();
+                        if (StringUtils.isNotBlank(value) && !"void".equals(value)) {
+                            builder.mixInClass(value);
+                        }
                         break;
                     case "implementationPackage":
-                        builder.classPackage(pair.getValue().asStringLiteralExpr().asString());
+                        value = pair.getValue().asStringLiteralExpr().asString();
+                        if (StringUtils.isNotBlank(value)) {
+                            builder.classPackage(pair.getValue().asStringLiteralExpr().asString());
+                        }
                         break;
                     case "basePath":
-                        builder.basePath(pair.getValue().asStringLiteralExpr().asString());
+                        value = pair.getValue().asStringLiteralExpr().asString();
+                        if (StringUtils.isNotBlank(value)) {
+                            builder.basePath(value);
+                        }
                         break;
                     case "enrichers":
                         checkEnrichers(builder::enrichers, pair.getValue().asArrayInitializerExpr());
@@ -446,8 +462,12 @@ public class Generator {
 
     private static void ensureParsedParents(ClassOrInterfaceDeclaration declaration, PrototypeData properties) {
         for (var extended : declaration.getExtendedTypes()) {
-            notNull(getParsed(extended), parse ->
-                    ifNull(parse.getFiles(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get())));
+            var parsed = getParsed(extended);
+            if (nonNull(parsed)) {
+                ifNull(parsed.getFiles(), () -> generateCodeForClass(parsed.getDeclaration().findCompilationUnit().get()));
+            } else {
+                handleCompiledPrototype(getExternalClassName(declaration.findCompilationUnit().get(), extended.getNameAsString()));
+            }
         }
 
         notNull(properties.getMixInClass(), c ->
