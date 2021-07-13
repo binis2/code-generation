@@ -22,5 +22,7 @@ public class Constants {
     public static final String QUERY_NAME_KEY = QUERY_KEY + "Name";
     public static final String QUERY_NAME_INTF_KEY = QUERY_KEY + "NameIntf";
 
+    public static final String CLONE_METHOD = "clone";
+
 
 }

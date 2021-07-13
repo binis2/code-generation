@@ -7,8 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.CodePrototype;
 
 import static net.binis.codegen.generation.core.Generator.generateCodeForClass;
-import static net.binis.codegen.generation.core.Helpers.loadClass;
 import static net.binis.codegen.generation.core.Helpers.lookup;
+import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.notNull;
 
 @Slf4j
@@ -23,14 +23,13 @@ public abstract class CompiledPrototypesHandler {
     public static void handleCompiledPrototype(String compiledPrototype) {
         notNull(loadClass(compiledPrototype), c -> {
             notNull(c.getAnnotation(CodePrototype.class), ann -> {
-                log.info("{}", ann);
-
                 var declaration = new CompilationUnit().setPackageDeclaration(c.getPackageName()).addClass(c.getSimpleName()).setInterface(true);
                 handleAnnotations(c, declaration);
                 handleFields(c, declaration);
 
                 var parsed = Structures.Parsed.<ClassOrInterfaceDeclaration>builder()
                         .compiled(c)
+                        .parser(parser)
                         .declaration(declaration);
 
                 lookup.registerParsed(compiledPrototype, parsed.build());

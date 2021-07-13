@@ -1,5 +1,6 @@
 package net.binis.codegen.generation.core.interfaces;
 
+import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
@@ -8,6 +9,8 @@ import org.apache.commons.lang3.tuple.Triple;
 import java.util.List;
 
 public interface PrototypeDescription<T extends TypeDeclaration<T>> {
+
+    JavaParser getParser();
 
     Class<?> getCompiled();
 

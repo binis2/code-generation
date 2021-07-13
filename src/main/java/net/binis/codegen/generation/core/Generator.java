@@ -35,6 +35,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledPrototype;
 import static net.binis.codegen.generation.core.Helpers.*;
+import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
@@ -798,7 +799,7 @@ public class Generator {
 
     private static void addDoneMethod(ClassOrInterfaceDeclaration spec, String parentName, String parentClassName, boolean isClass, boolean isAbstract) {
         var method = spec
-                .addMethod("done")
+                .addMethod(Constants.MODIFIER_DONE_METHOD_NAME)
                 .setType(parentName);
         if (isClass) {
             method

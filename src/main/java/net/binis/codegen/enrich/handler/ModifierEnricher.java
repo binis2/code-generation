@@ -27,6 +27,7 @@ import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.*;
 import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.generation.core.Helpers.*;
+import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j

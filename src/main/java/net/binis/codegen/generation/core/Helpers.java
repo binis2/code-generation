@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
@@ -618,14 +619,6 @@ public class Helpers {
         }
 
         return 0;
-    }
-
-    public static Class<?> loadClass(String className) {
-        try {
-            return Class.forName(className);
-        } catch (ClassNotFoundException e) {
-            return null;
-        }
     }
 
     public static boolean classExists(String className) {

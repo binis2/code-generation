@@ -74,7 +74,7 @@ public abstract class BaseTest {
         }
         parse.getResult().ifPresent(u ->
                 u.getTypes().forEach(t ->
-                        CodeGen.handleType(t, resource)));
+                        CodeGen.handleType(parser, t, resource)));
     }
 
     protected void compare(CompilationUnit unit, String resource) {

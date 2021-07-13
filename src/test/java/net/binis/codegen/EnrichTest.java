@@ -48,6 +48,11 @@ public class EnrichTest extends BaseTest {
                 "enrich/enrichCreatorModifierMixIn-2.java");
     }
 
+    @Test
+    public void enrichClone() {
+        testSingle("enrich/enrichClone.java", "enrich/enrichClone-0.java", "enrich/enrichClone-1.java");
+    }
+
 
 
 }

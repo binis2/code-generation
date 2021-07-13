@@ -1,5 +1,6 @@
 package net.binis.codegen.generation.core;
 
+import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
@@ -70,6 +71,8 @@ public class Structures {
     @Data
     @Builder
     public static class Parsed<T extends TypeDeclaration<T>> implements PrototypeDescription<T> {
+
+        private JavaParser parser;
 
         private Class<?> compiled;
         private String prototypeFileName;
