@@ -36,6 +36,7 @@ public class QueryEnricher extends BaseEnricher {
     private static final String QUERY_ORDER_GENERIC = "QO";
     private static final String QUERY_AGGREGATE_GENERIC = "QA";
     private static final String QUERY_FUNCTIONS = "QueryFunctions";
+    private static final String QUERY_COLLECTION_FUNCTIONS = "QueryCollectionFunctions";
     private static final String QUERY_FIELDS = "QueryFields";
     private static final String QUERY_OP_FIELDS = "QueryOperationFields";
     private static final String QUERY_FUNCS = "QueryFuncs";
@@ -271,26 +272,16 @@ public class QueryEnricher extends BaseEnricher {
         if (desc.isCollection()) {
             var subType = CollectionsHandler.getCollectionType(field.getCommonType());
 
-            fields.addMethod(name)
-                    .setType(QUERY_GENERIC)
-                    .setBody(null)
-                    .addParameter(subType, "in");
+            select.addMethod(name)
+                    .setType(QUERY_COLLECTION_FUNCTIONS + "<" + subType + "," + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
+                    .setBody(null);
 
             impl.addMethod(name)
-                    .setType(QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
+                    .setType(QUERY_COLLECTION_FUNCTIONS + "<" + subType + "," + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
                     .addModifier(PUBLIC)
-                    .addParameter(subType, "in")
                     .setBody(new BlockStmt()
-                            .addStatement("collection(\"" + name + "\", in);")
-                            .addStatement(new ReturnStmt("this")));
+                            .addStatement(new ReturnStmt("(" + QUERY_COLLECTION_FUNCTIONS + ") identifier(\"" + name + "\")")));
 
-            qNameImpl.addMethod(name)
-                    .setType(QUERY_SELECT_OPERATION + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">")
-                    .addModifier(PUBLIC)
-                    .addParameter(subType, "in")
-                    .setBody(new BlockStmt()
-                            .addStatement("executor.collection(\"" + name + "\", in);")
-                            .addStatement(new ReturnStmt("(" + QUERY_SELECT_OPERATION + ") executor")));
         } else {
             Helpers.importType(field.getCommonType(), fields.findCompilationUnit().get());
 
@@ -299,8 +290,7 @@ public class QueryEnricher extends BaseEnricher {
                     .addModifier(PUBLIC)
                     .addParameter(field.getCommonType(), name)
                     .setBody(new BlockStmt()
-                            .addStatement("identifier(\"" + name + "\", " + name + ");")
-                            .addStatement(new ReturnStmt("this")));
+                            .addStatement(new ReturnStmt("identifier(\"" + name + "\", " + name + ")")));
 
             opFields.addMethod(name)
                     .setType(QUERY_GENERIC)
