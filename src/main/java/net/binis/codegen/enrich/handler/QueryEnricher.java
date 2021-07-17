@@ -11,7 +11,6 @@ import net.binis.codegen.generation.core.Constants;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
-import net.binis.codegen.spring.query.QueryExecute;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
@@ -114,28 +113,28 @@ public class QueryEnricher extends BaseEnricher {
                 .setBody(new BlockStmt()
                         .addStatement("doNot();")
                         .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
-                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement("result.setParent(alias, this);")
                         .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
 
         impl.addMethod("lower", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
                 .setBody(new BlockStmt()
                         .addStatement("doLower();")
                         .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
-                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement("result.setParent(alias, this);")
                         .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
 
         impl.addMethod("upper", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
                 .setBody(new BlockStmt()
                         .addStatement("doUpper();")
                         .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
-                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement("result.setParent(alias, this);")
                         .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
 
         impl.addMethod("trim", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
                 .setBody(new BlockStmt()
                         .addStatement("doTrim();")
                         .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
-                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement("result.setParent(alias, this);")
                         .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
 
         impl.addMethod("substring", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
@@ -143,7 +142,7 @@ public class QueryEnricher extends BaseEnricher {
                 .setBody(new BlockStmt()
                         .addStatement("doSubstring(start);")
                         .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
-                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement("result.setParent(alias, this);")
                         .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
 
         impl.addMethod("substring", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
@@ -152,7 +151,7 @@ public class QueryEnricher extends BaseEnricher {
                 .setBody(new BlockStmt()
                         .addStatement("doSubstring(start, len);")
                         .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
-                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement("result.setParent(alias, this);")
                         .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
 
         impl.addMethod("replace", PUBLIC).setType(entity + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">")
@@ -161,7 +160,7 @@ public class QueryEnricher extends BaseEnricher {
                 .setBody(new BlockStmt()
                         .addStatement("doReplace(what, withWhat);")
                         .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "<>();")
-                        .addStatement("result.setParent(\"u\", this);")
+                        .addStatement("result.setParent(alias, this);")
                         .addStatement(new ReturnStmt("(" + entity + "." + QUERY_NAME + ") result")));
 
         var orderImpl = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + QUERY_ORDER + QUERY_IMPL)
@@ -321,8 +320,7 @@ public class QueryEnricher extends BaseEnricher {
                 funcs.addMethod(name).setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + "," + QUERY_GENERIC + ">").setBody(null);
                 impl.addMethod(name, PUBLIC).setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + "," + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
                         .setBody(new BlockStmt()
-                                .addStatement("identifier(\"" + name + "\");")
-                                .addStatement(new ReturnStmt("(" + QUERY_FUNCTIONS + ") this")));
+                                .addStatement(new ReturnStmt("(" + QUERY_FUNCTIONS + ") identifier(\"" + name + "\")")));
 
                 qNameImpl.addMethod(name)
                         .setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + ", " + QUERY_SELECT_OPERATION + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">>")
