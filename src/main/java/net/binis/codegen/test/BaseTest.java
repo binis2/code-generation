@@ -68,7 +68,7 @@ public abstract class BaseTest {
     protected void load(List<Pair<String, String>> list, String resource) {
         var source = resourceAsString(resource);
         var parse = parser.parse(source);
-        assertTrue(parse.isSuccessful());
+        assertTrue(parse.toString(), parse.isSuccessful());
         if (nonNull(list)) {
             list.add(Pair.of(parse.getResult().get().findFirst(ClassOrInterfaceDeclaration.class).get().getFullyQualifiedName().get(), source));
         }

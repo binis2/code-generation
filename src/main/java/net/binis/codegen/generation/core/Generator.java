@@ -221,18 +221,19 @@ public class Generator {
 
     private static void handleDefaultMethod(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, MethodDeclaration declaration) {
         var ignores = getIgnores(declaration);
+        var method = declaration.clone().removeModifier(DEFAULT);
+        method.getAnnotationByClass(Ignore.class).ifPresent(method::remove);
         if (!ignores.isForInterface()) {
             if (ignores.isForClass()) {
                 //TODO: Throw
                 throw new GenericCodeGenException("Not implemented!");
             } else {
-                intf.addMember(declaration.clone().removeModifier(DEFAULT).setBody(null));
+                intf.addMember(handleForAnnotations(method.clone(), false).setBody(null));
             }
         }
 
         if (!ignores.isForClass()) {
-            var method = declaration.clone().removeModifier(DEFAULT).addModifier(PUBLIC);
-            method.getAnnotationByClass(Ignore.class).ifPresent(method::remove);
+            method.addModifier(PUBLIC);
 
             declaration.getBody().ifPresent(b -> {
                 var body = b.clone();
@@ -240,8 +241,24 @@ public class Generator {
                 method.setBody(body);
             });
 
-            spec.addMember(method);
+            spec.addMember(handleForAnnotations(method, true));
         }
+    }
+
+    private static MethodDeclaration handleForAnnotations(MethodDeclaration method, boolean isClass) {
+
+        var chk = isClass ? "ForInterface" : "ForImplementation";
+
+        for (var i = method.getAnnotations().size() - 1; i > 0; i--) {
+            if (chk.equals(method.getAnnotation(i - 1).getNameAsString())) {
+                method.remove(method.getAnnotation(i));
+            }
+        }
+
+        method.getAnnotationByClass(ForInterface.class).ifPresent(method::remove);
+        method.getAnnotationByClass(ForImplementation.class).ifPresent(method::remove);
+
+        return method;
     }
 
     private static void handleDefaultMethodBody(PrototypeDescription<ClassOrInterfaceDeclaration> parse, Node node, boolean isGetter) {
