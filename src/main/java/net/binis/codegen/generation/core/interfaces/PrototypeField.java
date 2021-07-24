@@ -16,5 +16,5 @@ public interface PrototypeField {
     Structures.Ignores getIgnores();
     PrototypeDescription<ClassOrInterfaceDeclaration> getPrototype();
     Map<String, Type> getGenerics();
-
+    Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> getTypePrototypes();
 }

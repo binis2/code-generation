@@ -658,15 +658,15 @@ public class Helpers {
 
         notNull(parsed.getBase(), base ->
                 notNull(base.getProperties().getInheritedEnrichers(), l ->
-                        l.forEach( e -> map.put(e.getClass(), e))));
+                        l.forEach(e -> map.put(e.getClass(), e))));
 
         notNull(parsed.getMixIn(), mixIn ->
                 notNull(mixIn.getBase(), base ->
                         notNull(base.getProperties().getInheritedEnrichers(), l ->
-                                l.forEach( e -> map.put(e.getClass(), e)))));
+                                l.forEach(e -> map.put(e.getClass(), e)))));
 
         notNull(parsed.getProperties().getEnrichers(), l ->
-                l.forEach( e -> map.put(e.getClass(), e)));
+                l.forEach(e -> map.put(e.getClass(), e)));
 
         var list = new ArrayList<>(map.values());
         list.sort(Comparator.comparingInt(PrototypeEnricher::order).reversed());
@@ -681,11 +681,22 @@ public class Helpers {
         getEnrichersList(parsed).forEach(e -> e.finalize(parsed));
 
         parsed.getInitializers().forEach(i -> {
-            getInitializer(isNull(parsed.getMixIn()) ? parsed.getSpec() : parsed.getMixIn().getSpec()).addStatement(new MethodCallExpr()
-                    .setName("CodeFactory.registerType")
-                    .addArgument((i.getLeft().getParentNode().get() instanceof ClassOrInterfaceDeclaration ? ((ClassOrInterfaceDeclaration) i.getLeft().getParentNode().get()).getNameAsString() + "." : "") + i.getLeft().getNameAsString() + ".class")
-                    .addArgument(i.getMiddle().getNameAsString() + "::new")
-                    .addArgument(nonNull(i.getRight()) ? "(p, v) -> new " + i.getRight().getNameAsString() + "<>(p, (" + i.getMiddle().getNameAsString() + ") v)" : "null"));
+            if (i.getMiddle() instanceof ClassOrInterfaceDeclaration) {
+                var type = (ClassOrInterfaceDeclaration) i.getMiddle();
+                getInitializer(isNull(parsed.getMixIn()) ? parsed.getSpec() : parsed.getMixIn().getSpec()).addStatement(new MethodCallExpr()
+                        .setName("CodeFactory.registerType")
+                        .addArgument((i.getLeft().getParentNode().get() instanceof ClassOrInterfaceDeclaration ? ((ClassOrInterfaceDeclaration) i.getLeft().getParentNode().get()).getNameAsString() + "." : "") + i.getLeft().getNameAsString() + ".class")
+                        .addArgument(type.getNameAsString() + "::new")
+                        .addArgument(nonNull(i.getRight()) ? "(p, v) -> new " + i.getRight().getNameAsString() + "<>(p, (" + type.getNameAsString() + ") v)" : "null"));
+            } else if (i.getMiddle() instanceof LambdaExpr) {
+                var expr = (LambdaExpr) i.getMiddle();
+                getInitializer(isNull(parsed.getMixIn()) ? parsed.getSpec() : parsed.getMixIn().getSpec()).addStatement(new MethodCallExpr()
+                        .setName("CodeFactory.registerType")
+                        .addArgument((i.getLeft().getParentNode().get() instanceof ClassOrInterfaceDeclaration ? ((ClassOrInterfaceDeclaration) i.getLeft().getParentNode().get()).getNameAsString() + "." : "") + i.getLeft().getNameAsString() + ".class")
+                        .addArgument(expr)
+                        .addArgument("null"));
+
+            }
         });
 
         Helpers.handleImports(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getIntf());
@@ -745,19 +756,28 @@ public class Helpers {
     }
 
     public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration embedded) {
-        type.findCompilationUnit().get().addImport("net.binis.codegen.factory.CodeFactory");
+        addInitializerInternal(description, intf, type, embedded);
+    }
+
+    public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, LambdaExpr expr, ClassOrInterfaceDeclaration embedded) {
+        addInitializerInternal(description, intf, expr, embedded);
+    }
+
+    private static void addInitializerInternal(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, Node node, ClassOrInterfaceDeclaration embedded) {
+        description.getSpec().findCompilationUnit().get().addImport("net.binis.codegen.factory.CodeFactory");
 
         var list = description.getInitializers();
         for (var i = 0; i < list.size(); i++) {
             if (list.get(i).getLeft().getFullyQualifiedName().get().equals(intf.getFullyQualifiedName().get())) {
                 if (isNull(list.get(i).getRight()) && nonNull(embedded)) {
-                    list.set(i, Triple.of(intf, type, embedded));
+                    list.set(i, Triple.of(intf, node, embedded));
                 }
                 return;
             }
         }
 
-        list.add(Triple.of(intf, type, embedded));
+        list.add(Triple.of(intf, node, embedded));
     }
+
 
 }

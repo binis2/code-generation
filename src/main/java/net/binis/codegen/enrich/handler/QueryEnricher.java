@@ -2,6 +2,7 @@ package net.binis.codegen.enrich.handler;
 
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.expr.LambdaExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
@@ -26,6 +27,7 @@ public class QueryEnricher extends BaseEnricher {
     private static final String QUERY_ORDER_OPERATION = QUERY_ORDER + "Operation";
     private static final String QUERY_AGGREGATE = "QueryAggregate";
     private static final String QUERY_AGGREGATE_OPERATION = QUERY_AGGREGATE + "Operation";
+    private static final String QUERY_JOIN_AGGREGATE_OPERATION = "QueryJoinAggregateOperation";
     private static final String QUERY_AGGREGATOR = "QueryAggregator";
     private static final String QUERY_PARAM = "QueryParam";
     private static final String QUERY_EXECUTE = "QueryExecute";
@@ -36,6 +38,7 @@ public class QueryEnricher extends BaseEnricher {
     private static final String QUERY_AGGREGATE_GENERIC = "QA";
     private static final String QUERY_FUNCTIONS = "QueryFunctions";
     private static final String QUERY_COLLECTION_FUNCTIONS = "QueryCollectionFunctions";
+    private static final String QUERY_JOIN_COLLECTION_FUNCTIONS = "QueryJoinCollectionFunctions";
     private static final String QUERY_FIELDS = "QueryFields";
     private static final String QUERY_OP_FIELDS = "QueryOperationFields";
     private static final String QUERY_FUNCS = "QueryFuncs";
@@ -253,6 +256,7 @@ public class QueryEnricher extends BaseEnricher {
 
         description.registerClass(Constants.QUERY_EXECUTOR_KEY, impl);
         description.registerClass(Constants.QUERY_ORDER_KEY, orderImpl);
+        description.registerClass(Constants.QUERY_ORDER_INTF_KEY, order);
         description.registerClass(Constants.QUERY_NAME_KEY, qNameImpl);
         description.registerClass(Constants.QUERY_NAME_INTF_KEY, qName);
     }
@@ -271,15 +275,35 @@ public class QueryEnricher extends BaseEnricher {
         if (desc.isCollection()) {
             var subType = CollectionsHandler.getCollectionType(field.getCommonType());
 
-            select.addMethod(name)
-                    .setType(QUERY_COLLECTION_FUNCTIONS + "<" + subType + "," + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
-                    .setBody(null);
+            if (nonNull(desc.getTypePrototypes())) {
+                var returnType = QUERY_JOIN_COLLECTION_FUNCTIONS + "<" + subType + "," + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">, " + QUERY_JOIN_AGGREGATE_OPERATION + "<" + subType + "." + QUERY_OP_FIELDS + "<" + subType + "." + QUERY_AGGREGATE + "<Number, " + subType + "." + QUERY_SELECT + "<Number>>>, " + subType + "." + QUERY_SELECT + "<Number>>>";
+                var prototype = desc.getTypePrototypes().get(subType);
 
-            impl.addMethod(name)
-                    .setType(QUERY_COLLECTION_FUNCTIONS + "<" + subType + "," + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
-                    .addModifier(PUBLIC)
-                    .setBody(new BlockStmt()
-                            .addStatement(new ReturnStmt("(" + QUERY_COLLECTION_FUNCTIONS + ") identifier(\"" + name + "\")")));
+                select.addMethod(name)
+                        .setType(returnType)
+                        .setBody(null);
+
+                impl.addMethod(name)
+                        .setType(returnType)
+                        .addModifier(PUBLIC)
+                        .setBody(new BlockStmt()
+                                .addStatement(new ReturnStmt("(" + QUERY_JOIN_COLLECTION_FUNCTIONS + ") joinStart(\"" + name + "\", " + subType + "." + QUERY_ORDER + ".class)")));
+
+                if (nonNull(prototype)) {
+                    Helpers.addInitializer(prototype, prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) prototype.getParser().parseExpression("() -> " + subType + ".find().aggregate()").getResult().get(), null);
+                }
+            } else {
+                var returnType = QUERY_COLLECTION_FUNCTIONS + "<" + subType + "," + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>";
+                select.addMethod(name)
+                        .setType(returnType)
+                        .setBody(null);
+
+                impl.addMethod(name)
+                        .setType(returnType)
+                        .addModifier(PUBLIC)
+                        .setBody(new BlockStmt()
+                                .addStatement(new ReturnStmt("(" + QUERY_COLLECTION_FUNCTIONS + ") identifier(\"" + name + "\")")));
+            }
 
         } else {
             Helpers.importType(field.getCommonType(), fields.findCompilationUnit().get());

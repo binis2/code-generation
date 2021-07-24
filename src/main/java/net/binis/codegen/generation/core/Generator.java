@@ -641,13 +641,22 @@ public class Generator {
     }
 
     public static String handleType(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Type type, boolean isCollection) {
-        return handleType(source.findCompilationUnit().get(), destination.findCompilationUnit().get(), type, isCollection);
+        return handleType(source, destination, type, isCollection, null);
+    }
+
+
+    public static String handleType(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Type type, boolean isCollection, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
+        return handleType(source.findCompilationUnit().get(), destination.findCompilationUnit().get(), type, isCollection, prototypeMap);
     }
 
     public static String handleType(CompilationUnit source, CompilationUnit destination, Type type, boolean isCollection) {
+        return handleType(source, destination, type, isCollection, null);
+    }
+
+    public static String handleType(CompilationUnit source, CompilationUnit destination, Type type, boolean isCollection, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
         var result = type.toString();
         if (type.isClassOrInterfaceType()) {
-            var generic = handleGenericTypes(source, destination, type.asClassOrInterfaceType());
+            var generic = handleGenericTypes(source, destination, type.asClassOrInterfaceType(), prototypeMap);
             if (!isEmpty(generic)) {
                 result = type.asClassOrInterfaceType().getNameAsString() + "<" + String.join(",", generic) + ">";
             }
@@ -656,13 +665,13 @@ public class Generator {
         return handleType(source, destination, result, false);
     }
 
-    public static List<String> handleGenericTypes(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type) {
+    public static List<String> handleGenericTypes(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
         var result = new ArrayList<String>();
         var arguments = type.getTypeArguments();
         if (arguments.isEmpty() || arguments.get().isEmpty()) {
             return result;
         } else {
-            return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), true)).collect(Collectors.toList());
+            return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), true, prototypeMap)).collect(Collectors.toList());
         }
     }
 
@@ -677,6 +686,10 @@ public class Generator {
     }
 
     public static String handleType(CompilationUnit source, CompilationUnit destination, String type, boolean embedded) {
+        return handleType(source, destination, type, embedded, null);
+    }
+
+    public static String handleType(CompilationUnit source, CompilationUnit destination, String type, boolean embedded, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
         var full = getExternalClassName(source, type);
         var parse = lookup.findParsed(full);
 
@@ -685,6 +698,9 @@ public class Generator {
 
             if (embedded) {
                 lookup.generateEmbeddedModifier(parse);
+                if (nonNull(prototypeMap)) {
+                    prototypeMap.put(parse.getInterfaceName(), parse);
+                }
             }
 
             if (isNull(processing)) {
@@ -835,10 +851,12 @@ public class Generator {
         var fieldName = method.getNameAsString();
         var field = findField(spec, fieldName);
         if (isNull(field)) {
+            var prototypeMap = new HashMap<String, PrototypeDescription<ClassOrInterfaceDeclaration>>();
             if (nonNull(generic)) {
                 field = spec.addField(generic, fieldName, PROTECTED);
             } else {
-                field = spec.addField(handleType(type, spec, method.getType(), false), fieldName, PROTECTED);
+                field = spec.addField(handleType(type, spec, method.getType(), false, prototypeMap), fieldName, PROTECTED);
+
             }
             parsed.getFields().add(Structures.FieldData.builder()
                     .name(fieldName)
@@ -848,6 +866,7 @@ public class Generator {
                     .ignores(getIgnores(method))
                     .generics(nonNull(generic) ? Map.of(generic.asString(), generic) : null)
                     .prototype(isNull(generic) ? lookup.findParsed(getExternalClassName(type.findCompilationUnit().get(), method.getType().asString())) : null)
+                    .typePrototypes(!prototypeMap.isEmpty() ? prototypeMap : null)
                     .build());
         } else {
             parsed.getFields().stream().filter(d -> d.getName().equals(fieldName)).findFirst().ifPresent(d ->

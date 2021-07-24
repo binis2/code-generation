@@ -2,6 +2,7 @@ package net.binis.codegen.generation.core;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -66,6 +67,9 @@ public class Structures {
         private PrototypeDescription<ClassOrInterfaceDeclaration> prototype;
         @ToString.Exclude
         private Map<String, Type> generics;
+
+        @ToString.Exclude
+        private Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> typePrototypes;
     }
 
     @Data
@@ -104,7 +108,7 @@ public class Structures {
 
         @Builder.Default
         @EqualsAndHashCode.Exclude
-        private List<Triple<ClassOrInterfaceDeclaration, ClassOrInterfaceDeclaration, ClassOrInterfaceDeclaration>> initializers = new ArrayList<>();
+        private List<Triple<ClassOrInterfaceDeclaration, Node, ClassOrInterfaceDeclaration>> initializers = new ArrayList<>();
 
         public void registerClass(String key, ClassOrInterfaceDeclaration declaration) {
             classes.put(key, declaration);
