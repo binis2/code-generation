@@ -139,15 +139,15 @@ public abstract class BaseTest {
         var compileList = new ArrayList<Pair<String, String>>();
         files.forEach(f -> {
             lookup.findGeneratedByFileName(f.getLeft()).forEach(parsed -> {
+                compare(parsed.getFiles().get(1), f.getRight());
+                compare(parsed.getFiles().get(0), f.getMiddle());
+
                 if (nonNull(pathToSave)) {
                     if (isNull(parsed.getMixIn())) {
                         save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
                     }
                     save(parsed.getProperties().getInterfaceName(), parsed.getFiles().get(1), pathToSave);
                 }
-
-                compare(parsed.getFiles().get(1), f.getRight());
-                compare(parsed.getFiles().get(0), f.getMiddle());
 
                 if (isNull(parsed.getMixIn())) {
                     compileList.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
