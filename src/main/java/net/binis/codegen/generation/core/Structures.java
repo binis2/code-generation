@@ -14,6 +14,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import org.apache.commons.lang3.tuple.Triple;
+import org.springframework.scheduling.config.Task;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,7 +68,6 @@ public class Structures {
         private PrototypeDescription<ClassOrInterfaceDeclaration> prototype;
         @ToString.Exclude
         private Map<String, Type> generics;
-
         @ToString.Exclude
         private Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> typePrototypes;
     }
@@ -110,6 +110,10 @@ public class Structures {
         @EqualsAndHashCode.Exclude
         private List<Triple<ClassOrInterfaceDeclaration, Node, ClassOrInterfaceDeclaration>> initializers = new ArrayList<>();
 
+        @Builder.Default
+        @ToString.Exclude
+        private List<Runnable> postProcessActions = new ArrayList<>();
+
         public void registerClass(String key, ClassOrInterfaceDeclaration declaration) {
             classes.put(key, declaration);
         }
@@ -117,6 +121,15 @@ public class Structures {
         public ClassOrInterfaceDeclaration getRegisteredClass(String key) {
             return classes.get(key);
         }
+
+        public void registerPostProcessAction(Runnable task) {
+            postProcessActions.add(task);
+        }
+
+        public void processActions() {
+            postProcessActions.forEach(Runnable::run);
+        }
+
     }
 
     @Data

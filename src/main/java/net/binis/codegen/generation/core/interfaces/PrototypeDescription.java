@@ -42,4 +42,7 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     void registerClass(String key, ClassOrInterfaceDeclaration declaration);
     ClassOrInterfaceDeclaration getRegisteredClass(String key);
 
+    void registerPostProcessAction(Runnable task);
+    void processActions();
+
 }

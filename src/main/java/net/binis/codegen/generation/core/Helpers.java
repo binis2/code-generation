@@ -680,6 +680,8 @@ public class Helpers {
     public static void finalizeEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
         getEnrichersList(parsed).forEach(e -> e.finalize(parsed));
 
+        parsed.processActions();
+
         parsed.getInitializers().forEach(i -> {
             if (i.getMiddle() instanceof ClassOrInterfaceDeclaration) {
                 var type = (ClassOrInterfaceDeclaration) i.getMiddle();

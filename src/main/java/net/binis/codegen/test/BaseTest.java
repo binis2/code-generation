@@ -8,7 +8,6 @@ import com.github.javaparser.printer.PrettyPrinterConfiguration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.CodeGen;
-import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
 import org.apache.commons.lang3.tuple.Pair;

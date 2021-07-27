@@ -207,7 +207,7 @@ public class QueryEnricher extends BaseEnricher {
         spec.addMember(qNameImpl);
 
         var qFields = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_FIELDS)
-                .addExtendedType( QUERY_SCRIPT + "<" + QUERY_GENERIC + ">")
+                .addExtendedType(QUERY_SCRIPT + "<" + QUERY_GENERIC + ">")
                 .addTypeParameter(QUERY_GENERIC);
         intf.addMember(qFields);
 
@@ -290,7 +290,8 @@ public class QueryEnricher extends BaseEnricher {
                                 .addStatement(new ReturnStmt("(" + QUERY_JOIN_COLLECTION_FUNCTIONS + ") joinStart(\"" + name + "\", " + subType + "." + QUERY_ORDER + ".class)")));
 
                 if (nonNull(prototype)) {
-                    Helpers.addInitializer(prototype, prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) prototype.getParser().parseExpression("() -> " + subType + ".find().aggregate()").getResult().get(), null);
+                    prototype.registerPostProcessAction(() ->
+                            Helpers.addInitializer(prototype, prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) prototype.getParser().parseExpression("() -> " + subType + ".find().aggregate()").getResult().get(), null));
                 }
             } else {
                 var returnType = QUERY_COLLECTION_FUNCTIONS + "<" + subType + "," + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>";
