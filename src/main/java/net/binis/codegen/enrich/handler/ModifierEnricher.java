@@ -9,9 +9,9 @@ package net.binis.codegen.enrich.handler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,7 @@ package net.binis.codegen.enrich.handler;
  * #L%
  */
 
+import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -40,6 +41,10 @@ import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
@@ -55,6 +60,7 @@ public class ModifierEnricher extends BaseEnricher {
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+        var imports = new ArrayList<Pair<CompilationUnit, String>>();
         var spec = description.getSpec();
         if (nonNull(description.getProperties().getMixInClass())) {
             spec = description.getMixIn().getSpec();
@@ -88,7 +94,7 @@ public class ModifierEnricher extends BaseEnricher {
         }
 
         for (var field : description.getFields()) {
-            declare(description, properties, modifier, modifierClass, modifierFields, field, description.getDeclaration());
+            declare(description, properties, modifier, modifierClass, modifierFields, field, description.getDeclaration(), imports);
         }
 
         if (nonNull(description.getBase())) {
@@ -96,11 +102,11 @@ public class ModifierEnricher extends BaseEnricher {
             if (nonNull(fields)) {
                 modifierFields.addExtendedType(description.getBase().getInterfaceName() + "." + fields.getNameAsString() + "<" + MODIFIER_FIELD_GENERIC + ">");
                 for (var field : description.getBase().getFields()) {
-                    declare(description, properties, modifier, modifierClass, null, field, description.getBase().getDeclaration());
+                    declare(description, properties, modifier, modifierClass, null, field, description.getBase().getDeclaration(), imports);
                 }
             } else {
                 for (var field : description.getBase().getFields()) {
-                    declare(description, properties, modifier, modifierClass, modifierFields, field, description.getBase().getDeclaration());
+                    declare(description, properties, modifier, modifierClass, modifierFields, field, description.getBase().getDeclaration(), imports);
                 }
             }
         }
@@ -110,11 +116,11 @@ public class ModifierEnricher extends BaseEnricher {
             if (nonNull(fields)) {
                 modifierFields.addExtendedType(description.getMixIn().getInterfaceName() + "." + fields.getNameAsString() + "<" + MODIFIER_FIELD_GENERIC + ">");
                 for (var field : description.getMixIn().getFields()) {
-                    declare(description, properties, modifier, modifierClass, null, field, description.getMixIn().getDeclaration());
+                    declare(description, properties, modifier, modifierClass, null, field, description.getMixIn().getDeclaration(), imports);
                 }
             } else {
                 for (var field : description.getMixIn().getFields()) {
-                    declare(description, properties, modifier, modifierClass, modifierFields, field, description.getMixIn().getDeclaration());
+                    declare(description, properties, modifier, modifierClass, modifierFields, field, description.getMixIn().getDeclaration(), imports);
                 }
             }
 
@@ -126,11 +132,11 @@ public class ModifierEnricher extends BaseEnricher {
                         modifierFields.addExtendedType(type);
                     }
                     for (var field : description.getMixIn().getBase().getFields()) {
-                        declare(description, properties, modifier, modifierClass, null, field, description.getMixIn().getBase().getDeclaration());
+                        declare(description, properties, modifier, modifierClass, null, field, description.getMixIn().getBase().getDeclaration(), imports);
                     }
                 } else {
                     for (var field : description.getMixIn().getBase().getFields()) {
-                        declare(description, properties, modifier, modifierClass, modifierFields, field, description.getMixIn().getBase().getDeclaration());
+                        declare(description, properties, modifier, modifierClass, modifierFields, field, description.getMixIn().getBase().getDeclaration(), imports);
                     }
                 }
             }
@@ -140,10 +146,13 @@ public class ModifierEnricher extends BaseEnricher {
             intf.addMember(modifierFields);
             description.registerClass(MODIFIER_FIELDS_KEY, modifierFields);
             modifier.addExtendedType(intf.getNameAsString() + "." + modifierFields.getNameAsString() + "<" + intf.getNameAsString() + "." + modifier.getNameAsString() + ">");
+            intf.findCompilationUnit().ifPresent(dest ->
+                    imports.forEach(pair ->
+                            notNull(getExternalClassNameIfExists(pair.getKey(), pair.getValue()), dest::addImport)));
         }
     }
 
-    private void declare(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeData properties, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration modifierFields, PrototypeField field, TypeDeclaration<ClassOrInterfaceDeclaration> classDeclaration) {
+    private void declare(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeData properties, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration modifierFields, PrototypeField field, TypeDeclaration<ClassOrInterfaceDeclaration> classDeclaration, List<Pair<CompilationUnit, String>> imports) {
         if (!field.getIgnores().isForModifier()) {
             var type = isNull(field.getDescription()) ? field.getDeclaration().getVariables().get(0).getType() : field.getDescription().getType();
             if (nonNull(modifierClass)) {
@@ -156,12 +165,12 @@ public class ModifierEnricher extends BaseEnricher {
                 notNull(lookup.findParsed(CollectionsHandler.getFullCollectionType(type)), parsed ->
                         lookup.generateEmbeddedModifier(parsed));
             } else {
-                addField(field, modifierFields);
+                addField(field, modifierFields, imports);
             }
         }
     }
 
-    private void addField(PrototypeField field, ClassOrInterfaceDeclaration modifierFields) {
+    private void addField(PrototypeField field, ClassOrInterfaceDeclaration modifierFields, List<Pair<CompilationUnit, String>> imports) {
         if (nonNull(modifierFields)) {
             var type = field.getDeclaration().getVariable(0).getType();
             modifierFields.addMethod(field.getName())
@@ -169,8 +178,7 @@ public class ModifierEnricher extends BaseEnricher {
                     .addParameter(type, field.getName())
                     .setBody(null);
             field.getDeclaration().findCompilationUnit().ifPresent(source ->
-                    modifierFields.findCompilationUnit().ifPresent(dest ->
-                            dest.addImport(getExternalClassName(source, type.asString()))));
+                    imports.add(Pair.of(source, type.asString())));
         }
     }
 
