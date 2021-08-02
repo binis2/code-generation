@@ -127,13 +127,17 @@ public class CodeGen {
 
     @SuppressWarnings("unchecked")
     public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName) {
+        var className = t.findCompilationUnit().get().getPackageDeclaration().get().getNameAsString() + '.' + t.getNameAsString();
         if (t.isEnumDeclaration()) {
-            enumParsed.put(getClassName(t.asEnumDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).parser(parser).build());
+            enumParsed.put(getClassName(t.asEnumDeclaration()),
+                    Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).build());
         } else {
             if (t.getAnnotationByName("ConstantPrototype").isPresent()) {
-                constantParsed.put(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).parser(parser).build());
+                constantParsed.put(getClassName(t.asClassOrInterfaceDeclaration()),
+                        Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).build());
             } else {
-                lookup.registerParsed(getClassName(t.asClassOrInterfaceDeclaration()), Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).parser(parser).build());
+                lookup.registerParsed(getClassName(t.asClassOrInterfaceDeclaration()),
+                        Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).build());
             }
         }
     }

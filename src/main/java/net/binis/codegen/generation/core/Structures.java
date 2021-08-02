@@ -90,6 +90,11 @@ public class Structures {
         private Map<String, Type> generics;
         @ToString.Exclude
         private Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> typePrototypes;
+
+        MethodDeclaration interfaceGetter;
+        MethodDeclaration interfaceSetter;
+        MethodDeclaration implementationGetter;
+        MethodDeclaration implementationSetter;
     }
 
     @Data
@@ -100,6 +105,7 @@ public class Structures {
 
         private Class<?> compiled;
         private String prototypeFileName;
+        private String prototypeClassName;
 
         private PrototypeDataHandler properties;
 

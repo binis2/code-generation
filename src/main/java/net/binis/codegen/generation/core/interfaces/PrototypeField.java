@@ -37,4 +37,8 @@ public interface PrototypeField {
     PrototypeDescription<ClassOrInterfaceDeclaration> getPrototype();
     Map<String, Type> getGenerics();
     Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> getTypePrototypes();
+    MethodDeclaration getInterfaceGetter();
+    MethodDeclaration getInterfaceSetter();
+    MethodDeclaration getImplementationGetter();
+    MethodDeclaration getImplementationSetter();
 }
