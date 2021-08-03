@@ -385,7 +385,7 @@ public class ModifierEnricher extends BaseEnricher {
     }
 
     private void addModifier(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierClassName, String modifierName, boolean isClass) {
-        var type = isNull(declaration.getDescription()) ?
+        var type = isNull(declaration.getDescription()) || "dummy".equals(declaration.getDescription().findCompilationUnit().get().getPackageDeclaration().get().getNameAsString()) ?
                 handleType(declaration.getDeclaration().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDeclaration().getVariables().get(0).getType(), false) :
                 handleType(declaration.getDescription().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDescription().getType(), false);
         var method = new MethodDeclaration().setName(declaration.getName())

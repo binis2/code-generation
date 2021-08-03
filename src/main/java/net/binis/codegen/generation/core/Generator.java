@@ -906,16 +906,33 @@ public class Generator {
         var fieldName = getFieldName(method.getName());
         if (!fieldExists(spec, fieldName)) {
             FieldDeclaration field;
+            MethodDeclaration description;
             if (nonNull(generic)) {
-                field = spec.addField(generic.get(parseMethodSignature(method)), fieldName, PROTECTED);
+                var type = generic.get(parseMethodSignature(method));
+                field = spec.addField(type, fieldName, PROTECTED);
+                description = new MethodDeclaration().setName(fieldName).setType(type);
             } else {
                 field = spec.addField(method.getReturnType(), fieldName, PROTECTED);
+                description = new MethodDeclaration().setName(fieldName).setType(method.getReturnType());
             }
             if (!method.getReturnType().isPrimitive() && !method.getReturnType().getCanonicalName().startsWith("java.lang.")) {
                 spec.findCompilationUnit().get().addImport(method.getReturnType().getCanonicalName());
             }
 
+            var dummy = new CompilationUnit();
+            dummy.setPackageDeclaration("dummy");
+            dummy.addClass("Dummy").addMember(description);
+
+            if (method.getDeclaredAnnotations().length > 0) {
+                for (var ann : method.getDeclaredAnnotations()) {
+                    description.addAnnotation(ann.annotationType());
+                    dummy.addImport(ann.annotationType().getPackageName());
+                    //TODO: Handle annotation params
+                }
+            }
+
             result = Structures.FieldData.builder()
+                    .description(description)
                     .name(fieldName)
                     .declaration(field)
                     .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
