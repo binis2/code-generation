@@ -119,7 +119,8 @@ enables query building for your jpa entities
 ```
 
 
-Multiple enrichers can be combined for spicing up your objects.
+Multiple enrichers can be combined for spicing up your objects. See below.   
+*Note that QueryEnricher requires code-generation-spring module dependency to your project*
 
 ### Collections support
 
@@ -164,8 +165,192 @@ public interface UserPrototype extends BasePrototype {
 }
 ```
 
+### Real life examples
 
-*More Examples coming soon.*
+Initial design of the library was to ease the creation and maintenance of JPA entities. So here is a full scale example.
+*Note that it copes well with lombok.*
+
+So let's declare a base entity first:
+```java
+@CodePrototype(
+        base = true,
+        interfaceName = "BaseInterface",
+        classGetters = false,
+        classSetters = false,
+        interfaceSetters = false,
+        implementationPackage = "my.project.db.entity",
+        enrichers = {AsEnricher.class, ModifierEnricher.class},
+        inheritedEnrichers = {CreatorModifierEnricher.class, ModifierEnricher.class, QueryEnricher.class})
+@MappedSuperclass
+public interface BaseEntityPrototype extends Serializable, Identifiable {
+
+    @CodeConstant(isPublic = false)
+    long serialVersionUID = 1862576989031617048L;
+
+    @Id
+    @Column(name = "id", nullable = false, updatable = false)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @JsonSerialize(using = ToStringSerializer.class)
+    @ToString.Include
+    Long id();
+
+    @Ignore(forModifier = true)
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    @ColumnDefault("current_timestamp")
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+    OffsetDateTime created();
+
+    @LastModifiedDate
+    @Column(nullable = false)
+    @ColumnDefault("current_timestamp")
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+    OffsetDateTime modified();
+
+    @Ignore(forInterface = true, forModifier = true)
+    @CreatedBy
+    @Column(updatable = false)
+    String createdBy();
+
+    @Ignore(forInterface = true, forModifier = true)
+    @LastModifiedBy
+    String modifiedBy();
+
+    @Data
+    @ToString(onlyExplicitlyIncluded = true)
+    public static class BaseClassAnnotations {
+
+    }
+}
+```
+
+Now an actual entity:
+
+```java
+
+@CodePrototype(
+        classGetters = false,
+        classSetters = false,
+        interfaceSetters = false,
+        implementationPackage = "my.project.db.entity",
+        baseModifierClass = BaseEntityModifier.class)
+@Entity(name = UserEntityPrototype.TABLE_NAME)
+public interface UserEntityPrototype extends BaseEntityPrototype, Addressable, Statusable<CustomerStatus> {
+
+    @CodeConstant(isPublic = false)
+    long serialVersionUID = 2344606065855771677L;
+
+    String TABLE_NAME = "users";
+
+    @ToString.Include
+    @Column(unique = true)
+    String username();
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    String password();
+
+    String firstName();
+    String lastName();
+    String email();
+
+    @OneToOne(targetEntity = AddressEntityPrototype.class, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "address_id")
+    AddressEntityPrototype address();
+
+    @ColumnDefault("0")
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+    CustomerStatus status();
+
+    @Ignore(forInterface = true)
+    @Transient
+    default String getPreview() {
+        return username() + " (" + firstName() + " " + lastName() + ")";
+    }
+
+    @ForImplementation
+    @Transient
+    default boolean isActive() {
+        return !CustomerStatus.INACTIVE.equals(status());
+    }
+
+    @Data
+    @EqualsAndHashCode(callSuper = true)
+    @ToString(onlyExplicitlyIncluded = true)
+    class ClassAnnotations extends BaseClassAnnotations implements Previewable {
+
+    }
+}
+```
+Now you can simply write things like this anywhere in your code without need of anything else except importing your new interface
+```java
+User.create()
+        .username("username")
+        .password("password")
+        .email("email@email.com")
+        .address(Address.create()
+            .street("nowhere str.")
+            .number(5)
+            .done())
+        .status(CustomerStatus.ACTIVE)
+        .save();
+```
+or
+```java
+User.find().by().email("email@email.com").get().ifPresent(user -> 
+        user.with().status(CustomerStatus.ACTIVE).save());
+```
+
+
+
+*For more use cases check the unit tests [here](https://github.com/binis2/code-generation/tree/master/src/test/resources) and [here](https://github.com/binis2/code-generation-test/tree/master/src/test/resources) *
+
+### How to make it work?
+
+Depends on your preferences you can keep your prototypes outside your actual project into lets call it prototypes project. Just add this build step to your prototypes project's pom.xml.
+
+```xml
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+                <execution>
+                    <id>generateCode</id>
+                    <phase>generate-sources</phase>
+                    <goals>
+                        <goal>java</goal>
+                    </goals>
+                    <configuration>
+                        <mainClass>net.binis.codegen.CodeGen</mainClass>
+                        <arguments>
+                            <argument>-s</argument>
+                            <argument>${project.basedir}/..</argument>
+                            <argument>-d</argument>
+                            <argument>${project.basedir}/../modules/core/src/main/java</argument>
+                            <argument>-id</argument>
+                            <argument>${project.basedir}/../modules/db/src/main/java</argument>
+                            <argument>-f</argument>
+                            <argument>**Prototype.java</argument>
+                        </arguments>
+                        <classpathScope>compile</classpathScope>
+                        <sourceRoot>${project.build.directory}/generated-sources/main/java</sourceRoot>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+```
+or you can use the annotation processor
+```xml
+<dependency>
+    <groupId>net.binis</groupId>
+    <artifactId>code-generator-annotation</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <scope>compile</scope>
+</dependency>
+```
 
 ### Other modules of the suite
 
