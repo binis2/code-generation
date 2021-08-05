@@ -9,9 +9,9 @@ package net.binis.codegen.generation.core;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -270,7 +270,7 @@ public class Helpers {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(methodName) &&
                                 m.getParameters().size() == declaration.getParameters().size() &&
-                                m.getType().equals(declaration.getType())
+                                (m.getType().equals(declaration.getType()) || declaration.getTypeParameters().isNonEmpty())
                         //TODO: Match parameter types also
                 ) || !isClass && ancestorMethodExists(spec, declaration, methodName);
     }

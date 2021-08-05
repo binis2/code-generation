@@ -754,7 +754,7 @@ public class Generator {
                         if (isNull(ann.getAnnotation(CodeAnnotation.class))) {
                             var target = ann.getAnnotation(Target.class);
                             if (target == null || target.toString().contains("FIELD")) {
-                                field.addAnnotation(a);
+                                handleAnnotation(unit, field, a);
                             }
                         } else {
                             if (CodeFieldAnnotations.class.isAssignableFrom(ann)) {
@@ -773,6 +773,12 @@ public class Generator {
                     }
                 })
         );
+    }
+
+    private static void handleAnnotation(CompilationUnit unit, FieldDeclaration field, AnnotationExpr ann) {
+        field.getAnnotations().stream().filter(a -> a.getNameAsString().equals(ann.getNameAsString())).findFirst().ifPresent(a ->
+                field.getAnnotations().remove(a));
+        field.addAnnotation(ann);
     }
 
     private static void handleMethodAnnotations(CompilationUnit unit, MethodDeclaration method, MethodDeclaration declaration) {
@@ -927,6 +933,8 @@ public class Generator {
                 for (var ann : method.getDeclaredAnnotations()) {
                     description.addAnnotation(ann.annotationType());
                     dummy.addImport(ann.annotationType().getPackageName());
+                    field.addAnnotation(ann.annotationType());
+                    //TODO: Check if the annotation can be applied to field.
                     //TODO: Handle annotation params
                 }
             }
@@ -964,9 +972,16 @@ public class Generator {
                         .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName(declaration.getName()))));
                 ((Structures.FieldData) field).setImplementationGetter(method);
                 handleMethodAnnotations(spec.findCompilationUnit().get(), method, declaration);
+                if (declaration.getTypeParameters().isNonEmpty()) {
+                    method.setType("Object");
+                }
             } else {
                 method.setBody(null);
                 ((Structures.FieldData) field).setInterfaceGetter(method);
+
+                if (declaration.getTypeParameters().isNonEmpty()) {
+                    declaration.getTypeParameters().forEach(method::addTypeParameter);
+                }
             }
         }
     }
@@ -1021,9 +1036,17 @@ public class Generator {
                         .addModifier(PUBLIC)
                         .setBody(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName("this." + declaration.getName())).setValue(new NameExpr().setName(declaration.getName()))));
                 ((Structures.FieldData) field).setImplementationSetter(method);
+
+                if (declaration.getTypeParameters().isNonEmpty()) {
+                    method.getParameter(0).setType("Object");
+                }
             } else {
                 method.setBody(null);
                 ((Structures.FieldData) field).setInterfaceSetter(method);
+
+                if (declaration.getTypeParameters().isNonEmpty()) {
+                    declaration.getTypeParameters().forEach(method::addTypeParameter);
+                }
             }
         }
     }
