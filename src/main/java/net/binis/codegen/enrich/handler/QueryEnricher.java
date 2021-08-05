@@ -290,8 +290,11 @@ public class QueryEnricher extends BaseEnricher {
         var field = desc.getDeclaration();
         var name = field.getVariable(0).getNameAsString();
 
-        if (!isTransient(desc.getDescription())) {
-            if (desc.isCollection()) {
+        var trans = isTransient(desc.getDescription());
+
+        if (desc.isCollection()) {
+
+            if (!trans) {
                 var subType = CollectionsHandler.getCollectionType(field.getCommonType());
 
                 if (nonNull(desc.getTypePrototypes())) {
@@ -325,47 +328,51 @@ public class QueryEnricher extends BaseEnricher {
                             .setBody(new BlockStmt()
                                     .addStatement(new ReturnStmt("identifier(\"" + name + "\")")));
                 }
+            }
+        } else {
+            Helpers.importType(field.getCommonType(), fields.findCompilationUnit().get());
 
-            } else {
-                Helpers.importType(field.getCommonType(), fields.findCompilationUnit().get());
+            impl.addMethod(name)
+                    .setType(QUERY_SELECT_OPERATION)
+                    .addModifier(PUBLIC)
+                    .addParameter(field.getCommonType(), name)
+                    .setBody(new BlockStmt()
+                            .addStatement(new ReturnStmt("identifier(\"" + name + "\", " + name + ")")));
 
-                impl.addMethod(name)
-                        .setType(QUERY_SELECT_OPERATION)
-                        .addModifier(PUBLIC)
-                        .addParameter(field.getCommonType(), name)
-                        .setBody(new BlockStmt()
-                                .addStatement(new ReturnStmt("identifier(\"" + name + "\", " + name + ")")));
-
-                opFields.addMethod(name)
-                        .setType(QUERY_GENERIC)
-                        .setBody(null);
-
+            if (!trans) {
                 orderImpl.addMethod(name)
                         .setType(QUERY_ORDER_OPERATION)
                         .addModifier(PUBLIC)
                         .setBody(new BlockStmt()
                                 .addStatement(new ReturnStmt("(" + QUERY_ORDER_OPERATION + ") func.apply(\"" + name + "\")")));
 
-                if (checkQueryName(entity, desc)) {
-                    select.addMethod(name).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">").setBody(null);
-                    impl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
-                            .setBody(new BlockStmt()
-                                    .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class);")
-                                    .addStatement("((QueryEmbed) result).setParent(\"" + name + "\", this);")
-                                    .addStatement(new ReturnStmt("result")));
+                opFields.addMethod(name)
+                        .setType(QUERY_GENERIC)
+                        .setBody(null);
+            }
 
-                    qName.addMethod(name).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">").setBody(null);
-                    qNameImpl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
-                            .setBody(new BlockStmt()
-                                    .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class);")
-                                    .addStatement("((QueryEmbed) result).setParent(\"" + name + "\", executor);")
-                                    .addStatement(new ReturnStmt("result")));
+            if (checkQueryName(entity, desc)) {
+                select.addMethod(name).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">").setBody(null);
+                impl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
+                        .setBody(new BlockStmt()
+                                .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class);")
+                                .addStatement("((QueryEmbed) result).setParent(\"" + name + "\", this);")
+                                .addStatement(new ReturnStmt("result")));
 
-                } else {
+                qName.addMethod(name).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">").setBody(null);
+                qNameImpl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
+                        .setBody(new BlockStmt()
+                                .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class);")
+                                .addStatement("((QueryEmbed) result).setParent(\"" + name + "\", executor);")
+                                .addStatement(new ReturnStmt("result")));
+
+            } else {
+                if (!trans) {
                     funcs.addMethod(name).setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + "," + QUERY_GENERIC + ">").setBody(null);
                     impl.addMethod(name, PUBLIC).setType(QUERY_FUNCTIONS)
                             .setBody(new BlockStmt()
                                     .addStatement(new ReturnStmt("identifier(\"" + name + "\")")));
+
 
                     qNameImpl.addMethod(name)
                             .setType(QUERY_FUNCTIONS)
@@ -373,21 +380,21 @@ public class QueryEnricher extends BaseEnricher {
                             .setBody(new BlockStmt()
                                     .addStatement(new ReturnStmt("executor.identifier(\"" + name + "\")")));
                 }
-
-                if (!Helpers.methodExists(fields, desc, false)) {
-                    fields.addMethod(name)
-                            .setType(QUERY_GENERIC)
-                            .setBody(null)
-                            .addParameter(field.getCommonType(), name);
-                }
-
-                qNameImpl.addMethod(name)
-                        .setType(QUERY_SELECT_OPERATION)
-                        .addModifier(PUBLIC)
-                        .addParameter(field.getCommonType(), name)
-                        .setBody(new BlockStmt()
-                                .addStatement(new ReturnStmt("executor.identifier(\"" + name + "\", " + name + ")")));
             }
+
+            if (!Helpers.methodExists(fields, desc, false)) {
+                fields.addMethod(name)
+                        .setType(QUERY_GENERIC)
+                        .setBody(null)
+                        .addParameter(field.getCommonType(), name);
+            }
+
+            qNameImpl.addMethod(name)
+                    .setType(QUERY_SELECT_OPERATION)
+                    .addModifier(PUBLIC)
+                    .addParameter(field.getCommonType(), name)
+                    .setBody(new BlockStmt()
+                            .addStatement(new ReturnStmt("executor.identifier(\"" + name + "\", " + name + ")")));
         }
     }
 
