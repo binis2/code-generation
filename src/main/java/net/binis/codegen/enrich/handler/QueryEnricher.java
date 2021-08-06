@@ -290,7 +290,7 @@ public class QueryEnricher extends BaseEnricher {
         var field = desc.getDeclaration();
         var name = field.getVariable(0).getNameAsString();
 
-        var trans = isTransient(desc.getDescription());
+        var trans = isTransient(desc);
 
         if (desc.isCollection()) {
 
@@ -398,11 +398,11 @@ public class QueryEnricher extends BaseEnricher {
         }
     }
 
-    private boolean isTransient(MethodDeclaration description) {
-        for (var ann : description.getAnnotations()) {
+    private boolean isTransient(PrototypeField field) {
+        for (var ann : field.getDescription().getAnnotations()) {
             var name = ann.getNameAsString();
             if ("Transient".equals(name)) {
-                name = Helpers.getExternalClassName(description.findCompilationUnit().get(), name);
+                name = Helpers.getExternalClassName(field.getDescription().findCompilationUnit().get(), name);
             }
             if ("javax.persistence.Transient".equals(name) || "org.springframework.data.annotation.Transient".equals(name)) {
                 return true;

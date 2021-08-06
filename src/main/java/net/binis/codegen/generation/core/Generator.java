@@ -781,6 +781,16 @@ public class Generator {
         field.addAnnotation(ann);
     }
 
+    private static void handleAnnotation(CompilationUnit unit, MethodDeclaration method, AnnotationExpr ann) {
+        method.getAnnotations().stream().filter(a -> a.getNameAsString().equals(ann.getNameAsString())).findFirst().ifPresent(a ->
+                method.getAnnotations().remove(a));
+        method.addAnnotation(ann);
+
+        notNull(getExternalClassNameIfExists(unit, ann.getNameAsString()), i ->
+                method.findCompilationUnit().ifPresent(u -> u.addImport(i)));
+    }
+
+
     private static void handleMethodAnnotations(CompilationUnit unit, MethodDeclaration method, MethodDeclaration declaration) {
         declaration.getAnnotations().forEach(a ->
                 notNull(getExternalClassName(unit, a.getNameAsString()), name -> {
@@ -851,8 +861,11 @@ public class Generator {
             if (nonNull(generic)) {
                 field = spec.addField(generic, fieldName, PROTECTED);
             } else {
-                field = spec.addField(handleType(type, spec, method.getType(), false, prototypeMap), fieldName, PROTECTED);
-
+                if (method.getTypeParameters().isEmpty() || !method.getType().asString().equals(method.getTypeParameter(0).asString())) {
+                    field = spec.addField(handleType(type, spec, method.getType(), false, prototypeMap), fieldName, PROTECTED);
+                } else {
+                    field = spec.addField("Object", fieldName, PROTECTED);
+                }
             }
             result = Structures.FieldData.builder()
                     .name(fieldName)
@@ -870,6 +883,7 @@ public class Generator {
             if (proto.isPresent()) {
                 result = proto.get();
                 ((Structures.FieldData) result).setPrototype(isNull(generic) ? lookup.findParsed(getExternalClassName(type.findCompilationUnit().get(), method.getType().asString())) : null);
+                mergeAnnotations(method, result.getDescription());
             }
         }
         handleFieldAnnotations(type.findCompilationUnit().get(), field, method);
@@ -963,9 +977,15 @@ public class Generator {
     private static void addGetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
         var name = getGetterName(declaration.getNameAsString(), declaration.getType().asString());
         if (!methodExists(spec, declaration, name, isClass)) {
+            String rType;
+            if (declaration.getTypeParameters().isEmpty()) {
+                rType = handleType(type, spec, declaration.getType(), false);
+            } else {
+                rType = declaration.getType().asString();
+            }
             var method = spec
                     .addMethod(name)
-                    .setType(handleType(type, spec, declaration.getType(), false));
+                    .setType(rType);
             if (isClass) {
                 method
                         .addModifier(PUBLIC)
@@ -1133,14 +1153,14 @@ public class Generator {
                     if (isNull(field)) {
                         destination.addMember(member.clone());
                     } else {
-                        mergeAnnotations(member, field);
+                        //TODO: Merge annotations
                     }
                 } else if (member instanceof MethodDeclaration) {
                     var method = findMethod(destination, member.asMethodDeclaration().getNameAsString());
                     if (isNull(method)) {
                         destination.addMember(adjuster.apply((MethodDeclaration) member.clone()));
                     } else {
-                        mergeAnnotations(member, method);
+                        //TODO: Merge annotations
                     }
                 }
             }
@@ -1148,8 +1168,12 @@ public class Generator {
         }
     }
 
-    private static void mergeAnnotations(BodyDeclaration<?> source, BodyDeclaration<?> destination) {
-        log.warn("Merging annotations is not implemented yet!");
+    private static void mergeAnnotations(MethodDeclaration source, MethodDeclaration destination) {
+        source.findCompilationUnit().ifPresent(unit -> {
+            for (var ann : source.getAnnotations()) {
+                handleAnnotation(unit, destination, ann);
+            }
+        });
     }
 
     public static void generateCodeForEnum(CompilationUnit parser) {

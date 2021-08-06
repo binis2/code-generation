@@ -20,6 +20,7 @@ package net.binis.codegen.enrich.handler;
  * #L%
  */
 
+import com.github.javaparser.TokenRange;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -31,6 +32,8 @@ import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.Final;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
@@ -154,7 +157,7 @@ public class ModifierEnricher extends BaseEnricher {
 
     private void declare(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeData properties, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration modifierFields, PrototypeField field, TypeDeclaration<ClassOrInterfaceDeclaration> classDeclaration, List<Pair<CompilationUnit, String>> imports) {
         if (!field.getIgnores().isForModifier()) {
-            var type = isNull(field.getDescription()) ? field.getDeclaration().getVariables().get(0).getType() : field.getDescription().getType();
+            var type = getFieldType(field);
             if (nonNull(modifierClass)) {
                 addModifier(modifierClass, field, isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), properties.getLongModifierName(), true);
             }
@@ -167,6 +170,14 @@ public class ModifierEnricher extends BaseEnricher {
             } else {
                 addField(field, modifierFields, imports);
             }
+        }
+    }
+
+    private Type getFieldType(PrototypeField field) {
+        if (field.getDescription().getTypeParameters().isEmpty()) {
+            return isNull(field.getDescription()) ? field.getDeclaration().getVariables().get(0).getType() : field.getDescription().getType();
+        } else {
+            return new ClassOrInterfaceType().setName("Object");
         }
     }
 
@@ -387,7 +398,7 @@ public class ModifierEnricher extends BaseEnricher {
     private void addModifier(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierClassName, String modifierName, boolean isClass) {
         var type = isNull(declaration.getDescription()) || "dummy".equals(declaration.getDescription().findCompilationUnit().get().getPackageDeclaration().get().getNameAsString()) ?
                 handleType(declaration.getDeclaration().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDeclaration().getVariables().get(0).getType(), false) :
-                handleType(declaration.getDescription().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDescription().getType(), false);
+                (declaration.getDescription().getTypeParameters().isEmpty() ? handleType(declaration.getDescription().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDescription().getType(), false) : "Object");
         var method = new MethodDeclaration().setName(declaration.getName())
                 .setType(modifierName)
                 .addParameter(new Parameter().setName(declaration.getName()).setType(type));
