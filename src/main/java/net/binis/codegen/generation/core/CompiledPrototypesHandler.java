@@ -34,8 +34,6 @@ import static net.binis.codegen.tools.Tools.notNull;
 @Slf4j
 public abstract class CompiledPrototypesHandler {
 
-    private static final JavaParser parser = new JavaParser();
-
     private CompiledPrototypesHandler() {
         //Do nothing
     }
@@ -49,7 +47,7 @@ public abstract class CompiledPrototypesHandler {
 
                 var parsed = Structures.Parsed.<ClassOrInterfaceDeclaration>builder()
                         .compiled(c)
-                        .parser(parser)
+                        .parser(lookup.getParser())
                         .declaration(declaration);
 
                 lookup.registerParsed(compiledPrototype, parsed.build());
@@ -74,7 +72,7 @@ public abstract class CompiledPrototypesHandler {
 
     private static void handleAnnotations(Class<?> cls, ClassOrInterfaceDeclaration declaration) {
         for (var ann : cls.getAnnotations()) {
-            parser.parseAnnotation(ann.toString()).getResult().ifPresent(annotation -> {
+            lookup.getParser().parseAnnotation(ann.toString()).getResult().ifPresent(annotation -> {
                 declaration.findCompilationUnit().get().addImport(ann.annotationType().getCanonicalName());
                 annotation.setName(ann.annotationType().getSimpleName());
                 declaration.addAnnotation(annotation);

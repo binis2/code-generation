@@ -73,6 +73,4 @@ public class EnrichTest extends BaseTest {
         testSingle("enrich/enrichClone.java", "enrich/enrichClone-0.java", "enrich/enrichClone-1.java");
     }
 
-
-
 }

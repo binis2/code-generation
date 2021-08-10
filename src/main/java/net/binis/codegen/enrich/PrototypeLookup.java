@@ -20,6 +20,7 @@ package net.binis.codegen.enrich;
  * #L%
  */
 
+import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
@@ -29,6 +30,8 @@ import java.util.Collection;
 import java.util.List;
 
 public interface PrototypeLookup {
+
+    JavaParser getParser();
 
     void registerParsed(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> parsed);
     void registerGenerated(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> generated);

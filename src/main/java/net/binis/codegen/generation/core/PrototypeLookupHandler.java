@@ -20,7 +20,10 @@ package net.binis.codegen.generation.core;
  * #L%
  */
 
+import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
@@ -40,6 +43,8 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> requestedEmbeddedModifiers = new HashMap<>();
 
+    @Getter
+    private final JavaParser parser = new JavaParser();
 
     @Override
     public void registerParsed(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
