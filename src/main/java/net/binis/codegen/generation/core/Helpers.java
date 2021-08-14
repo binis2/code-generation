@@ -42,6 +42,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.TypeVariable;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -78,33 +79,6 @@ public class Helpers {
     public static final Map<String, List<Pair<String, String>>> declaredConstants = new HashMap<>();
     public static final Map<String, Structures.ProcessingType> processingTypes = new HashMap<>();
     public static final List<Triple<PrototypeDescription<ClassOrInterfaceDeclaration>, CompilationUnit, ClassExpr>> recursiveExpr = new LinkedList<>();
-
-    public static final Method classSignature = initClassSignature();
-    public static final Method methodSignature = initMethodSignature();
-    public static final Pattern methodSignatureMatcher = Pattern.compile("T(.*?);");
-
-    private static Method initMethodSignature() {
-        try {
-            var method = Method.class.getDeclaredMethod("getGenericSignature");
-            method.setAccessible(true);
-            return method;
-        } catch (NoSuchMethodException e) {
-            log.error("Unable to initialize Generic Method Signature getter!");
-        }
-        return null;
-    }
-
-    private static Method initClassSignature() {
-        try {
-            var method = Class.class.getDeclaredMethod("getGenericSignature0");
-            method.setAccessible(true);
-            return method;
-        } catch (NoSuchMethodException e) {
-            log.error("Unable to initialize Generic Class Signature getter!");
-        }
-        return null;
-    }
-
 
     public static String defaultPackage(TypeDeclaration<?> type, String name) {
         var result = type.findCompilationUnit().get().getPackageDeclaration().get().getNameAsString();
@@ -483,33 +457,11 @@ public class Helpers {
     }
 
     public static List<String> parseGenericClassSignature(Class<?> cls) {
-        try {
-            return parseGenericClassSignature((String) classSignature.invoke(cls));
-        } catch (Exception e) {
-            log.error("Unable to get class signature for {}", cls.getName());
-        }
-        return Collections.emptyList();
-    }
-
-    public static List<String> parseGenericClassSignature(String signature) {
-        var result = new ArrayList<String>();
-        var split = signature.split(":");
-        for (var i = 0; i < split.length - 1; i++) {
-            result.add(String.valueOf(split[i].charAt(split[i].length() - 1)));
-        }
-        return result;
+        return Arrays.stream(cls.getTypeParameters()).map(TypeVariable::getName).collect(Collectors.toList());
     }
 
     public static String parseMethodSignature(Method method) {
-        try {
-            var match = methodSignatureMatcher.matcher((String) methodSignature.invoke(method));
-            if (match.find()) {
-                return match.group(1);
-            }
-        } catch (Exception e) {
-            log.error("Unable to get method signature for {}", method.getName());
-        }
-        return "Object";
+        return method.getGenericReturnType().getTypeName();
     }
 
     public static String parseMethodSignature(MethodDeclaration method) {
