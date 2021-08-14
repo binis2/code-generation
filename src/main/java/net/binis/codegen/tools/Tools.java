@@ -121,6 +121,13 @@ public class Tools {
         return null;
     }
 
+    public static <T, R> R withRes(T object, Function<T, R> wither, R defaultValue) {
+        if (nonNull(object)) {
+            return wither.apply(object);
+        }
+        return defaultValue;
+    }
+
     @SafeVarargs
     public static <T> boolean in(T object, T... list) {
         for (var o : list) {
