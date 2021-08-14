@@ -29,6 +29,7 @@ import net.binis.codegen.generation.core.Structures;
 import java.util.Map;
 
 public interface PrototypeField {
+    Structures.Parsed<ClassOrInterfaceDeclaration> getParsed();
     String getName();
     MethodDeclaration getDescription();
     FieldDeclaration getDeclaration();
@@ -41,4 +42,7 @@ public interface PrototypeField {
     MethodDeclaration getInterfaceSetter();
     MethodDeclaration getImplementationGetter();
     MethodDeclaration getImplementationSetter();
+
+    MethodDeclaration generateGetter();
+    MethodDeclaration generateSetter();
 }

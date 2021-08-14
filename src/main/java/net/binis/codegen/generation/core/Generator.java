@@ -165,7 +165,7 @@ public class Generator {
 
                             if (!declaration.isDefault()) {
                                 var ignore = getIgnores(member);
-                                PrototypeField field = Structures.FieldData.builder().build();
+                                PrototypeField field = Structures.FieldData.builder().parsed(parse).build();
                                 if (!ignore.isForField()) {
                                     field = addField(parse, typeDeclaration, spec, declaration, null);
                                 }
@@ -868,6 +868,7 @@ public class Generator {
                 }
             }
             result = Structures.FieldData.builder()
+                    .parsed(parsed)
                     .name(fieldName)
                     .description(method)
                     .declaration(field)
@@ -902,6 +903,7 @@ public class Generator {
             }
 
             result = Structures.FieldData.builder()
+                    .parsed(parsed)
                     .name(fieldName)
                     .description(method)
                     .declaration(field)
@@ -954,6 +956,7 @@ public class Generator {
             }
 
             result = Structures.FieldData.builder()
+                    .parsed(parsed)
                     .description(description)
                     .name(fieldName)
                     .declaration(field)
@@ -974,7 +977,7 @@ public class Generator {
         return result;
     }
 
-    private static void addGetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
+    public static void addGetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
         var name = getGetterName(declaration.getNameAsString(), declaration.getType().asString());
         if (!methodExists(spec, declaration, name, isClass)) {
             String rType;
@@ -1043,7 +1046,7 @@ public class Generator {
         }
     }
 
-    private static void addSetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
+    public static void addSetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
         var name = getSetterName(declaration.getNameAsString());
         var method = new MethodDeclaration()
                 .setName(name)

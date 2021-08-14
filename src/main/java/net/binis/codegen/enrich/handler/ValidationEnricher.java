@@ -32,13 +32,16 @@ import net.binis.codegen.annotation.validation.AliasFor;
 import net.binis.codegen.annotation.validation.Sanitize;
 import net.binis.codegen.annotation.validation.Validate;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
+import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Reflection;
+import org.apache.commons.lang3.tuple.Pair;
 
 import static net.binis.codegen.tools.Reflection.loadClass;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -52,6 +55,10 @@ import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
 public class ValidationEnricher extends BaseEnricher {
+
+    private static final String VALUE = "value";
+    private static final String PARAMS = "params";
+    private static final String MESSAGE = "message";
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
@@ -86,10 +93,11 @@ public class ValidationEnricher extends BaseEnricher {
     private void generateSanitization(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, AnnotationExpr annotation, Class<?> annotationClass) {
         Params ann = getSanitizationParams(field, annotation, annotationClass);
 
-        if (nonNull(field.getImplementationSetter())) {
-            addSanitization(field, field.getImplementationSetter(), ann);
+        if (isNull(field.getImplementationSetter())) {
+            field.generateSetter();
         }
 
+        addSanitization(field, field.getImplementationSetter(), ann);
         handleSanitizationModifier(description, field, MODIFIER_KEY, ann);
         handleSanitizationModifier(description, field, EMBEDDED_MODIFIER_KEY, ann);
     }
@@ -110,10 +118,10 @@ public class ValidationEnricher extends BaseEnricher {
                 } else if (node instanceof MemberValuePair) {
                     var pair = (MemberValuePair) node;
                     switch (pair.getNameAsString()) {
-                        case "value":
+                        case VALUE:
                             params.cls(pair.getValue().asClassExpr().getTypeAsString());
                             break;
-                        case "params":
+                        case PARAMS:
                             params.params(pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).map(StringLiteralExpr::asString).collect(Collectors.toList()));
                             break;
                         default:
@@ -141,13 +149,13 @@ public class ValidationEnricher extends BaseEnricher {
                 } else if (node instanceof MemberValuePair) {
                     var pair = (MemberValuePair) node;
                     switch (pair.getNameAsString()) {
-                        case "value":
+                        case VALUE:
                             params.cls(pair.getValue().asClassExpr().getTypeAsString());
                             break;
-                        case "message":
+                        case MESSAGE:
                             params.message(pair.getValue().asStringLiteralExpr().asString());
                             break;
-                        case "params":
+                        case PARAMS:
                             params.params(pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).map(StringLiteralExpr::asString).collect(Collectors.toList()));
                             break;
                         default:
@@ -160,6 +168,14 @@ public class ValidationEnricher extends BaseEnricher {
     }
 
     private void handleAliases(AnnotationExpr annotation, Class<?> annotationClass, Params.ParamsBuilder params) {
+        var list = new ArrayList<String>();
+        var parOrder = Arrays.stream(annotationClass.getDeclaredMethods())
+                .filter(m -> Arrays.stream(m.getDeclaredAnnotations()).filter(a -> a.annotationType().isAssignableFrom(AliasFor.class)).map(AliasFor.class::cast).anyMatch(a -> PARAMS.equals(a.value())))
+                .map(m -> Pair.of(m.getName(), (String) m.getDefaultValue()))
+                .collect(Collectors.toList());
+
+        parOrder.forEach(p -> list.add(p.getValue()));
+
         for (var node : annotation.getChildNodes()) {
             if (node instanceof MemberValuePair) {
                 var pair = (MemberValuePair) node;
@@ -170,32 +186,79 @@ public class ValidationEnricher extends BaseEnricher {
                         .map(AliasFor::value)
                         .findFirst()
                         .orElseGet(pair::getNameAsString)) {
-                    case "value":
+                    case VALUE:
                         params.cls(pair.getValue().asClassExpr().getTypeAsString());
                         break;
-                    case "message":
+                    case MESSAGE:
                         params.message(pair.getValue().asStringLiteralExpr().asString());
                         break;
-                    case "params":
+                    case PARAMS:
                         if (pair.getValue().isArrayInitializerExpr()) {
-                            params.params(pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).map(StringLiteralExpr::asString).collect(Collectors.toList()));
+                            list.addAll(pair.getValue().asArrayInitializerExpr().getValues().stream()
+                                    .map(Expression::asStringLiteralExpr)
+                                    .map(StringLiteralExpr::asString)
+                                    .collect(Collectors.toList()));
                         } else {
-                            params.params(List.of(pair.getValue().asStringLiteralExpr().asString()));
+                            var idx = getParamIndex(parOrder, pair.getNameAsString());
+                            if (idx != -1) {
+                                list.set(idx, pair.getValue().asStringLiteralExpr().asString());
+                            } else {
+                                throw new GenericCodeGenException("Invalid annotation params! " + annotation);
+                            }
                         }
                         break;
                     default:
                 }
+            } else if (node instanceof StringLiteralExpr) {
+                var exp = ((StringLiteralExpr) node).asString();
+                switch (Arrays.stream(annotationClass.getDeclaredMethods())
+                        .filter(m -> m.getName().equals(VALUE))
+                        .map(m -> m.getDeclaredAnnotation(AliasFor.class))
+                        .filter(Objects::nonNull)
+                        .map(AliasFor::value)
+                        .findFirst()
+                        .orElse(VALUE)) {
+                    case VALUE:
+                        params.cls(exp);
+                        break;
+                    case MESSAGE:
+                        params.message(exp);
+                        break;
+                    case PARAMS:
+                        var idx = getParamIndex(parOrder, VALUE);
+                        if (idx != -1) {
+                            list.set(idx, exp);
+                        } else {
+                            throw new GenericCodeGenException("Invalid annotation params! " + annotation);
+                        }
+                        break;
+                    default:
+
+                }
             }
         }
+        if (!list.isEmpty()) {
+            params.params(list);
+        }
+    }
+
+    private int getParamIndex(List<Pair<String, String>> list, String name) {
+        for (var i = 0; i < list.size(); i++) {
+            if (name.equals(list.get(i).getKey())) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private void generateValidation(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, AnnotationExpr annotation, Class<?> annotationClass) {
         var ann = getValidationParams(field, annotation, annotationClass);
 
-        if (nonNull(field.getImplementationSetter())) {
-            addValidation(field, field.getImplementationSetter(), ann);
+        if (isNull(field.getImplementationSetter())) {
+            field.generateSetter();
         }
 
+        addValidation(field, field.getImplementationSetter(), ann);
         handleValidationModifier(description, field, MODIFIER_KEY, ann);
         handleValidationModifier(description, field, EMBEDDED_MODIFIER_KEY, ann);
     }

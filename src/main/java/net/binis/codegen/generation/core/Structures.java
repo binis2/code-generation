@@ -79,6 +79,7 @@ public class Structures {
     @Data
     @Builder
     public static class FieldData implements PrototypeField {
+        Parsed<ClassOrInterfaceDeclaration> parsed;
         private String name;
         private FieldDeclaration declaration;
         private MethodDeclaration description;
@@ -95,6 +96,20 @@ public class Structures {
         MethodDeclaration interfaceSetter;
         MethodDeclaration implementationGetter;
         MethodDeclaration implementationSetter;
+
+        @Override
+        public MethodDeclaration generateGetter() {
+            var cls = (ClassOrInterfaceDeclaration) declaration.getParentNode().get();
+            Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this);
+            return implementationGetter;
+        }
+
+        @Override
+        public MethodDeclaration generateSetter() {
+            var cls = (ClassOrInterfaceDeclaration) declaration.getParentNode().get();
+            Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this);
+            return implementationSetter;
+        }
     }
 
     @Data
