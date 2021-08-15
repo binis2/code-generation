@@ -118,7 +118,34 @@ enables query building for your jpa entities
     Test.find().by().amount().greater(10.0).and().not().title("title").get();
 ```
 
+#### ValidationEnricher
 
+```java
+import net.binis.codegen.annotation.validation.Sanitize;
+
+@CodePrototype(enrichers = {ValidationEnricher.class})
+public interface TestPrototype {
+    @ValidateNull
+    @SanitizeTrim
+    String title();
+
+    //or use the longer syntax 
+    @Sanitize(ReplaceSanitizer.class, "\\s+", "_")
+    @Validate(NullValidator.class, "Subtitle can't be null!")
+    String subtitle;
+}
+```
+
+enables validation and sanitization for your entities. It handles both setters and modifiers. The system is also opened for 
+registering custom validators/sanitizers.  
+
+```java
+    assertThrows(ValidationException.class, () -> entity.setTitle(null));
+    assertEquals("title", entity.with().title("  title  ").done().getTitle());
+```
+
+*Note: [Validation module](https://github.com/binis2/code-generation-validation) needs to be included into the project!* 
+      
 Multiple enrichers can be combined for spicing up your objects. See below.   
 *Note that QueryEnricher requires code-generation-spring module dependency to your project*
 
@@ -358,3 +385,4 @@ Core - [https://github.com/binis2/code-generation-core]
 Spring Extension - [https://github.com/binis2/code-generation-spring]   
 Tests mocking suite - [https://github.com/binis2/code-generation-test]   
 Annotation processor - [https://github.com/binis2/code-generation-annotation] 
+Validation and Sanitization extension - [https://github.com/binis2/code-generation-validation] 
