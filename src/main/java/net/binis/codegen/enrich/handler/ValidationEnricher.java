@@ -168,11 +168,18 @@ public class ValidationEnricher extends BaseEnricher {
     }
 
     private void handleAliases(AnnotationExpr annotation, Class<?> annotationClass, Params.ParamsBuilder params) {
-        var list = new ArrayList<String>();
+        var list = new ArrayList<Object>();
         var parOrder = Arrays.stream(annotationClass.getDeclaredMethods())
                 .filter(m -> Arrays.stream(m.getDeclaredAnnotations()).filter(a -> a.annotationType().isAssignableFrom(AliasFor.class)).map(AliasFor.class::cast).anyMatch(a -> PARAMS.equals(a.value())))
-                .map(m -> Pair.of(m.getName(), (String) m.getDefaultValue()))
+                .map(m -> Pair.of(m.getName(), m.getDefaultValue()))
                 .collect(Collectors.toList());
+
+        Arrays.stream(annotationClass.getDeclaredMethods())
+                .filter(m -> MESSAGE.equals(m.getName()))
+                .filter(m -> m.getReturnType().equals(String.class))
+                .filter(m -> isNull(m.getDeclaredAnnotation(AliasFor.class)))
+                .findFirst().ifPresent(m ->
+                        params.message((String) m.getDefaultValue()));
 
         parOrder.forEach(p -> list.add(p.getValue()));
 
@@ -201,7 +208,7 @@ public class ValidationEnricher extends BaseEnricher {
                         } else {
                             var idx = getParamIndex(parOrder, pair.getNameAsString());
                             if (idx != -1) {
-                                list.set(idx, pair.getValue().asStringLiteralExpr().asString());
+                                list.set(idx, getParamValue(pair.getValue()));
                             } else {
                                 throw new GenericCodeGenException("Invalid annotation params! " + annotation);
                             }
@@ -242,7 +249,21 @@ public class ValidationEnricher extends BaseEnricher {
         }
     }
 
-    private int getParamIndex(List<Pair<String, String>> list, String name) {
+    private Object getParamValue(Expression value) {
+        if (value.isStringLiteralExpr()) {
+            return value.asStringLiteralExpr().asString();
+        } else if (value.isIntegerLiteralExpr()) {
+            return value.asIntegerLiteralExpr().asNumber();
+        } else if (value.isDoubleLiteralExpr()) {
+            return value.asDoubleLiteralExpr().asDouble();
+        } else if (value.isBooleanLiteralExpr()) {
+            return value.asBooleanLiteralExpr().getValue();
+        }
+        //TODO: Handle external constants
+        return null;
+    }
+
+    private int getParamIndex(List<Pair<String, Object>> list, String name) {
         for (var i = 0; i < list.size(); i++) {
             if (name.equals(list.get(i).getKey())) {
                 return i;
@@ -325,16 +346,21 @@ public class ValidationEnricher extends BaseEnricher {
                 e -> e.getStatements().add(e.getStatements().size() - offset, expr));
     }
 
-    private String buildParamsStr(List<String> params) {
+    private String buildParamsStr(List<Object> params) {
         if (isNull(params) || params.isEmpty()) {
             return "";
         }
 
         var result = new StringBuilder();
         for (var param : params) {
-            result.append(", \"")
-                    .append(StringEscapeUtils.escapeJava(param))
-                    .append("\"");
+            if (param instanceof String) {
+                result.append(", \"")
+                        .append(StringEscapeUtils.escapeJava((String) param))
+                        .append("\"");
+            } else {
+                result.append(", ")
+                        .append(nonNull(param) ? param.toString() : "null");
+            }
         }
         return result.toString();
     }
@@ -349,7 +375,7 @@ public class ValidationEnricher extends BaseEnricher {
     private static class Params {
         private String cls;
         private String message;
-        private List<String> params;
+        private List<Object> params;
     }
 
 }
