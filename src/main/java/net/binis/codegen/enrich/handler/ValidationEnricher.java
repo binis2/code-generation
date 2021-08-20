@@ -29,6 +29,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.validation.AliasFor;
+import net.binis.codegen.annotation.validation.AsCode;
 import net.binis.codegen.annotation.validation.Sanitize;
 import net.binis.codegen.annotation.validation.Validate;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
@@ -36,7 +37,9 @@ import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,9 +51,9 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.EMBEDDED_MODIFIER_KEY;
 import static net.binis.codegen.generation.core.Constants.MODIFIER_KEY;
+import static net.binis.codegen.generation.core.Helpers.getExternalClassName;
 import static net.binis.codegen.tools.Reflection.loadClass;
-import static net.binis.codegen.tools.Tools.notNull;
-import static net.binis.codegen.tools.Tools.withRes;
+import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
 public class ValidationEnricher extends BaseEnricher {
@@ -58,6 +61,7 @@ public class ValidationEnricher extends BaseEnricher {
     private static final String VALUE = "value";
     private static final String PARAMS = "params";
     private static final String MESSAGE = "message";
+    private static final String AS_CODE = "asCode";
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
@@ -102,12 +106,14 @@ public class ValidationEnricher extends BaseEnricher {
     }
 
     private Params getSanitizationParams(PrototypeField field, AnnotationExpr annotation, Class<?> annotationClass) {
+        String cls = null;
         var params = Params.builder();
 
         if (!Sanitize.class.equals(annotationClass)) {
             var ann = annotationClass.getDeclaredAnnotation(Sanitize.class);
             params.cls(ann.value().getSimpleName()).params(Arrays.asList(ann.params()));
-            field.getDeclaration().findCompilationUnit().get().addImport(ann.value().getCanonicalName());
+            cls = ann.value().getCanonicalName();
+            field.getDeclaration().findCompilationUnit().get().addImport(cls);
 
             handleAliases(annotation, annotationClass, params);
         } else {
@@ -123,22 +129,34 @@ public class ValidationEnricher extends BaseEnricher {
                         case PARAMS:
                             params.params(pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).map(StringLiteralExpr::asString).collect(Collectors.toList()));
                             break;
+                        case AS_CODE:
+                            params.asCode(pair.getValue().asStringLiteralExpr().asString());
+                            break;
                         default:
                     }
                 }
             }
         }
 
-        return params.build();
+        var result = params.build();
+
+        if (isNull(result.getAsCode())) {
+            notNull(loadClass(isNull(cls) ? getExternalClassName(field.getParsed().getDeclaration().findCompilationUnit().get(), result.getCls()) : cls), c ->
+                    notNull(c.getDeclaredAnnotation(AsCode.class), a -> result.setAsCode(a.value())));
+        }
+
+        return result;
     }
 
     private Params getValidationParams(PrototypeField field, AnnotationExpr annotation, Class<?> annotationClass) {
         var params = Params.builder();
+        String cls = null;
 
         if (!Validate.class.equals(annotationClass)) {
             var ann = annotationClass.getDeclaredAnnotation(Validate.class);
             params.cls(ann.value().getSimpleName()).params(Arrays.asList(ann.params()));
-            field.getDeclaration().findCompilationUnit().get().addImport(ann.value().getCanonicalName());
+            cls = ann.value().getCanonicalName();
+            field.getDeclaration().findCompilationUnit().get().addImport(cls);
 
             handleAliases(annotation, annotationClass, params);
         } else {
@@ -157,20 +175,30 @@ public class ValidationEnricher extends BaseEnricher {
                         case PARAMS:
                             params.params(pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).map(StringLiteralExpr::asString).collect(Collectors.toList()));
                             break;
+                        case AS_CODE:
+                            params.asCode(pair.getValue().asStringLiteralExpr().asString());
+                            break;
                         default:
                     }
                 }
             }
         }
 
-        return params.build();
+        var result = params.build();
+
+        if (isNull(result.getAsCode())) {
+            notNull(loadClass(isNull(cls) ? getExternalClassName(field.getParsed().getDeclaration().findCompilationUnit().get(), result.getCls()) : cls), c ->
+                    notNull(c.getDeclaredAnnotation(AsCode.class), a -> result.setAsCode(a.value())));
+        }
+
+        return result;
     }
 
     private void handleAliases(AnnotationExpr annotation, Class<?> annotationClass, Params.ParamsBuilder params) {
         var list = new ArrayList<Object>();
         var parOrder = Arrays.stream(annotationClass.getDeclaredMethods())
                 .filter(m -> Arrays.stream(m.getDeclaredAnnotations()).filter(a -> a.annotationType().isAssignableFrom(AliasFor.class)).map(AliasFor.class::cast).anyMatch(a -> PARAMS.equals(a.value())))
-                .map(m -> Pair.of(m.getName(), m.getDefaultValue()))
+                .map(m -> Triple.of(m.getName(), m.getDefaultValue(), m.getDeclaredAnnotation(AsCode.class)))
                 .collect(Collectors.toList());
 
         Arrays.stream(annotationClass.getDeclaredMethods())
@@ -180,7 +208,7 @@ public class ValidationEnricher extends BaseEnricher {
                 .findFirst().ifPresent(m ->
                         params.message((String) m.getDefaultValue()));
 
-        parOrder.forEach(p -> list.add(p.getValue()));
+        parOrder.forEach(p -> list.add(checkAsCode(p.getMiddle(), p.getRight())));
 
         for (var node : annotation.getChildNodes()) {
             if (node instanceof MemberValuePair) {
@@ -197,6 +225,9 @@ public class ValidationEnricher extends BaseEnricher {
                         break;
                     case MESSAGE:
                         params.message(pair.getValue().asStringLiteralExpr().asString());
+                        break;
+                    case AS_CODE:
+                        params.asCode(pair.getValue().asStringLiteralExpr().asString());
                         break;
                     case PARAMS:
                         if (pair.getValue().isArrayInitializerExpr()) {
@@ -230,6 +261,9 @@ public class ValidationEnricher extends BaseEnricher {
                     case MESSAGE:
                         params.message(exp);
                         break;
+                    case AS_CODE:
+                        params.asCode(exp);
+                        break;
                     case PARAMS:
                         var idx = getParamIndex(parOrder, VALUE);
                         if (idx != -1) {
@@ -248,6 +282,13 @@ public class ValidationEnricher extends BaseEnricher {
         }
     }
 
+    private Object checkAsCode(Object value, AsCode code) {
+        if (nonNull(code)) {
+            return AsCodeHolder.builder().value((String) value).format(code.value()).build();
+        }
+        return value;
+    }
+
     private Object getParamValue(Expression value) {
         if (value.isStringLiteralExpr()) {
             return value.asStringLiteralExpr().asString();
@@ -262,9 +303,9 @@ public class ValidationEnricher extends BaseEnricher {
         return null;
     }
 
-    private int getParamIndex(List<Pair<String, Object>> list, String name) {
+    private int getParamIndex(List<Triple<String, Object, AsCode>> list, String name) {
         for (var i = 0; i < list.size(); i++) {
-            if (name.equals(list.get(i).getKey())) {
+            if (name.equals(list.get(i).getLeft())) {
                 return i;
             }
         }
@@ -305,7 +346,7 @@ public class ValidationEnricher extends BaseEnricher {
                 .append(params.getCls())
                 .append(".class, ")
                 .append(isNull(params.getMessage()) ? "null" : "\"" + StringEscapeUtils.escapeJava(params.getMessage()) + "\"")
-                .append(buildParamsStr(params.getParams()))
+                .append(buildParamsStr(params, field))
                 .append(");");
         var expr = lookup.getParser()
                 .parseStatement(exp.toString())
@@ -336,7 +377,7 @@ public class ValidationEnricher extends BaseEnricher {
                 .append(", ")
                 .append(params.getCls())
                 .append(".class")
-                .append(buildParamsStr(params.getParams()))
+                .append(buildParamsStr(params, field))
                 .append(");");
         var expr = lookup.getParser()
                 .parseStatement(exp.toString())
@@ -345,17 +386,23 @@ public class ValidationEnricher extends BaseEnricher {
                 e -> e.getStatements().add(e.getStatements().size() - offset, expr));
     }
 
-    private String buildParamsStr(List<Object> params) {
-        if (isNull(params) || params.isEmpty()) {
+    private String buildParamsStr(Params params, PrototypeField field) {
+        var list = params.getParams();
+        if (isNull(list) || list.isEmpty()) {
             return "";
         }
 
         var result = new StringBuilder();
-        for (var param : params) {
+        for (var param : list) {
             if (param instanceof String) {
                 result.append(", \"")
                         .append(StringEscapeUtils.escapeJava((String) param))
                         .append("\"");
+            } else if (param instanceof AsCodeHolder) {
+                var holder = (AsCodeHolder) param;
+                var format = "%s".equals(holder.getFormat()) && !StringUtils.isBlank(params.getAsCode()) ? params.getAsCode() : holder.getFormat();
+                result.append(", ")
+                        .append(String.format(format.replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString()), holder.getValue()));
             } else {
                 result.append(", ")
                         .append(nonNull(param) ? param.toString() : "null");
@@ -375,6 +422,14 @@ public class ValidationEnricher extends BaseEnricher {
         private String cls;
         private String message;
         private List<Object> params;
+        private String asCode;
+    }
+
+    @Data
+    @Builder
+    private static class AsCodeHolder {
+        private String value;
+        private String format;
     }
 
 }
