@@ -2,7 +2,9 @@
 package net.binis.codegen;
 
 import net.binis.codegen.creator.EntityCreatorModifier;
+import javax.annotation.processing.Generated;
 
+@Generated(value = "TestPrototype", comments = "TestImpl")
 public interface Test {
 
     static Test.Modify create() {

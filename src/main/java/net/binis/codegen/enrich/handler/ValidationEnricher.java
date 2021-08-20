@@ -36,12 +36,8 @@ import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
-import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.tuple.Pair;
 
-import static net.binis.codegen.tools.Reflection.loadClass;
-
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -50,8 +46,11 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.generation.core.Constants.*;
-import static net.binis.codegen.tools.Tools.*;
+import static net.binis.codegen.generation.core.Constants.EMBEDDED_MODIFIER_KEY;
+import static net.binis.codegen.generation.core.Constants.MODIFIER_KEY;
+import static net.binis.codegen.tools.Reflection.loadClass;
+import static net.binis.codegen.tools.Tools.notNull;
+import static net.binis.codegen.tools.Tools.withRes;
 
 @Slf4j
 public class ValidationEnricher extends BaseEnricher {

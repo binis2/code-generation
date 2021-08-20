@@ -2,7 +2,9 @@
 package net.binis.codegen;
 
 import net.binis.codegen.factory.CodeFactory;
+import javax.annotation.processing.Generated;
 
+@Generated(value = "TestPrototype", comments = "Test")
 public class TestImpl implements Test {
 
     protected String title;

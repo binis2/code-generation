@@ -98,7 +98,7 @@ public abstract class BaseTest {
 
     protected void compare(CompilationUnit unit, String resource) {
         if (nonNull(resource)) {
-            assertEquals(resourceAsString(resource), getAsString(unit));
+            assertEquals(resource, resourceAsString(resource), getAsString(unit));
         }
     }
 

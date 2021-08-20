@@ -1,6 +1,9 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.codegen;
 
+import javax.annotation.processing.Generated;
+
+@Generated(value = "BasePrototype", comments = "Base")
 public class BaseImpl implements Base {
 
     protected Long id;

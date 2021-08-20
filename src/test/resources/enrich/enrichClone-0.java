@@ -1,11 +1,13 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.codegen;
 
+import javax.annotation.processing.Generated;
 import java.util.stream.Collectors;
 import java.util.Set;
 import java.util.Map;
 import java.util.List;
 
+@Generated(value = "TestPrototype", comments = "Test")
 public class TestImpl implements Test {
 
     protected List<Long> list;

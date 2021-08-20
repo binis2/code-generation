@@ -2,7 +2,9 @@
 package net.binis.codegen;
 
 import net.binis.codegen.creator.EntityCreatorModifier;
+import javax.annotation.processing.Generated;
 
+@Generated(value = "MixInPrototype", comments = "MixInImpl")
 public interface MixIn extends Test {
 
     MixIn.Modify asMixIn();

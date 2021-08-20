@@ -1,8 +1,10 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.codegen;
 
+import javax.annotation.processing.Generated;
 import java.util.function.Function;
 
+@Generated(value = "TestPrototype", comments = "TestImpl")
 public interface Test {
 
     String getTitle();

@@ -81,6 +81,7 @@ public class Generator {
                     handleEnrichersSetup(properties);
 
                     var unit = new CompilationUnit();
+                    unit.addImport("javax.annotation.processing.Generated");
                     var spec = unit.addClass(properties.getClassName());
                     unit.setPackageDeclaration(properties.getClassPackage());
                     spec.addModifier(PUBLIC);
@@ -90,6 +91,7 @@ public class Generator {
                     }
 
                     var iUnit = new CompilationUnit();
+                    iUnit.addImport("javax.annotation.processing.Generated");
                     var intf = iUnit.addClass(properties.getInterfaceName()).setInterface(true);
                     iUnit.setPackageDeclaration(properties.getInterfacePackage());
                     intf.addModifier(PUBLIC);
@@ -104,6 +106,9 @@ public class Generator {
                     parse.setFiles(List.of(unit, iUnit));
                     parse.setSpec(spec);
                     parse.setIntf(intf);
+
+                    spec.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeName() + "\", comments=\"" + properties.getInterfaceName() + "\")").getResult().get());
+                    intf.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeName() + "\", comments=\"" + properties.getClassName() + "\")").getResult().get());
 
                     typeDeclaration.getExtendedTypes().forEach(t -> {
                         var parsed = getParsed(t);

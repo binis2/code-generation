@@ -2,7 +2,9 @@
 package net.binis.codegen;
 
 import org.springframework.transaction.annotation.Transactional;
+import javax.annotation.processing.Generated;
 
+@Generated(value = "TestPrototype", comments = "Test")
 public class TestImpl implements Test {
 
     protected Long id = 1L;
