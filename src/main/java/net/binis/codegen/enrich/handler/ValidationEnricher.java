@@ -267,7 +267,12 @@ public class ValidationEnricher extends BaseEnricher {
                     case PARAMS:
                         var idx = getParamIndex(parOrder, VALUE);
                         if (idx != -1) {
-                            list.set(idx, exp);
+                            var triple = parOrder.get(idx);
+                            if (nonNull(triple.getRight())) {
+                                list.set(idx, checkAsCode(exp, triple.getRight()));
+                            } else {
+                                list.set(idx, exp);
+                            }
                         } else {
                             throw new GenericCodeGenException("Invalid annotation params! " + annotation);
                         }
