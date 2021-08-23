@@ -24,6 +24,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.utils.StringEscapeUtils;
 import lombok.Builder;
 import lombok.Data;
@@ -342,22 +343,39 @@ public class ValidationEnricher extends BaseEnricher {
     }
 
     private void addValidation(PrototypeField field, MethodDeclaration method, Params params) {
-        field.getDeclaration().findCompilationUnit().ifPresent(u ->
-                u.addImport("net.binis.codegen.factory.CodeFactory.validate", true, false));
-        var offset = method.getType().isVoidType() ? 1 : 2;
-        var exp = new StringBuilder("validate(")
-                .append(field.getName())
-                .append(", ")
-                .append(params.getCls())
-                .append(".class, ")
-                .append(isNull(params.getMessage()) ? "null" : "\"" + StringEscapeUtils.escapeJava(params.getMessage()) + "\"")
-                .append(buildParamsStr(params, field))
-                .append(");");
-        var expr = lookup.getParser()
-                .parseStatement(exp.toString())
-                .getResult().get();
-        method.getChildNodes().stream().filter(BlockStmt.class::isInstance).map(BlockStmt.class::cast).findFirst().ifPresent(
-                e -> e.getStatements().add(e.getStatements().size() - offset, expr));
+        method.findCompilationUnit().get().addImport("net.binis.codegen.validation.flow.Validation");
+        var block = method.getChildNodes().stream().filter(BlockStmt.class::isInstance).map(BlockStmt.class::cast).findFirst().get();
+
+        if (block.getStatements().get(0).asExpressionStmt().getExpression() instanceof AssignExpr) {
+            var exp = new StringBuilder("Validation.start(\"")
+                    .append(field.getName())
+                    .append("\", ")
+                    .append(field.getName())
+                    .append(").validate(")
+                    .append(params.getCls())
+                    .append(".class, ")
+                    .append(calcMessage(params))
+                    .append(buildParamsStr(params, field))
+                    .append(").perform(v -> this.map = v);");
+            var expr = lookup.getParser().parseStatement(exp.toString()).getResult().get();
+            var original = block.getStatements().remove(0);
+            ((ExpressionStmt) original).getExpression().asAssignExpr().setValue(new NameExpr("v"));
+            var mCall = expr.asExpressionStmt().getExpression().asMethodCallExpr();
+            ((LambdaExpr) mCall.getChildNodes().get(mCall.getChildNodes().size() - 1)).setBody(original);
+            block.getStatements().add(0, expr);
+        } else {
+            var mCall = block.getStatements().get(0).asExpressionStmt().getExpression().asMethodCallExpr();
+            var chain = mCall.getScope().get();
+            mCall.removeScope();
+            var m = new MethodCallExpr(chain, "validate").addArgument(params.getCls() + ".class").addArgument(calcMessage(params));
+            notNull(params.getParams(), p -> p.forEach(param ->
+                    m.addArgument(buildParamsStr(param, params, field))));
+            mCall.setScope(m);
+        }
+    }
+
+    private String calcMessage(Params params) {
+        return isNull(params.getMessage()) ? "null" : "\"" + StringEscapeUtils.escapeJava(params.getMessage()) + "\"";
     }
 
     private void handleSanitizationModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, String key, Params params) {
@@ -373,22 +391,34 @@ public class ValidationEnricher extends BaseEnricher {
     }
 
     private void addSanitization(PrototypeField field, MethodDeclaration method, Params params) {
-        field.getDeclaration().findCompilationUnit().ifPresent(u ->
-                u.addImport("net.binis.codegen.factory.CodeFactory.sanitize", true, false));
-        var offset = method.getType().isVoidType() ? 1 : 2;
-        var exp = new StringBuilder(field.getName())
-                .append(" = sanitize(")
-                .append(field.getName())
-                .append(", ")
-                .append(params.getCls())
-                .append(".class")
-                .append(buildParamsStr(params, field))
-                .append(");");
-        var expr = lookup.getParser()
-                .parseStatement(exp.toString())
-                .getResult().get();
-        method.getChildNodes().stream().filter(BlockStmt.class::isInstance).map(BlockStmt.class::cast).findFirst().ifPresent(
-                e -> e.getStatements().add(e.getStatements().size() - offset, expr));
+        method.findCompilationUnit().get().addImport("net.binis.codegen.validation.flow.Validation");
+        var block = method.getChildNodes().stream().filter(BlockStmt.class::isInstance).map(BlockStmt.class::cast).findFirst().get();
+
+        if (block.getStatements().get(0).asExpressionStmt().getExpression() instanceof AssignExpr) {
+            var exp = new StringBuilder("Validation.start(\"")
+                    .append(field.getName())
+                    .append("\", ")
+                    .append(field.getName())
+                    .append(").sanitize(")
+                    .append(params.getCls())
+                    .append(".class, ")
+                    .append(calcMessage(params))
+                    .append(").perform(v -> this.map = v);");
+            var expr = lookup.getParser().parseStatement(exp.toString()).getResult().get();
+            var original = block.getStatements().remove(0);
+            ((ExpressionStmt) original).getExpression().asAssignExpr().setValue(new NameExpr("v"));
+            var mCall = expr.asExpressionStmt().getExpression().asMethodCallExpr();
+            ((LambdaExpr) mCall.getChildNodes().get(mCall.getChildNodes().size() - 1)).setBody(original);
+            block.getStatements().add(0, expr);
+        } else {
+            var mCall = block.getStatements().get(0).asExpressionStmt().getExpression().asMethodCallExpr();
+            var chain = mCall.getScope().get();
+            mCall.removeScope();
+            var m = new MethodCallExpr(chain, "sanitize").addArgument(params.getCls() + ".class").addArgument(calcMessage(params));
+            notNull(params.getParams(), p -> p.forEach(param ->
+                    m.addArgument(buildParamsStr(param, params, field))));
+            mCall.setScope(m);
+        }
     }
 
     private String buildParamsStr(Params params, PrototypeField field) {
@@ -415,6 +445,19 @@ public class ValidationEnricher extends BaseEnricher {
         }
         return result.toString();
     }
+
+    private String buildParamsStr(Object param, Params params, PrototypeField field) {
+        if (param instanceof String) {
+            return "\"" + StringEscapeUtils.escapeJava((String) param) + "\"";
+        } else if (param instanceof AsCodeHolder) {
+            var holder = (AsCodeHolder) param;
+            var format = "%s".equals(holder.getFormat()) && !StringUtils.isBlank(params.getAsCode()) ? params.getAsCode() : holder.getFormat();
+            return String.format(format.replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString()), holder.getValue());
+        } else {
+            return nonNull(param) ? param.toString() : "null";
+        }
+    }
+
 
     private boolean isValidationAnnotation(AnnotationExpr annotation) {
         return withRes(loadClass(Helpers.getExternalClassNameIfExists(annotation.findCompilationUnit().get(), annotation.getNameAsString())), cls ->
