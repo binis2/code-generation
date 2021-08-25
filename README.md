@@ -118,6 +118,8 @@ enables query building for your jpa entities
     Test.find().by().amount().greater(10.0).and().not().title("title").get();
 ```
 
+*Note that QueryEnricher requires code-generation-spring module dependency to your project*
+
 #### ValidationEnricher
 
 ```java
@@ -136,18 +138,57 @@ public interface TestPrototype {
 }
 ```
 
-enables validation and sanitization for your entities. It handles both setters and modifiers. The system is also opened for 
-registering custom validators/sanitizers.  
+enables validation and sanitization for your entities. It handles both setters and modifiers.  
 
 ```java
     assertThrows(ValidationException.class, () -> entity.setTitle(null));
     assertEquals("title", entity.with().title("  title  ").done().getTitle());
 ```
 
+##### Custom validators/sanitizers
+
+The validation system has a neat way to inherit existing validation/sanitization annotations and introduce your own custom annotation validations/sanitizations.
+
+```java
+@Validate(LambdaValidator.class)
+public @interface ValidateNotBlank {
+    @AsCode
+    @AliasFor("params")
+    String value() default "org.apache.commons.lang3.StringUtils::isNotBlank";
+    String message() default "Value can't be blank!";
+}
+```
+```java
+@Validate(value = RegExValidator.class, params = ValidateEmail.REGEX)
+public @interface ValidateEmail {
+    String REGEX = "^[\\w!#$%&'*+/=?`{|}~^-]+(?:\\.[\\w!#$%&'*+/=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$";
+    String message() default "Invalid Email!";
+}
+```
+and use it like this
+
+```java
+@SanitizeTrim
+@ValidateNotBlank
+String field();
+
+@ValidateEmail
+String email();
+
+@ValidateRange(min = 0, max = 100)
+int value();
+
+@SanitizeLambda("String::trim")
+String lambda();
+```
+
+
+
 *Note: [Validation module](https://github.com/binis2/code-generation-validation) needs to be included into the project!* 
       
-Multiple enrichers can be combined for spicing up your objects. See below.   
-*Note that QueryEnricher requires code-generation-spring module dependency to your project*
+*Note that ValidationEnricher requires code-generation-validation module dependency to your project*
+
+Multiple enrichers can be combined for spicing up your objects. See below.
 
 ### Collections support
 
