@@ -125,6 +125,42 @@ public class CodeGen {
         lookup.parsed().stream().filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
     }
 
+    public static void processSources(List<String> files) {
+        var parser = new JavaParser();
+        for (var file : files) {
+            try {
+                var parse = parser.parse(file);
+                var unit = parse.getResult().get();
+                var fileName = unit.getPackageDeclaration().get().getNameAsString().replace('.', '/') + unit.getType(0).getNameAsString();
+                log.info("Parsed {} - {}", fileName, parse.toString());
+                parse.getResult().ifPresent(u ->
+                        u.getTypes().forEach(t ->
+                                handleType(parser, t, fileName)));
+            } catch (Exception e) {
+                log.error("Unable to parse {}", file, e);
+            }
+        }
+
+        for (var entry : enumParsed.entrySet()) {
+            ifNull(entry.getValue().getFiles(), () ->
+                    Generator.generateCodeForEnum(entry.getValue().getDeclaration().findCompilationUnit().get()));
+        }
+
+        for (var entry : lookup.parsed()) {
+            ifNull(entry.getFiles(), () ->
+                    Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get()));
+        }
+
+        recursiveExpr.forEach(pair ->
+                pair.getRight().setType(findProperType(pair.getLeft(), pair.getMiddle(), pair.getRight())));
+
+        lookup.parsed().stream().filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
+        lookup.parsed().stream().filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
+        lookup.parsed().stream().filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
+        lookup.parsed().stream().filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
+    }
+
+
     @SuppressWarnings("unchecked")
     public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName) {
         var className = t.findCompilationUnit().get().getPackageDeclaration().get().getNameAsString() + '.' + t.getNameAsString();

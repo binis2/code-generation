@@ -47,6 +47,7 @@ public class Structures {
     @Setter
     @Builder
     public static class PrototypeDataHandler implements PrototypeData {
+
         private String prototypeName;
         private String name;
         private String className;
@@ -115,6 +116,10 @@ public class Structures {
     @Data
     @Builder
     public static class Parsed<T extends TypeDeclaration<T>> implements PrototypeDescription<T> {
+
+        {
+            Helpers.registerKnownEnrichers();
+        }
 
         private JavaParser parser;
 

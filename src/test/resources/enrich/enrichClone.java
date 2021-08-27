@@ -1,7 +1,7 @@
 package net.binis.codegen;
 
 import net.binis.codegen.annotation.CodePrototype;
-import net.binis.codegen.enrich.handler.CloneEnricher;
+import net.binis.codegen.enrich.CloneEnricher;
 
 import java.util.List;
 import java.util.Map;

@@ -26,6 +26,7 @@ import com.github.javaparser.ast.expr.LambdaExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
+import net.binis.codegen.enrich.QueryEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.Constants;
@@ -38,7 +39,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Tools.with;
 
-public class QueryEnricher extends BaseEnricher {
+public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher {
 
     private static final String QUERY_START = "QueryStarter";
     private static final String QUERY_SELECT = "QuerySelect";
@@ -449,9 +450,9 @@ public class QueryEnricher extends BaseEnricher {
     }
 
     private boolean checkQueryName(String entity, PrototypeField desc) {
-        return nonNull(desc.getPrototype()) && (desc.getPrototype().getProperties().getEnrichers().stream().anyMatch(e -> QueryEnricher.class.equals(e.getClass())) ||
+        return nonNull(desc.getPrototype()) && (desc.getPrototype().getProperties().getEnrichers().stream().anyMatch(e -> QueryEnricherHandler.class.equals(e.getClass())) ||
                 nonNull(desc.getPrototype().getBase()) &&
-                        desc.getPrototype().getBase().getProperties().getInheritedEnrichers().stream().anyMatch(e -> QueryEnricher.class.equals(e.getClass())));
+                        desc.getPrototype().getBase().getProperties().getInheritedEnrichers().stream().anyMatch(e -> QueryEnricherHandler.class.equals(e.getClass())));
     }
 
 }

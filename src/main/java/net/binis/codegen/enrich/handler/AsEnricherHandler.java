@@ -24,14 +24,14 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
-import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
+import net.binis.codegen.enrich.AsEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
+import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 
-import static com.github.javaparser.ast.Modifier.Keyword.ABSTRACT;
 import static com.github.javaparser.ast.Modifier.Keyword.PUBLIC;
 import static net.binis.codegen.generation.core.Constants.MIXIN_MODIFYING_METHOD_PREFIX;
 
-public class AsEnricher extends BaseEnricher {
+public class AsEnricherHandler extends BaseEnricher implements AsEnricher {
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {

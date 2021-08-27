@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
+import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
@@ -495,8 +496,9 @@ public class Generator {
                 .filter(Expression::isClassExpr)
                 .map(e -> loadClass(getExternalClassName(expression.findCompilationUnit().get(), e.asClassExpr().getType().asString())))
                 .filter(Objects::nonNull)
-                .filter(PrototypeEnricher.class::isAssignableFrom)
-                .map(Reflection::instantiate)
+                .map(CodeFactory::create)
+                .filter(Objects::nonNull)
+                .filter(i -> PrototypeEnricher.class.isAssignableFrom(i.getClass()))
                 .forEach(e ->
                         with(((PrototypeEnricher) e), enricher -> {
                             enricher.init(lookup);
@@ -796,17 +798,15 @@ public class Generator {
     }
 
 
-    private static void handleMethodAnnotations(CompilationUnit unit, MethodDeclaration method, MethodDeclaration declaration) {
+    private static void handleMethodAnnotations(MethodDeclaration method, MethodDeclaration declaration) {
         declaration.getAnnotations().forEach(a ->
-                notNull(getExternalClassName(unit, a.getNameAsString()), name -> {
+                notNull(getExternalClassName(declaration.findCompilationUnit().get(), a.getNameAsString()), name -> {
                     var ann = loadClass(name);
-                    if (nonNull(ann) && !CodeAnnotation.class.isAssignableFrom(ann)) {
+                    if (nonNull(ann) && !ann.isAnnotationPresent(CodeAnnotation.class)) {
                         var target = ann.getAnnotation(Target.class);
-                        if (target != null && !target.toString().contains("FIELD")) {
+                        if (target != null && target.toString().contains("METHOD")) {
                             method.addAnnotation(a);
                         }
-                    } else {
-                        log.warn("Can't process annotation {}", name);
                     }
                 })
         );
@@ -999,7 +999,7 @@ public class Generator {
                         .addModifier(PUBLIC)
                         .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName(declaration.getName()))));
                 ((Structures.FieldData) field).setImplementationGetter(method);
-                handleMethodAnnotations(spec.findCompilationUnit().get(), method, declaration);
+                handleMethodAnnotations(method, declaration);
                 if (declaration.getTypeParameters().isNonEmpty()) {
                     method.setType("Object");
                 }

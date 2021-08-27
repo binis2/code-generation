@@ -23,16 +23,16 @@ package net.binis.codegen.enrich.handler;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
+import net.binis.codegen.enrich.CreatorEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
-import net.binis.codegen.generation.core.Constants;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 
 import static com.github.javaparser.ast.Modifier.Keyword.STATIC;
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.Constants.EMBEDDED_MODIFIER_KEY;
 
-public class CreatorModifierEnricher extends BaseEnricher {
+public class CreatorEnricherHandler extends BaseEnricher implements CreatorEnricher {
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
@@ -43,34 +43,16 @@ public class CreatorModifierEnricher extends BaseEnricher {
         var properties = description.getProperties();
         var spec = description.getSpec();
         var intf = description.getIntf();
-        var modifier = description.getRegisteredClass(Constants.MODIFIER_INTF_KEY);
-
-        var creatorClass = "EntityCreatorModifier";
-
-        spec.findCompilationUnit().get().addImport(creatorClass);
-
-        if (nonNull(modifier)) {
-            var type = intf.getNameAsString() + "." + modifier.getNameAsString();
-            if (isNull(properties.getMixInClass())) {
-                intf.addMethod("create", STATIC)
-                        .setType(type)
-                        .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + type + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class).with()")));
-            } else {
-                intf.addMethod("create", STATIC)
-                        .setType(type)
-                        .setBody(new BlockStmt().addStatement(new ReturnStmt("((" + intf.getNameAsString() + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class)).as" + intf.getNameAsString() + "()")));
-            }
-        } else {
-            creatorClass = "EntityCreator";
-            intf.addMethod("create", STATIC)
-                    .setType(intf.getNameAsString())
-                    .setBody(new BlockStmt().addStatement(new ReturnStmt(creatorClass + ".create(" + intf.getNameAsString() + ".class)")));
-        }
+        var creatorClass = "EntityCreator";
 
         intf.findCompilationUnit().get().addImport("net.binis.codegen.creator." + creatorClass);
 
+        intf.addMethod("create", STATIC)
+                .setType(intf.getNameAsString())
+                .setBody(new BlockStmt().addStatement(new ReturnStmt(creatorClass + ".create(" + intf.getNameAsString() + ".class, \"" + description.getParsedFullName() + "\")")));
+
         if (!properties.isBase()) {
-            var embedded = description.getRegisteredClass(Constants.EMBEDDED_MODIFIER_KEY);
+            var embedded = description.getRegisteredClass(EMBEDDED_MODIFIER_KEY);
 
             var type = spec;
             if (nonNull(description.getMixIn())) {
@@ -83,7 +65,7 @@ public class CreatorModifierEnricher extends BaseEnricher {
 
     @Override
     public int order() {
-        return 1000;
+        return 0;
     }
 
 }

@@ -8,7 +8,7 @@ import javax.annotation.processing.Generated;
 public interface Test {
 
     static Test create() {
-        return EntityCreator.create(Test.class);
+        return EntityCreator.create(Test.class, "net.binis.codegen.TestImpl");
     }
 
     String getTitle();

@@ -10,7 +10,7 @@ public interface MixIn extends Test {
     MixIn.Modify asMixIn();
 
     static MixIn.Modify create() {
-        return ((MixIn) EntityCreatorModifier.create(MixIn.class)).asMixIn();
+        return ((MixIn) EntityCreatorModifier.create(MixIn.class, "net.binis.codegen.TestImpl")).asMixIn();
     }
 
     String getSubtitle();

@@ -8,7 +8,7 @@ import javax.annotation.processing.Generated;
 public interface Test {
 
     static Test.Modify create() {
-        return (Test.Modify) EntityCreatorModifier.create(Test.class).with();
+        return (Test.Modify) EntityCreatorModifier.create(Test.class, "net.binis.codegen.TestImpl").with();
     }
 
     String getTitle();

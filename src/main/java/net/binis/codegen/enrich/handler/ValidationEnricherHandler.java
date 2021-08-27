@@ -33,6 +33,7 @@ import net.binis.codegen.annotation.validation.AliasFor;
 import net.binis.codegen.annotation.validation.AsCode;
 import net.binis.codegen.annotation.validation.Sanitize;
 import net.binis.codegen.annotation.validation.Validate;
+import net.binis.codegen.enrich.ValidationEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.generation.core.Helpers;
@@ -57,7 +58,7 @@ import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
-public class ValidationEnricher extends BaseEnricher {
+public class ValidationEnricherHandler extends BaseEnricher implements ValidationEnricher {
 
     private static final String VALUE = "value";
     private static final String PARAMS = "params";
@@ -401,8 +402,8 @@ public class ValidationEnricher extends BaseEnricher {
                     .append(field.getName())
                     .append(").sanitize(")
                     .append(params.getCls())
-                    .append(".class, ")
-                    .append(calcMessage(params))
+                    .append(".class")
+                    .append(buildParamsStr(params, field))
                     .append(").perform(v -> this.map = v);");
             var expr = lookup.getParser().parseStatement(exp.toString()).getResult().get();
             var original = block.getStatements().remove(0);

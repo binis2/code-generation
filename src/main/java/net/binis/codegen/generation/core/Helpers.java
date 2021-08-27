@@ -32,8 +32,10 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.enrich.PrototypeEnricher;
-import net.binis.codegen.enrich.PrototypeLookup;
+import net.binis.codegen.enrich.*;
+import net.binis.codegen.enrich.handler.*;
+import net.binis.codegen.exception.GenericCodeGenException;
+import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
@@ -50,11 +52,13 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.tools.Reflection.instantiate;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
 public class Helpers {
+
     public static final Set<String> knownClassAnnotations = Set.of(
             "javax.persistence.OneToOne",
             "javax.persistence.ManyToOne",
@@ -115,7 +119,6 @@ public class Helpers {
         }
         return className + "ModifyImpl";
     }
-
 
     public static String getGetterName(String name, String type) {
         if ("boolean".equals(type)) {
@@ -557,7 +560,6 @@ public class Helpers {
         cls.getMembers().stream().filter(BodyDeclaration::isClassOrInterfaceDeclaration).map(BodyDeclaration::asClassOrInterfaceDeclaration).forEach(Helpers::sortClass);
     }
 
-    @SuppressWarnings("unchecked")
     private static int compareMembers(BodyDeclaration<?> m1, BodyDeclaration<?> m2) {
         var result = memberIndex(m2) - memberIndex(m1);
         if (result == 0) {
@@ -606,6 +608,30 @@ public class Helpers {
         processingTypes.clear();
         recursiveExpr.clear();
     }
+
+    public static void registerEnricher(Class enricher) {
+        var reg = false;
+        for (var i : enricher.getInterfaces()) {
+            if (Enricher.class.isAssignableFrom(i) && !Enricher.class.equals(i.getClass())) {
+                CodeFactory.registerType(i, () -> instantiate(enricher), null);
+                reg = true;
+            }
+        }
+        if (!reg) {
+            throw new GenericCodeGenException(enricher.getCanonicalName() + " is not enricher!");
+        }
+    }
+
+    public static void registerKnownEnrichers() {
+        registerEnricher(AsEnricherHandler.class);
+        registerEnricher(CloneEnricherHandler.class);
+        registerEnricher(CreatorEnricherHandler.class);
+        registerEnricher(CreatorModifierEnricherHandler.class);
+        registerEnricher(ModifierEnricherHandler.class);
+        registerEnricher(QueryEnricherHandler.class);
+        registerEnricher(ValidationEnricherHandler.class);
+    }
+
 
     public static String handleGenericPrimitiveType(Type type) {
         if (type.isPrimitiveType()) {
@@ -752,6 +778,5 @@ public class Helpers {
 
         list.add(Triple.of(intf, node, embedded));
     }
-
 
 }
