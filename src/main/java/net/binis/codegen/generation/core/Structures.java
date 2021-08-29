@@ -9,9 +9,9 @@ package net.binis.codegen.generation.core;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,10 +29,11 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.type.Type;
 import lombok.*;
-import net.binis.codegen.enrich.PrototypeEnricher;
+import net.binis.codegen.enrich.*;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.scheduling.config.Task;
 
@@ -40,8 +41,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
+
+import static java.util.Objects.isNull;
+import static net.binis.codegen.generation.core.Helpers.defaultClassPackage;
+import static net.binis.codegen.generation.core.Helpers.defaultInterfacePackage;
 
 public class Structures {
+
+    public static final Map<String, Supplier<PrototypeDataHandler.PrototypeDataHandlerBuilder>> defaultProperties = initDefaultProperties();
 
     @Getter
     @Setter
@@ -74,6 +82,10 @@ public class Structures {
 
         private List<PrototypeEnricher> enrichers;
         private List<PrototypeEnricher> inheritedEnrichers;
+
+        private List<Class<? extends Enricher>> predefinedEnrichers;
+        private List<Class<? extends Enricher>> predefinedInheritedEnrichers;
+
     }
 
     @ToString
@@ -202,6 +214,43 @@ public class Structures {
         private String interfaceName;
         private String classPackage;
         private String className;
+    }
+
+    public static PrototypeDataHandler.PrototypeDataHandlerBuilder builder(String type) {
+        var result = defaultProperties.get(type);
+        if (isNull(result)) {
+            return defaultBuilder();
+        }
+        return result.get();
+    }
+
+    private static PrototypeDataHandler.PrototypeDataHandlerBuilder defaultBuilder() {
+        return Structures.PrototypeDataHandler.builder()
+                .generateConstructor(true)
+                .generateInterface(true)
+                .generateImplementation(true)
+                .classGetters(true)
+                .classSetters(true)
+                .interfaceSetters(true)
+                .modifierName(net.binis.codegen.generation.core.Constants.MODIFIER_INTERFACE_NAME);
+    }
+
+    private static Map<String, Supplier<PrototypeDataHandler.PrototypeDataHandlerBuilder>> initDefaultProperties() {
+        return Map.of(
+                "CodePrototype", Structures::defaultBuilder,
+                "CodeBuilder", () -> defaultBuilder()
+                        .predefinedEnrichers(List.of(CreatorModifierEnricher.class, ModifierEnricher.class))
+                        .classSetters(false)
+                        .interfaceSetters(false),
+                "CodeValidationBuilder", () -> defaultBuilder()
+                        .predefinedEnrichers(List.of(ValidationEnricher.class, CreatorModifierEnricher.class, ModifierEnricher.class))
+                        .classSetters(false)
+                        .interfaceSetters(false),
+                "CodeQueryBuilder", () -> defaultBuilder()
+                        .predefinedEnrichers(List.of(QueryEnricher.class, ValidationEnricher.class, CreatorModifierEnricher.class, ModifierEnricher.class))
+                        .classSetters(false)
+                        .interfaceSetters(false)
+                        .baseModifierClass("net.binis.codegen.spring.BaseEntityModifier"));
     }
 
 }

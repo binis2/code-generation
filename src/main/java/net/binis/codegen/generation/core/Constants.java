@@ -45,5 +45,4 @@ public class Constants {
 
     public static final String CLONE_METHOD = "clone";
 
-
 }

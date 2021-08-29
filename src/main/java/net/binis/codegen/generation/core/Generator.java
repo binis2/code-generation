@@ -39,7 +39,6 @@ import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Holder;
-import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -70,7 +69,7 @@ public class Generator {
 
         for (var type : parser.getTypes()) {
             if (type.isClassOrInterfaceDeclaration() && type.asClassOrInterfaceDeclaration().isInterface()) {
-                type.getAnnotationByName("CodePrototype").ifPresent(prototype -> {
+                getCodeAnnotation(type).ifPresent(prototype -> {
                     var typeDeclaration = type.asClassOrInterfaceDeclaration();
 
                     log.info("Processing - {}", typeDeclaration.getNameAsString());
@@ -224,6 +223,16 @@ public class Generator {
                 log.error("Invalid type " + type.getNameAsString());
             }
         }
+    }
+
+    private static Optional<AnnotationExpr> getCodeAnnotation(TypeDeclaration<?> type) {
+        for (var name : Structures.defaultProperties.keySet()) {
+            var ann = type.getAnnotationByName(name);
+            if (ann.isPresent()) {
+                return ann;
+            }
+        }
+        return Optional.empty();
     }
 
     private static void cleanUpInterface(Class<?> cls, ClassOrInterfaceDeclaration intf) {
@@ -384,16 +393,9 @@ public class Generator {
         var iName = Holder.of(defaultInterfaceName(type));
         var cName = defaultClassName(type);
 
-        var builder = Structures.PrototypeDataHandler.builder()
-                .generateConstructor(true)
-                .generateInterface(true)
-                .generateImplementation(true)
-                .classGetters(true)
-                .classSetters(true)
-                .interfaceSetters(true)
+        var builder = Structures.builder(prototype.getNameAsString())
                 .classPackage(defaultClassPackage(type))
-                .interfacePackage(defaultInterfacePackage(type))
-                .modifierName(Constants.MODIFIER_INTERFACE_NAME);
+                .interfacePackage(defaultInterfacePackage(type));
         prototype.getChildNodes().forEach(node -> {
             if (node instanceof MemberValuePair) {
                 var pair = (MemberValuePair) node;
@@ -480,12 +482,18 @@ public class Generator {
         var result = builder.build();
 
         if (isNull(result.getEnrichers())) {
-            result.setEnrichers(Collections.emptyList());
+            result.setEnrichers(new ArrayList<>());
         }
 
         if (isNull(result.getInheritedEnrichers())) {
-            result.setInheritedEnrichers(Collections.emptyList());
+            result.setInheritedEnrichers(new ArrayList<>());
         }
+
+        notNull(result.getPredefinedEnrichers(), list ->
+            list.forEach(e -> checkEnrichers(result.getEnrichers(), e)));
+
+        notNull(result.getPredefinedInheritedEnrichers(), list ->
+                list.forEach(e -> checkEnrichers(result.getInheritedEnrichers(), e)));
 
         return result;
     }
@@ -505,6 +513,18 @@ public class Generator {
                             list.add(enricher);
                         }));
         consumer.accept(list);
+    }
+
+    private static void checkEnrichers(List<PrototypeEnricher> list, Class enricher) {
+        if (list.stream().noneMatch(e -> enricher.isAssignableFrom(e.getClass()))) {
+            var e = CodeFactory.create(enricher);
+            if (e instanceof PrototypeEnricher) {
+                with(((PrototypeEnricher) e), r -> {
+                    r.init(lookup);
+                    list.add(r);
+                });
+            }
+        }
     }
 
     private static void ensureParsedParents(ClassOrInterfaceDeclaration declaration, PrototypeData properties) {
