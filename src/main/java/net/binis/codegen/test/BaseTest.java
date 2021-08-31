@@ -23,8 +23,8 @@ package net.binis.codegen.test;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.printer.PrettyPrinter;
-import com.github.javaparser.printer.PrettyPrinterConfiguration;
+import com.github.javaparser.printer.DefaultPrettyPrinter;
+import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.CodeGen;
@@ -57,8 +57,8 @@ public abstract class BaseTest {
     protected JavaParser parser = new JavaParser();
 
     protected String getAsString(CompilationUnit file) {
-        var config = new PrettyPrinterConfiguration();
-        var printer = new PrettyPrinter(config);
+        var config = new DefaultPrinterConfiguration();
+        var printer = new DefaultPrettyPrinter(config);
 
         sortImports(file);
         if (file.getType(0).isClassOrInterfaceDeclaration()) {

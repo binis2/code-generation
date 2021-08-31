@@ -23,10 +23,9 @@ package net.binis.codegen;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.TypeDeclaration;
-import com.github.javaparser.printer.PrettyPrinter;
-import com.github.javaparser.printer.PrettyPrinterConfiguration;
+import com.github.javaparser.printer.DefaultPrettyPrinter;
+import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
@@ -46,7 +45,8 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.generation.core.Structures.Parsed;
-import static net.binis.codegen.tools.Tools.*;
+import static net.binis.codegen.tools.Tools.ifNull;
+import static net.binis.codegen.tools.Tools.nullCheck;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Slf4j
@@ -179,8 +179,8 @@ public class CodeGen {
     }
 
     private static void saveFile(String baseDir, CompilationUnit file) {
-        var config = new PrettyPrinterConfiguration();
-        var printer = new PrettyPrinter(config);
+        var config = new DefaultPrinterConfiguration();
+        var printer = new DefaultPrettyPrinter(config);
 
         sortImports(file);
         if (file.getType(0).isClassOrInterfaceDeclaration()) {

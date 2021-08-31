@@ -33,9 +33,7 @@ import net.binis.codegen.enrich.*;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
-import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.tuple.Triple;
-import org.springframework.scheduling.config.Task;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,8 +42,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import static java.util.Objects.isNull;
-import static net.binis.codegen.generation.core.Helpers.defaultClassPackage;
-import static net.binis.codegen.generation.core.Helpers.defaultInterfacePackage;
 
 public class Structures {
 
