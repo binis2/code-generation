@@ -425,5 +425,5 @@ or you can use the annotation processor
 Core - [https://github.com/binis2/code-generation-core]   
 Spring Extension - [https://github.com/binis2/code-generation-spring]   
 Tests mocking suite - [https://github.com/binis2/code-generation-test]   
-Annotation processor - [https://github.com/binis2/code-generation-annotation] 
+Annotation processor - [https://github.com/binis2/code-generation-annotation]   
 Validation and Sanitization extension - [https://github.com/binis2/code-generation-validation] 
