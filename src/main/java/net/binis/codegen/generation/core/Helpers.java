@@ -630,6 +630,7 @@ public class Helpers {
         registerEnricher(ModifierEnricherHandler.class);
         registerEnricher(QueryEnricherHandler.class);
         registerEnricher(ValidationEnricherHandler.class);
+        registerEnricher(FluentEnricherHandler.class);
     }
 
 

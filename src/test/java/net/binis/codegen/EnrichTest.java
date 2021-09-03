@@ -78,5 +78,9 @@ public class EnrichTest extends BaseTest {
         testSingle("enrich/enrichCreatorModifierPredefined.java", "enrich/enrichCreatorModifier-0.java", "enrich/enrichCreatorModifier-1.java");
     }
 
+    @Test
+    public void enrichFluent() {
+        testSingle("enrich/enrichFluent.java", "enrich/enrichFluent-0.java", "enrich/enrichFluent-1.java");
+    }
 
 }

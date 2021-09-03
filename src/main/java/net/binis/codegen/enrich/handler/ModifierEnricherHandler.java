@@ -308,6 +308,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                             method.setBody(new BlockStmt()
                                     .addStatement(new AssignExpr().setTarget(new NameExpr().setName("entity." + method.getNameAsString())).setValue(new NameExpr().setName(method.getNameAsString())))
                                     .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("this"))));
+                            //TODO: Register modifier to field prototype
                         } else {
                             method.setBody(null);
                         }
@@ -409,6 +410,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     .setBody(new BlockStmt()
                             .addStatement(new AssignExpr().setTarget(new NameExpr().setName(modifierClassName + ".this." + declaration.getName())).setValue(new NameExpr().setName(declaration.getName())))
                             .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("this"))));
+            declaration.addModifier(method);
         } else {
             method.setBody(null);
         }

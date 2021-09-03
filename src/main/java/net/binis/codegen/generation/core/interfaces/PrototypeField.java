@@ -26,6 +26,7 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.type.Type;
 import net.binis.codegen.generation.core.Structures;
 
+import java.util.List;
 import java.util.Map;
 
 public interface PrototypeField {
@@ -43,6 +44,9 @@ public interface PrototypeField {
     MethodDeclaration getImplementationGetter();
     MethodDeclaration getImplementationSetter();
 
+    List<MethodDeclaration> getModifiers();
+
+    void addModifier(MethodDeclaration modifier);
     MethodDeclaration generateGetter();
     MethodDeclaration generateSetter();
 }

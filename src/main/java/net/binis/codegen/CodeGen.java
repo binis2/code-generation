@@ -22,12 +22,14 @@ package net.binis.codegen;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.printer.DefaultPrettyPrinter;
 import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
+import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import org.apache.commons.cli.*;
 
@@ -132,7 +134,7 @@ public class CodeGen {
                 var parse = parser.parse(file);
                 var unit = parse.getResult().get();
                 var fileName = unit.getPackageDeclaration().get().getNameAsString().replace('.', '/') + unit.getType(0).getNameAsString();
-                log.info("Parsed {} - {}", fileName, parse.toString());
+                log.info("Parsed {} - {}", fileName, parse);
                 parse.getResult().ifPresent(u ->
                         u.getTypes().forEach(t ->
                                 handleType(parser, t, fileName)));
@@ -172,10 +174,28 @@ public class CodeGen {
                 constantParsed.put(getClassName(t.asClassOrInterfaceDeclaration()),
                         Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).build());
             } else {
-                lookup.registerParsed(getClassName(t.asClassOrInterfaceDeclaration()),
+                var name = getClassName(t.asClassOrInterfaceDeclaration());
+                checkForNestedClasses(t.asTypeDeclaration(), fileName, className, parser);
+                lookup.registerParsed(name,
                         Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).build());
             }
         }
+    }
+
+    public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, String className, JavaParser parser) {
+        type.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(nested -> {
+            if (nested.asClassOrInterfaceDeclaration().isInterface() && Generator.getCodeAnnotation(nested).isPresent()) {
+                var parent = type.findCompilationUnit().get();
+                var unit = new CompilationUnit().setPackageDeclaration(parent.getPackageDeclaration().get());
+                var nestedType = nested.clone();
+                parent.getImports().forEach(unit::addImport);
+                unit.addType(nestedType);
+
+                lookup.registerParsed(getClassName(nestedType),
+                        Structures.Parsed.builder().declaration(nestedType.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).nested(true).build());
+
+            }
+        });
     }
 
     private static void saveFile(String baseDir, CompilationUnit file) {

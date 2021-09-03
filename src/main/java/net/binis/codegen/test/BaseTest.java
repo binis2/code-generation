@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.CodeGen;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
+import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -74,10 +75,10 @@ public abstract class BaseTest {
                     Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get()));
         }
 
-        lookup.parsed().stream().filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
-        lookup.parsed().stream().filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
-        lookup.parsed().stream().filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
-        lookup.parsed().stream().filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
+        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
+        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
+        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
+        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
     }
 
     protected void cleanUp() {

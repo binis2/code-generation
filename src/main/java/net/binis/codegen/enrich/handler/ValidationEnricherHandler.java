@@ -103,7 +103,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         }
 
         addSanitization(field, field.getImplementationSetter(), ann);
-        handleSanitizationModifier(description, field, MODIFIER_KEY, ann);
+        field.getModifiers().forEach(modifier -> addSanitization(field, modifier, ann));
         handleSanitizationModifier(description, field, EMBEDDED_MODIFIER_KEY, ann);
     }
 
@@ -327,8 +327,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         }
 
         addValidation(field, field.getImplementationSetter(), ann);
-        handleValidationModifier(description, field, MODIFIER_KEY, ann);
         handleValidationModifier(description, field, EMBEDDED_MODIFIER_KEY, ann);
+        field.getModifiers().forEach(modifier -> addValidation(field, modifier, ann));
     }
 
     private void handleValidationModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, String key, Params params) {

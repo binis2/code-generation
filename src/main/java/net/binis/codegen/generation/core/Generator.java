@@ -68,164 +68,164 @@ public class Generator {
     public static void generateCodeForClass(CompilationUnit parser) {
 
         for (var type : parser.getTypes()) {
-            if (type.isClassOrInterfaceDeclaration() && type.asClassOrInterfaceDeclaration().isInterface()) {
-                getCodeAnnotation(type).ifPresent(prototype -> {
-                    var typeDeclaration = type.asClassOrInterfaceDeclaration();
+            if (type.isClassOrInterfaceDeclaration()) {
+                if (type.asClassOrInterfaceDeclaration().isInterface()) {
+                    getCodeAnnotation(type).ifPresent(prototype -> {
+                        var typeDeclaration = type.asClassOrInterfaceDeclaration();
 
-                    log.info("Processing - {}", typeDeclaration.getNameAsString());
+                        log.info("Processing - {}", typeDeclaration.getNameAsString());
 
-                    var properties = getProperties(prototype);
-                    properties.setPrototypeName(typeDeclaration.getNameAsString());
-                    addProcessingType(typeDeclaration.getNameAsString(), properties.getInterfacePackage(), properties.getInterfaceName(), properties.getClassPackage(), properties.getClassName());
-                    ensureParsedParents(typeDeclaration, properties);
-                    handleEnrichersSetup(properties);
+                        var properties = getProperties(prototype);
+                        properties.setPrototypeName(typeDeclaration.getNameAsString());
+                        addProcessingType(typeDeclaration.getNameAsString(), properties.getInterfacePackage(), properties.getInterfaceName(), properties.getClassPackage(), properties.getClassName());
+                        ensureParsedParents(typeDeclaration, properties);
+                        handleEnrichersSetup(properties);
 
-                    var unit = new CompilationUnit();
-                    unit.addImport("javax.annotation.processing.Generated");
-                    var spec = unit.addClass(properties.getClassName());
-                    unit.setPackageDeclaration(properties.getClassPackage());
-                    spec.addModifier(PUBLIC);
+                        var unit = new CompilationUnit();
+                        unit.addImport("javax.annotation.processing.Generated");
+                        var spec = unit.addClass(properties.getClassName());
+                        unit.setPackageDeclaration(properties.getClassPackage());
+                        spec.addModifier(PUBLIC);
 
-                    if (properties.isGenerateConstructor()) {
-                        spec.addConstructor(PUBLIC);
-                    }
+                        if (properties.isGenerateConstructor()) {
+                            spec.addConstructor(PUBLIC);
+                        }
 
-                    var iUnit = new CompilationUnit();
-                    iUnit.addImport("javax.annotation.processing.Generated");
-                    var intf = iUnit.addClass(properties.getInterfaceName()).setInterface(true);
-                    iUnit.setPackageDeclaration(properties.getInterfacePackage());
-                    intf.addModifier(PUBLIC);
+                        var iUnit = new CompilationUnit();
+                        iUnit.addImport("javax.annotation.processing.Generated");
+                        var intf = iUnit.addClass(properties.getInterfaceName()).setInterface(true);
+                        iUnit.setPackageDeclaration(properties.getInterfacePackage());
+                        intf.addModifier(PUBLIC);
 
-                    var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
+                        var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
 
-                    parse.setParsedName(spec.getNameAsString());
-                    parse.setParsedFullName(spec.getFullyQualifiedName().get());
-                    parse.setInterfaceName(intf.getNameAsString());
-                    parse.setInterfaceFullName(intf.getFullyQualifiedName().get());
-                    parse.setProperties(properties);
-                    parse.setFiles(List.of(unit, iUnit));
-                    parse.setSpec(spec);
-                    parse.setIntf(intf);
+                        parse.setParsedName(spec.getNameAsString());
+                        parse.setParsedFullName(spec.getFullyQualifiedName().get());
+                        parse.setInterfaceName(intf.getNameAsString());
+                        parse.setInterfaceFullName(intf.getFullyQualifiedName().get());
+                        parse.setProperties(properties);
+                        parse.setFiles(List.of(unit, iUnit));
+                        parse.setSpec(spec);
+                        parse.setIntf(intf);
 
-                    spec.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeName() + "\", comments=\"" + properties.getInterfaceName() + "\")").getResult().get());
-                    intf.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeName() + "\", comments=\"" + properties.getClassName() + "\")").getResult().get());
+                        spec.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeName() + "\", comments=\"" + properties.getInterfaceName() + "\")").getResult().get());
+                        intf.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeName() + "\", comments=\"" + properties.getClassName() + "\")").getResult().get());
 
-                    typeDeclaration.getExtendedTypes().forEach(t -> {
-                        var parsed = getParsed(t);
+                        typeDeclaration.getExtendedTypes().forEach(t -> {
+                            var parsed = getParsed(t);
 
-                        if (nonNull(parsed) && parsed.getProperties().isBase()) {
-                            properties.setBaseClassName(parsed.getParsedName());
-                            if (isNull(parse.getBase())) {
-                                parse.setBase((Structures.Parsed) parsed);
-                            } else {
-                                throw new GenericCodeGenException(parse.getDeclaration().getNameAsString() + " can't have more that one base class!");
+                            if (nonNull(parsed) && parsed.getProperties().isBase()) {
+                                properties.setBaseClassName(parsed.getParsedName());
+                                if (isNull(parse.getBase())) {
+                                    parse.setBase((Structures.Parsed) parsed);
+                                } else {
+                                    throw new GenericCodeGenException(parse.getDeclaration().getNameAsString() + " can't have more that one base class!");
+                                }
+                                unit.addImport(parsed.getParsedFullName());
+                                spec.addExtendedType(parsed.getParsedName());
+
+                                if (parsed.getProperties().isGenerateConstructor() && properties.isGenerateConstructor()) {
+                                    spec.findFirst(ConstructorDeclaration.class).ifPresent(c ->
+                                            c.getBody().addStatement("super();")
+                                    );
+                                }
                             }
-                            unit.addImport(parsed.getParsedFullName());
-                            spec.addExtendedType(parsed.getParsedName());
+                        });
 
-                            if (parsed.getProperties().isGenerateConstructor() && properties.isGenerateConstructor()) {
-                                spec.findFirst(ConstructorDeclaration.class).ifPresent(c ->
-                                        c.getBody().addStatement("super();")
-                                );
+                        typeDeclaration.getExtendedTypes().forEach(t -> {
+                            var parsed = getParsed(t);
+
+                            if (nonNull(parsed)) {
+                                if (isNull(properties.getMixInClass()) || !properties.getMixInClass().equals(t.toString())) {
+                                    if (!parsed.getProperties().isBase()) {
+                                        implementInterface(parse, spec, parsed.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration());
+                                    }
+                                    if (StringUtils.isNotBlank(parsed.getInterfaceName())) {
+                                        iUnit.addImport(parsed.getInterfaceFullName());
+                                        if (nonNull(properties.getMixInClass())) {
+                                            intf.addExtendedType(parsed.getInterfaceName() + MIX_IN_EXTENSION);
+                                        } else {
+                                            intf.addExtendedType(parsed.getInterfaceName());
+                                        }
+                                    }
+                                } else {
+                                    parse.setMixIn((Structures.Parsed) parsed);
+                                }
+                            } else {
+                                handleExternalInterface(parse, typeDeclaration, spec, intf, t);
+                            }
+                        });
+
+                        if (nonNull(properties.getMixInClass()) && isNull(parse.getMixIn())) {
+                            throw new GenericCodeGenException("Mix in Class " + properties.getPrototypeName() + " must inherit " + properties.getMixInClass());
+                        }
+
+                        if (properties.isGenerateInterface()) {
+                            spec.addImplementedType(properties.getInterfaceName());
+                            unit.addImport(getClassName(intf));
+                        }
+
+                        for (var member : type.getMembers()) {
+                            if (member.isMethodDeclaration()) {
+                                var declaration = member.asMethodDeclaration();
+
+                                if (!declaration.isDefault()) {
+                                    var ignore = getIgnores(member);
+                                    PrototypeField field = Structures.FieldData.builder().parsed(parse).build();
+                                    if (!ignore.isForField()) {
+                                        field = addField(parse, typeDeclaration, spec, declaration, null);
+                                    }
+                                    if (!ignore.isForClass()) {
+                                        if (properties.isClassGetters()) {
+                                            addGetter(typeDeclaration, spec, declaration, true, field);
+                                        }
+                                        if (properties.isClassSetters()) {
+                                            addSetter(typeDeclaration, spec, declaration, true, field);
+                                        }
+                                    }
+                                    if (!ignore.isForInterface()) {
+                                        addGetter(typeDeclaration, intf, declaration, false, field);
+                                        if (properties.isInterfaceSetters()) {
+                                            addSetter(typeDeclaration, intf, declaration, false, field);
+                                        }
+                                    }
+                                } else {
+                                    handleDefaultMethod(parse, spec, intf, declaration);
+                                }
+                            } else if (member.isClassOrInterfaceDeclaration()) {
+                                processInnerClass(parse, typeDeclaration, spec, member.asClassOrInterfaceDeclaration());
+                            } else if (member.isFieldDeclaration()) {
+                                processConstant(typeDeclaration, spec, intf, member.asFieldDeclaration());
+                            } else {
+                                log.error("Can't process method " + member.toString());
                             }
                         }
+
+                        unit.setComment(new BlockComment("Generated code by Binis' code generator."));
+                        iUnit.setComment(new BlockComment("Generated code by Binis' code generator."));
+
+                        lookup.registerGenerated(getClassName(spec), parse);
+
+                        cleanUpInterface(typeDeclaration, intf);
+                        handleClassAnnotations(typeDeclaration, spec);
+                        checkForDeclaredConstants(spec);
+                        checkForDeclaredConstants(intf);
+                        checkForClassExpressions(spec, typeDeclaration);
+                        checkForClassExpressions(intf, typeDeclaration);
+
+                        handleMixin(parse);
+
+                        handleImports(typeDeclaration, spec);
+                        handleImports(typeDeclaration, intf);
+
+                        processingTypes.remove(typeDeclaration.getNameAsString());
                     });
-
-                    typeDeclaration.getExtendedTypes().forEach(t -> {
-                        var parsed = getParsed(t);
-
-                        if (nonNull(parsed)) {
-                            if (isNull(properties.getMixInClass()) || !properties.getMixInClass().equals(t.toString())) {
-                                if (!parsed.getProperties().isBase()) {
-                                    implementInterface(parse, spec, parsed.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration());
-                                }
-                                if (StringUtils.isNotBlank(parsed.getInterfaceName())) {
-                                    iUnit.addImport(parsed.getInterfaceFullName());
-                                    if (nonNull(properties.getMixInClass())) {
-                                        intf.addExtendedType(parsed.getInterfaceName() + MIX_IN_EXTENSION);
-                                    } else {
-                                        intf.addExtendedType(parsed.getInterfaceName());
-                                    }
-                                }
-                            } else {
-                                parse.setMixIn((Structures.Parsed) parsed);
-                            }
-                        } else {
-                            handleExternalInterface(parse, typeDeclaration, spec, intf, t);
-                        }
-                    });
-
-                    if (nonNull(properties.getMixInClass()) && isNull(parse.getMixIn())) {
-                        throw new GenericCodeGenException("Mix in Class " + properties.getPrototypeName() + " must inherit " + properties.getMixInClass());
-                    }
-
-                    if (properties.isGenerateInterface()) {
-                        spec.addImplementedType(properties.getInterfaceName());
-                        unit.addImport(getClassName(intf));
-                    }
-
-                    for (var member : type.getMembers()) {
-                        if (member.isMethodDeclaration()) {
-                            var declaration = member.asMethodDeclaration();
-
-                            if (!declaration.isDefault()) {
-                                var ignore = getIgnores(member);
-                                PrototypeField field = Structures.FieldData.builder().parsed(parse).build();
-                                if (!ignore.isForField()) {
-                                    field = addField(parse, typeDeclaration, spec, declaration, null);
-                                }
-                                if (!ignore.isForClass()) {
-                                    if (properties.isClassGetters()) {
-                                        addGetter(typeDeclaration, spec, declaration, true, field);
-                                    }
-                                    if (properties.isClassSetters()) {
-                                        addSetter(typeDeclaration, spec, declaration, true, field);
-                                    }
-                                }
-                                if (!ignore.isForInterface()) {
-                                    addGetter(typeDeclaration, intf, declaration, false, field);
-                                    if (properties.isInterfaceSetters()) {
-                                        addSetter(typeDeclaration, intf, declaration, false, field);
-                                    }
-                                }
-                            } else {
-                                handleDefaultMethod(parse, spec, intf, declaration);
-                            }
-                        } else if (member.isClassOrInterfaceDeclaration()) {
-                            processInnerClass(parse, typeDeclaration, spec, member.asClassOrInterfaceDeclaration());
-                        } else if (member.isFieldDeclaration()) {
-                            processConstant(typeDeclaration, spec, intf, member.asFieldDeclaration());
-                        } else {
-                            log.error("Can't process method " + member.toString());
-                        }
-                    }
-
-                    unit.setComment(new BlockComment("Generated code by Binis' code generator."));
-                    iUnit.setComment(new BlockComment("Generated code by Binis' code generator."));
-
-                    lookup.registerGenerated(getClassName(spec), parse);
-
-                    cleanUpInterface(typeDeclaration, intf);
-                    handleClassAnnotations(typeDeclaration, spec);
-                    checkForDeclaredConstants(spec);
-                    checkForDeclaredConstants(intf);
-                    checkForClassExpressions(spec, typeDeclaration);
-                    checkForClassExpressions(intf, typeDeclaration);
-
-                    handleMixin(parse);
-
-                    handleImports(typeDeclaration, spec);
-                    handleImports(typeDeclaration, intf);
-
-                    processingTypes.remove(typeDeclaration.getNameAsString());
-                });
-            } else {
-                log.error("Invalid type " + type.getNameAsString());
+                }
             }
         }
     }
 
-    private static Optional<AnnotationExpr> getCodeAnnotation(TypeDeclaration<?> type) {
+    public static Optional<AnnotationExpr> getCodeAnnotation(TypeDeclaration<?> type) {
         for (var name : Structures.defaultProperties.keySet()) {
             var ann = type.getAnnotationByName(name);
             if (ann.isPresent()) {
@@ -490,7 +490,7 @@ public class Generator {
         }
 
         notNull(result.getPredefinedEnrichers(), list ->
-            list.forEach(e -> checkEnrichers(result.getEnrichers(), e)));
+                list.forEach(e -> checkEnrichers(result.getEnrichers(), e)));
 
         notNull(result.getPredefinedInheritedEnrichers(), list ->
                 list.forEach(e -> checkEnrichers(result.getInheritedEnrichers(), e)));

@@ -25,7 +25,6 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
-import com.github.javaparser.ast.expr.LambdaExpr;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.List;
@@ -64,5 +63,9 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     void registerPostProcessAction(Runnable task);
     void processActions();
+
+    boolean isValid();
+
+    boolean isNested();
 
 }

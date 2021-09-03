@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 public class Structures {
 
@@ -100,11 +101,25 @@ public class Structures {
         private Map<String, Type> generics;
         @ToString.Exclude
         private Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> typePrototypes;
+        @ToString.Exclude
+        private List<MethodDeclaration> modifiers;
 
         MethodDeclaration interfaceGetter;
         MethodDeclaration interfaceSetter;
         MethodDeclaration implementationGetter;
         MethodDeclaration implementationSetter;
+
+        public List<MethodDeclaration> getModifiers() {
+            if (isNull(modifiers)) {
+                modifiers = new ArrayList<>();
+            }
+            return modifiers;
+        }
+
+        @Override
+        public void addModifier(MethodDeclaration modifier) {
+            getModifiers().add(modifier);
+        }
 
         @Override
         public MethodDeclaration generateGetter() {
@@ -149,6 +164,8 @@ public class Structures {
         private Parsed<T> base;
         private Parsed<T> mixIn;
 
+        private boolean nested;
+
         @EqualsAndHashCode.Exclude
         @Builder.Default
         private Map<String, ClassOrInterfaceDeclaration> classes = new HashMap<>();
@@ -182,6 +199,11 @@ public class Structures {
 
         public void processActions() {
             postProcessActions.forEach(Runnable::run);
+        }
+
+        @Override
+        public boolean isValid() {
+            return nonNull(properties);
         }
 
     }
