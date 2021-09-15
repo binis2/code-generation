@@ -49,7 +49,7 @@ public class CreatorEnricherHandler extends BaseEnricher implements CreatorEnric
 
         intf.addMethod("create", STATIC)
                 .setType(intf.getNameAsString())
-                .setBody(new BlockStmt().addStatement(new ReturnStmt(creatorClass + ".create(" + intf.getNameAsString() + ".class, \"" + description.getParsedFullName() + "\")")));
+                .setBody(new BlockStmt().addStatement(new ReturnStmt(creatorClass + ".create(" + intf.getNameAsString() + ".class, \"" + description.getImplementorFullName() + "\")")));
 
         if (!properties.isBase()) {
             var embedded = description.getRegisteredClass(EMBEDDED_MODIFIER_KEY);

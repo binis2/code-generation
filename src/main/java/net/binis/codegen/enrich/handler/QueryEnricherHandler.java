@@ -41,16 +41,17 @@ import static net.binis.codegen.tools.Tools.with;
 
 public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher {
 
+    public static final String OPERATION = "Operation";
     private static final String QUERY_START = "QueryStarter";
     private static final String QUERY_SELECT = "QuerySelect";
-    private static final String QUERY_SELECT_OPERATION = QUERY_SELECT + "Operation";
+    private static final String QUERY_SELECT_OPERATION = QUERY_SELECT + OPERATION;
     private static final String QUERY_ORDER = "QueryOrder";
-    private static final String QUERY_ORDER_OPERATION = QUERY_ORDER + "Operation";
+    private static final String QUERY_ORDER_OPERATION = QUERY_ORDER + OPERATION;
     private static final String QUERY_ORDER_START = QUERY_ORDER + "Start";
     private static final String QUERY_AGGREGATE = "QueryAggregate";
     private static final String QUERY_FIELDS_START = "QueryFieldsStart";
-    private static final String QUERY_AGGREGATE_OPERATION = QUERY_AGGREGATE + "Operation";
-    private static final String QUERY_JOIN_AGGREGATE_OPERATION = "QueryJoinAggregateOperation";
+    private static final String QUERY_AGGREGATE_OPERATION = QUERY_AGGREGATE + OPERATION;
+    private static final String QUERY_JOIN_AGGREGATE_OPERATION = "QueryJoinAggregate" + OPERATION;
     private static final String QUERY_AGGREGATOR = "QueryAggregator";
     private static final String QUERY_PARAM = "QueryParam";
     private static final String QUERY_EXECUTE = "QueryExecute";
@@ -94,7 +95,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addImport("java.util.function.Function")
         );
 
-        addFindMethod(intf);
+        addFindMethod(description, intf);
         addQuerySelectOrderName(description, intf, spec);
 
         Helpers.addInitializer(description, intf, isNull(description.getMixIn()) ? spec : description.getMixIn().getSpec(), null);
@@ -290,11 +291,11 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         description.registerClass(Constants.QUERY_NAME_INTF_KEY, qName);
     }
 
-    private void addFindMethod(ClassOrInterfaceDeclaration intf) {
+    private void addFindMethod(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf) {
         var entity = intf.getNameAsString();
         intf.addMethod("find", STATIC)
                 .setType(QUERY_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">, " + QUERY_AGGREGATE_OPERATION + "<" + QUERY_OP_FIELDS + "<" + entity + "." + QUERY_AGGREGATE + "<Number, " + entity + "." + QUERY_SELECT + "<Number>>>>, " + QUERY_FIELDS_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">>>")
-                .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + QUERY_START + ") EntityCreator.create(" + entity + "." + QUERY_SELECT + ".class)")));
+                .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + QUERY_START + ") EntityCreator.create(" + entity + "." + QUERY_SELECT + ".class, \"" + description.getImplementorFullName() + "\")")));
     }
 
     private void declareField(String entity, PrototypeField desc, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration impl, ClassOrInterfaceDeclaration orderImpl, ClassOrInterfaceDeclaration order, ClassOrInterfaceDeclaration qName, ClassOrInterfaceDeclaration qNameImpl, ClassOrInterfaceDeclaration fields, ClassOrInterfaceDeclaration opFields, ClassOrInterfaceDeclaration funcs) {
@@ -366,14 +367,14 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 select.addMethod(name).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">").setBody(null);
                 impl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
                         .setBody(new BlockStmt()
-                                .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class);")
+                                .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class, \"" + desc.getPrototype().getImplementorFullName() + "\");")
                                 .addStatement("((QueryEmbed) result).setParent(\"" + name + "\", this);")
                                 .addStatement(new ReturnStmt("result")));
 
                 qName.addMethod(name).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">").setBody(null);
                 qNameImpl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
                         .setBody(new BlockStmt()
-                                .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class);")
+                                .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class, \"" + desc.getPrototype().getImplementorFullName() + "\");")
                                 .addStatement("((QueryEmbed) result).setParent(\"" + name + "\", executor);")
                                 .addStatement(new ReturnStmt("result")));
 

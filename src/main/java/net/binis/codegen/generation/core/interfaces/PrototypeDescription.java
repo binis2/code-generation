@@ -45,6 +45,8 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     String getInterfaceName();
     String getInterfaceFullName();
 
+    String getImplementorFullName();
+
     TypeDeclaration<T> getDeclaration();
     List<CompilationUnit> getFiles();
 

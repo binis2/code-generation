@@ -55,11 +55,11 @@ public class CreatorModifierEnricherHandler extends BaseEnricher implements Crea
             if (isNull(properties.getMixInClass())) {
                 intf.addMethod("create", STATIC)
                         .setType(type)
-                        .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + type + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class, \"" + description.getParsedFullName() + "\").with()")));
+                        .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + type + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class, \"" + description.getImplementorFullName() + "\").with()")));
             } else {
                 intf.addMethod("create", STATIC)
                         .setType(type)
-                        .setBody(new BlockStmt().addStatement(new ReturnStmt("((" + intf.getNameAsString() + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class, \"" + description.getMixIn().getParsedFullName() + "\")).as" + intf.getNameAsString() + "()")));
+                        .setBody(new BlockStmt().addStatement(new ReturnStmt("((" + intf.getNameAsString() + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class, \"" + description.getMixIn().getImplementorFullName() + "\")).as" + intf.getNameAsString() + "()")));
             }
         } else {
             creatorClass = "EntityCreator";

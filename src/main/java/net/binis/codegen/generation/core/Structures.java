@@ -158,6 +158,13 @@ public class Structures {
         private String interfaceName;
         private String interfaceFullName;
 
+        public String getImplementorFullName() {
+            if (nonNull(mixIn)) {
+                return mixIn.parsedFullName;
+            }
+            return parsedFullName;
+        }
+
         private TypeDeclaration<T> declaration;
         private List<CompilationUnit> files;
 
