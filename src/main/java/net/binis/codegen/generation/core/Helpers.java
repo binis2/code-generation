@@ -31,8 +31,11 @@ import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
+import com.github.javaparser.ast.type.TypeParameter;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.enrich.*;
+import net.binis.codegen.enrich.Enricher;
+import net.binis.codegen.enrich.PrototypeEnricher;
+import net.binis.codegen.enrich.PrototypeLookup;
 import net.binis.codegen.enrich.handler.*;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.factory.CodeFactory;
@@ -47,11 +50,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.TypeVariable;
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.tools.Reflection.instantiate;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
@@ -244,10 +247,14 @@ public class Helpers {
     }
 
     public static boolean methodExists(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String methodName, boolean isClass) {
+        var type = declaration.getType().asString();
+        var actual = declaration.getTypeParameters().stream().map(TypeParameter::asString).anyMatch(s -> s.equals(type)) ? type :
+                declaration.getParentNode().isPresent() ? handleType((ClassOrInterfaceDeclaration) declaration.getParentNode().get(), spec, declaration.getType()) : type;
+
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(methodName) &&
                                 m.getParameters().size() == declaration.getParameters().size() &&
-                                (m.getType().equals(declaration.getType()) || declaration.getTypeParameters().isNonEmpty())
+                                (m.getType().asString().equals(actual) || declaration.getTypeParameters().isNonEmpty())
                         //TODO: Match parameter types also
                 ) || !isClass && ancestorMethodExists(spec, declaration, methodName);
     }

@@ -577,10 +577,10 @@ public class Generator {
                     }
                     handleExternalInterface(parsed, declaration, spec, cls, type.getTypeArguments().orElse(null));
                     if (nonNull(intf)) {
-                        intf.addExtendedType(handleType(declaration.findCompilationUnit().get(), intf.findCompilationUnit().get(), type, false));
+                        intf.addExtendedType(handleType(declaration.findCompilationUnit().get(), intf.findCompilationUnit().get(), type));
                     } else {
                         if (spec.getImplementedTypes().stream().noneMatch(type::equals)) {
-                            spec.addImplementedType(handleType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), type, false));
+                            spec.addImplementedType(handleType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), type));
                         }
                     }
                 } else {
@@ -689,20 +689,20 @@ public class Generator {
         return null;
     }
 
-    public static String handleType(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Type type, boolean isCollection) {
-        return handleType(source, destination, type, isCollection, null);
+    public static String handleType(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Type type) {
+        return handleType(source, destination, type, null);
     }
 
 
-    public static String handleType(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Type type, boolean isCollection, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
-        return handleType(source.findCompilationUnit().get(), destination.findCompilationUnit().get(), type, isCollection, prototypeMap);
+    public static String handleType(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Type type, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
+        return handleType(source.findCompilationUnit().get(), destination.findCompilationUnit().get(), type, prototypeMap);
     }
 
-    public static String handleType(CompilationUnit source, CompilationUnit destination, Type type, boolean isCollection) {
-        return handleType(source, destination, type, isCollection, null);
+    public static String handleType(CompilationUnit source, CompilationUnit destination, Type type) {
+        return handleType(source, destination, type, null);
     }
 
-    public static String handleType(CompilationUnit source, CompilationUnit destination, Type type, boolean isCollection, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
+    public static String handleType(CompilationUnit source, CompilationUnit destination, Type type, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
         var result = type.toString();
         if (type.isClassOrInterfaceType()) {
             var generic = handleGenericTypes(source, destination, type.asClassOrInterfaceType(), prototypeMap);
@@ -887,7 +887,7 @@ public class Generator {
                 field = spec.addField(generic, fieldName, PROTECTED);
             } else {
                 if (method.getTypeParameters().isEmpty() || !method.getType().asString().equals(method.getTypeParameter(0).asString())) {
-                    field = spec.addField(handleType(type, spec, method.getType(), false, prototypeMap), fieldName, PROTECTED);
+                    field = spec.addField(handleType(type, spec, method.getType(), prototypeMap), fieldName, PROTECTED);
                 } else {
                     field = spec.addField("Object", fieldName, PROTECTED);
                 }
@@ -1007,7 +1007,7 @@ public class Generator {
         if (!methodExists(spec, declaration, name, isClass)) {
             String rType;
             if (declaration.getTypeParameters().isEmpty()) {
-                rType = handleType(type, spec, declaration.getType(), false);
+                rType = handleType(type, spec, declaration.getType());
             } else {
                 rType = declaration.getType().asString();
             }
@@ -1076,7 +1076,7 @@ public class Generator {
         var method = new MethodDeclaration()
                 .setName(name)
                 .setType("void")
-                .addParameter(new Parameter().setName(declaration.getName()).setType(handleType(type, spec, declaration.getType(), false)));
+                .addParameter(new Parameter().setName(declaration.getName()).setType(handleType(type, spec, declaration.getType())));
         if (!methodExists(spec, method, name, isClass)) {
             spec.addMember(method);
             if (isClass) {

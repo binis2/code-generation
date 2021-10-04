@@ -20,7 +20,6 @@ package net.binis.codegen.enrich.handler;
  * #L%
  */
 
-import com.github.javaparser.TokenRange;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -57,7 +56,8 @@ import static net.binis.codegen.generation.core.Constants.*;
 import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Reflection.loadClass;
-import static net.binis.codegen.tools.Tools.*;
+import static net.binis.codegen.tools.Tools.notNull;
+import static net.binis.codegen.tools.Tools.nullCheck;
 
 @Slf4j
 public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnricher {
@@ -399,8 +399,8 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
 
     private void addModifier(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierClassName, String modifierName, boolean isClass) {
         var type = isNull(declaration.getDescription()) || "dummy".equals(declaration.getDescription().findCompilationUnit().get().getPackageDeclaration().get().getNameAsString()) ?
-                handleType(declaration.getDeclaration().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDeclaration().getVariables().get(0).getType(), false) :
-                (declaration.getDescription().getTypeParameters().isEmpty() ? handleType(declaration.getDescription().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDescription().getType(), false) : "Object");
+                handleType(declaration.getDeclaration().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDeclaration().getVariables().get(0).getType()) :
+                (declaration.getDescription().getTypeParameters().isEmpty() ? handleType(declaration.getDescription().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDescription().getType()) : "Object");
         var method = new MethodDeclaration().setName(declaration.getName())
                 .setType(modifierName)
                 .addParameter(new Parameter().setName(declaration.getName()).setType(type));

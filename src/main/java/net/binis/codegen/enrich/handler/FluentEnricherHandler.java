@@ -76,7 +76,7 @@ public class FluentEnricherHandler extends BaseEnricher implements FluentEnriche
         var method = new MethodDeclaration()
                 .setName(name)
                 .setType(spec.getNameAsString())
-                .addParameter(new Parameter().setName(name).setType(handleType(type, spec, field.getDeclaration().getVariables().get(0).getType(), false)));
+                .addParameter(new Parameter().setName(name).setType(handleType(type, spec, field.getDeclaration().getVariables().get(0).getType())));
         if (!methodExists(spec, method, name, isClass)) {
             spec.addMember(method);
             if (isClass) {
