@@ -47,6 +47,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.TypeVariable;
 import java.util.*;
 import java.util.function.Predicate;
@@ -473,6 +474,30 @@ public class Helpers {
     public static String parseMethodSignature(Method method) {
         return method.getGenericReturnType().getTypeName();
     }
+
+    public static String mapGenericMethodSignature(Method method, Map<String, String> types) {
+        return mapGenericSignature(method.getGenericReturnType(), types);
+
+    }
+
+    public static String mapGenericSignature(java.lang.reflect.Type type, Map<String, String> types) {
+        if (type instanceof TypeVariable) {
+            var result = types.get(((TypeVariable<?>) type).getName());
+            if (isNull(result)) {
+                throw new GenericCodeGenException("Invalid generic type: " + type);
+            }
+            return result;
+        }
+        if (type.equals(void.class)) {
+            return "void";
+        }
+        var t = (ParameterizedType) type;
+        if (t.getActualTypeArguments().length > 0) {
+            return Arrays.stream(t.getActualTypeArguments()).map(tt -> mapGenericSignature(tt, types)).collect(Collectors.joining(",", t.getRawType().getTypeName() + "<", ">"));
+        }
+        return t.getTypeName();
+    }
+
 
     public static String parseMethodSignature(MethodDeclaration method) {
         return "Not Implemented";

@@ -48,6 +48,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
@@ -230,14 +231,18 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     spec.findCompilationUnit().get().addImport(baseClass);
                     var intfName = intf.getNameAsString();
                     var modName = intfName + "." + modifier.getNameAsString();
-                    var clsSignature = parseGenericClassSignature(cls);
-                    if (clsSignature.size() != 2) {
+                    var signature = parseGenericClassSignature(cls);
+                    if (signature.size() != 2) {
                         log.error("BaseModifier ({}) should have two generic params!", cls.getCanonicalName());
                     }
+                    var clsSignature = Map.<String, String>of(
+                            signature.get(0), modName,
+                            signature.get(1), intfName
+                    );
                     modifierClass.addExtendedType(cls.getSimpleName() + "<" + modName + ", " + intfName + ">");
 
                     for (var method : cls.getDeclaredMethods()) {
-                        if (java.lang.reflect.Modifier.isPublic(method.getModifiers()) && !"setObject".equals(method.getName())) {
+                        if (java.lang.reflect.Modifier.isPublic(method.getModifiers()) && !java.lang.reflect.Modifier.isStatic(method.getModifiers()) && !"setObject".equals(method.getName())) {
                             var ann = method.getAnnotation(Final.class);
                             if (nonNull(ann)) {
                                 if (StringUtils.isBlank(ann.description())) {
@@ -250,8 +255,37 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                             }
                         }
                     }
+
+                    if (nonNull(cls.getSuperclass()) && net.binis.codegen.modifier.Modifier.class.isAssignableFrom(cls)) {
+                        handleSuperModifierBaseImplementation(parse, spec, intf, modifier, modifierClass, cls.getSuperclass(), clsSignature);
+                    }
                 })
         );
+    }
+
+    private static void handleSuperModifierBaseImplementation(PrototypeDescription<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, Class<?> cls, Map<String, String> clsSignature) {
+
+        var intfName = intf.getNameAsString();
+        var modName = intfName + "." + modifier.getNameAsString();
+
+        for (var method : cls.getDeclaredMethods()) {
+            if (java.lang.reflect.Modifier.isPublic(method.getModifiers()) && !java.lang.reflect.Modifier.isStatic(method.getModifiers()) && !"setObject".equals(method.getName())) {
+                var ann = method.getAnnotation(Final.class);
+                if (nonNull(ann)) {
+                    if (StringUtils.isBlank(ann.description())) {
+                        Generator.addMethod(modifier, method, clsSignature, intfName);
+                    } else {
+                        Generator.addMethod(modifier, method, clsSignature, modName, intfName, ann);
+                    }
+                } else {
+                    Generator.addMethod(modifier, method, clsSignature, modName);
+                }
+            }
+        }
+
+        if (nonNull(cls.getSuperclass()) && net.binis.codegen.modifier.Modifier.class.isAssignableFrom(cls)) {
+            handleSuperModifierBaseImplementation(parse, spec, intf, modifier, modifierClass, cls.getSuperclass(), clsSignature);
+        }
     }
 
     @Override

@@ -623,35 +623,6 @@ public class Generator {
         }
     }
 
-    private static void handleModifierBaseImplementation(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {
-        notNull(findInheritanceProperty(parse.getDeclaration().asClassOrInterfaceDeclaration(), parse.getProperties(), (s, p) -> nullCheck(p.getBaseModifierClass(), prp -> getExternalClassName(s.findCompilationUnit().get(), prp))), baseClass ->
-                notNull(loadClass(baseClass), cls -> {
-                    if (net.binis.codegen.modifier.Modifier.class.isAssignableFrom(cls)) {
-                        modifierClass.addConstructor(PROTECTED).setBody(new BlockStmt().addStatement("setObject(" + parse.getProperties().getClassName() + ".this);"));
-                        spec.findCompilationUnit().get().addImport(net.binis.codegen.modifier.Modifier.class);
-                    }
-                    spec.findCompilationUnit().get().addImport(baseClass);
-                    var intfName = intf.getNameAsString();
-                    var modName = intfName + "." + modifier.getNameAsString();
-                    var clsSignature = parseGenericClassSignature(cls);
-                    if (clsSignature.size() != 2) {
-                        log.error("BaseModifier ({}) should have two generic params!", cls.getCanonicalName());
-                    }
-                    modifierClass.addExtendedType(cls.getSimpleName() + "<" + modName + ", " + intfName + ">");
-
-                    for (var method : cls.getDeclaredMethods()) {
-                        if (java.lang.reflect.Modifier.isPublic(method.getModifiers()) && !"setObject".equals(method.getName())) {
-                            if (nonNull(method.getAnnotation(Final.class))) {
-                                addMethod(modifier, method, clsSignature, intfName);
-                            } else {
-                                addMethod(modifier, method, clsSignature, modName);
-                            }
-                        }
-                    }
-                })
-        );
-    }
-
     private static void handleMixin(PrototypeDescription<ClassOrInterfaceDeclaration> parse) {
         if (nonNull(parse.getProperties().getMixInClass())) {
             var parent = lookup.findParsed(getExternalClassName(parse.getDeclaration().findCompilationUnit().get(), parse.getProperties().getMixInClass()));
@@ -1137,10 +1108,10 @@ public class Generator {
         }
     }
 
-    public static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, List<String> signature, String name) {
+    public static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, Map<String, String> signature, String name) {
         if (!methodExists(spec, declaration, false)) {
             var method = spec.addMethod(declaration.getName());
-            method.setType(signature.contains(parseMethodSignature(declaration)) ? name : declaration.getReturnType().toString());
+            method.setType(mapGenericMethodSignature(declaration, signature));
             for (var i = 0; i < declaration.getParameterCount(); i++) {
                 var param = declaration.getParameters()[i];
                 method.addParameter(param.getType().getCanonicalName(), param.getName());
@@ -1149,11 +1120,11 @@ public class Generator {
         }
     }
 
-    public static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, List<String> signature, String modName, String intfName, Final ann) {
+    public static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, Map<String, String> signature, String modName, String intfName, Final ann) {
         if (!methodExists(spec, declaration, false)) {
             spec.findCompilationUnit().ifPresent(u -> Arrays.stream(ann.imports()).forEach(u::addImport));
             var method = spec.addMethod(declaration.getName());
-            method.setType(signature.contains(parseMethodSignature(declaration)) ? intfName : declaration.getReturnType().toString());
+            method.setType(mapGenericMethodSignature(declaration, signature));
             var params = ann.description().split(";");
             for (var i = 0; i < declaration.getParameterCount(); i++) {
                 var param = declaration.getParameters()[i];

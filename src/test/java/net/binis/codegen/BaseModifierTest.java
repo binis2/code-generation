@@ -39,4 +39,10 @@ public class BaseModifierTest extends BaseTest {
         testSingle("base/modifier/baseTest1.java", "base/modifier/baseTest1-0.java", "base/modifier/baseTest1-1.java");
     }
 
+    @Test
+    public void testAsync() {
+        testSingle("base/modifier/baseTest2.java", "base/modifier/baseTest2-0.java", "base/modifier/baseTest2-1.java");
+    }
+
+
 }
