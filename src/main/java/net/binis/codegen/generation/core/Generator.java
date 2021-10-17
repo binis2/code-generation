@@ -298,7 +298,7 @@ public class Generator {
         return method;
     }
 
-    private static void handleDefaultMethodBody(PrototypeDescription<ClassOrInterfaceDeclaration> parse, Node node, boolean isGetter) {
+    private static boolean handleDefaultMethodBody(PrototypeDescription<ClassOrInterfaceDeclaration> parse, Node node, boolean isGetter) {
         var typeDeclaration = parse.getDeclaration();
         if (isGetter && node.getParentNode().get().getChildNodes().size() == 2 && node.getParentNode().get().getChildNodes().get(1) instanceof SimpleName) {
             var name = (SimpleName) node.getParentNode().get().getChildNodes().get(1);
@@ -323,16 +323,21 @@ public class Generator {
                         notNull(lookup.findParsed(getExternalClassName(typeDeclaration.findCompilationUnit().get(), parent.get().asMethodDeclaration().getTypeAsString())), p ->
                                 handleDefaultMethodBody(p, n, true));
 
-                        node.replace(method, new FieldAccessExpr().setName(method.getName()));
+                        return node.replace(method, new FieldAccessExpr().setName(method.getName()));
                     } else {
-                        handleDefaultMethodBody(parse, n, false);
+                        if (handleDefaultMethodBody(parse, n, false)) {
+                            handleDefaultMethodBody(parse, node, false);
+                        }
                     }
 
                 } else {
-                    handleDefaultMethodBody(parse, n, isGetter);
+                    if (handleDefaultMethodBody(parse, n, isGetter)) {
+                        handleDefaultMethodBody(parse, node, isGetter);
+                    }
                 }
             }
         }
+        return false;
     }
 
     private static void checkForDeclaredConstants(Node type) {

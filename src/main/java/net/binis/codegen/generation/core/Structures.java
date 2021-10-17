@@ -175,10 +175,12 @@ public class Structures {
 
         @EqualsAndHashCode.Exclude
         @Builder.Default
+        @ToString.Exclude
         private Map<String, ClassOrInterfaceDeclaration> classes = new HashMap<>();
 
         @EqualsAndHashCode.Exclude
         @Builder.Default
+        @ToString.Exclude
         private List<PrototypeField> fields = new ArrayList<>();
 
         private ClassOrInterfaceDeclaration spec;
@@ -186,6 +188,7 @@ public class Structures {
 
         @Builder.Default
         @EqualsAndHashCode.Exclude
+        @ToString.Exclude
         private List<Triple<ClassOrInterfaceDeclaration, Node, ClassOrInterfaceDeclaration>> initializers = new ArrayList<>();
 
         @Builder.Default
