@@ -29,10 +29,7 @@ import com.github.javaparser.utils.StringEscapeUtils;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.annotation.validation.AliasFor;
-import net.binis.codegen.annotation.validation.AsCode;
-import net.binis.codegen.annotation.validation.Sanitize;
-import net.binis.codegen.annotation.validation.Validate;
+import net.binis.codegen.annotation.validation.*;
 import net.binis.codegen.enrich.ValidationEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
@@ -40,7 +37,6 @@ import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.ArrayList;
@@ -52,10 +48,10 @@ import java.util.stream.Collectors;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.EMBEDDED_MODIFIER_KEY;
-import static net.binis.codegen.generation.core.Constants.MODIFIER_KEY;
 import static net.binis.codegen.generation.core.Helpers.getExternalClassName;
 import static net.binis.codegen.tools.Reflection.loadClass;
-import static net.binis.codegen.tools.Tools.*;
+import static net.binis.codegen.tools.Tools.notNull;
+import static net.binis.codegen.tools.Tools.withRes;
 
 @Slf4j
 public class ValidationEnricherHandler extends BaseEnricher implements ValidationEnricher {
@@ -91,6 +87,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                 generateValidation(description, field, annotation, cls);
             } else if (Sanitize.class.equals(cls) || cls.isAnnotationPresent(Sanitize.class)) {
                 generateSanitization(description, field, annotation, cls);
+            } else if (Execute.class.equals(cls) || cls.isAnnotationPresent(Execute.class)) {
+                generateExecution(description, field, annotation, cls);
             }
         });
     }
@@ -102,8 +100,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             field.generateSetter();
         }
 
-        addSanitization(field, field.getImplementationSetter(), ann);
-        field.getModifiers().forEach(modifier -> addSanitization(field, modifier, ann));
+        addSanitization(field, field.getImplementationSetter(), ann, ModifierType.MAIN);
+        field.getModifiers().forEach(modifier -> addSanitization(field, modifier, ann, ModifierType.MODIFIER));
         handleSanitizationModifier(description, field, EMBEDDED_MODIFIER_KEY, ann);
     }
 
@@ -326,9 +324,9 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             field.generateSetter();
         }
 
-        addValidation(field, field.getImplementationSetter(), ann);
+        addValidation(field, field.getImplementationSetter(), ann, ModifierType.MAIN);
+        field.getModifiers().forEach(modifier -> addValidation(field, modifier, ann, ModifierType.MODIFIER));
         handleValidationModifier(description, field, EMBEDDED_MODIFIER_KEY, ann);
-        field.getModifiers().forEach(modifier -> addValidation(field, modifier, ann));
     }
 
     private void handleValidationModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, String key, Params params) {
@@ -339,11 +337,11 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                     .map(MethodDeclaration.class::cast)
                     .filter(m -> m.getNameAsString().equals(field.getName()))
                     .findFirst().ifPresent(m ->
-                            addValidation(field, m, params));
+                            addValidation(field, m, params, ModifierType.EMBEDDED));
         }
     }
 
-    private void addValidation(PrototypeField field, MethodDeclaration method, Params params) {
+    private void addValidation(PrototypeField field, MethodDeclaration method, Params params, ModifierType modifier) {
         method.findCompilationUnit().get().addImport("net.binis.codegen.validation.flow.Validation");
         var block = method.getChildNodes().stream().filter(BlockStmt.class::isInstance).map(BlockStmt.class::cast).findFirst().get();
 
@@ -356,7 +354,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                     .append(params.getCls())
                     .append(".class, ")
                     .append(calcMessage(params))
-                    .append(buildParamsStr(params, field))
+                    .append(buildParamsStr(params, field, modifier))
                     .append(").perform(v -> this.map = v);");
             var expr = lookup.getParser().parseStatement(exp.toString()).getResult().get();
             var original = block.getStatements().remove(0);
@@ -370,7 +368,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             mCall.removeScope();
             var m = new MethodCallExpr(chain, "validate").addArgument(params.getCls() + ".class").addArgument(calcMessage(params));
             notNull(params.getParams(), p -> p.forEach(param ->
-                    m.addArgument(buildParamsStr(param, params, field))));
+                    m.addArgument(buildParamsStr(param, params, field, modifier))));
             mCall.setScope(m);
         }
     }
@@ -387,11 +385,11 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                     .map(MethodDeclaration.class::cast)
                     .filter(m -> m.getNameAsString().equals(field.getName()))
                     .findFirst().ifPresent(m ->
-                            addSanitization(field, m, params));
+                            addSanitization(field, m, params, ModifierType.EMBEDDED));
         }
     }
 
-    private void addSanitization(PrototypeField field, MethodDeclaration method, Params params) {
+    private void addSanitization(PrototypeField field, MethodDeclaration method, Params params, ModifierType modifier) {
         method.findCompilationUnit().get().addImport("net.binis.codegen.validation.flow.Validation");
         var block = method.getChildNodes().stream().filter(BlockStmt.class::isInstance).map(BlockStmt.class::cast).findFirst().get();
 
@@ -403,7 +401,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                     .append(").sanitize(")
                     .append(params.getCls())
                     .append(".class")
-                    .append(buildParamsStr(params, field))
+                    .append(buildParamsStr(params, field, modifier))
                     .append(").perform(v -> this.map = v);");
             var expr = lookup.getParser().parseStatement(exp.toString()).getResult().get();
             var original = block.getStatements().remove(0);
@@ -417,12 +415,115 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             mCall.removeScope();
             var m = new MethodCallExpr(chain, "sanitize").addArgument(params.getCls() + ".class").addArgument(calcMessage(params));
             notNull(params.getParams(), p -> p.forEach(param ->
-                    m.addArgument(buildParamsStr(param, params, field))));
+                    m.addArgument(buildParamsStr(param, params, field, modifier))));
             mCall.setScope(m);
         }
     }
 
-    private String buildParamsStr(Params params, PrototypeField field) {
+    private void generateExecution(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, AnnotationExpr annotation, Class<?> annotationClass) {
+        var ann = getExecutionParams(field, annotation, annotationClass);
+
+        if (isNull(field.getImplementationSetter())) {
+            field.generateSetter();
+        }
+
+        addExecution(field, field.getImplementationSetter(), ann, ModifierType.MAIN);
+        field.getModifiers().forEach(modifier -> addExecution(field, modifier, ann, ModifierType.MODIFIER));
+        handleExecutionModifier(description, field, EMBEDDED_MODIFIER_KEY, ann);
+    }
+
+    private void handleExecutionModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, String key, Params params) {
+        var modifier = description.getRegisteredClass(key);
+        if (nonNull(modifier)) {
+            modifier.getChildNodes().stream()
+                    .filter(MethodDeclaration.class::isInstance)
+                    .map(MethodDeclaration.class::cast)
+                    .filter(m -> m.getNameAsString().equals(field.getName()))
+                    .findFirst().ifPresent(m ->
+                            addExecution(field, m, params, ModifierType.EMBEDDED));
+        }
+    }
+
+    private void addExecution(PrototypeField field, MethodDeclaration method, Params params, ModifierType modifier) {
+        method.findCompilationUnit().get().addImport("net.binis.codegen.validation.flow.Validation");
+        var block = method.getChildNodes().stream().filter(BlockStmt.class::isInstance).map(BlockStmt.class::cast).findFirst().get();
+
+        if (block.getStatements().get(0).asExpressionStmt().getExpression() instanceof AssignExpr) {
+            var exp = new StringBuilder("Validation.start(\"")
+                    .append(field.getName())
+                    .append("\", ")
+                    .append(field.getName())
+                    .append(").execute(")
+                    .append(params.getCls())
+                    .append(".class, ")
+                    .append(calcMessage(params))
+                    .append(buildParamsStr(params, field, modifier))
+                    .append(").perform(v -> this.map = v);");
+            var expr = lookup.getParser().parseStatement(exp.toString()).getResult().get();
+            var original = block.getStatements().remove(0);
+            ((ExpressionStmt) original).getExpression().asAssignExpr().setValue(new NameExpr("v"));
+            var mCall = expr.asExpressionStmt().getExpression().asMethodCallExpr();
+            ((LambdaExpr) mCall.getChildNodes().get(mCall.getChildNodes().size() - 1)).setBody(original);
+            block.getStatements().add(0, expr);
+        } else {
+            var mCall = block.getStatements().get(0).asExpressionStmt().getExpression().asMethodCallExpr();
+            var chain = mCall.getScope().get();
+            mCall.removeScope();
+            var m = new MethodCallExpr(chain, "execute").addArgument(params.getCls() + ".class").addArgument(calcMessage(params));
+            notNull(params.getParams(), p -> p.forEach(param ->
+                    m.addArgument(buildParamsStr(param, params, field, modifier))));
+            mCall.setScope(m);
+        }
+    }
+
+    private Params getExecutionParams(PrototypeField field, AnnotationExpr annotation, Class<?> annotationClass) {
+        var params = Params.builder();
+        String cls = null;
+
+        if (!Execute.class.equals(annotationClass)) {
+            var ann = annotationClass.getDeclaredAnnotation(Execute.class);
+            params.cls(ann.value().getSimpleName()).params(Arrays.asList(ann.params()));
+            cls = ann.value().getCanonicalName();
+            field.getDeclaration().findCompilationUnit().get().addImport(cls);
+
+            handleAliases(annotation, annotationClass, params);
+        } else {
+            for (var node : annotation.getChildNodes()) {
+                if (node instanceof ClassExpr) {
+                    params.cls(((ClassExpr) node).getTypeAsString());
+                } else if (node instanceof MemberValuePair) {
+                    var pair = (MemberValuePair) node;
+                    switch (pair.getNameAsString()) {
+                        case VALUE:
+                            params.cls(pair.getValue().asClassExpr().getTypeAsString());
+                            break;
+                        case MESSAGE:
+                            params.message(pair.getValue().asStringLiteralExpr().asString());
+                            break;
+                        case PARAMS:
+                            params.params(pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).map(StringLiteralExpr::asString).collect(Collectors.toList()));
+                            break;
+                        case AS_CODE:
+                            params.asCode(pair.getValue().asStringLiteralExpr().asString());
+                            break;
+                        default:
+                    }
+                }
+            }
+        }
+
+        var result = params.build();
+
+        if (isNull(result.getAsCode())) {
+            notNull(loadClass(isNull(cls) ? getExternalClassName(field.getParsed().getDeclaration().findCompilationUnit().get(), result.getCls()) : cls), c ->
+                    notNull(c.getDeclaredAnnotation(AsCode.class), a -> result.setAsCode(a.value())));
+        }
+
+        return result;
+    }
+
+
+    private String buildParamsStr(Params params, PrototypeField field, ModifierType modifier) {
         var list = params.getParams();
         if (isNull(list) || list.isEmpty()) {
             return "";
@@ -438,7 +539,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                 var holder = (AsCodeHolder) param;
                 var format = "%s".equals(holder.getFormat()) && !StringUtils.isBlank(params.getAsCode()) ? params.getAsCode() : holder.getFormat();
                 result.append(", ")
-                        .append(String.format(format.replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString()), holder.getValue()));
+                        .append(String.format(format.replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString()),
+                                holder.getValue().replaceAll("\\{entity}", modifier.getValue())));
             } else {
                 result.append(", ")
                         .append(nonNull(param) ? param.toString() : "null");
@@ -447,7 +549,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         return result.toString();
     }
 
-    private String buildParamsStr(Object param, Params params, PrototypeField field) {
+    private String buildParamsStr(Object param, Params params, PrototypeField field, ModifierType modifier) {
         if (param instanceof String) {
             return "\"" + StringEscapeUtils.escapeJava((String) param) + "\"";
         } else if (param instanceof AsCodeHolder) {
@@ -462,7 +564,23 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
 
     private boolean isValidationAnnotation(AnnotationExpr annotation) {
         return withRes(loadClass(Helpers.getExternalClassNameIfExists(annotation.findCompilationUnit().get(), annotation.getNameAsString())), cls ->
-                Validate.class.equals(cls) || cls.isAnnotationPresent(Validate.class) || Sanitize.class.equals(cls) || cls.isAnnotationPresent(Sanitize.class), false);
+                Validate.class.equals(cls) || cls.isAnnotationPresent(Validate.class) || Sanitize.class.equals(cls) || cls.isAnnotationPresent(Sanitize.class) || Execute.class.equals(cls) || cls.isAnnotationPresent(Execute.class), false);
+    }
+
+    private static enum ModifierType {
+        MAIN("this"),
+        MODIFIER("parent"),
+        EMBEDDED("entity");
+
+        private String value;
+
+        ModifierType(String s) {
+            this.value = s;
+        }
+
+        String getValue() {
+            return value;
+        }
     }
 
     @Data
