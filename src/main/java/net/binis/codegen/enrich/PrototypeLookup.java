@@ -27,6 +27,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public interface PrototypeLookup {
 
@@ -49,5 +50,7 @@ public interface PrototypeLookup {
     void generateEmbeddedModifier(String type, PrototypeDescription<ClassOrInterfaceDeclaration> parsed);
     void generateEmbeddedModifier(PrototypeDescription<ClassOrInterfaceDeclaration> parsed);
     boolean embeddedModifierRequested(PrototypeDescription<ClassOrInterfaceDeclaration> parsed);
+    void addPrototypeMap(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap);
 
+    void calcPrototypeMaps();
 }

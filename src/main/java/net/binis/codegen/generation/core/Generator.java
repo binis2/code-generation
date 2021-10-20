@@ -725,6 +725,9 @@ public class Generator {
                 lookup.generateEmbeddedModifier(parse);
                 if (nonNull(prototypeMap)) {
                     prototypeMap.put(parse.getInterfaceName(), parse);
+                    if (isNull(parse.getInterfaceName())) {
+                        lookup.addPrototypeMap(parse, prototypeMap);
+                    }
                 }
             }
 

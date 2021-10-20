@@ -23,18 +23,17 @@ package net.binis.codegen.generation.core;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.generation.core.interfaces.PrototypeData;
-import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.enrich.PrototypeLookup;
+import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.tools.Tools.*;
+import static net.binis.codegen.tools.Tools.nullCheck;
 
 @Slf4j
 public class PrototypeLookupHandler implements PrototypeLookup {
@@ -42,6 +41,7 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> parsed = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> requestedEmbeddedModifiers = new HashMap<>();
+    private final List<Pair<Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>>, PrototypeDescription<ClassOrInterfaceDeclaration>>> prototypeMaps = new ArrayList<>();
 
     @Getter
     private final JavaParser parser = new JavaParser();
@@ -105,6 +105,17 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     @Override
     public boolean embeddedModifierRequested(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
         return requestedEmbeddedModifiers.containsKey(parsed.getDeclaration().getFullyQualifiedName().get());
+    }
+
+    @Override
+    public void addPrototypeMap(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
+        prototypeMaps.add(Pair.of(prototypeMap, parsed));
+    }
+
+    @Override
+    public void calcPrototypeMaps() {
+        prototypeMaps.forEach(p ->
+                p.getLeft().put(p.getRight().getInterfaceName(), p.getRight()));
     }
 
     @Override

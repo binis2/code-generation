@@ -122,6 +122,8 @@ public class CodeGen {
         recursiveExpr.forEach(pair ->
                 pair.getRight().setType(findProperType(pair.getLeft(), pair.getMiddle(), pair.getRight())));
 
+        lookup.calcPrototypeMaps();
+
         lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
         lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
         lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
@@ -156,6 +158,8 @@ public class CodeGen {
 
         recursiveExpr.forEach(pair ->
                 pair.getRight().setType(findProperType(pair.getLeft(), pair.getMiddle(), pair.getRight())));
+
+        lookup.calcPrototypeMaps();
 
         lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
         lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
