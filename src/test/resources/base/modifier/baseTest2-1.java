@@ -24,6 +24,8 @@ public interface Test {
 
         Test delete();
 
+        Test detach();
+
         Test done();
 
         Test merge();

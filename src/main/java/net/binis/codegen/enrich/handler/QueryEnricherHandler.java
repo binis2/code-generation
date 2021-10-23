@@ -69,6 +69,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     private static final String QUERY_FUNCS = "QueryFuncs";
     private static final String QUERY_NAME = "QueryName";
     private static final String QUERY_SCRIPT = "QueryScript";
+    private static final String QUERY_BRACKET = "QueryBracket";
     private static final String QUERY_IMPL = "Impl";
 
     @Override
@@ -114,6 +115,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addExtendedType(entity + "." + QUERY_FIELDS + "<" + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
                 .addExtendedType(entity + "." + QUERY_FUNCS + "<" + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
                 .addExtendedType(QUERY_ORDER_START + "<" + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>>")
+                .addExtendedType(QUERY_BRACKET + "<" + QUERY_SELECT + "<" + QUERY_GENERIC + ">>")
                 .addTypeParameter(QUERY_GENERIC);
         intf.addMember(select);
 
@@ -124,7 +126,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addImplementedType(entity + "." + QUERY_SELECT)
                 .addImplementedType(entity + "." + QUERY_FIELDS_START);
         impl.addConstructor(PROTECTED)
-                .setBody(new BlockStmt().addStatement("super(" + entity + ".class);"));
+                .setBody(new BlockStmt().addStatement("super(" + entity + ".class, () -> new " + entity + QUERY_NAME + QUERY_IMPL + "());"));
         impl.addMethod("order").setType(entity + "." + QUERY_ORDER)
                 .addModifier(PUBLIC)
                 .setBody(new BlockStmt()
@@ -137,60 +139,6 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
         Helpers.addInitializer(description, select, impl, null);
 
-        impl.addMethod("not", PUBLIC).setType(entity + "." + QUERY_NAME)
-                .setBody(new BlockStmt()
-                        .addStatement("doNot();")
-                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "();")
-                        .addStatement("result.setParent(alias, this);")
-                        .addStatement(new ReturnStmt("result")));
-
-        impl.addMethod("lower", PUBLIC).setType(entity + "." + QUERY_NAME)
-                .setBody(new BlockStmt()
-                        .addStatement("doLower();")
-                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "();")
-                        .addStatement("result.setParent(alias, this);")
-                        .addStatement(new ReturnStmt("result")));
-
-        impl.addMethod("upper", PUBLIC).setType(entity + "." + QUERY_NAME)
-                .setBody(new BlockStmt()
-                        .addStatement("doUpper();")
-                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "();")
-                        .addStatement("result.setParent(alias, this);")
-                        .addStatement(new ReturnStmt("result")));
-
-        impl.addMethod("trim", PUBLIC).setType(entity + "." + QUERY_NAME)
-                .setBody(new BlockStmt()
-                        .addStatement("doTrim();")
-                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "();")
-                        .addStatement("result.setParent(alias, this);")
-                        .addStatement(new ReturnStmt("result")));
-
-        impl.addMethod("substring", PUBLIC).setType(entity + "." + QUERY_NAME)
-                .addParameter("int", "start")
-                .setBody(new BlockStmt()
-                        .addStatement("doSubstring(start);")
-                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "();")
-                        .addStatement("result.setParent(alias, this);")
-                        .addStatement(new ReturnStmt("result")));
-
-        impl.addMethod("substring", PUBLIC).setType(entity + "." + QUERY_NAME)
-                .addParameter("int", "start")
-                .addParameter("int", "len")
-                .setBody(new BlockStmt()
-                        .addStatement("doSubstring(start, len);")
-                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "();")
-                        .addStatement("result.setParent(alias, this);")
-                        .addStatement(new ReturnStmt("result")));
-
-        impl.addMethod("replace", PUBLIC).setType(entity + "." + QUERY_NAME)
-                .addParameter("String", "what")
-                .addParameter("String", "withWhat")
-                .setBody(new BlockStmt()
-                        .addStatement("doReplace(what, withWhat);")
-                        .addStatement("var result = new " + entity + QUERY_NAME + QUERY_IMPL + "();")
-                        .addStatement("result.setParent(alias, this);")
-                        .addStatement(new ReturnStmt("result")));
-
         var orderImpl = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + QUERY_ORDER + QUERY_IMPL)
                 .addModifier(PROTECTED)
                 .addExtendedType(QUERY_ORDER + "er")
@@ -201,13 +149,6 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addParameter(entity + QUERY_EXECUTOR + QUERY_IMPL, "executor")
                 .addParameter("Function<String, Object>", "func")
                 .setBody(new BlockStmt().addStatement("super(executor, func);"));
-
-        orderImpl.addMethod("script")
-                .setType(QUERY_ORDER_OPERATION)
-                .addModifier(PUBLIC)
-                .addParameter("String", "script")
-                .setBody(new BlockStmt()
-                        .addStatement(new ReturnStmt("(" + QUERY_ORDER_OPERATION + ") " + entity + QUERY_EXECUTOR + "Impl.this.script(script)")));
 
         impl.addMember(orderImpl);
 
