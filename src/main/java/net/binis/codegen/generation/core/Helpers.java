@@ -78,7 +78,7 @@ public class Helpers {
             "EmbeddedCodeSetImpl",
             "net.binis.codegen.collection.EmbeddedCodeSetImpl");
 
-    public static final Set<String> primitiveTypes = Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char");
+    public static final Set<String> primitiveTypes = Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char", "void");
 
     public static final PrototypeLookup lookup = new PrototypeLookupHandler();
     public static final Map<String, PrototypeDescription<EnumDeclaration>> enumParsed = new HashMap<>();
@@ -93,7 +93,11 @@ public class Helpers {
         if (nonNull(name)) {
             return result.replace("prototype", name);
         } else {
-            return result.replace(".prototype", "");
+            if (result.endsWith(".prototype")) {
+                return result.replace(".prototype", "");
+            } else {
+                return result.replace(".prototype.", ".");
+            }
         }
     }
 

@@ -136,9 +136,19 @@ public class Generator {
                             var parsed = getParsed(t);
 
                             if (nonNull(parsed)) {
+                                if (!parsed.getProperties().isBase() && !parsed.getProperties().getPrototypeName().equals(parse.getProperties().getMixInClass())) {
+                                    parsed.getFields().forEach(field -> {
+                                        var method = field.getDescription().clone();
+                                        var dummy = envelopWithDummyClass(method);
+                                        field.getDescription().findCompilationUnit().ifPresent(u -> u.getImports().forEach(dummy::addImport));
+
+                                        addField(parse, parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, method, nonNull(field.getGenerics()) ? field.getGenerics().values().iterator().next() : null);
+                                    });
+                                }
+
                                 if (isNull(properties.getMixInClass()) || !properties.getMixInClass().equals(t.toString())) {
                                     if (!parsed.getProperties().isBase()) {
-                                        implementInterface(parse, spec, parsed.getFiles().get(0).getType(0).asClassOrInterfaceDeclaration());
+                                        implementPrototype(parse, spec, parsed);
                                     }
                                     if (StringUtils.isNotBlank(parsed.getInterfaceName())) {
                                         iUnit.addImport(parsed.getInterfaceFullName());
@@ -232,6 +242,7 @@ public class Generator {
                 return ann;
             }
         }
+        log.warn("Type {} is not annotated with Code annotation!", type.getName());
         return Optional.empty();
     }
 
@@ -265,6 +276,10 @@ public class Generator {
                 //TODO: Throw
                 throw new GenericCodeGenException("Not implemented!");
             } else {
+                if (methodExists(intf, method, false)) {
+                    intf.getChildNodes().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).filter(m -> m.getNameAsString().equals(method.getNameAsString())).findFirst().ifPresent(intf::remove);
+                }
+
                 intf.addMember(handleForAnnotations(method.clone(), false).setBody(null));
             }
         }
@@ -277,6 +292,10 @@ public class Generator {
                 handleDefaultMethodBody(parse, body, false);
                 method.setBody(body);
             });
+
+            if (methodExists(spec, method, false)) {
+                spec.getChildNodes().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).filter(m -> m.getNameAsString().equals(method.getNameAsString())).findFirst().ifPresent(spec::remove);
+            }
 
             spec.addMember(handleForAnnotations(method, true));
         }
@@ -555,20 +574,26 @@ public class Generator {
                                 ifNull(parse.getFiles(), () -> generateCodeForEnum(parse.getDeclaration().findCompilationUnit().get())))));
     }
 
-    private static void implementInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration declaration) {
+    private static void implementPrototype(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, PrototypeDescription<ClassOrInterfaceDeclaration> declaration) {
         var properties = parse.getProperties();
-        for (var method : declaration.getMethods()) {
-            if (method.getNameAsString().startsWith("get")) {
-                var field = addFieldFromGetter(parse, spec, method, null);
-                if (properties.isClassGetters()) {
-                    addGetterFromGetter(spec, method, true, field);
-                }
-            } else if (method.getNameAsString().startsWith("set")) {
-                if (properties.isClassSetters()) {
-                    addSetterFromSetter(spec, method, true, lookup.findField(parse.getPrototypeClassName(), getFieldName(method.getNameAsString())));
+        for (var method : declaration.getSpec().getMethods()) {
+            if (declaration.getDeclaration().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).anyMatch(m -> m.getNameAsString().equals(method.getNameAsString()))) {
+                spec.addMember(method.clone());
+            } else {
+                if (method.getNameAsString().startsWith("get")) {
+                    var field = addFieldFromGetter(parse, spec, method, null);
+                    if (properties.isClassGetters()) {
+                        addGetterFromGetter(spec, method, true, field);
+                    }
+                } else if (method.getNameAsString().startsWith("set")) {
+                    var field = addFieldFromSetter(parse, spec, method, null);
+                    if (properties.isClassSetters()) {
+                        addSetterFromSetter(spec, method, true, field);
+                    }
                 }
             }
         }
+        handleImports(declaration.getSpec(), spec);
     }
 
     private static void handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceType type) {
@@ -745,7 +770,7 @@ public class Generator {
                 return processing.getInterfaceName();
             }
         } else {
-            if (!isJavaType(type)) {
+            if (!isJavaType(type) && !full.contains(".prototype.")) {
                 destination.findCompilationUnit().ifPresent(u -> u.addImport(full));
             }
             return type;
@@ -764,7 +789,7 @@ public class Generator {
                             }
                         } else {
                             if (CodeFieldAnnotations.class.isAssignableFrom(ann)) {
-                                a.getChildNodes().stream().filter(n -> n instanceof ArrayInitializerExpr).findFirst().ifPresent(e ->
+                                a.getChildNodes().stream().filter(ArrayInitializerExpr.class::isInstance).findFirst().ifPresent(e ->
                                         e.getChildNodes().forEach(n ->
                                                 field.addAnnotation(((StringLiteralExpr) n).asStringLiteralExpr().asString())));
                             } else if (Default.class.isAssignableFrom(ann)) {
@@ -927,6 +952,39 @@ public class Generator {
         return result;
     }
 
+    private static PrototypeField addFieldFromSetter(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Map<String, Type> generic) {
+        PrototypeField result = null;
+        var fieldName = getFieldName(method.getNameAsString());
+        if (!fieldExists(spec, fieldName)) {
+            FieldDeclaration field;
+            if (nonNull(generic)) {
+                field = spec.addField(generic.get(parseMethodSignature(method)), fieldName, PROTECTED);
+            } else {
+                field = spec.addField(method.getParameter(0).getType(), fieldName, PROTECTED);
+            }
+
+            result = Structures.FieldData.builder()
+                    .parsed(parsed)
+                    .name(fieldName)
+                    .description(method)
+                    .declaration(field)
+                    .ignores(getIgnores(method))
+                    .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
+                    .generics(generic)
+                    //TODO: enable prototypes
+                    .build();
+            parsed.getFields().add(result);
+        } else {
+            var proto = parsed.getFields().stream().filter(d -> d.getName().equals(fieldName)).findFirst();
+            if (proto.isPresent()) {
+                result = proto.get();
+            }
+        }
+
+        return result;
+    }
+
+
     private static PrototypeField addFieldFromGetter(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, Method method, Map<String, Type> generic) {
         PrototypeField result = null;
         var fieldName = getFieldName(method.getName());
@@ -945,9 +1003,7 @@ public class Generator {
                 spec.findCompilationUnit().get().addImport(method.getReturnType().getCanonicalName());
             }
 
-            var dummy = new CompilationUnit();
-            dummy.setPackageDeclaration("dummy");
-            dummy.addClass("Dummy").addMember(description);
+            var dummy = envelopWithDummyClass(description);
 
             if (method.getDeclaredAnnotations().length > 0) {
                 for (var ann : method.getDeclaredAnnotations()) {
@@ -979,6 +1035,13 @@ public class Generator {
         }
 
         return result;
+    }
+
+    private static CompilationUnit envelopWithDummyClass(MethodDeclaration description) {
+        var dummy = new CompilationUnit();
+        dummy.setPackageDeclaration("dummy");
+        dummy.addClass("Dummy").addMember(description);
+        return dummy;
     }
 
     public static void addGetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {

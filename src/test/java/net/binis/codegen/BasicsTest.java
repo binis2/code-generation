@@ -21,10 +21,13 @@ package net.binis.codegen;
  */
 
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.test.BaseTest;
 import net.binis.codegen.generation.core.Helpers;
+import net.binis.codegen.test.BaseTest;
+import org.apache.commons.lang3.tuple.Triple;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.List;
 
 @Slf4j
 public class BasicsTest extends BaseTest {
@@ -38,5 +41,14 @@ public class BasicsTest extends BaseTest {
     public void test() {
         testSingle("basic/Test1.java", "basic/Test1-0.java", "basic/Test1-1.java");
     }
+
+    @Test
+    public void testExtended() {
+        testMulti(List.of(
+                Triple.of("extended/Extended1.java", "extended/Extended1-0.java", "extended/Extended1-1.java"),
+                Triple.of("extended/Test1.java", "extended/Test1-0.java", "extended/Test1-1.java")
+        ));
+    }
+
 
 }
