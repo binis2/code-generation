@@ -590,6 +590,11 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         private String message;
         private List<Object> params;
         private String asCode;
+
+        //Custom builder to satisfy java-doc
+        public static class ParamsBuilder {
+
+        }
     }
 
     @Data

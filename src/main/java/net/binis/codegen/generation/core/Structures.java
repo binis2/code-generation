@@ -83,6 +83,11 @@ public class Structures {
         private List<Class<? extends Enricher>> predefinedEnrichers;
         private List<Class<? extends Enricher>> predefinedInheritedEnrichers;
 
+        //Custom builder to satisfy java-doc
+        public static class PrototypeDataHandlerBuilder {
+
+        }
+
     }
 
     @ToString
