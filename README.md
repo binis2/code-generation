@@ -413,11 +413,20 @@ Depends on your preferences you can keep your prototypes outside your actual pro
 or you can use the annotation processor
 ```xml
 <dependency>
-    <groupId>net.binis</groupId>
+    <groupId>dev.binis</groupId>
     <artifactId>code-generator-annotation</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <scope>compile</scope>
 </dependency>
+```
+
+### Maven Dependency
+```xml
+    <dependency>
+        <groupId>dev.binis</groupId>
+        <artifactId>code-generator</artifactId>
+        <version>0.1.0</version>
+    </dependency>
 ```
 
 ### Other modules of the suite
