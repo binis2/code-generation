@@ -47,9 +47,11 @@ public class CreatorEnricherHandler extends BaseEnricher implements CreatorEnric
 
         intf.findCompilationUnit().get().addImport("net.binis.codegen.creator." + creatorClass);
 
+        Helpers.addDefaultCreation(description);
+
         intf.addMethod("create", STATIC)
                 .setType(intf.getNameAsString())
-                .setBody(new BlockStmt().addStatement(new ReturnStmt(creatorClass + ".create(" + intf.getNameAsString() + ".class, \"" + description.getImplementorFullName() + "\")")));
+                .setBody(new BlockStmt().addStatement(new ReturnStmt(creatorClass + ".create(" + intf.getNameAsString() + ".class)")));
 
         if (!properties.isBase()) {
             var embedded = description.getRegisteredClass(EMBEDDED_MODIFIER_KEY);

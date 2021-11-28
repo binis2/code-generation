@@ -2,15 +2,17 @@
 package net.binis.codegen;
 
 import net.binis.codegen.creator.EntityCreatorModifier;
+import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 
 @Generated(value = "MixInPrototype", comments = "MixInImpl")
+@Default("net.binis.codegen.TestImpl")
 public interface MixIn extends Test {
 
     MixIn.Modify asMixIn();
 
     static MixIn.Modify create() {
-        return ((MixIn) EntityCreatorModifier.create(MixIn.class, "net.binis.codegen.TestImpl")).asMixIn();
+        return ((MixIn) EntityCreatorModifier.create(MixIn.class)).asMixIn();
     }
 
     String getSubtitle();

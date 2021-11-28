@@ -2,13 +2,15 @@
 package net.binis.codegen.test;
 
 import net.binis.codegen.creator.EntityCreatorModifier;
+import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 
 @Generated(value = "TestAnnotationPrototype", comments = "TestAnnotationImpl")
+@Default("net.binis.codegen.test.TestAnnotationImpl")
 public interface TestAnnotation extends Extended {
 
     static TestAnnotation.Modify create() {
-        return (TestAnnotation.Modify) EntityCreatorModifier.create(TestAnnotation.class, "net.binis.codegen.test.TestAnnotationImpl").with();
+        return (TestAnnotation.Modify) EntityCreatorModifier.create(TestAnnotation.class).with();
     }
 
     String getValue();

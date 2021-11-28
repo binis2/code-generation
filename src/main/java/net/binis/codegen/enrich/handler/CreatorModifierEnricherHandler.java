@@ -50,16 +50,18 @@ public class CreatorModifierEnricherHandler extends BaseEnricher implements Crea
 
         spec.findCompilationUnit().get().addImport(creatorClass);
 
+        Helpers.addDefaultCreation(description);
+
         if (nonNull(modifier)) {
             var type = intf.getNameAsString() + "." + modifier.getNameAsString();
             if (isNull(properties.getMixInClass())) {
                 intf.addMethod("create", STATIC)
                         .setType(type)
-                        .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + type + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class, \"" + description.getImplementorFullName() + "\").with()")));
+                        .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + type + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class).with()")));
             } else {
                 intf.addMethod("create", STATIC)
                         .setType(type)
-                        .setBody(new BlockStmt().addStatement(new ReturnStmt("((" + intf.getNameAsString() + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class, \"" + description.getMixIn().getImplementorFullName() + "\")).as" + intf.getNameAsString() + "()")));
+                        .setBody(new BlockStmt().addStatement(new ReturnStmt("((" + intf.getNameAsString() + ") " + creatorClass + ".create(" + intf.getNameAsString() + ".class)).as" + intf.getNameAsString() + "()")));
             }
         } else {
             creatorClass = "EntityCreator";

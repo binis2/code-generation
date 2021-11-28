@@ -233,10 +233,11 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     }
 
     private void addFindMethod(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf) {
+        Helpers.addDefaultCreation(description);
         var entity = intf.getNameAsString();
         intf.addMethod("find", STATIC)
                 .setType(QUERY_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">, " + QUERY_AGGREGATE_OPERATION + "<" + QUERY_OP_FIELDS + "<" + entity + "." + QUERY_AGGREGATE + "<Number, " + entity + "." + QUERY_SELECT + "<Number>>>>, " + QUERY_FIELDS_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">>>")
-                .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + QUERY_START + ") EntityCreator.create(" + entity + "." + QUERY_SELECT + ".class, \"" + description.getImplementorFullName() + "\")")));
+                .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + QUERY_START + ") EntityCreator.create(" + entity + "." + QUERY_SELECT + ".class)")));
     }
 
     private void declareField(String entity, PrototypeField desc, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration impl, ClassOrInterfaceDeclaration orderImpl, ClassOrInterfaceDeclaration order, ClassOrInterfaceDeclaration qName, ClassOrInterfaceDeclaration qNameImpl, ClassOrInterfaceDeclaration fields, ClassOrInterfaceDeclaration opFields, ClassOrInterfaceDeclaration funcs) {

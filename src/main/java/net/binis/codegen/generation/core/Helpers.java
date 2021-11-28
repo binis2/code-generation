@@ -33,6 +33,7 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.TypeParameter;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.annotation.Default;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.enrich.PrototypeLookup;
@@ -502,7 +503,6 @@ public class Helpers {
         return t.getTypeName();
     }
 
-
     public static String parseMethodSignature(MethodDeclaration method) {
         return "Not Implemented";
     }
@@ -798,6 +798,14 @@ public class Helpers {
 
     public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, LambdaExpr expr, ClassOrInterfaceDeclaration embedded) {
         addInitializerInternal(description, intf, expr, embedded);
+    }
+
+    public static void addDefaultCreation(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+        var intf = description.getIntf();
+        if (description.getProperties().isGenerateImplementation() && intf.getAnnotationByName("Default").isEmpty()) {
+            intf.addAnnotation(description.getParser().parseAnnotation("@Default(\"" + description.getImplementorFullName() + "\")").getResult().get());
+            intf.findCompilationUnit().get().addImport(Default.class.getCanonicalName());
+        }
     }
 
     private static void addInitializerInternal(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, Node node, ClassOrInterfaceDeclaration embedded) {
