@@ -20,8 +20,6 @@ package net.binis.codegen.tools;
  * #L%
  */
 
-import lombok.val;
-
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -156,7 +154,7 @@ public class Tools {
     }
 
     public static long measure(Runnable run) {
-        val start = System.currentTimeMillis();
+        var start = System.currentTimeMillis();
         run.run();
         return System.currentTimeMillis() - start;
     }
