@@ -65,6 +65,11 @@ public class Generator {
 
     public static final String MIX_IN_EXTENSION = "$MixIn";
 
+    private Generator() {
+        //Do nothing
+    }
+
+    @SuppressWarnings("unchecked")
     public static void generateCodeForClass(CompilationUnit parser) {
 
         for (var type : parser.getTypes()) {
@@ -539,6 +544,7 @@ public class Generator {
         consumer.accept(list);
     }
 
+    @SuppressWarnings("unchecked")
     private static void checkEnrichers(List<PrototypeEnricher> list, Class enricher) {
         if (list.stream().noneMatch(e -> enricher.isAssignableFrom(e.getClass()))) {
             var e = CodeFactory.create(enricher);
@@ -1246,13 +1252,14 @@ public class Generator {
         });
     }
 
+    @SuppressWarnings("unchecked")
     public static void generateCodeForEnum(CompilationUnit parser) {
         for (var type : parser.getTypes()) {
             if (type.isEnumDeclaration()) {
                 type.getAnnotationByName("EnumPrototype").ifPresent(prototype -> {
                     var typeDeclaration = type.asEnumDeclaration();
 
-                    log.info("Processing - {}", prototype.toString());
+                    log.info("Processing - {}", prototype);
 
                     var properties = getEnumProperties(prototype);
                     ensureParsedParents(typeDeclaration, properties);

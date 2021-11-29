@@ -645,6 +645,7 @@ public class Helpers {
         recursiveExpr.clear();
     }
 
+    @SuppressWarnings("unchecked")
     public static void registerEnricher(Class enricher) {
         var reg = false;
         for (var i : enricher.getInterfaces()) {
@@ -741,7 +742,7 @@ public class Helpers {
     }
 
     public static BlockStmt getInitializer(ClassOrInterfaceDeclaration type) {
-        return type.getChildNodes().stream().filter(n -> n instanceof InitializerDeclaration).map(n -> ((InitializerDeclaration) n).asInitializerDeclaration().getBody()).findFirst().orElseGet(type::addInitializer);
+        return type.getChildNodes().stream().filter(InitializerDeclaration.class::isInstance).map(n -> ((InitializerDeclaration) n).asInitializerDeclaration().getBody()).findFirst().orElseGet(type::addInitializer);
     }
 
     public static boolean isJavaType(String type) {

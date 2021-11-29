@@ -187,6 +187,7 @@ public class CodeGen {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, String className, JavaParser parser) {
         type.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(nested -> {
             if (nested.asClassOrInterfaceDeclaration().isInterface() && Generator.getCodeAnnotation(nested).isPresent()) {
