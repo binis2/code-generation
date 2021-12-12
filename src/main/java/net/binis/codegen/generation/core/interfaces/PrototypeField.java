@@ -34,7 +34,11 @@ public interface PrototypeField {
     String getName();
     MethodDeclaration getDescription();
     FieldDeclaration getDeclaration();
+    String getFullType();
+    String getType();
     boolean isCollection();
+    boolean isExternal();
+    boolean isGenericMethod();
     Structures.Ignores getIgnores();
     PrototypeDescription<ClassOrInterfaceDeclaration> getPrototype();
     Map<String, Type> getGenerics();

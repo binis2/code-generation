@@ -98,7 +98,11 @@ public class Structures {
         private String name;
         private FieldDeclaration declaration;
         private MethodDeclaration description;
+        private String fullType;
+        private String type;
         private boolean collection;
+        private boolean external;
+        private boolean genericMethod;
         private Structures.Ignores ignores;
         @ToString.Exclude
         private PrototypeDescription<ClassOrInterfaceDeclaration> prototype;

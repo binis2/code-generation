@@ -28,6 +28,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 public interface PrototypeLookup {
 
@@ -35,13 +36,16 @@ public interface PrototypeLookup {
 
     void registerParsed(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> parsed);
     void registerGenerated(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> generated);
+    void registerExternalLookup(UnaryOperator<String> lookup);
 
     PrototypeDescription<ClassOrInterfaceDeclaration> findParsed(String prototype);
     PrototypeDescription<ClassOrInterfaceDeclaration> findGenerated(String prototype);
+    PrototypeDescription<ClassOrInterfaceDeclaration> findExternal(String prototype);
     PrototypeDescription<ClassOrInterfaceDeclaration> findByInterfaceName(String name);
     PrototypeField findField(String prototype, String name);
     boolean isParsed(String prototype);
     boolean isGenerated(String prototype);
+    boolean isExternal(String prototype);
     Collection<PrototypeDescription<ClassOrInterfaceDeclaration>> parsed();
     Collection<PrototypeDescription<ClassOrInterfaceDeclaration>> generated();
 

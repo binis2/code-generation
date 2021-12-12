@@ -189,7 +189,7 @@ public class Helpers {
         if (isNull(result)) {
             result = unit.getImports().stream().filter(ImportDeclaration::isAsterisk)
                     .map(i -> i.getNameAsString() + "." + type)
-                    .filter(name -> lookup.isParsed(name) || classExists(name))
+                    .filter(name -> lookup.isParsed(name) || classExists(name) || lookup.isExternal(name))
                     .findFirst().orElse(null);
         }
 
