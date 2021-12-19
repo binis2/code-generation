@@ -40,7 +40,7 @@ public class CreatorModifierEnricherHandler extends BaseEnricher implements Crea
     }
 
     @Override
-    public void finalize(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+    public void finalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         var properties = description.getProperties();
         var spec = description.getSpec();
         var intf = description.getIntf();

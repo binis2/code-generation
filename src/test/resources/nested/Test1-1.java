@@ -18,12 +18,10 @@ public interface TestAnnotation {
     TestAnnotation.Modify with();
 
     interface Fields<T> {
-
         T value(String value);
     }
 
     interface Modify extends TestAnnotation.Fields<TestAnnotation.Modify> {
-
         TestAnnotation done();
     }
 }

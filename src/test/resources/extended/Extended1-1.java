@@ -5,8 +5,6 @@ import javax.annotation.processing.Generated;
 
 @Generated(value = "ExtendedPrototype", comments = "ExtendedImpl")
 public interface Extended {
-
     String getDoubleExtended();
-
     String getExtended();
 }

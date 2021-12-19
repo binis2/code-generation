@@ -29,7 +29,8 @@ public interface PrototypeEnricher {
     void init(PrototypeLookup lookup);
     void setup(PrototypeData properies);
     void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description);
-    void finalize(PrototypeDescription<ClassOrInterfaceDeclaration> description);
+    void finalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description);
+    void postProcess(PrototypeDescription<ClassOrInterfaceDeclaration> description);
     int order();
 
 }

@@ -97,6 +97,7 @@ public class PrototypeLookupHandler implements PrototypeLookup {
 
     @Override
     public PrototypeDescription<ClassOrInterfaceDeclaration> findExternal(String prototype) {
+        handleExternal(prototype);
         return external.get(prototype);
     }
 

@@ -67,7 +67,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
     }
 
     @Override
-    public void finalize(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+    public void finalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         description.getFields().forEach(f -> handleField(description, f));
     }
 

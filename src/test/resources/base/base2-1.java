@@ -5,13 +5,11 @@ import javax.annotation.processing.Generated;
 
 @Generated(value = "BasePrototype", comments = "BaseImpl")
 public interface Base {
-
     Long getId();
 
     void setId(Long id);
 
     interface Fields<T> {
-
         T id(Long id);
     }
 }

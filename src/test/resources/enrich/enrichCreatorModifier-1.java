@@ -20,12 +20,10 @@ public interface Test {
     Test.Modify with();
 
     interface Fields<T> {
-
         T title(String title);
     }
 
     interface Modify extends Test.Fields<Test.Modify> {
-
         Test done();
     }
 }

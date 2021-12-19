@@ -5,7 +5,6 @@ import javax.annotation.processing.Generated;
 
 @Generated(value = "TestPrototype", comments = "TestImpl")
 public interface Test {
-
     String getTitle();
 
     void setTitle(String title);

@@ -289,7 +289,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
     }
 
     @Override
-    public void finalize(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+    public void finalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         if (lookup.embeddedModifierRequested(description)) {
             buildEmbeddedModifier(description, true);
             buildEmbeddedModifier(description, false);

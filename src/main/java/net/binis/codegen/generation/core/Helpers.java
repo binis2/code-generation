@@ -668,6 +668,7 @@ public class Helpers {
         registerEnricher(QueryEnricherHandler.class);
         registerEnricher(ValidationEnricherHandler.class);
         registerEnricher(FluentEnricherHandler.class);
+        registerEnricher(RegionEnricherHandler.class);
     }
 
 
@@ -714,7 +715,7 @@ public class Helpers {
     }
 
     public static void finalizeEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
-        getEnrichersList(parsed).forEach(e -> e.finalize(parsed));
+        getEnrichersList(parsed).forEach(e -> e.finalizeEnrich(parsed));
 
         parsed.processActions();
 
@@ -739,6 +740,8 @@ public class Helpers {
 
         Helpers.handleImports(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getIntf());
         Helpers.handleImports(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getSpec());
+
+        getEnrichersList(parsed).forEach(e -> e.postProcess(parsed));
     }
 
     public static BlockStmt getInitializer(ClassOrInterfaceDeclaration type) {

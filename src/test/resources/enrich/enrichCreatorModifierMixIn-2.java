@@ -8,7 +8,6 @@ import javax.annotation.processing.Generated;
 @Generated(value = "MixInPrototype", comments = "MixInImpl")
 @Default("net.binis.codegen.TestImpl")
 public interface MixIn extends Test {
-
     MixIn.Modify asMixIn();
 
     static MixIn.Modify create() {
@@ -20,12 +19,10 @@ public interface MixIn extends Test {
     void setSubtitle(String subtitle);
 
     interface Fields<T> extends Test.Fields<T> {
-
         T subtitle(String subtitle);
     }
 
     interface Modify extends MixIn.Fields<MixIn.Modify> {
-
         MixIn done();
     }
 }

@@ -23,14 +23,13 @@ package net.binis.codegen.test;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.printer.DefaultPrettyPrinter;
-import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.CodeGen;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
+import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -58,8 +57,7 @@ public abstract class BaseTest {
     protected JavaParser parser = new JavaParser();
 
     protected String getAsString(CompilationUnit file) {
-        var config = new DefaultPrinterConfiguration();
-        var printer = new DefaultPrettyPrinter(config);
+        var printer = new CodeGenPrettyPrinter();
 
         sortImports(file);
         if (file.getType(0).isClassOrInterfaceDeclaration()) {
@@ -89,6 +87,7 @@ public abstract class BaseTest {
 
     protected void load(List<Pair<String, String>> list, String resource) {
         var source = resourceAsString(resource);
+
         var parse = parser.parse(source);
         assertTrue(parse.toString(), parse.isSuccessful());
         if (nonNull(list)) {

@@ -6,7 +6,6 @@ import javax.annotation.processing.Generated;
 
 @Generated(value = "TestPrototype", comments = "TestImpl")
 public interface Test {
-
     Long getId();
 
     void setId(Long id);

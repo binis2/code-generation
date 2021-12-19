@@ -24,14 +24,13 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
-import com.github.javaparser.printer.DefaultPrettyPrinter;
-import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
+import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
 import org.apache.commons.cli.*;
 
 import java.io.BufferedWriter;
@@ -205,8 +204,7 @@ public class CodeGen {
     }
 
     private static void saveFile(String baseDir, CompilationUnit file) {
-        var config = new DefaultPrinterConfiguration();
-        var printer = new DefaultPrettyPrinter(config);
+        var printer = new CodeGenPrettyPrinter();
 
         sortImports(file);
         if (file.getType(0).isClassOrInterfaceDeclaration()) {

@@ -8,17 +8,12 @@ import java.util.List;
 
 @Generated(value = "TestPrototype", comments = "TestImpl")
 public interface Test {
-
     List<Long> getList();
-
     Map<Long, String> getMap();
-
     Set<Long> getSet();
-
     String getTitle();
 
     Test list(List<Long> list);
-
     Test map(Map<Long, String> map);
 
     Test set(Set<Long> set);

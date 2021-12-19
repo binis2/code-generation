@@ -366,7 +366,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     }
 
     @Override
-    public void finalize(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+    public void finalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         if (nonNull(description.getMixIn())) {
             description.getMixIn().getSpec().addMember(description.getRegisteredClass(Constants.QUERY_EXECUTOR_KEY));
             combineQueryNames(description);

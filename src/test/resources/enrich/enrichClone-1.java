@@ -8,22 +8,15 @@ import java.util.List;
 
 @Generated(value = "TestPrototype", comments = "TestImpl")
 public interface Test {
-
     Test clone();
 
     List<Long> getList();
-
     Map<Long, String> getMap();
-
     Set<Long> getSet();
-
     String getTitle();
 
     void setList(List<Long> list);
-
     void setMap(Map<Long, String> map);
-
     void setSet(Set<Long> set);
-
     void setTitle(String title);
 }
