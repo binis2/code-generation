@@ -54,7 +54,7 @@ public class RegionEnricherHandler extends BaseEnricher implements RegionEnriche
         if (isNull(description.getProperties().getMixInClass())) {
             var spec = description.getSpec();
             Helpers.sortClass(spec);
-            calcRegions(spec, FieldDeclaration.class::isInstance);
+            calcRegions(spec, m -> m instanceof FieldDeclaration && !m.asFieldDeclaration().isFinal() && !m.asFieldDeclaration().isStatic());
         }
     }
 
