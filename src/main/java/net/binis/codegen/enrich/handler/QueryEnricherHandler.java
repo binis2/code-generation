@@ -67,6 +67,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     private static final String QUERY_FIELDS = "QueryFields";
     private static final String QUERY_OP_FIELDS = "QueryOperationFields";
     private static final String QUERY_FUNCS = "QueryFuncs";
+    private static final String QUERY_FETCH = "QueryFetch";
     private static final String QUERY_NAME = "QueryName";
     private static final String QUERY_SCRIPT = "QueryScript";
     private static final String QUERY_BRACKET = "QueryBracket";
@@ -157,7 +158,8 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addTypeParameter(QUERY_ORDER_GENERIC)
                 .addTypeParameter(QUERY_GENERIC)
                 .addExtendedType(entity + "." + QUERY_FIELDS + "<" + QUERY_SELECT_OPERATION + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">>")
-                .addExtendedType(entity + "." + QUERY_FUNCS + "<" + QUERY_SELECT_OPERATION + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">>");
+                .addExtendedType(entity + "." + QUERY_FUNCS + "<" + QUERY_SELECT_OPERATION + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">>")
+                .addExtendedType(QUERY_FETCH + "<" + QUERY_SELECT_OPERATION + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">>");
         intf.addMember(qName);
 
         var qNameImpl = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + QUERY_NAME + QUERY_IMPL)
