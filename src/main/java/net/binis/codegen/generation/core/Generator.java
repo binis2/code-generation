@@ -675,7 +675,7 @@ public class Generator {
                             addGetterFromGetter(spec, method, true, generic, field);
                         }
                     } else if (method.getParameterCount() == 1 && method.getName().startsWith("set") && method.getReturnType().getCanonicalName().equals("void")) {
-                        var field = addFieldFromGetter(parsed, spec, method, generic);
+                        var field = addFieldFromSetter(parsed, spec, method, generic);
                         if (properties.isClassSetters()) {
                             addSetterFromSetter(spec, method, true, generic, field);
                         }
@@ -1035,7 +1035,6 @@ public class Generator {
         return result;
     }
 
-
     private static PrototypeField addFieldFromGetter(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, Method method, Map<String, Type> generic) {
         PrototypeField result = null;
         var fieldName = getFieldName(method.getName());
@@ -1054,6 +1053,65 @@ public class Generator {
                 description = new MethodDeclaration().setName(fieldName).setType(method.getReturnType());
                 if (!method.getReturnType().isPrimitive() && !method.getReturnType().getCanonicalName().startsWith("java.lang.")) {
                     spec.findCompilationUnit().get().addImport(method.getReturnType().getCanonicalName());
+                }
+            }
+
+            var dummy = envelopWithDummyClass(description);
+
+            if (method.getDeclaredAnnotations().length > 0) {
+                for (var ann : method.getDeclaredAnnotations()) {
+                    description.addAnnotation(ann.annotationType());
+                    dummy.addImport(ann.annotationType().getPackageName());
+                    field.addAnnotation(ann.annotationType());
+                    //TODO: Check if the annotation can be applied to field.
+                    //TODO: Handle annotation params
+                }
+            }
+
+            result = Structures.FieldData.builder()
+                    .parsed(parsed)
+                    .description(description)
+                    .name(fieldName)
+                    .declaration(field)
+                    .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
+                    .ignores(Structures.Ignores.builder().build())
+                    .generics(generic)
+                    .genericMethod(genericMethod)
+                    .fullType(genericMethod ? null : getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
+                    .type(genericMethod ? parseMethodSignature(method) : field.getElementType().asString())
+                    //TODO: enable ignores
+                    //TODO: enable prototypes
+                    .build();
+            parsed.getFields().add(result);
+        } else {
+            var proto = parsed.getFields().stream().filter(d -> d.getName().equals(fieldName)).findFirst();
+            if (proto.isPresent()) {
+                result = proto.get();
+            }
+        }
+
+        return result;
+    }
+
+    private static PrototypeField addFieldFromSetter(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, Method method, Map<String, Type> generic) {
+        PrototypeField result = null;
+        var fieldName = getFieldName(method.getName());
+        var genericMethod = false;
+        if (!fieldExists(spec, fieldName)) {
+            FieldDeclaration field;
+            MethodDeclaration description;
+            if (nonNull(generic)) {
+                var type = generic.get(parseMethodSignature(method));
+                field = spec.addField(type, fieldName, PROTECTED);
+                description = new MethodDeclaration().setName(fieldName).setType(type);
+                handleType(parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, type);
+            } else {
+                var type = method.getParameters()[0].getType();
+                genericMethod = !type.equals(method.getGenericParameterTypes()[0]);
+                field = spec.addField(type, fieldName, PROTECTED);
+                description = new MethodDeclaration().setName(fieldName).setType(type);
+                if (!type.isPrimitive() && !type.getCanonicalName().startsWith("java.lang.")) {
+                    spec.findCompilationUnit().get().addImport(type.getCanonicalName());
                 }
             }
 
