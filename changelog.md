@@ -1,5 +1,10 @@
 # Change Log
 
+**28-12-2021** ver. 0.1.4
+* Spring: Static projections.
+* Spring: Added join fetch for OneToOne relations.
+* Generation: Fixed field generation from external setter
+
 **19-12-2021** ver. 0.1.3
 * Spring: Added left join support.
 * Spring: Fixed .count() for join queries.
