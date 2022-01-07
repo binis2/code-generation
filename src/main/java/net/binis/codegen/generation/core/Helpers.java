@@ -734,9 +734,10 @@ public class Helpers {
                         .addArgument((i.getLeft().getParentNode().get() instanceof ClassOrInterfaceDeclaration ? ((ClassOrInterfaceDeclaration) i.getLeft().getParentNode().get()).getNameAsString() + "." : "") + i.getLeft().getNameAsString() + ".class")
                         .addArgument(expr)
                         .addArgument("null"));
-
             }
         });
+
+        parsed.getCustomInitializers().forEach(i -> i.accept(getInitializer(parsed.getSpec())));
 
         Helpers.handleImports(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getIntf());
         Helpers.handleImports(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getSpec());

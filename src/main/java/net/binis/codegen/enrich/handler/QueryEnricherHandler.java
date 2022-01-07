@@ -34,6 +34,9 @@ import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -72,6 +75,31 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     private static final String QUERY_SCRIPT = "QueryScript";
     private static final String QUERY_BRACKET = "QueryBracket";
     private static final String QUERY_IMPL = "Impl";
+
+    private static final Set<String> reserved = Set.of(
+            "ensure",
+            "reference",
+            "get",
+            "list",
+            "references",
+            "count",
+            "top",
+
+            "page",
+
+            "tuple",
+            "tuples",
+            "prepare",
+
+            "projection",
+            "flush",
+            "lock",
+            "hint",
+            "filter",
+
+            "exists",
+            "delete",
+            "remove");
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
@@ -213,18 +241,18 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
         with(description.getBase(), base ->
                 base.getFields().forEach(desc ->
-                        declareField(entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs)));
+                        declareField(description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs)));
 
         description.getFields().forEach(desc ->
-                declareField(entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs));
+                declareField(description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs));
 
         if (nonNull(description.getMixIn())) {
             with(description.getMixIn().getBase(), base ->
                     base.getFields().forEach(desc ->
-                            declareField(entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs)));
+                            declareField(description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs)));
 
             description.getMixIn().getFields().forEach(desc ->
-                    declareField(entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs));
+                    declareField(description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs));
         }
 
         description.registerClass(Constants.QUERY_EXECUTOR_KEY, impl);
@@ -242,9 +270,10 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + QUERY_START + ") EntityCreator.create(" + entity + "." + QUERY_SELECT + ".class)")));
     }
 
-    private void declareField(String entity, PrototypeField desc, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration impl, ClassOrInterfaceDeclaration orderImpl, ClassOrInterfaceDeclaration order, ClassOrInterfaceDeclaration qName, ClassOrInterfaceDeclaration qNameImpl, ClassOrInterfaceDeclaration fields, ClassOrInterfaceDeclaration opFields, ClassOrInterfaceDeclaration funcs) {
+    private void declareField(PrototypeDescription<ClassOrInterfaceDeclaration> description, String entity, PrototypeField desc, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration impl, ClassOrInterfaceDeclaration orderImpl, ClassOrInterfaceDeclaration order, ClassOrInterfaceDeclaration qName, ClassOrInterfaceDeclaration qNameImpl, ClassOrInterfaceDeclaration fields, ClassOrInterfaceDeclaration opFields, ClassOrInterfaceDeclaration funcs) {
         var field = desc.getDeclaration();
-        var name = field.getVariable(0).getNameAsString();
+        var fName = field.getVariable(0).getNameAsString();
+        var name = checkReserved(fName);
 
         var trans = isTransient(desc);
 
@@ -266,7 +295,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                             .setType(QUERY_JOIN_COLLECTION_FUNCTIONS)
                             .addModifier(PUBLIC)
                             .setBody(new BlockStmt()
-                                    .addStatement(new ReturnStmt("(" + QUERY_JOIN_COLLECTION_FUNCTIONS + ") joinStart(\"" + name + "\", " + subType + "." + QUERY_ORDER + ".class)")));
+                                    .addStatement(new ReturnStmt("(" + QUERY_JOIN_COLLECTION_FUNCTIONS + ") joinStart(\"" + fName + "\", " + subType + "." + QUERY_ORDER + ".class)")));
 
                     if (nonNull(prototype)) {
                         prototype.registerPostProcessAction(() ->
@@ -282,7 +311,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                             .setType(QUERY_COLLECTION_FUNCTIONS)
                             .addModifier(PUBLIC)
                             .setBody(new BlockStmt()
-                                    .addStatement(new ReturnStmt("identifier(\"" + name + "\")")));
+                                    .addStatement(new ReturnStmt("identifier(\"" + fName + "\")")));
                 }
             }
         } else {
@@ -291,16 +320,16 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
             impl.addMethod(name)
                     .setType(QUERY_SELECT_OPERATION)
                     .addModifier(PUBLIC)
-                    .addParameter(field.getCommonType(), name)
+                    .addParameter(field.getCommonType(), fName)
                     .setBody(new BlockStmt()
-                            .addStatement(new ReturnStmt("identifier(\"" + name + "\", " + name + ")")));
+                            .addStatement(new ReturnStmt("identifier(\"" + fName + "\", " + fName + ")")));
 
             if (!trans) {
                 orderImpl.addMethod(name)
                         .setType(QUERY_ORDER_OPERATION)
                         .addModifier(PUBLIC)
                         .setBody(new BlockStmt()
-                                .addStatement(new ReturnStmt("(" + QUERY_ORDER_OPERATION + ") func.apply(\"" + name + "\")")));
+                                .addStatement(new ReturnStmt("(" + QUERY_ORDER_OPERATION + ") func.apply(\"" + fName + "\")")));
 
                 opFields.addMethod(name)
                         .setType(QUERY_GENERIC)
@@ -312,14 +341,14 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 impl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
                         .setBody(new BlockStmt()
                                 .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class, \"" + desc.getPrototype().getImplementorFullName() + "\");")
-                                .addStatement("((QueryEmbed) result).setParent(\"" + name + "\", this);")
+                                .addStatement("((QueryEmbed) result).setParent(\"" + fName + "\", this);")
                                 .addStatement(new ReturnStmt("result")));
 
                 qName.addMethod(name).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ">").setBody(null);
                 qNameImpl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
                         .setBody(new BlockStmt()
                                 .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class, \"" + desc.getPrototype().getImplementorFullName() + "\");")
-                                .addStatement("((QueryEmbed) result).setParent(\"" + name + "\", executor);")
+                                .addStatement("((QueryEmbed) result).setParent(\"" + fName + "\", executor);")
                                 .addStatement(new ReturnStmt("result")));
 
             } else {
@@ -327,14 +356,14 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                     funcs.addMethod(name).setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + "," + QUERY_GENERIC + ">").setBody(null);
                     impl.addMethod(name, PUBLIC).setType(QUERY_FUNCTIONS)
                             .setBody(new BlockStmt()
-                                    .addStatement(new ReturnStmt("identifier(\"" + name + "\")")));
+                                    .addStatement(new ReturnStmt("identifier(\"" + fName + "\")")));
 
 
                     qNameImpl.addMethod(name)
                             .setType(QUERY_FUNCTIONS)
                             .addModifier(PUBLIC)
                             .setBody(new BlockStmt()
-                                    .addStatement(new ReturnStmt("executor.identifier(\"" + name + "\")")));
+                                    .addStatement(new ReturnStmt("executor.identifier(\"" + fName + "\")")));
                 }
             }
 
@@ -342,16 +371,31 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 fields.addMethod(name)
                         .setType(QUERY_GENERIC)
                         .setBody(null)
-                        .addParameter(field.getCommonType(), name);
+                        .addParameter(field.getCommonType(), fName);
             }
 
             qNameImpl.addMethod(name)
                     .setType(QUERY_SELECT_OPERATION)
                     .addModifier(PUBLIC)
-                    .addParameter(field.getCommonType(), name)
+                    .addParameter(field.getCommonType(), fName)
                     .setBody(new BlockStmt()
-                            .addStatement(new ReturnStmt("executor.identifier(\"" + name + "\", " + name + ")")));
+                            .addStatement(new ReturnStmt("executor.identifier(\"" + fName + "\", " + fName + ")")));
+
+            desc.getDescription().getAnnotations().forEach(a -> {
+                var cls = Helpers.getExternalClassNameIfExists(desc.getDescription().findCompilationUnit().get(), a.getNameAsString());
+                if ("javax.persistence.Id".equals(cls)) {
+                    description.getCustomInitializers().add(b ->
+                            b.addStatement("CodeFactory.registerId(" + entity + ".class, \"" + fName + "\", " + field.getVariable(0).getType().asString() + ".class);"));
+                }
+            });
         }
+    }
+
+    private String checkReserved(String name) {
+        if (reserved.contains(name)) {
+            return "_" + name;
+        }
+        return name;
     }
 
     private boolean isTransient(PrototypeField field) {

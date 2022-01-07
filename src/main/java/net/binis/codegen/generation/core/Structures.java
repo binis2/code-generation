@@ -27,6 +27,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.Type;
 import lombok.*;
 import net.binis.codegen.enrich.*;
@@ -39,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.Objects.isNull;
@@ -199,6 +201,11 @@ public class Structures {
         @EqualsAndHashCode.Exclude
         @ToString.Exclude
         private List<Triple<ClassOrInterfaceDeclaration, Node, ClassOrInterfaceDeclaration>> initializers = new ArrayList<>();
+
+        @Builder.Default
+        @EqualsAndHashCode.Exclude
+        @ToString.Exclude
+        private List<Consumer<BlockStmt>> customInitializers = new ArrayList<>();
 
         @Builder.Default
         @ToString.Exclude

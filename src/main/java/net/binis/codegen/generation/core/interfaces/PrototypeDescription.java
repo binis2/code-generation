@@ -25,9 +25,11 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.stmt.BlockStmt;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
@@ -59,6 +61,7 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     ClassOrInterfaceDeclaration getIntf();
 
     List<Triple<ClassOrInterfaceDeclaration, Node, ClassOrInterfaceDeclaration>> getInitializers();
+    List<Consumer<BlockStmt>> getCustomInitializers();
 
     void registerClass(String key, ClassOrInterfaceDeclaration declaration);
     ClassOrInterfaceDeclaration getRegisteredClass(String key);
