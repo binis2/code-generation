@@ -1,5 +1,10 @@
 # Change Log
 
+**08-01-2022** ver. 0.1.5
+* Spring: Added support for references.
+* Spring: Better 'distinct' support. 
+* Spring: Fixed aggregations type mapping for single column queries.
+
 **28-12-2021** ver. 0.1.4
 * Spring: Static projections.
 * Spring: Added join fetch for OneToOne relations.
