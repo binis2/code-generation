@@ -1,5 +1,10 @@
 # Change Log
 
+**17-01-2022** ver. 0.1.6
+* Spring: Added support for different async flows.
+* Spring: Added query logging.
+* Spring: Fixed 'in' expressions for empty or null collections.
+
 **08-01-2022** ver. 0.1.5
 * Spring: Added support for references.
 * Spring: Better 'distinct' support. 
