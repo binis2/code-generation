@@ -33,6 +33,9 @@ import java.util.function.Consumer;
 
 public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
+    boolean isProcessed();
+    boolean isInvalid();
+
     JavaParser getParser();
 
     Class<?> getCompiled();

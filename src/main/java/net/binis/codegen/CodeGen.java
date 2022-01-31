@@ -71,7 +71,7 @@ public class CodeGen {
         processFiles(files);
 
         enumParsed.values().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
-            if (isNull(p.getProperties().getMixInClass())) {
+            if (isNull(p.getProperties().getMixInClass()) && isNull(p.getCompiled())) {
                 saveFile(getBasePath(cmd.getOptionValue(DESTINATION), p.getProperties()), p.getFiles().get(0));
             }
         });
@@ -84,10 +84,10 @@ public class CodeGen {
         var destination = cmd.getOptionValue(DESTINATION);
         var impl_destination = cmd.getOptionValue(IMPL_DESTINATION);
         lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
-            if (p.getProperties().isGenerateImplementation() && isNull(p.getProperties().getMixInClass())) {
+            if (p.getProperties().isGenerateImplementation() && isNull(p.getProperties().getMixInClass()) && isNull(p.getCompiled())) {
                 saveFile(nullCheck(getBasePath(impl_destination, p.getProperties()), destination), p.getFiles().get(0));
             }
-            if (p.getProperties().isGenerateInterface()) {
+            if (p.getProperties().isGenerateInterface() && isNull(p.getCompiled())) {
                 saveFile(getBasePath(destination, p.getProperties()), p.getFiles().get(1));
             }
         });
@@ -113,9 +113,10 @@ public class CodeGen {
                     Generator.generateCodeForEnum(entry.getValue().getDeclaration().findCompilationUnit().get()));
         }
 
-        for (var entry : lookup.parsed()) {
-            ifNull(entry.getFiles(), () ->
-                    Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get()));
+        var entry = lookup.parsed().stream().filter(e -> isNull(e.getFiles()) && !e.isInvalid()).findFirst();
+        while (entry.isPresent()) {
+            Generator.generateCodeForClass(entry.get().getDeclaration().findCompilationUnit().get(), entry.get());
+            entry = lookup.parsed().stream().filter(e -> isNull(e.getFiles()) && !e.isInvalid()).findFirst();
         }
 
         recursiveExpr.forEach(pair ->
@@ -152,7 +153,7 @@ public class CodeGen {
 
         for (var entry : lookup.parsed()) {
             ifNull(entry.getFiles(), () ->
-                    Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get()));
+                    Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get(), entry));
         }
 
         recursiveExpr.forEach(pair ->

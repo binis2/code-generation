@@ -110,6 +110,10 @@ public class Helpers {
         return defaultPackage(type, null);
     }
 
+    public static String defaultInterfaceName(String type) {
+        return defaultClassName(type).replace("Entity", "");
+    }
+
     public static String defaultInterfaceName(ClassOrInterfaceDeclaration type) {
         return defaultClassName(type).replace("Entity", "");
     }

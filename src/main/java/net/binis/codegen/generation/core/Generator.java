@@ -69,8 +69,14 @@ public class Generator {
         //Do nothing
     }
 
-    @SuppressWarnings("unchecked")
     public static void generateCodeForClass(CompilationUnit parser) {
+        generateCodeForClass(parser, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void generateCodeForClass(CompilationUnit parser, PrototypeDescription<ClassOrInterfaceDeclaration> prsd) {
+
+        var processed = Holder.of(0);
 
         for (var type : parser.getTypes()) {
             if (type.isClassOrInterfaceDeclaration()) {
@@ -80,7 +86,7 @@ public class Generator {
 
                         log.info("Processing - {}", typeDeclaration.getNameAsString());
 
-                        var properties = getProperties(prototype);
+                        var properties = nonNull(prsd) && nonNull(prsd.getCompiled()) ? (Structures.PrototypeDataHandler) prsd.getProperties() : getProperties(prototype);
                         properties.setPrototypeName(typeDeclaration.getNameAsString());
                         addProcessingType(typeDeclaration.getNameAsString(), properties.getInterfacePackage(), properties.getInterfaceName(), properties.getClassPackage(), properties.getClassName());
                         ensureParsedParents(typeDeclaration, properties);
@@ -212,7 +218,7 @@ public class Generator {
                             } else if (member.isFieldDeclaration()) {
                                 processConstant(typeDeclaration, spec, intf, member.asFieldDeclaration());
                             } else {
-                                log.error("Can't process method " + member.toString());
+                                log.error("Can't process method " + member);
                             }
                         }
 
@@ -233,10 +239,16 @@ public class Generator {
                         handleImports(typeDeclaration, spec);
                         handleImports(typeDeclaration, intf);
 
+                        processed.set(processed.get() + 1);
+                        parse.setProcessed(true);
                         processingTypes.remove(typeDeclaration.getNameAsString());
                     });
                 }
             }
+        }
+
+        if (prsd != null && processed.get() == 0) {
+            ((Structures.Parsed) prsd).setInvalid(true);
         }
     }
 
@@ -561,7 +573,7 @@ public class Generator {
         for (var extended : declaration.getExtendedTypes()) {
             var parsed = getParsed(extended);
             if (nonNull(parsed)) {
-                ifNull(parsed.getFiles(), () -> generateCodeForClass(parsed.getDeclaration().findCompilationUnit().get()));
+                ifNull(parsed.getFiles(), () -> generateCodeForClass(parsed.getDeclaration().findCompilationUnit().get(), parsed));
             } else {
                 handleCompiledPrototype(getExternalClassName(declaration.findCompilationUnit().get(), extended.getNameAsString()));
             }
@@ -570,7 +582,7 @@ public class Generator {
         notNull(properties.getMixInClass(), c ->
                 notNull(getExternalClassName(declaration.findCompilationUnit().get(), c),
                         name -> notNull(lookup.findParsed(name), parse ->
-                                ifNull(parse.getFiles(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get())))));
+                                ifNull(parse.getFiles(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get(), parse)))));
     }
 
     private static void ensureParsedParents(EnumDeclaration declaration, PrototypeData properties) {
@@ -792,7 +804,7 @@ public class Generator {
 
             if (isNull(processing)) {
                 if (isNull(parse.getFiles())) {
-                    generateCodeForClass(parse.getDeclaration().findCompilationUnit().get());
+                    generateCodeForClass(parse.getDeclaration().findCompilationUnit().get(), parse);
                 }
 
                 var intf = parse.getFiles().get(1).getType(0);

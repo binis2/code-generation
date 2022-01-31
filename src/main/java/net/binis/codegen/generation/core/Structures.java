@@ -155,6 +155,9 @@ public class Structures {
             Helpers.registerKnownEnrichers();
         }
 
+        private boolean processed;
+        private boolean invalid;
+
         private JavaParser parser;
 
         private Class<?> compiled;

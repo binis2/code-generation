@@ -70,7 +70,7 @@ public abstract class BaseTest {
     protected void generate() {
         for (var entry : lookup.parsed()) {
             ifNull(entry.getFiles(), () ->
-                    Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get()));
+                    Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get(), entry));
         }
 
         lookup.calcPrototypeMaps();
