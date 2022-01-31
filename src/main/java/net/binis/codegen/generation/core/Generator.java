@@ -657,6 +657,8 @@ public class Generator {
                             ((Structures.Parsed) external).setSpec(org.findCompilationUnit().get().clone().getType(0).asClassOrInterfaceDeclaration());
                             implementPrototype(parsed, spec, external, generics, true);
                             ((Structures.Parsed) external).setSpec(org);
+                            intf.addExtendedType(external.getDeclaration().getNameAsString());
+                            intf.findCompilationUnit().get().addImport(external.getDeclaration().getFullyQualifiedName().get()); //TODO: Handle generics
                             return true;
                         }
                     }
@@ -846,7 +848,26 @@ public class Generator {
 
                         }
                     } else {
-                        log.warn("Can't process annotation {}", name);
+                        var parsed = lookup.findExternal(name);
+                        if (nonNull(parsed) && parsed.getDeclaration().isAnnotationDeclaration()) {
+                            if (parsed.getDeclaration().stream().filter(AnnotationExpr.class::isInstance)
+                                    .map(AnnotationExpr.class::cast)
+                                    .filter(an -> "java.lang.annotation.Target".equals(getExternalClassName(parsed.getDeclaration().findCompilationUnit().get(), an.getNameAsString())))
+                                    .findFirst()
+                                    .map(t -> t.stream().filter(ArrayInitializerExpr.class::isInstance)
+                                            .map(ArrayInitializerExpr.class::cast)
+                                            .findFirst()
+                                            .map(arr -> arr.getValues().stream().map(Object::toString)
+                                                    .anyMatch("ElementType.FIELD"::equals))
+                                            .orElse(false))
+                                    .orElse(true)) {
+                                handleAnnotation(unit, field, a);
+                            } else {
+                                log.warn("Invalid annotation target {}", name);
+                            }
+                        } else {
+                            log.warn("Can't process annotation {}", name);
+                        }
                     }
                 })
         );
@@ -887,13 +908,34 @@ public class Generator {
                 declaration.getAnnotations().forEach(a ->
                         notNull(getExternalClassName(unit, a.getNameAsString()), name -> {
                             var ann = loadClass(name);
-                            if (nonNull(ann) && !CodeAnnotation.class.isAssignableFrom(ann)) {
-                                var target = ann.getAnnotation(Target.class);
-                                if (target != null && !target.toString().equals("TYPE")) {
-                                    spec.addAnnotation(a);
+                            if (nonNull(ann)) {
+                                if (!CodeAnnotation.class.isAssignableFrom(ann)) {
+                                    var target = ann.getAnnotation(Target.class);
+                                    if (target != null && !target.toString().equals("TYPE")) {
+                                        spec.addAnnotation(a);
+                                    }
                                 }
                             } else {
-                                log.warn("Can't process annotation {}", name);
+                                var parsed = lookup.findExternal(name);
+                                if (nonNull(parsed) && parsed.getDeclaration().isAnnotationDeclaration()) {
+                                    if (parsed.getDeclaration().stream().filter(AnnotationExpr.class::isInstance)
+                                            .map(AnnotationExpr.class::cast)
+                                            .filter(an -> "java.lang.annotation.Target".equals(getExternalClassName(parsed.getDeclaration().findCompilationUnit().get(), an.getNameAsString())))
+                                            .findFirst()
+                                            .map(t -> t.stream().filter(ArrayInitializerExpr.class::isInstance)
+                                                    .map(ArrayInitializerExpr.class::cast)
+                                                    .findFirst()
+                                                    .map(arr -> arr.getValues().stream().map(Object::toString)
+                                                            .anyMatch("ElementType.TYPE"::equals))
+                                                    .orElse(false))
+                                            .orElse(true)) {
+                                        spec.addAnnotation(a);
+                                    } else {
+                                        log.warn("Invalid annotation target {}", name);
+                                    }
+                                } else {
+                                    log.warn("Can't process annotation {}", name);
+                                }
                             }
                         })
                 ));
