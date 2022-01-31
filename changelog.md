@@ -1,5 +1,10 @@
 # Change Log
 
+**31-01-2022** ver. 0.1.7
+* Spring: Added CompletableFeature support.
+* Spring: Added in() support for OneToOne relations.
+* Generation: Improved support for compiled prototypes.
+
 **17-01-2022** ver. 0.1.6
 * Spring: Added support for different async flows.
 * Spring: Added query logging.
