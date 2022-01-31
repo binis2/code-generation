@@ -39,6 +39,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -57,14 +58,18 @@ public class CodeGen {
     public static final String NONE = "<none>";
     public static final String SOURCE = "source";
     public static final String DESTINATION = "destination";
+    public static final String CLASS_DESTINATION = "output";
     public static final String IMPL_DESTINATION = "idestination";
     public static final String FILTER = "filter";
 
     public static void main(String[] args) throws IOException {
-
         log.info("Class path: {}", System.getProperty("java.class.path"));
 
         var cmd = handleArgs(args);
+
+        if (nonNull(cmd.getOptionValue(CLASS_DESTINATION))) {
+            addGenerationFile(cmd.getOptionValue(CLASS_DESTINATION));
+        }
 
         var files = new ArrayList<Path>();
         addTree(Paths.get(cmd.getOptionValue(SOURCE)), files, cmd.getOptionValue(FILTER));
@@ -264,6 +269,11 @@ public class CodeGen {
         filter.setRequired(false);
         options.addOption(filter);
 
+        Option clsOutput = new Option("o", CLASS_DESTINATION, true, "Classes output folder");
+        clsOutput.setRequired(false);
+        options.addOption(clsOutput);
+
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd = null;
@@ -274,6 +284,9 @@ public class CodeGen {
             log.info("source: " + nullCheck(cmd.getOptionValue(SOURCE), NONE));
             log.info("destination: " + nullCheck(cmd.getOptionValue(DESTINATION), NONE));
             log.info("implementations destination: " + nullCheck(cmd.getOptionValue(IMPL_DESTINATION), "<destination>"));
+            if (nonNull(cmd.getOptionValue(CLASS_DESTINATION))) {
+                log.info("classes output: " + cmd.getOptionValue(CLASS_DESTINATION));
+            }
             log.info("filter: " + nullCheck(cmd.getOptionValue(FILTER), NONE));
         } catch (ParseException e) {
             log.info(e.getMessage());
@@ -290,6 +303,14 @@ public class CodeGen {
             return properties.getBasePath();
         }
         return defaultPath;
+    }
+
+    private static void addGenerationFile(String folder) {
+        try (var myWriter = new FileWriter(folder + "/codegen.info")) {
+            myWriter.write("CodeGen generation started at " + LocalDateTime.now());
+        } catch (Exception e) {
+            log.error("Can't create marker file!");
+        }
     }
 
 }
