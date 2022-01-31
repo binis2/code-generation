@@ -657,8 +657,10 @@ public class Generator {
                             ((Structures.Parsed) external).setSpec(org.findCompilationUnit().get().clone().getType(0).asClassOrInterfaceDeclaration());
                             implementPrototype(parsed, spec, external, generics, true);
                             ((Structures.Parsed) external).setSpec(org);
-                            intf.addExtendedType(external.getDeclaration().getNameAsString());
-                            intf.findCompilationUnit().get().addImport(external.getDeclaration().getFullyQualifiedName().get()); //TODO: Handle generics
+                            if (nonNull(intf)) {
+                                intf.addExtendedType(external.getDeclaration().getNameAsString());
+                                intf.findCompilationUnit().get().addImport(external.getDeclaration().getFullyQualifiedName().get()); //TODO: Handle generics
+                            }
                             return true;
                         }
                     }
