@@ -17,7 +17,7 @@ public interface Test {
     }
 
     interface Modify extends Test.Fields<Test.Modify> {
-        net.binis.codegen.spring.async.AsyncModifier<Test.Modify> async();
+        net.binis.codegen.spring.async.AsyncModifier<Test.Modify, Test> async();
         Test delete();
         Test detach();
         Test done();
