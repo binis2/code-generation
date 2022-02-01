@@ -1,5 +1,9 @@
 # Change Log
 
+**01-02-2022** ver. 0.1.8
+* Spring: Renamed async consumer methods to avoid compilation issues.
+* Annotation: Fixed code generation from source code.
+
 **31-01-2022** ver. 0.1.7
 * Spring: Added CompletableFeature support.
 * Spring: Added in() support for OneToOne relations.
