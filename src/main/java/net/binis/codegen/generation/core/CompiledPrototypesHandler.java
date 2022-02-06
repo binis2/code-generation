@@ -97,7 +97,7 @@ public abstract class CompiledPrototypesHandler {
         }
 
         if (StringUtils.isNotBlank(ann.basePath())) {
-            builder.classPackage(ann.basePath());
+            builder.basePath(ann.basePath());
         }
 
         builder.base(ann.base())

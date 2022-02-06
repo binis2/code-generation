@@ -503,6 +503,18 @@ public class Generator {
                             builder.basePath(value);
                         }
                         break;
+                    case "interfacePath":
+                        value = pair.getValue().asStringLiteralExpr().asString();
+                        if (StringUtils.isNotBlank(value)) {
+                            builder.interfacePath(value);
+                        }
+                        break;
+                    case "implementationPath":
+                        value = pair.getValue().asStringLiteralExpr().asString();
+                        if (StringUtils.isNotBlank(value)) {
+                            builder.implementationPath(value);
+                        }
+                        break;
                     case "enrichers":
                         checkEnrichers(builder::enrichers, pair.getValue().asArrayInitializerExpr());
                         break;

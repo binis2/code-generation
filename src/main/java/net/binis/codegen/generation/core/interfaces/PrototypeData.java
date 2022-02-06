@@ -48,6 +48,8 @@ public interface PrototypeData {
     String getBaseModifierClass();
     String getMixInClass();
     String getBasePath();
+    String getInterfacePath();
+    String getImplementationPath();
 
     List<PrototypeEnricher> getEnrichers();
     List<PrototypeEnricher> getInheritedEnrichers();

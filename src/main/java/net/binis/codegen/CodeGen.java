@@ -77,7 +77,7 @@ public class CodeGen {
 
         enumParsed.values().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
             if (isNull(p.getProperties().getMixInClass()) && isNull(p.getCompiled())) {
-                saveFile(getBasePath(cmd.getOptionValue(DESTINATION), p.getProperties()), p.getFiles().get(0));
+                saveFile(getBasePath(cmd.getOptionValue(DESTINATION), p.getProperties(), true), p.getFiles().get(0));
             }
         });
 
@@ -90,10 +90,10 @@ public class CodeGen {
         var impl_destination = cmd.getOptionValue(IMPL_DESTINATION);
         lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
             if (p.getProperties().isGenerateImplementation() && isNull(p.getProperties().getMixInClass()) && isNull(p.getCompiled())) {
-                saveFile(nullCheck(getBasePath(impl_destination, p.getProperties()), destination), p.getFiles().get(0));
+                saveFile(nullCheck(getBasePath(impl_destination, p.getProperties(), true), destination), p.getFiles().get(0));
             }
             if (p.getProperties().isGenerateInterface() && isNull(p.getCompiled())) {
-                saveFile(getBasePath(destination, p.getProperties()), p.getFiles().get(1));
+                saveFile(getBasePath(destination, p.getProperties(), false), p.getFiles().get(1));
             }
         });
     }
@@ -273,7 +273,6 @@ public class CodeGen {
         clsOutput.setRequired(false);
         options.addOption(clsOutput);
 
-
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd = null;
@@ -298,11 +297,24 @@ public class CodeGen {
         return cmd;
     }
 
-    private static String getBasePath(String defaultPath, PrototypeData properties) {
+    private static String getBasePath(String defaultPath, PrototypeData properties, boolean implementation) {
+        var result = defaultPath;
+
         if (isNotBlank(properties.getBasePath())) {
-            return properties.getBasePath();
+            result = properties.getBasePath();
         }
-        return defaultPath;
+
+        if (implementation) {
+            if (isNotBlank(properties.getImplementationPath())) {
+                result = properties.getImplementationPath();
+            }
+        } else {
+            if (isNotBlank(properties.getInterfacePath())) {
+                result = properties.getInterfacePath();
+            }
+        }
+
+        return result;
     }
 
     private static void addGenerationFile(String folder) {

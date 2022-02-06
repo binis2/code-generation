@@ -78,6 +78,8 @@ public class Structures {
         private String baseModifierClass;
         private String mixInClass;
         private String basePath;
+        private String interfacePath;
+        private String implementationPath;
 
         private List<PrototypeEnricher> enrichers;
         private List<PrototypeEnricher> inheritedEnrichers;
