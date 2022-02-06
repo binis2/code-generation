@@ -1,5 +1,10 @@
 # Change Log
 
+**06-02-2022** ver. 0.1.9
+* Core: Added feature to specify specific destination path for interfaces and implementations.
+* Annotation: Files generated from compiled prototypes won't be saved by the annotation processor.
+* Spring: Fixed initialization of AsyncDispatcher.
+
 **01-02-2022** ver. 0.1.8
 * Spring: Renamed async consumer methods to avoid compilation issues.
 * Annotation: Fixed code generation from source code.
