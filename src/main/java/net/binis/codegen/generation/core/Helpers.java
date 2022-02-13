@@ -731,7 +731,7 @@ public class Helpers {
                         .addArgument((i.getLeft().getParentNode().get() instanceof ClassOrInterfaceDeclaration ? ((ClassOrInterfaceDeclaration) i.getLeft().getParentNode().get()).getNameAsString() + "." : "") + i.getLeft().getNameAsString() + ".class")
                         .addArgument(type.getNameAsString() + "::new")
                         .addArgument(nonNull(i.getRight()) ? "(p, v) -> new " + i.getRight().getNameAsString() + "<>(p, (" + type.getNameAsString() + ") v)" : "null"));
-            } else if (i.getMiddle() instanceof LambdaExpr) {
+            } else if (i.getMiddle() instanceof LambdaExpr && nonNull(i.getLeft())) {
                 var expr = (LambdaExpr) i.getMiddle();
                 getInitializer(isNull(parsed.getMixIn()) ? parsed.getSpec() : parsed.getMixIn().getSpec()).addStatement(new MethodCallExpr()
                         .setName("CodeFactory.registerType")
@@ -833,4 +833,8 @@ public class Helpers {
         list.add(Triple.of(intf, node, embedded));
     }
 
+    public static boolean hasAnnotation(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, Class<?> annotation) {
+        return parsed.getDeclaration().getAnnotations().stream()
+                .map(a -> getExternalClassName(parsed.getDeclaration().findCompilationUnit().get(), a.getNameAsString())).anyMatch(a -> annotation.getCanonicalName().equals(a));
+    }
 }

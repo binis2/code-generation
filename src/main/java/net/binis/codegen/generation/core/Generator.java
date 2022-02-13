@@ -832,8 +832,14 @@ public class Generator {
                 return processing.getInterfaceName();
             }
         } else {
-            if (!isJavaType(type) && !full.contains(".prototype.")) {
-                destination.findCompilationUnit().ifPresent(u -> u.addImport(full));
+            if (!isJavaType(type)) {
+                if (handleCompiledPrototype(full)) {
+                    return handleType(source, destination, type, embedded, prototypeMap);
+                } else {
+                    if (!full.contains(".prototype.")) { //TODO: Better way to hanle prototype self references
+                        destination.findCompilationUnit().ifPresent(u -> u.addImport(full));
+                    }
+                }
             }
             return type;
         }
@@ -923,7 +929,7 @@ public class Generator {
                         notNull(getExternalClassName(unit, a.getNameAsString()), name -> {
                             var ann = loadClass(name);
                             if (nonNull(ann)) {
-                                if (!CodeAnnotation.class.isAssignableFrom(ann)) {
+                                if (isNull(ann.getAnnotation(CodeAnnotation.class))) {
                                     var target = ann.getAnnotation(Target.class);
                                     if (target != null && !target.toString().equals("TYPE")) {
                                         spec.addAnnotation(a);

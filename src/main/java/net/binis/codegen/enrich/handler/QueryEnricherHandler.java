@@ -33,6 +33,7 @@ import net.binis.codegen.generation.core.Constants;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.spring.annotation.Joinable;
 
 import java.util.Set;
 
@@ -261,6 +262,10 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         description.registerClass(Constants.QUERY_ORDER_INTF_KEY, order);
         description.registerClass(Constants.QUERY_NAME_KEY, qNameImpl);
         description.registerClass(Constants.QUERY_NAME_INTF_KEY, qName);
+
+        if (Helpers.hasAnnotation(description, Joinable.class)) {
+            Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) description.getParser().parseExpression("() -> " + description.getIntf().getNameAsString() + ".find().aggregate()").getResult().get(), null);
+        }
     }
 
     private void addFindMethod(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf) {

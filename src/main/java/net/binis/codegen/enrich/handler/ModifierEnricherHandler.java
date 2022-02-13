@@ -34,12 +34,14 @@ import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.annotation.Embeddable;
 import net.binis.codegen.annotation.Final;
 import net.binis.codegen.enrich.ModifierEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.Constants;
 import net.binis.codegen.generation.core.Generator;
+import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
@@ -65,6 +67,10 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+        if (Helpers.hasAnnotation(description, Embeddable.class)) {
+            lookup.generateEmbeddedModifier(description);
+        }
+
         var imports = new ArrayList<Pair<CompilationUnit, String>>();
         var spec = description.getSpec();
         if (nonNull(description.getProperties().getMixInClass())) {

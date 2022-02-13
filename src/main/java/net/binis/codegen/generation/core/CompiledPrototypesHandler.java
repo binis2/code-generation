@@ -50,7 +50,8 @@ public abstract class CompiledPrototypesHandler {
         //Do nothing
     }
 
-    public static void handleCompiledPrototype(String compiledPrototype) {
+    public static boolean handleCompiledPrototype(String compiledPrototype) {
+        var result = Holder.of(false);
         notNull(loadClass(compiledPrototype), c ->
                 notNull(c.getAnnotation(CodePrototype.class), ann -> {
                     var declaration = new CompilationUnit().setPackageDeclaration(c.getPackageName()).addClass(c.getSimpleName()).setInterface(true);
@@ -69,7 +70,10 @@ public abstract class CompiledPrototypesHandler {
                     generateCodeForClass(declaration.findCompilationUnit().get(), prsd);
 
                     //TODO: Implement class annotations
+
+                    result.set(true);
                 }));
+        return result.get();
     }
 
     private static Structures.PrototypeDataHandler handleProperties(ClassOrInterfaceDeclaration type, Class<?> cls, CodePrototype ann) {
