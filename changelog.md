@@ -1,5 +1,10 @@
 # Change Log
 
+**13-02-2022** ver. 0.1.9
+* Generator: Added support for compiled prototypes used as types in another prototypes.
+* Code: Added @Embeddable annotation to enable explicit collection embedding.
+* Spring: Added @Joinable annotation to enable explicit collection joining.
+
 **06-02-2022** ver. 0.1.9
 * Core: Added feature to specify specific destination path for interfaces and implementations.
 * Annotation: Files generated from compiled prototypes won't be saved by the annotation processor.
