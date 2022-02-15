@@ -1,5 +1,8 @@
 # Change Log
 
+**15-02-2022** ver. 0.1.11
+* Generator: Fixed issue that can prevent code generation when compiled type is used.
+
 **13-02-2022** ver. 0.1.10
 * Generator: Added support for compiled prototypes used as types in another prototypes.
 * Code: Added @Embeddable annotation to enable explicit collection embedding.

@@ -31,6 +31,7 @@ import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
+import net.binis.codegen.tools.CollectionUtils;
 import org.apache.commons.cli.*;
 
 import java.io.BufferedWriter;
@@ -157,7 +158,7 @@ public class CodeGen {
                     Generator.generateCodeForEnum(entry.getValue().getDeclaration().findCompilationUnit().get()));
         }
 
-        for (var entry : new ArrayList<>(lookup.parsed())) {
+        for (var entry : CollectionUtils.copyList(lookup.parsed())) {
             ifNull(entry.getFiles(), () ->
                     Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get(), entry));
         }

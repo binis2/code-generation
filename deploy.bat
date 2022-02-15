@@ -1,1 +1,1 @@
-mvn clean javadoc:jar source:jar deploy -Prelease-sign-artifacts
+mvn clean javadoc:jar source:jar deploy -Prelease-sign-artifacts license:update-file-header
