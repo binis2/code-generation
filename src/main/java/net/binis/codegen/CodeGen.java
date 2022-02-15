@@ -43,6 +43,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -156,7 +157,7 @@ public class CodeGen {
                     Generator.generateCodeForEnum(entry.getValue().getDeclaration().findCompilationUnit().get()));
         }
 
-        for (var entry : lookup.parsed()) {
+        for (var entry : new ArrayList<>(lookup.parsed())) {
             ifNull(entry.getFiles(), () ->
                     Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get(), entry));
         }
