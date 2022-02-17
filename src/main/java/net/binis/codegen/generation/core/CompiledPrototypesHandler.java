@@ -30,6 +30,8 @@ import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -167,6 +169,7 @@ public abstract class CompiledPrototypesHandler {
                     lookup.getParser().parseAnnotation(ann.toString()).getResult().ifPresent(annotation -> {
                         unit.addImport(ann.annotationType().getCanonicalName());
                         annotation.setName(ann.annotationType().getSimpleName());
+                        addAnnotationTypeImports(ann, unit);
                         mtd.addAnnotation(annotation);
                     });
                 }
@@ -175,12 +178,50 @@ public abstract class CompiledPrototypesHandler {
     }
 
     private static void handleAnnotations(Class<?> cls, ClassOrInterfaceDeclaration declaration) {
+        var unit = declaration.findCompilationUnit().get();
         for (var ann : cls.getAnnotations()) {
             lookup.getParser().parseAnnotation(ann.toString()).getResult().ifPresent(annotation -> {
-                declaration.findCompilationUnit().get().addImport(ann.annotationType().getCanonicalName());
+                unit.addImport(ann.annotationType().getCanonicalName());
                 annotation.setName(ann.annotationType().getSimpleName());
+                addAnnotationTypeImports(ann, unit);
                 declaration.addAnnotation(annotation);
             });
+        }
+    }
+
+    private static void addAnnotationTypeImports(Annotation ann, CompilationUnit unit) {
+        for (var method : ann.annotationType().getDeclaredMethods()) {
+            if (!"java.lang".equals(method.getReturnType().getPackageName())) {
+                try {
+                    var result = method.invoke(ann);
+                    handleAnnotationValue(result, unit);
+                } catch (Exception e) {
+                    log.warn("Unable to access value for {}::{}", ann.annotationType().getSimpleName(), method.getName());
+                }
+            }
+        }
+    }
+
+    private static void handleAnnotationValue(Object value, CompilationUnit unit) {
+        if (nonNull(value)) {
+            var name = value.getClass().getCanonicalName();
+            if (value instanceof Annotation) {
+                addAnnotationTypeImports((Annotation) value, unit);
+            } else if (value.getClass().isEnum()) {
+                unit.addImport(name + "." + ((Enum) value).name(), true, false);
+            } else if (value.getClass().isArray()) {
+                handleAnnotationArray(value, unit);
+                if (name.endsWith("[]")) {
+                    name = name.substring(0, name.length() - 2);
+                }
+            }
+            unit.addImport(name);
+        }
+    }
+
+    private static void handleAnnotationArray(Object object, CompilationUnit unit) {
+        for (var i = 0; i < Array.getLength(object); i++) {
+            handleAnnotationValue(Array.get(object, i), unit);
         }
     }
 
