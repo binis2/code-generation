@@ -118,7 +118,6 @@ public abstract class CompiledPrototypesHandler {
                 .enrichers(checkEnrichers(ann.enrichers()))
                 .inheritedEnrichers(checkEnrichers(ann.inheritedEnrichers()));
 
-
         if (cName.equals(iName.get())) {
             cName = iName.get() + "Impl";
         }

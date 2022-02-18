@@ -172,6 +172,10 @@ public class Helpers {
     }
 
     public static String getExternalClassName(CompilationUnit unit, String type) {
+        if (nonNull(lookup.findParsed(type))) {
+            return type;
+        }
+
         var result = getExternalClassNameIfExists(unit, type);
         if (isNull(result)) {
             result = unit.getPackageDeclaration().get().getNameAsString() + "." + type;
