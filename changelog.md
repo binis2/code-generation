@@ -1,5 +1,11 @@
 # Change Log
 
+**28-02-2022** ver. 0.1.12
+* Generator: Proper handling of annotation values imports for compiled prototypes.
+* Generator: Added resolving of prototypes with their full names.
+* Spring: Better handling of single column selects or aggregations.
+* Spring: Added toString() implementation for TupleBackedProjection.
+
 **15-02-2022** ver. 0.1.11
 * Generator: Fixed issue that can prevent code generation when compiled type is used.
 
