@@ -29,6 +29,7 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public interface PrototypeDescription<T extends TypeDeclaration<T>> {
@@ -76,4 +77,5 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     boolean isNested();
 
+    Optional<PrototypeField> findField(String name);
 }

@@ -36,10 +36,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import org.apache.commons.lang3.tuple.Triple;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -235,6 +232,11 @@ public class Structures {
         @Override
         public boolean isValid() {
             return nonNull(properties);
+        }
+
+        @Override
+        public Optional<PrototypeField> findField(String name) {
+            return fields.stream().filter(f -> f.getName().equals(name)).findFirst();
         }
 
     }

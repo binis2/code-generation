@@ -37,6 +37,8 @@ public class Constants {
     public static final String EMBEDDED_MODIFIER_INTF_KEY = EMBEDDED_MODIFIER_KEY + "Intf";
 
     public static final String QUERY_KEY = "Query";
+    public static final String QUERY_SELECT_KEY = QUERY_KEY + "Select";
+    public static final String QUERY_SELECT_INTF_KEY = QUERY_SELECT_KEY + "Intf";
     public static final String QUERY_EXECUTOR_KEY = QUERY_KEY + "Executor";
     public static final String QUERY_ORDER_KEY = QUERY_KEY + "Order";
     public static final String QUERY_ORDER_INTF_KEY = QUERY_KEY + QUERY_ORDER_KEY + "Intf";
