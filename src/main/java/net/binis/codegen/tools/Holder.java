@@ -73,11 +73,11 @@ public class Holder<T> {
     }
 
     public static <T> Holder<T> blank() {
-        return new Holder<>(null);
+        return new Holder<>((T) null);
     }
 
     public static <T> Holder<T> lazy(Supplier<T> supplier) {
-        var result = Holder.<T>blank();
+        var result = new Holder<>((T) null);
         result.supplier = supplier;
         return result;
     }

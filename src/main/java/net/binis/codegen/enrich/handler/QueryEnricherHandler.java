@@ -21,16 +21,13 @@ package net.binis.codegen.enrich.handler;
  */
 
 import com.github.javaparser.ast.Modifier;
-import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.LambdaExpr;
-import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
-import com.github.javaparser.ast.stmt.Statement;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.enrich.QueryEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
@@ -40,14 +37,14 @@ import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.spring.annotation.Joinable;
-import net.binis.codegen.tools.Holder;
+import net.binis.codegen.spring.annotation.QueryPreset;
+import net.binis.codegen.spring.query.Preset;
 
 import java.util.Set;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.tools.Tools.notNull;
 import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
@@ -450,7 +447,8 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         description.getDeclaration().getMembers().stream()
                 .filter(BodyDeclaration::isMethodDeclaration)
                 .map(BodyDeclaration::asMethodDeclaration)
-                .filter(MethodDeclaration::isDefault).forEach(method ->
+                .filter(MethodDeclaration::isDefault)
+                .filter(m -> m.isAnnotationPresent(QueryPreset.class)).forEach(method ->
                         method.getBody().ifPresent(body -> {
                             if (body.getStatements().size() == 1) {
                                 var expression = body.getStatement(0).toString();

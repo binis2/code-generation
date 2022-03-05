@@ -10,7 +10,6 @@ import static net.binis.codegen.spring.query.Preset.param;
 @CodePrototype(enrichers = {QueryEnricher.class, RegionEnricher.class})
 public interface PresetTestPrototype {
     String title();
-
     int data();
 
     @QueryPreset
@@ -25,5 +24,12 @@ public interface PresetTestPrototype {
         Preset.declare()
                 .field(title(), "title");
     }
+
+    @QueryPreset
+    default void queryPrototype() {
+        Preset.declare()
+                .field(title(), "title");
+    }
+
 
 }
