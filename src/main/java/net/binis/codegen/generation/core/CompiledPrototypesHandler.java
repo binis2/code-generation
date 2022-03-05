@@ -134,14 +134,30 @@ public abstract class CompiledPrototypesHandler {
             result.setInheritedEnrichers(new ArrayList<>());
         }
 
+        checkBaseClassForEnrichers(cls, result.getEnrichers());
+
         //TODO: Handle predefined enrichers
 
         return result;
 
     }
 
+    private static void checkBaseClassForEnrichers(Class<?> cls, List<PrototypeEnricher> list) {
+        for (var intf : cls.getInterfaces()) {
+            //TODO: Handle predefined enrichers
+            notNull(intf.getAnnotation(CodePrototype.class), ann ->
+                    checkEnrichers(list, ann.inheritedEnrichers()));
+            checkBaseClassForEnrichers(intf, list);
+        }
+    }
+
     private static List<PrototypeEnricher> checkEnrichers(Class<? extends Enricher>[] enrichers) {
         var list = new ArrayList<PrototypeEnricher>();
+        checkEnrichers(list, enrichers);
+        return list;
+    }
+
+    private static List<PrototypeEnricher> checkEnrichers(List<PrototypeEnricher> list, Class<? extends Enricher>[] enrichers) {
         Arrays.stream(enrichers)
                 .map(CodeFactory::create)
                 .filter(Objects::nonNull)
@@ -153,7 +169,6 @@ public abstract class CompiledPrototypesHandler {
                         }));
         return list;
     }
-
 
     private static void handleFields(Class<?> c, ClassOrInterfaceDeclaration declaration) {
         var unit = declaration.findCompilationUnit().get();
