@@ -44,6 +44,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -638,10 +639,16 @@ public class Generator {
             var cls = loadClass(className);
             if (nonNull(cls)) {
                 if (cls.isInterface()) {
-                    for (var i : cls.getInterfaces()) {
-                        handleExternalInterface(parsed, declaration, spec, i, type.getTypeArguments().orElse(null));
+                    var generics = cls.getGenericInterfaces();
+                    var interfaces = cls.getInterfaces();
+                    for (var i = 0; i < interfaces.length; i++) {
+                        java.lang.reflect.Type[] types = null;
+                        if (generics[i] instanceof ParameterizedType) {
+                            types = ((ParameterizedType) generics[i]).getActualTypeArguments();
+                        }
+                        handleExternalInterface(parsed, declaration, spec, interfaces[i], type.getTypeArguments().orElse(null), types);
                     }
-                    handleExternalInterface(parsed, declaration, spec, cls, type.getTypeArguments().orElse(null));
+                    handleExternalInterface(parsed, declaration, spec, cls, type.getTypeArguments().orElse(null), null);
                     if (nonNull(intf)) {
                         intf.addExtendedType(handleType(declaration.findCompilationUnit().get(), intf.findCompilationUnit().get(), type));
                     } else {
@@ -684,13 +691,15 @@ public class Generator {
         return false;
     }
 
-    private static void handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, NodeList<Type> generics) {
+    private static void handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, NodeList<Type> generics, java.lang.reflect.Type[] generics2) {
         Map<String, Type> generic = null;
         if (nonNull(generics)) {
             generic = processGenerics(cls, generics);
+        } else if (nonNull(generics2)) {
+            generic = processGenerics(cls, generics2);
         }
 
-        Arrays.stream(cls.getInterfaces()).forEach(i -> handleExternalInterface(parsed, declaration, spec, i, generics));
+        Arrays.stream(cls.getInterfaces()).forEach(i -> handleExternalInterface(parsed, declaration, spec, i, generics, generics2)); //TODO: Handle sub generics
 
         var properties = parsed.getProperties();
 
