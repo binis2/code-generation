@@ -22,10 +22,16 @@ package net.binis.codegen.tools;
 
 import lombok.ToString;
 
+import java.util.function.Supplier;
+
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+
 @ToString
 public class Holder<T> {
 
     private T object;
+    private Supplier<T> supplier;
 
     public <R> Holder() {
         new Holder<R>(null);
@@ -37,6 +43,11 @@ public class Holder<T> {
     }
 
     public T get() {
+        if (nonNull(supplier)) {
+            object = supplier.get();
+            supplier = null;
+        }
+
         return object;
     }
 
@@ -49,13 +60,26 @@ public class Holder<T> {
         return object;
     }
 
+    public boolean isEmpty() {
+        return isNull(object);
+    }
+
+    public boolean isPresent() {
+        return nonNull(object);
+    }
 
     public static <T> Holder<T> of(T object) {
         return new Holder<>(object);
     }
 
     public static <T> Holder<T> blank() {
-        return new Holder<>(null);
+        return new Holder<>((T) null);
+    }
+
+    public static <T> Holder<T> lazy(Supplier<T> supplier) {
+        var result = new Holder<>((T) null);
+        result.supplier = supplier;
+        return result;
     }
 
 }

@@ -286,6 +286,7 @@ public class Generator {
     }
 
     private static void handleDefaultMethod(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, MethodDeclaration declaration) {
+        var unit = declaration.findCompilationUnit().get();
         var ignores = getIgnores(declaration);
         var method = declaration.clone().removeModifier(DEFAULT);
         method.getAnnotationByClass(Ignore.class).ifPresent(method::remove);
@@ -298,7 +299,7 @@ public class Generator {
                     intf.getChildNodes().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).filter(m -> m.getNameAsString().equals(method.getNameAsString())).findFirst().ifPresent(intf::remove);
                 }
 
-                intf.addMember(handleForAnnotations(method.clone(), false).setBody(null));
+                intf.addMember(handleForAnnotations(unit, method.clone(), false).setBody(null));
             }
         }
 
@@ -315,12 +316,11 @@ public class Generator {
                 spec.getChildNodes().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).filter(m -> m.getNameAsString().equals(method.getNameAsString())).findFirst().ifPresent(spec::remove);
             }
 
-            spec.addMember(handleForAnnotations(method, true));
+            spec.addMember(handleForAnnotations(unit, method, true));
         }
     }
 
-    private static MethodDeclaration handleForAnnotations(MethodDeclaration method, boolean isClass) {
-
+    private static MethodDeclaration handleForAnnotations(CompilationUnit unit, MethodDeclaration method, boolean isClass) {
         var chk = isClass ? "ForInterface" : "ForImplementation";
 
         for (var i = method.getAnnotations().size() - 1; i > 0; i--) {
@@ -329,8 +329,15 @@ public class Generator {
             }
         }
 
-        method.getAnnotationByClass(ForInterface.class).ifPresent(method::remove);
-        method.getAnnotationByClass(ForImplementation.class).ifPresent(method::remove);
+        for (var i = method.getAnnotations().size() - 1; i >= 0; i--) {
+            var ann = method.getAnnotation(i);
+            notNull(getExternalClassName(unit, method.getAnnotation(i).getNameAsString()), className ->
+                    notNull(loadClass(className), cls -> {
+                        if (cls.isAnnotationPresent(CodeAnnotation.class)) {
+                            method.remove(ann);
+                        }
+                    }));
+        }
 
         return method;
     }

@@ -78,5 +78,4 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     boolean isNested();
 
     Optional<PrototypeField> findField(String name);
-
 }

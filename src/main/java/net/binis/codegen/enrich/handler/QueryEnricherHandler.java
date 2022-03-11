@@ -21,11 +21,14 @@ package net.binis.codegen.enrich.handler;
  */
 
 import com.github.javaparser.ast.Modifier;
+import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.LambdaExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
+import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.enrich.QueryEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.CollectionsHandler;
@@ -34,6 +37,8 @@ import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.spring.annotation.Joinable;
+import net.binis.codegen.spring.annotation.QueryPreset;
+import net.binis.codegen.spring.query.Preset;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -43,6 +48,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Tools.with;
 
+@Slf4j
 public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher {
 
     public static final String OPERATION = "Operation";
@@ -77,6 +83,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     private static final String QUERY_SCRIPT = "QueryScript";
     private static final String QUERY_BRACKET = "QueryBracket";
     private static final String QUERY_IMPL = "Impl";
+    private static final String PRESET_PREFIX = "__";
 
     private static final Set<String> reserved = Set.of(
             "ensure",
@@ -129,6 +136,8 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
         addFindMethod(description, intf);
         addQuerySelectOrderName(description, intf, spec);
+
+        addPresets(description, intf, spec);
 
         Helpers.addInitializer(description, intf, isNull(description.getMixIn()) ? spec : description.getMixIn().getSpec(), null);
     }
@@ -261,6 +270,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         }
 
         description.registerClass(Constants.QUERY_EXECUTOR_KEY, impl);
+        description.registerClass(Constants.QUERY_SELECT_INTF_KEY, select);
         description.registerClass(Constants.QUERY_ORDER_KEY, orderImpl);
         description.registerClass(Constants.QUERY_ORDER_INTF_KEY, order);
         description.registerClass(Constants.QUERY_NAME_KEY, qNameImpl);
@@ -432,6 +442,107 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
             combineQueryNames(description);
         } else {
             Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_NAME_INTF_KEY), description.getRegisteredClass(Constants.QUERY_NAME_KEY), null);
+        }
+    }
+
+    private void addPresets(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration spec) {
+        var entity = description.getProperties().getInterfaceName();
+        var returnType = QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">";
+        var implReturnType = description.getInterfaceName() + QUERY_EXECUTOR + QUERY_IMPL;
+        var select = description.getRegisteredClass(Constants.QUERY_SELECT_INTF_KEY);
+        var exec = description.getRegisteredClass(Constants.QUERY_EXECUTOR_KEY);
+
+        description.getDeclaration().getMembers().stream()
+                .filter(BodyDeclaration::isMethodDeclaration)
+                .map(BodyDeclaration::asMethodDeclaration)
+                .filter(MethodDeclaration::isDefault)
+                .filter(m -> m.isAnnotationPresent(QueryPreset.class)).forEach(method ->
+                        method.getBody().ifPresent(body -> {
+                            if (body.getStatements().size() == 1) {
+                                var expression = body.getStatement(0).toString();
+                                if (expression.startsWith("Preset.declare().")) {
+                                    var mtd = select.addMethod(PRESET_PREFIX + method.getNameAsString())
+                                            .setType(returnType)
+                                            .setBody(null);
+
+                                    var impl = exec.addMethod(PRESET_PREFIX + method.getNameAsString())
+                                            .addModifier(PUBLIC)
+                                            .setType(implReturnType);
+                                    expression = handlePresetParameters(description, expression, mtd, impl);
+
+                                    impl.setBody(description.getParser().parseBlock("{((" + description.getInterfaceName() + "." + QUERY_SELECT + "<Object>) this)" + expression + "return this;}").getResult().get());
+                                } else {
+                                    log.error("Expression '{}' is not valid Preset expression! Preset expressions must start with: Preset.declare()", body);
+                                }
+                            } else {
+                                log.error("Invalid Preset expression! Preset expression must be sole expression in method's body!");
+                            }
+                        }));
+
+    }
+
+    private String handlePresetParameters(PrototypeDescription<ClassOrInterfaceDeclaration> description, String expression, MethodDeclaration mtd, MethodDeclaration impl) {
+        var params = expression.split("param\\(\\)");
+
+        if (params.length > 1) {
+            var parIdx = 0;
+
+            var builder = new StringBuilder();
+            for (var j = 0; j < params.length - 1; j++) {
+                var i = params[j].lastIndexOf(".field(");
+                String name;
+                var type = "Object";
+                if (i > -1) {
+                    i += 7;
+                    name = params[j].substring(i, params[j].indexOf('(', i));
+                    var field = description.findField(name);
+                    if (field.isPresent()) {
+                        type = field.get().getType();
+                    } else {
+                        log.error("Field not found '{}'!", name);
+                    }
+                } else {
+                    name = "param" + parIdx;
+                    parIdx++;
+                }
+                addPresetParam(mtd, name, type);
+                addPresetParam(impl, name, type);
+                builder.append(params[j]).append(name);
+            }
+
+            expression = builder.append(params[params.length - 1]).toString();
+        }
+
+        params = expression.split(".field\\(");
+
+        if (params.length > 1) {
+            var builder = new StringBuilder();
+            for (var j = 1; j < params.length; j++) {
+                var i = params[j].indexOf("(");
+                var name = params[j].substring(0, i);
+                var field = description.findField(name);
+                if (field.isPresent()) {
+                    if (params[j].charAt(i + 2) == ')') {
+                        builder.append('.').append(name).append('(').append(params[j].substring(i + 2));
+                    } else if (params[j].charAt(i + 2) == ',') {
+                        builder.append('.').append(name).append('(').append(params[j].substring(i + 4));
+                    } else {
+                        log.error("Invalid preset format!");
+                    }
+                } else {
+                    log.error("Field not found '{}'!", name);
+                }
+            }
+
+            expression = builder.toString();
+        }
+
+        return expression;
+    }
+
+    private void addPresetParam(MethodDeclaration mtd, String name, String type) {
+        if (mtd.getParameterByName(name).isEmpty()) {
+            mtd.addParameter(type, name);
         }
     }
 

@@ -34,6 +34,7 @@ import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.TypeParameter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.Default;
+import net.binis.codegen.annotation.Ignore;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.enrich.PrototypeLookup;
@@ -540,31 +541,46 @@ public class Helpers {
         return "Not Implemented";
     }
 
-    public static Structures.Ignores getIgnores(BodyDeclaration<?> member) {
+    public static Structures.Ignores getIgnores(CompilationUnit unit, BodyDeclaration<?> member) {
         var result = Structures.Ignores.builder();
-        member.getAnnotations().stream().filter(a -> "Ignore".equals(a.getNameAsString())).findFirst().ifPresent(annotation ->
-                annotation.getChildNodes().forEach(node -> {
-                    if (node instanceof MemberValuePair) {
-                        var pair = (MemberValuePair) node;
-                        var name = pair.getNameAsString();
-                        switch (name) {
-                            case "forField":
-                                result.forField(pair.getValue().asBooleanLiteralExpr().getValue());
-                                break;
-                            case "forClass":
-                                result.forClass(pair.getValue().asBooleanLiteralExpr().getValue());
-                                break;
-                            case "forInterface":
-                                result.forInterface(pair.getValue().asBooleanLiteralExpr().getValue());
-                                break;
-                            case "forModifier":
-                                result.forModifier(pair.getValue().asBooleanLiteralExpr().getValue());
-                                break;
-                            default:
-                        }
+        member.getAnnotations().forEach(annotation -> notNull(getExternalClassName(unit, annotation.getNameAsString()), className ->
+                notNull(loadClass(className), cls -> {
+                    if (Ignore.class.equals(cls)) {
+                        annotation.getChildNodes().forEach(node -> {
+                            if (node instanceof MemberValuePair) {
+                                var pair = (MemberValuePair) node;
+                                var name = pair.getNameAsString();
+                                switch (name) {
+                                    case "forField":
+                                        result.forField(pair.getValue().asBooleanLiteralExpr().getValue());
+                                        break;
+                                    case "forClass":
+                                        result.forClass(pair.getValue().asBooleanLiteralExpr().getValue());
+                                        break;
+                                    case "forInterface":
+                                        result.forInterface(pair.getValue().asBooleanLiteralExpr().getValue());
+                                        break;
+                                    case "forModifier":
+                                        result.forModifier(pair.getValue().asBooleanLiteralExpr().getValue());
+                                        break;
+                                    default:
+                                }
+                            }
+                        });
+                    } else {
+                        notNull(cls.getAnnotation(Ignore.class), ann -> result
+                                .forField(ann.forField())
+                                .forClass(ann.forClass())
+                                .forInterface(ann.forInterface())
+                                .forModifier(ann.forModifier()));
                     }
-                }));
+                })));
         return result.build();
+    }
+
+
+    public static Structures.Ignores getIgnores(BodyDeclaration<?> member) {
+        return getIgnores(member.findCompilationUnit().get(), member);
     }
 
     public static String getDefaultValue(BodyDeclaration<?> member) {

@@ -236,7 +236,7 @@ public class Structures {
 
         @Override
         public Optional<PrototypeField> findField(String name) {
-            return getFields().stream().filter(n -> n.getName().equals(name)).findFirst();
+            return fields.stream().filter(f -> f.getName().equals(name)).findFirst();
         }
 
     }
