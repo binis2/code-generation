@@ -513,7 +513,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
             expression = builder.append(params[params.length - 1]).toString();
         }
 
-        params = expression.split(".field\\(");
+        params = expression.split(".field\\(|.prototype\\(|.collection\\(");
 
         if (params.length > 1) {
             var builder = new StringBuilder();

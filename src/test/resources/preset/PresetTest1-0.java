@@ -17,6 +17,10 @@ public class PresetTestImpl implements PresetTest {
 
     protected int data;
 
+    protected List<String> list;
+
+    protected PresetTest parent;
+
     protected String title;
 
     // region constructor & initializer
@@ -35,6 +39,14 @@ public class PresetTestImpl implements PresetTest {
         return data;
     }
 
+    public List<String> getList() {
+        return list;
+    }
+
+    public PresetTest getParent() {
+        return parent;
+    }
+
     public String getTitle() {
         return title;
     }
@@ -43,6 +55,14 @@ public class PresetTestImpl implements PresetTest {
     // region setters
     public void setData(int data) {
         this.data = data;
+    }
+
+    public void setList(List<String> list) {
+        this.list = list;
+    }
+
+    public void setParent(PresetTest parent) {
+        this.parent = parent;
     }
 
     public void setTitle(String title) {
@@ -57,6 +77,11 @@ public class PresetTestImpl implements PresetTest {
             super(PresetTest.class, () -> new PresetTestQueryNameImpl());
         }
 
+        public PresetTestQueryExecutorImpl __queryPrototype(PresetTest parent) {
+            ((PresetTest.QuerySelect<Object>) this).parent(parent).and().parent().title().isNull().and().list().isEmpty();
+            return this;
+        }
+
         public PresetTestQueryExecutorImpl __queryTitle(String title, int data) {
             ((PresetTest.QuerySelect<Object>) this).title().contains(title).and().data(data);
             return this;
@@ -65,6 +90,10 @@ public class PresetTestImpl implements PresetTest {
         public PresetTestQueryExecutorImpl __queryTitleString() {
             ((PresetTest.QuerySelect<Object>) this).title("title");
             return this;
+        }
+
+        public QueryCollectionFunctions _list() {
+            return identifier("list");
         }
 
         public QueryAggregateOperation aggregate() {
@@ -81,6 +110,16 @@ public class PresetTestImpl implements PresetTest {
 
         public PresetTest.QueryOrder order() {
             return (PresetTest.QueryOrder) orderStart(new PresetTestQueryOrderImpl(this, PresetTestQueryExecutorImpl.this::orderIdentifier));
+        }
+
+        public QuerySelectOperation parent(PresetTest parent) {
+            return identifier("parent", parent);
+        }
+
+        public PresetTest.QueryName parent() {
+            var result = EntityCreator.create(PresetTest.QueryName.class, "net.binis.codegen.PresetTestImpl");
+            ((QueryEmbed) result).setParent("parent", this);
+            return result;
         }
 
         public QuerySelectOperation title(String title) {
@@ -101,6 +140,10 @@ public class PresetTestImpl implements PresetTest {
                 return (QueryOrderOperation) func.apply("data");
             }
 
+            public QueryOrderOperation parent() {
+                return (QueryOrderOperation) func.apply("parent");
+            }
+
             public QueryOrderOperation title() {
                 return (QueryOrderOperation) func.apply("title");
             }
@@ -115,6 +158,16 @@ public class PresetTestImpl implements PresetTest {
 
         public QuerySelectOperation data(int data) {
             return executor.identifier("data", data);
+        }
+
+        public PresetTest.QueryName parent() {
+            var result = EntityCreator.create(PresetTest.QueryName.class, "net.binis.codegen.PresetTestImpl");
+            ((QueryEmbed) result).setParent("parent", executor);
+            return result;
+        }
+
+        public QuerySelectOperation parent(PresetTest parent) {
+            return executor.identifier("parent", parent);
         }
 
         public QueryFunctions title() {

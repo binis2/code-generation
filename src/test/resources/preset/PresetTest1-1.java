@@ -19,9 +19,13 @@ public interface PresetTest {
     // endregion
 
     int getData();
+    List<String> getList();
+    PresetTest getParent();
     String getTitle();
 
     void setData(int data);
+    void setList(List<String> list);
+    void setParent(PresetTest parent);
     void setTitle(String title);
 
     // region inner classes
@@ -30,6 +34,7 @@ public interface PresetTest {
 
     interface QueryFields<QR> extends QueryScript<QR> {
         QR data(int data);
+        QR parent(PresetTest parent);
         QR title(String title);
     }
 
@@ -42,10 +47,12 @@ public interface PresetTest {
     }
 
     interface QueryName<QS, QO, QR, QF> extends PresetTest.QueryFields<QuerySelectOperation<QS, QO, QR>>, PresetTest.QueryFuncs<QuerySelectOperation<QS, QO, QR>>, QueryFetch<QuerySelectOperation<QS, QO, QR>, QF> {
+        PresetTest.QueryName<QS, QO, QR, PresetTest> parent();
     }
 
     interface QueryOperationFields<QR> extends QueryScript<QR> {
         QR data();
+        QR parent();
         QR title();
     }
 
@@ -53,8 +60,11 @@ public interface PresetTest {
     }
 
     interface QuerySelect<QR> extends QueryExecute<QR>, QueryModifiers<PresetTest.QueryName<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR, PresetTest>>, PresetTest.QueryFields<QuerySelectOperation<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR>>, PresetTest.QueryFuncs<QuerySelectOperation<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR>>, QueryOrderStart<QueryOperationFields<QueryOrderOperation<PresetTest.QueryOrder<QR>, QR>>>, QueryBracket<QuerySelect<QR>> {
+        QuerySelectOperation<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR> __queryPrototype(PresetTest parent);
         QuerySelectOperation<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR> __queryTitle(String title, int data);
         QuerySelectOperation<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR> __queryTitleString();
+        QueryCollectionFunctions<String, QuerySelectOperation<PresetTest.QuerySelect<QR>, QueryOperationFields<QueryOrderOperation<PresetTest.QueryOrder<QR>, QR>>, QR>> _list();
+        PresetTest.QueryName<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR, PresetTest> parent();
     }
     // endregion
 }

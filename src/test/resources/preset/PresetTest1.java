@@ -5,12 +5,17 @@ import net.binis.codegen.enrich.QueryEnricher;
 import net.binis.codegen.enrich.RegionEnricher;
 import net.binis.codegen.spring.annotation.QueryPreset;
 import net.binis.codegen.spring.query.Preset;
+
+import java.util.List;
+
 import static net.binis.codegen.spring.query.Preset.param;
 
 @CodePrototype(enrichers = {QueryEnricher.class, RegionEnricher.class})
 public interface PresetTestPrototype {
     String title();
     int data();
+    PresetTestPrototype parent();
+    List<String> list();
 
     @QueryPreset
     default void queryTitle() {
@@ -28,7 +33,9 @@ public interface PresetTestPrototype {
     @QueryPreset
     default void queryPrototype() {
         Preset.declare()
-                .field(title(), "title");
+                .field(parent(), param()).and()
+                .prototype(parent()).field(title()).isNull().and()
+                .collection(list()).isEmpty();
     }
 
 
