@@ -40,6 +40,7 @@ import net.binis.codegen.spring.annotation.Joinable;
 import net.binis.codegen.spring.annotation.QueryPreset;
 import net.binis.codegen.spring.query.Preset;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
@@ -250,20 +251,22 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addTypeParameter(QUERY_SELECT_GENERIC);
         intf.addMember(fields);
 
+        var declaredFields = new HashSet<String>();
+
         with(description.getBase(), base ->
                 base.getFields().forEach(desc ->
-                        declareField(description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs)));
+                        declareField(declaredFields, description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs)));
 
         description.getFields().forEach(desc ->
-                declareField(description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs));
+                declareField(declaredFields, description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs));
 
         if (nonNull(description.getMixIn())) {
             with(description.getMixIn().getBase(), base ->
                     base.getFields().forEach(desc ->
-                            declareField(description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs)));
+                            declareField(declaredFields, description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs)));
 
             description.getMixIn().getFields().forEach(desc ->
-                    declareField(description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs));
+                    declareField(declaredFields, description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs));
         }
 
         description.registerClass(Constants.QUERY_EXECUTOR_KEY, impl);
@@ -286,124 +289,129 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + QUERY_START + ") EntityCreator.create(" + entity + "." + QUERY_SELECT + ".class)")));
     }
 
-    private void declareField(PrototypeDescription<ClassOrInterfaceDeclaration> description, String entity, PrototypeField desc, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration impl, ClassOrInterfaceDeclaration orderImpl, ClassOrInterfaceDeclaration order, ClassOrInterfaceDeclaration qName, ClassOrInterfaceDeclaration qNameImpl, ClassOrInterfaceDeclaration fields, ClassOrInterfaceDeclaration opFields, ClassOrInterfaceDeclaration funcs) {
+    private void declareField(Set<String> declaredFields, PrototypeDescription<ClassOrInterfaceDeclaration> description, String entity, PrototypeField desc, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration impl, ClassOrInterfaceDeclaration orderImpl, ClassOrInterfaceDeclaration order, ClassOrInterfaceDeclaration qName, ClassOrInterfaceDeclaration qNameImpl, ClassOrInterfaceDeclaration fields, ClassOrInterfaceDeclaration opFields, ClassOrInterfaceDeclaration funcs) {
         var field = desc.getDeclaration();
         var fName = field.getVariable(0).getNameAsString();
         var name = checkReserved(fName);
 
-        var trans = isTransient(desc);
+        if (!declaredFields.contains(name)) {
 
-        if (desc.isCollection()) {
+            var trans = isTransient(desc);
 
-            if (!trans) {
-                var subType = CollectionsHandler.getCollectionType(field.getCommonType());
+            if (desc.isCollection()) {
 
-                if (nonNull(desc.getTypePrototypes())) {
-                    var returnType = QUERY_JOIN_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">, " + QUERY_JOIN_AGGREGATE_OPERATION + "<" + subType + "." + QUERY_OP_FIELDS + "<" + subType + "." + QUERY_AGGREGATE + "<Number, " + subType + "." + QUERY_SELECT + "<Number>>>, " + subType + "." + QUERY_SELECT + "<Number>>>";
-
-                    var prototype = desc.getTypePrototypes().get(subType);
-
-                    select.addMethod(name)
-                            .setType(returnType)
-                            .setBody(null);
-
-                    impl.addMethod(name)
-                            .setType(QUERY_JOIN_COLLECTION_FUNCTIONS)
-                            .addModifier(PUBLIC)
-                            .setBody(new BlockStmt()
-                                    .addStatement(new ReturnStmt("(" + QUERY_JOIN_COLLECTION_FUNCTIONS + ") joinStart(\"" + fName + "\", " + subType + "." + QUERY_ORDER + ".class)")));
-
-                    if (nonNull(prototype)) {
-                        prototype.registerPostProcessAction(() ->
-                                Helpers.addInitializer(prototype, prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) prototype.getParser().parseExpression("() -> " + subType + ".find().aggregate()").getResult().get(), null));
-                    }
-                } else {
-                    var returnType = QUERY_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">>";
-                    select.addMethod(name)
-                            .setType(returnType)
-                            .setBody(null);
-
-                    impl.addMethod(name)
-                            .setType(QUERY_COLLECTION_FUNCTIONS)
-                            .addModifier(PUBLIC)
-                            .setBody(new BlockStmt()
-                                    .addStatement(new ReturnStmt("identifier(\"" + fName + "\")")));
-                }
-            }
-        } else {
-            Helpers.importType(field.getCommonType(), fields.findCompilationUnit().get());
-
-            impl.addMethod(name)
-                    .setType(QUERY_SELECT_OPERATION)
-                    .addModifier(PUBLIC)
-                    .addParameter(field.getCommonType(), fName)
-                    .setBody(new BlockStmt()
-                            .addStatement(new ReturnStmt("identifier(\"" + fName + "\", " + fName + ")")));
-
-            if (!trans) {
-                orderImpl.addMethod(name)
-                        .setType(QUERY_ORDER_OPERATION)
-                        .addModifier(PUBLIC)
-                        .setBody(new BlockStmt()
-                                .addStatement(new ReturnStmt("(" + QUERY_ORDER_OPERATION + ") func.apply(\"" + fName + "\")")));
-
-                opFields.addMethod(name)
-                        .setType(QUERY_GENERIC)
-                        .setBody(null);
-            }
-
-            if (checkQueryName(entity, desc)) {
-                select.addMethod(name).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ", " + desc.getPrototype().getInterfaceName() + ">").setBody(null);
-                impl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
-                        .setBody(new BlockStmt()
-                                .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class, \"" + desc.getPrototype().getImplementorFullName() + "\");")
-                                .addStatement("((QueryEmbed) result).setParent(\"" + fName + "\", this);")
-                                .addStatement(new ReturnStmt("result")));
-
-                qName.addMethod(name).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ", " + desc.getPrototype().getInterfaceName() + ">").setBody(null);
-                qNameImpl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
-                        .setBody(new BlockStmt()
-                                .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class, \"" + desc.getPrototype().getImplementorFullName() + "\");")
-                                .addStatement("((QueryEmbed) result).setParent(\"" + fName + "\", executor);")
-                                .addStatement(new ReturnStmt("result")));
-
-            } else {
                 if (!trans) {
-                    funcs.addMethod(name).setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + "," + QUERY_GENERIC + ">").setBody(null);
-                    impl.addMethod(name, PUBLIC).setType(QUERY_FUNCTIONS)
-                            .setBody(new BlockStmt()
-                                    .addStatement(new ReturnStmt("identifier(\"" + fName + "\")")));
+                    var subType = CollectionsHandler.getCollectionType(field.getCommonType());
 
+                    if (nonNull(desc.getTypePrototypes())) {
+                        var returnType = QUERY_JOIN_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">, " + QUERY_JOIN_AGGREGATE_OPERATION + "<" + subType + "." + QUERY_OP_FIELDS + "<" + subType + "." + QUERY_AGGREGATE + "<Number, " + subType + "." + QUERY_SELECT + "<Number>>>, " + subType + "." + QUERY_SELECT + "<Number>>>";
 
-                    qNameImpl.addMethod(name)
-                            .setType(QUERY_FUNCTIONS)
+                        var prototype = desc.getTypePrototypes().get(subType);
+
+                        select.addMethod(name)
+                                .setType(returnType)
+                                .setBody(null);
+
+                        impl.addMethod(name)
+                                .setType(QUERY_JOIN_COLLECTION_FUNCTIONS)
+                                .addModifier(PUBLIC)
+                                .setBody(new BlockStmt()
+                                        .addStatement(new ReturnStmt("(" + QUERY_JOIN_COLLECTION_FUNCTIONS + ") joinStart(\"" + fName + "\", " + subType + "." + QUERY_ORDER + ".class)")));
+
+                        if (nonNull(prototype)) {
+                            prototype.registerPostProcessAction(() ->
+                                    Helpers.addInitializer(prototype, prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) prototype.getParser().parseExpression("() -> " + subType + ".find().aggregate()").getResult().get(), null));
+                        }
+                    } else {
+                        var returnType = QUERY_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">>";
+                        select.addMethod(name)
+                                .setType(returnType)
+                                .setBody(null);
+
+                        impl.addMethod(name)
+                                .setType(QUERY_COLLECTION_FUNCTIONS)
+                                .addModifier(PUBLIC)
+                                .setBody(new BlockStmt()
+                                        .addStatement(new ReturnStmt("identifier(\"" + fName + "\")")));
+                    }
+                }
+            } else {
+                Helpers.importType(field.getCommonType(), fields.findCompilationUnit().get());
+
+                impl.addMethod(name)
+                        .setType(QUERY_SELECT_OPERATION)
+                        .addModifier(PUBLIC)
+                        .addParameter(field.getCommonType(), fName)
+                        .setBody(new BlockStmt()
+                                .addStatement(new ReturnStmt("identifier(\"" + fName + "\", " + fName + ")")));
+
+                if (!trans) {
+                    orderImpl.addMethod(name)
+                            .setType(QUERY_ORDER_OPERATION)
                             .addModifier(PUBLIC)
                             .setBody(new BlockStmt()
-                                    .addStatement(new ReturnStmt("executor.identifier(\"" + fName + "\")")));
+                                    .addStatement(new ReturnStmt("(" + QUERY_ORDER_OPERATION + ") func.apply(\"" + fName + "\")")));
+
+                    opFields.addMethod(name)
+                            .setType(QUERY_GENERIC)
+                            .setBody(null);
                 }
+
+                if (checkQueryName(entity, desc)) {
+                    select.addMethod(name).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ", " + desc.getPrototype().getInterfaceName() + ">").setBody(null);
+                    impl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
+                            .setBody(new BlockStmt()
+                                    .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class, \"" + desc.getPrototype().getImplementorFullName() + "\");")
+                                    .addStatement("((QueryEmbed) result).setParent(\"" + fName + "\", this);")
+                                    .addStatement(new ReturnStmt("result")));
+
+                    qName.addMethod(name).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + QUERY_SELECT_GENERIC + ", " + QUERY_ORDER_GENERIC + ", " + QUERY_GENERIC + ", " + desc.getPrototype().getInterfaceName() + ">").setBody(null);
+                    qNameImpl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
+                            .setBody(new BlockStmt()
+                                    .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class, \"" + desc.getPrototype().getImplementorFullName() + "\");")
+                                    .addStatement("((QueryEmbed) result).setParent(\"" + fName + "\", executor);")
+                                    .addStatement(new ReturnStmt("result")));
+
+                } else {
+                    if (!trans) {
+                        funcs.addMethod(name).setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + "," + QUERY_GENERIC + ">").setBody(null);
+                        impl.addMethod(name, PUBLIC).setType(QUERY_FUNCTIONS)
+                                .setBody(new BlockStmt()
+                                        .addStatement(new ReturnStmt("identifier(\"" + fName + "\")")));
+
+
+                        qNameImpl.addMethod(name)
+                                .setType(QUERY_FUNCTIONS)
+                                .addModifier(PUBLIC)
+                                .setBody(new BlockStmt()
+                                        .addStatement(new ReturnStmt("executor.identifier(\"" + fName + "\")")));
+                    }
+                }
+
+                if (!Helpers.methodExists(fields, desc, false)) {
+                    fields.addMethod(name)
+                            .setType(QUERY_GENERIC)
+                            .setBody(null)
+                            .addParameter(field.getCommonType(), fName);
+                }
+
+                qNameImpl.addMethod(name)
+                        .setType(QUERY_SELECT_OPERATION)
+                        .addModifier(PUBLIC)
+                        .addParameter(field.getCommonType(), fName)
+                        .setBody(new BlockStmt()
+                                .addStatement(new ReturnStmt("executor.identifier(\"" + fName + "\", " + fName + ")")));
+
+                desc.getDescription().getAnnotations().forEach(a -> {
+                    var cls = Helpers.getExternalClassNameIfExists(desc.getDescription().findCompilationUnit().get(), a.getNameAsString());
+                    if ("javax.persistence.Id".equals(cls)) {
+                        description.getCustomInitializers().add(b ->
+                                b.addStatement("CodeFactory.registerId(" + entity + ".class, \"" + fName + "\", " + field.getVariable(0).getType().asString() + ".class);"));
+                    }
+                });
             }
 
-            if (!Helpers.methodExists(fields, desc, false)) {
-                fields.addMethod(name)
-                        .setType(QUERY_GENERIC)
-                        .setBody(null)
-                        .addParameter(field.getCommonType(), fName);
-            }
-
-            qNameImpl.addMethod(name)
-                    .setType(QUERY_SELECT_OPERATION)
-                    .addModifier(PUBLIC)
-                    .addParameter(field.getCommonType(), fName)
-                    .setBody(new BlockStmt()
-                            .addStatement(new ReturnStmt("executor.identifier(\"" + fName + "\", " + fName + ")")));
-
-            desc.getDescription().getAnnotations().forEach(a -> {
-                var cls = Helpers.getExternalClassNameIfExists(desc.getDescription().findCompilationUnit().get(), a.getNameAsString());
-                if ("javax.persistence.Id".equals(cls)) {
-                    description.getCustomInitializers().add(b ->
-                            b.addStatement("CodeFactory.registerId(" + entity + ".class, \"" + fName + "\", " + field.getVariable(0).getType().asString() + ".class);"));
-                }
-            });
+            declaredFields.add(name);
         }
     }
 

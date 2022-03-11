@@ -481,6 +481,31 @@ public class Helpers {
         return result;
     }
 
+    public static Map<String, Type> processGenerics(Class<?> cls, java.lang.reflect.Type[] generics) {
+        Map<String, Type> result = null;
+        var types = parseGenericClassSignature(cls);
+
+        if (types.size() != generics.length) {
+            log.warn("Generic types miss match for {}", cls.getName());
+        }
+
+        result = new HashMap<>();
+
+        for (var i = 0; i < types.size(); i++) {
+            var type = (Class) generics[i];
+            var generic = new ClassOrInterfaceType().setName(type.getSimpleName());
+            if (type.isInterface()) {
+                var parsed = lookup.findParsed(type.getCanonicalName());
+                if (nonNull(parsed)) {
+                    generic = new ClassOrInterfaceType().setName(parsed.getIntf().getNameAsString());
+                }
+            }
+            result.put(types.get(i), generic);
+        }
+        return result;
+    }
+
+
     public static List<String> parseGenericClassSignature(Class<?> cls) {
         return Arrays.stream(cls.getTypeParameters()).map(TypeVariable::getName).collect(Collectors.toList());
     }

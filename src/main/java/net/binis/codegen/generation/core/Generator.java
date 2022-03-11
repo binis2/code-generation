@@ -44,6 +44,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -357,13 +358,13 @@ public class Generator {
                 var n = node.getChildNodes().get(i);
                 if (n instanceof MethodCallExpr) {
                     var method = (MethodCallExpr) n;
-                    var parent = typeDeclaration.getMembers().stream().filter(m -> m.isMethodDeclaration() && !m.asMethodDeclaration().isDefault() && m.asMethodDeclaration().getNameAsString().equals(method.getNameAsString())).findFirst();
+                    var parent = parse.findField(method.getNameAsString());
                     if (parent.isEmpty() && nonNull(parse.getBase())) {
-                        parent = parse.getBase().getDeclaration().getMembers().stream().filter(m -> m.isMethodDeclaration() && !m.asMethodDeclaration().isDefault() && m.asMethodDeclaration().getNameAsString().equals(method.getNameAsString())).findFirst();
+                        parent = parse.getBase().findField(method.getNameAsString());
                     }
 
                     if (parent.isPresent()) {
-                        notNull(lookup.findParsed(getExternalClassName(typeDeclaration.findCompilationUnit().get(), parent.get().asMethodDeclaration().getTypeAsString())), p ->
+                        notNull(lookup.findParsed(getExternalClassName(typeDeclaration.findCompilationUnit().get(), parent.get().getType())), p ->
                                 handleDefaultMethodBody(p, n, true));
 
                         return node.replace(method, new FieldAccessExpr().setName(method.getName()));
@@ -617,7 +618,7 @@ public class Generator {
             if (declaration.isValid() && declaration.getDeclaration().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).anyMatch(m -> m.getNameAsString().equals(method.getNameAsString()))) {
                 spec.addMember(method.clone());
             } else {
-                if (method.getNameAsString().startsWith("get")) {
+                if (method.getNameAsString().startsWith("get") || method.getNameAsString().startsWith("is")) {
                     if (!external || parse.getDeclaration().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).noneMatch(m ->
                             m.isDefault() && m.getNameAsString().equals(method.getNameAsString()) && m.getTypeAsString().equals(method.getTypeAsString()))) {
                         var field = addFieldFromGetter(parse, spec, method, generic, external);
@@ -645,10 +646,16 @@ public class Generator {
             var cls = loadClass(className);
             if (nonNull(cls)) {
                 if (cls.isInterface()) {
-                    for (var i : cls.getInterfaces()) {
-                        handleExternalInterface(parsed, declaration, spec, i, type.getTypeArguments().orElse(null));
+                    var generics = cls.getGenericInterfaces();
+                    var interfaces = cls.getInterfaces();
+                    for (var i = 0; i < interfaces.length; i++) {
+                        java.lang.reflect.Type[] types = null;
+                        if (generics[i] instanceof ParameterizedType) {
+                            types = ((ParameterizedType) generics[i]).getActualTypeArguments();
+                        }
+                        handleExternalInterface(parsed, declaration, spec, interfaces[i], type.getTypeArguments().orElse(null), types);
                     }
-                    handleExternalInterface(parsed, declaration, spec, cls, type.getTypeArguments().orElse(null));
+                    handleExternalInterface(parsed, declaration, spec, cls, type.getTypeArguments().orElse(null), null);
                     if (nonNull(intf)) {
                         intf.addExtendedType(handleType(declaration.findCompilationUnit().get(), intf.findCompilationUnit().get(), type));
                     } else {
@@ -691,13 +698,15 @@ public class Generator {
         return false;
     }
 
-    private static void handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, NodeList<Type> generics) {
+    private static void handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, NodeList<Type> generics, java.lang.reflect.Type[] generics2) {
         Map<String, Type> generic = null;
         if (nonNull(generics)) {
             generic = processGenerics(cls, generics);
+        } else if (nonNull(generics2)) {
+            generic = processGenerics(cls, generics2);
         }
 
-        Arrays.stream(cls.getInterfaces()).forEach(i -> handleExternalInterface(parsed, declaration, spec, i, generics));
+        Arrays.stream(cls.getInterfaces()).forEach(i -> handleExternalInterface(parsed, declaration, spec, i, generics, generics2)); //TODO: Handle sub generics
 
         var properties = parsed.getProperties();
 

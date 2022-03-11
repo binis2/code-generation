@@ -1,5 +1,9 @@
 # Change Log
 
+**09-03-2022** ver. 0.1.13
+* Generator: Improved generics handling for external types.
+* Generator: Fixed inherited enrichers for compiled types.
+
 **28-02-2022** ver. 0.1.12
 * Generator: Proper handling of annotation values imports for compiled prototypes.
 * Generator: Added resolving of prototypes with their full names.

@@ -107,9 +107,9 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     }
 
     @Override
-    public PrototypeField findField(String prototype, String name) {
+    public Optional<PrototypeField> findField(String prototype, String name) {
         return nullCheck(findParsed(prototype), parsed ->
-                parsed.getFields().stream().filter(n -> n.getName().equals(name)).findFirst().orElse(null));
+                parsed.findField(name));
     }
 
     @Override
