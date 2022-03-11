@@ -351,13 +351,13 @@ public class Generator {
                 var n = node.getChildNodes().get(i);
                 if (n instanceof MethodCallExpr) {
                     var method = (MethodCallExpr) n;
-                    var parent = typeDeclaration.getMembers().stream().filter(m -> m.isMethodDeclaration() && !m.asMethodDeclaration().isDefault() && m.asMethodDeclaration().getNameAsString().equals(method.getNameAsString())).findFirst();
+                    var parent = parse.findField(method.getNameAsString());
                     if (parent.isEmpty() && nonNull(parse.getBase())) {
-                        parent = parse.getBase().getDeclaration().getMembers().stream().filter(m -> m.isMethodDeclaration() && !m.asMethodDeclaration().isDefault() && m.asMethodDeclaration().getNameAsString().equals(method.getNameAsString())).findFirst();
+                        parent = parse.getBase().findField(method.getNameAsString());
                     }
 
                     if (parent.isPresent()) {
-                        notNull(lookup.findParsed(getExternalClassName(typeDeclaration.findCompilationUnit().get(), parent.get().asMethodDeclaration().getTypeAsString())), p ->
+                        notNull(lookup.findParsed(getExternalClassName(typeDeclaration.findCompilationUnit().get(), parent.get().getType())), p ->
                                 handleDefaultMethodBody(p, n, true));
 
                         return node.replace(method, new FieldAccessExpr().setName(method.getName()));
@@ -611,7 +611,7 @@ public class Generator {
             if (declaration.isValid() && declaration.getDeclaration().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).anyMatch(m -> m.getNameAsString().equals(method.getNameAsString()))) {
                 spec.addMember(method.clone());
             } else {
-                if (method.getNameAsString().startsWith("get")) {
+                if (method.getNameAsString().startsWith("get") || method.getNameAsString().startsWith("is")) {
                     if (!external || parse.getDeclaration().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).noneMatch(m ->
                             m.isDefault() && m.getNameAsString().equals(method.getNameAsString()) && m.getTypeAsString().equals(method.getTypeAsString()))) {
                         var field = addFieldFromGetter(parse, spec, method, generic, external);
