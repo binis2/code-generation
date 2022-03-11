@@ -44,5 +44,11 @@ public class AnnotationsTest extends BaseTest {
         testSingle("annotation/testFor1.java", "annotation/testFor1-0.java", "annotation/testFor1-1.java");
     }
 
+    @Test
+    public void testForDefaultMethod() {
+        testSingle("annotation/testForDefault1.java", null, "annotation/testForDefault1-1.java");
+    }
+
+
 
 }
