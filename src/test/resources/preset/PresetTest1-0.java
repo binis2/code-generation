@@ -82,6 +82,11 @@ public class PresetTestImpl implements PresetTest {
             return this;
         }
 
+        public PresetTestQueryExecutorImpl __queryString(String title, PresetTest parent, int data) {
+            ((PresetTest.QuerySelect<Object>) this).title(title).and().parent(parent).and().data().greater(data);
+            return this;
+        }
+
         public PresetTestQueryExecutorImpl __queryTitle(String title, int data) {
             ((PresetTest.QuerySelect<Object>) this).title().contains(title).and().data(data);
             return this;

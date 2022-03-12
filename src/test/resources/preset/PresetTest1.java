@@ -8,8 +8,6 @@ import net.binis.codegen.spring.query.Preset;
 
 import java.util.List;
 
-import static net.binis.codegen.spring.query.Preset.param;
-
 @CodePrototype(enrichers = {QueryEnricher.class, RegionEnricher.class})
 public interface PresetTestPrototype {
     String title();
@@ -18,10 +16,10 @@ public interface PresetTestPrototype {
     List<String> list();
 
     @QueryPreset
-    default void queryTitle() {
+    default void queryTitle(String title, int data) {
         Preset.declare()
-                .field(title()).contains(param()).and()
-                .field(data(), param());
+                .field(title()).contains(title).and()
+                .field(data(), data);
     }
 
     @QueryPreset
@@ -31,12 +29,16 @@ public interface PresetTestPrototype {
     }
 
     @QueryPreset
-    default void queryPrototype() {
+    default void queryPrototype(PresetTestPrototype parent) {
         Preset.declare()
-                .field(parent(), param()).and()
+                .field(parent(), parent).and()
                 .prototype(parent()).field(title()).isNull().and()
                 .collection(list()).isEmpty();
     }
 
+    @QueryPreset
+    default String queryString(String title, PresetTestPrototype parent, int data) {
+        return "title(title).and().parent(parent).and().data().greater(data)";
+    }
 
 }

@@ -38,7 +38,6 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.spring.annotation.Joinable;
 import net.binis.codegen.spring.annotation.QueryPreset;
-import net.binis.codegen.spring.query.Preset;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -459,20 +458,10 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .filter(m -> m.isAnnotationPresent(QueryPreset.class)).forEach(method ->
                         method.getBody().ifPresent(body -> {
                             if (body.getStatements().size() == 1) {
-                                var expression = body.getStatement(0).toString();
-                                if (expression.startsWith("Preset.declare().")) {
-                                    var mtd = select.addMethod(PRESET_PREFIX + method.getNameAsString())
-                                            .setType(returnType)
-                                            .setBody(null);
-
-                                    var impl = exec.addMethod(PRESET_PREFIX + method.getNameAsString())
-                                            .addModifier(PUBLIC)
-                                            .setType(implReturnType);
-                                    expression = handlePresetParameters(description, expression, mtd, impl);
-
-                                    impl.setBody(description.getParser().parseBlock("{((" + description.getInterfaceName() + "." + QUERY_SELECT + "<Object>) this)" + expression + "return this;}").getResult().get());
+                                if ("String".equals(method.getType().asString())) {
+                                    handleStringPreset(description, method, body, select, exec, returnType, implReturnType);
                                 } else {
-                                    log.error("Expression '{}' is not valid Preset expression! Preset expressions must start with: Preset.declare()", body);
+                                    handlePreset(description, method, body, select, exec, returnType, implReturnType);
                                 }
                             } else {
                                 log.error("Invalid Preset expression! Preset expression must be sole expression in method's body!");
@@ -481,39 +470,66 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
     }
 
-    private String handlePresetParameters(PrototypeDescription<ClassOrInterfaceDeclaration> description, String expression, MethodDeclaration mtd, MethodDeclaration impl) {
-        var params = expression.split("param\\(\\)");
+    private void handleStringPreset(PrototypeDescription<ClassOrInterfaceDeclaration> description, MethodDeclaration method, BlockStmt body, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration exec, String returnType, String implReturnType) {
+        var statement = body.getStatement(0);
+        if (statement.isReturnStmt() && statement.asReturnStmt().getExpression().isPresent() && statement.asReturnStmt().getExpression().get().isStringLiteralExpr()) {
+            var expression = statement.asReturnStmt().getExpression().get().asStringLiteralExpr().asString();
 
-        if (params.length > 1) {
-            var parIdx = 0;
+            var mtd = select.addMethod(PRESET_PREFIX + method.getNameAsString())
+                    .setType(returnType)
+                    .setBody(null);
 
-            var builder = new StringBuilder();
-            for (var j = 0; j < params.length - 1; j++) {
-                var i = params[j].lastIndexOf(".field(");
-                String name;
-                var type = "Object";
-                if (i > -1) {
-                    i += 7;
-                    name = params[j].substring(i, params[j].indexOf('(', i));
-                    var field = description.findField(name);
-                    if (field.isPresent()) {
-                        type = field.get().getType();
-                    } else {
-                        log.error("Field not found '{}'!", name);
-                    }
-                } else {
-                    name = "param" + parIdx;
-                    parIdx++;
-                }
-                addPresetParam(mtd, name, type);
-                addPresetParam(impl, name, type);
-                builder.append(params[j]).append(name);
-            }
+            copyParameters(method, mtd);
 
-            expression = builder.append(params[params.length - 1]).toString();
+            var impl = exec.addMethod(PRESET_PREFIX + method.getNameAsString())
+                    .addModifier(PUBLIC)
+                    .setType(implReturnType);
+
+            copyParameters(method, impl);
+
+            impl.setBody(description.getParser().parseBlock("{((" + description.getInterfaceName() + "." + QUERY_SELECT + "<Object>) this)." + expression + ";return this;}").getResult().get());
+        } else {
+            log.error("Expression '{}' is not valid Preset expression! Preset expressions must directly return string! Example 'return \"title(title)\"'", body);
         }
+    }
 
-        params = expression.split(".field\\(|.prototype\\(|.collection\\(");
+    private void handlePreset(PrototypeDescription<ClassOrInterfaceDeclaration> description, MethodDeclaration method, BlockStmt body, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration exec, String returnType, String implReturnType) {
+        var expression = body.getStatement(0).toString();
+        if (expression.startsWith("Preset.declare().")) {
+            var mtd = select.addMethod(PRESET_PREFIX + method.getNameAsString())
+                    .setType(returnType)
+                    .setBody(null);
+
+            copyParameters(method, mtd);
+
+            var impl = exec.addMethod(PRESET_PREFIX + method.getNameAsString())
+                    .addModifier(PUBLIC)
+                    .setType(implReturnType);
+
+            copyParameters(method, impl);
+
+            expression = handlePresetParameters(description, expression, mtd, impl);
+
+            impl.setBody(description.getParser().parseBlock("{((" + description.getInterfaceName() + "." + QUERY_SELECT + "<Object>) this)" + expression + "return this;}").getResult().get());
+        } else {
+            log.error("Expression '{}' is not valid Preset expression! Preset expressions must start with: Preset.declare()", body);
+        }
+    }
+
+    private void copyParameters(MethodDeclaration method, MethodDeclaration dest) {
+        var unit = method.findCompilationUnit().get();
+        method.getParameters().forEach(param -> {
+            var proto = lookup.findParsed(Helpers.getExternalClassName(unit, param.getType().asString()));
+            if (nonNull(proto)) {
+                dest.addParameter(proto.getInterfaceName(), param.getNameAsString());
+            } else {
+                dest.addParameter(param);
+            }
+        });
+    }
+
+    private String handlePresetParameters(PrototypeDescription<ClassOrInterfaceDeclaration> description, String expression, MethodDeclaration mtd, MethodDeclaration impl) {
+        var params = expression.split(".field\\(|.prototype\\(|.collection\\(");
 
         if (params.length > 1) {
             var builder = new StringBuilder();
