@@ -1,5 +1,10 @@
 # Change Log
 
+**13-03-2022** ver. 0.1.14
+* Generator: New experimental feature - Query presets.
+* Generator: Added ability to @Keep default method implementations in the generated interface.
+* Validation: Fixed generation of consecutive sanitization annotations.
+
 **09-03-2022** ver. 0.1.13
 * Generator: Improved generics handling for external types.
 * Generator: Fixed inherited enrichers for compiled types.
