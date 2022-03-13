@@ -1,8 +1,8 @@
-package net.binis.codegen;
+package net.binis.codegen.prototype;
 
 /*-
  * #%L
- * code-generator
+ * code-generation-test
  * %%
  * Copyright (C) 2021 - 2022 Binis Belev
  * %%
@@ -20,26 +20,26 @@ package net.binis.codegen;
  * #L%
  */
 
-import net.binis.codegen.generation.core.Helpers;
-import net.binis.codegen.test.BaseTest;
-import org.junit.Before;
-import org.junit.Test;
+import net.binis.codegen.annotation.CodePrototype;
+import net.binis.codegen.spring.annotation.QueryFragment;
 
-public class PresetsTest extends BaseTest {
+@CodePrototype(generateImplementation = false)
+public interface CompiledPrototype {
 
-    @Before
-    public void cleanUp() {
-        Helpers.cleanUp();
+    boolean test();
+
+    default boolean isTestable() {
+        return test();
     }
 
-    @Test
-    public void test() {
-        testSingle("preset/PresetTest1.java", "preset/PresetTest1-0.java", "preset/PresetTest1-1.java");
+    @QueryFragment
+    default void queryPreset() {
+        //Do nothing
     }
 
-    @Test
-    public void testWithCompiledPrototype() {
-        testSingle("preset/PresetTestCompiled1.java", "preset/PresetTestCompiled1-0.java", "preset/PresetTestCompiled1-1.java", 2);
+    @QueryFragment
+    default String queryPreset(CompiledPrototype parent) {
+        return "test(parent.isTest())";
     }
 
 

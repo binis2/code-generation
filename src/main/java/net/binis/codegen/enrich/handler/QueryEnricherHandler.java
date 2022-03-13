@@ -24,6 +24,7 @@ import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.LambdaExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
@@ -37,14 +38,22 @@ import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.spring.annotation.Joinable;
-import net.binis.codegen.spring.annotation.QueryPreset;
+import net.binis.codegen.spring.annotation.QueryFragment;
+import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.tools.Tools.notNull;
 import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
@@ -136,7 +145,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         addFindMethod(description, intf);
         addQuerySelectOrderName(description, intf, spec);
 
-        addPresets(description, intf, spec);
+        addPresets(description, description.getDeclaration(), intf, spec);
 
         Helpers.addInitializer(description, intf, isNull(description.getMixIn()) ? spec : description.getMixIn().getSpec(), null);
     }
@@ -356,7 +365,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                             .setBody(null);
                 }
 
-                if (checkQueryName(entity, desc)) {
+                if (checkQueryName(desc)) {
                     select.addMethod(name).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ", " + desc.getPrototype().getInterfaceName() + ">").setBody(null);
                     impl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
                             .setBody(new BlockStmt()
@@ -444,18 +453,18 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         }
     }
 
-    private void addPresets(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration spec) {
+    private void addPresets(PrototypeDescription<ClassOrInterfaceDeclaration> description, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration spec) {
         var entity = description.getProperties().getInterfaceName();
         var returnType = QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">";
         var implReturnType = description.getInterfaceName() + QUERY_EXECUTOR + QUERY_IMPL;
         var select = description.getRegisteredClass(Constants.QUERY_SELECT_INTF_KEY);
         var exec = description.getRegisteredClass(Constants.QUERY_EXECUTOR_KEY);
 
-        description.getDeclaration().getMembers().stream()
+        declaration.getMembers().stream()
                 .filter(BodyDeclaration::isMethodDeclaration)
                 .map(BodyDeclaration::asMethodDeclaration)
                 .filter(MethodDeclaration::isDefault)
-                .filter(m -> m.isAnnotationPresent(QueryPreset.class)).forEach(method ->
+                .filter(m -> m.isAnnotationPresent(QueryFragment.class)).forEach(method ->
                         method.getBody().ifPresent(body -> {
                             if (body.getStatements().size() == 1) {
                                 if ("String".equals(method.getType().asString())) {
@@ -468,6 +477,68 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                             }
                         }));
 
+        declaration.asClassOrInterfaceDeclaration().getExtendedTypes().forEach(t ->
+                notNull(lookup.findParsed(Helpers.getExternalClassName(declaration.findCompilationUnit().get(), t.getNameAsString())), parsed -> {
+                    if (isNull(parsed.getCompiled())) {
+                        addPresets(description, parsed.getDeclaration(), intf, spec);
+                    } else {
+                        Arrays.stream(parsed.getCompiled().getDeclaredMethods())
+                                .filter(Method::isDefault)
+                                .filter(m -> nonNull(m.getAnnotation(QueryFragment.class)))
+                                .forEach(method -> {
+                                    if (String.class.equals(method.getReturnType())) {
+                                        handleCompiledStringPreset(description, method, getCompiledPreset(parsed.getCompiled(), method), select, exec, returnType, implReturnType);
+                                    } else {
+                                        log.warn("Unsupported query preset type in compiled prototype for method '{}.{}'", parsed.getCompiled().getSimpleName(), method.getName());
+                                    }
+                                });
+                    }
+                }));
+    }
+
+    private String getCompiledPreset(Class<?> cls, Method method) {
+        //TODO: Replace with invokeDefault when migrating to jdk 16+
+        var result = "Invalid method!";
+        InvocationHandler handler = (proxy, mtd, args) -> {
+            final Class declaringClass = mtd.getDeclaringClass();
+            Constructor<MethodHandles.Lookup> constructor = MethodHandles.Lookup.class.getDeclaredConstructor(Class.class, int.class);
+            constructor.setAccessible(true);
+            return
+                    constructor.newInstance(declaringClass, -1)
+                            .unreflectSpecial(mtd, declaringClass)
+                            .bindTo(proxy)
+                            .invokeWithArguments(args);
+        };
+        try {
+            var proxy = cls.cast(Proxy.newProxyInstance(
+                    cls.getClassLoader(), new Class<?>[] {cls}, handler));
+
+            var mtd = Arrays.stream(proxy.getClass().getDeclaredMethods())
+                    .filter(m -> m.getName().equals(method.getName()))
+                    .filter(m -> m.getReturnType().equals(method.getReturnType()))
+                    .filter(m -> compareParameterTypes(m, method))
+                    .findFirst().get();
+
+            result = (String) mtd.invoke(proxy, new Object[method.getParameterCount()]);
+        } catch (Exception e) {
+            log.error("Unable to get compiled preset for {}.{}", cls.getSimpleName(), method.getName());
+        }
+        return result;
+    }
+
+    private boolean compareParameterTypes(Method m, Method method) {
+        if (m.getParameterCount() == method.getParameterCount()) {
+            var params = m.getParameters();
+            var params2 = method.getParameters();
+            for (var i = 0; i < m.getParameterCount(); i ++) {
+                if (!params[i].getType().equals(params2[i].getType())) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private void handleStringPreset(PrototypeDescription<ClassOrInterfaceDeclaration> description, MethodDeclaration method, BlockStmt body, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration exec, String returnType, String implReturnType) {
@@ -516,16 +587,53 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         }
     }
 
+    private void handleCompiledStringPreset(PrototypeDescription<ClassOrInterfaceDeclaration> description, Method method, String body, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration exec, String returnType, String implReturnType) {
+        var mtd = select.addMethod(PRESET_PREFIX + method.getName())
+                .setType(returnType)
+                .setBody(null);
+        copyCompiledParameters(method, mtd);
+
+        var impl = exec.addMethod(PRESET_PREFIX + method.getName())
+                .addModifier(PUBLIC)
+                .setType(implReturnType);
+
+        copyCompiledParameters(method, impl);
+        impl.setBody(description.getParser().parseBlock("{((" + description.getInterfaceName() + "." + QUERY_SELECT + "<Object>) this)." + body + ";return this;}").getResult().get());
+    }
+
     private void copyParameters(MethodDeclaration method, MethodDeclaration dest) {
         var unit = method.findCompilationUnit().get();
         method.getParameters().forEach(param -> {
             var proto = lookup.findParsed(Helpers.getExternalClassName(unit, param.getType().asString()));
             if (nonNull(proto)) {
                 dest.addParameter(proto.getInterfaceName(), param.getNameAsString());
+                unit.addImport(proto.getInterfaceFullName());
             } else {
                 dest.addParameter(param);
+//                var type = Helpers.getExternalClassName(unit, param.getType().asString());
+//                if (!Helpers.isJavaType()) {
+//                    unit.addImport(proto.getInterfaceFullName());
+//                }
             }
         });
+    }
+
+    private void copyCompiledParameters(Method method, MethodDeclaration dest) {
+        var names = new LocalVariableTableParameterNameDiscoverer().getParameterNames(method);
+        var params = method.getParameters();
+        var unit = dest.findCompilationUnit().get();
+        for (var i = 0; i < params.length; i++) {
+            var proto = lookup.findParsed(params[i].getType().getCanonicalName());
+            if (nonNull(proto)) {
+                dest.addParameter(proto.getInterfaceName(), names[i]);
+                unit.addImport(proto.getInterfaceFullName());
+            } else {
+                dest.addParameter(params[i].getType().getSimpleName(), names[i]);
+//                if (!Helpers.isJavaType(param.getType().getCanonicalName())) {
+//                    unit.addImport(param.getType().getCanonicalName());
+//                }
+            }
+        }
     }
 
     private String handlePresetParameters(PrototypeDescription<ClassOrInterfaceDeclaration> description, String expression, MethodDeclaration mtd, MethodDeclaration impl) {
@@ -579,7 +687,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_NAME_INTF_KEY), description.getMixIn().getRegisteredClass(Constants.QUERY_NAME_KEY), null);
     }
 
-    private boolean checkQueryName(String entity, PrototypeField desc) {
+    private boolean checkQueryName(PrototypeField desc) {
         return nonNull(desc.getPrototype()) && (desc.getPrototype().getProperties().getEnrichers().stream().anyMatch(e -> QueryEnricherHandler.class.equals(e.getClass())) ||
                 nonNull(desc.getPrototype().getBase()) &&
                         desc.getPrototype().getBase().getProperties().getInheritedEnrichers().stream().anyMatch(e -> QueryEnricherHandler.class.equals(e.getClass())));
