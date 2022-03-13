@@ -413,7 +413,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             var mCall = block.getStatements().get(0).asExpressionStmt().getExpression().asMethodCallExpr();
             var chain = mCall.getScope().get();
             mCall.removeScope();
-            var m = new MethodCallExpr(chain, "sanitize").addArgument(params.getCls() + ".class").addArgument(calcMessage(params));
+            var m = new MethodCallExpr(chain, "sanitize").addArgument(params.getCls() + ".class");
             notNull(params.getParams(), p -> p.forEach(param ->
                     m.addArgument(buildParamsStr(param, params, field, modifier))));
             mCall.setScope(m);
