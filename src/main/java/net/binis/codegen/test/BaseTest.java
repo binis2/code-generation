@@ -9,9 +9,9 @@ package net.binis.codegen.test;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,8 +48,7 @@ import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Tools.ifNull;
 import static net.binis.codegen.tools.Tools.with;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Slf4j
 public abstract class BaseTest {
@@ -98,10 +97,23 @@ public abstract class BaseTest {
                         CodeGen.handleType(parser, t, resource)));
     }
 
+    protected void loadExecute(List<Pair<String, String>> list, String resource) {
+        var source = resourceAsString(resource);
+
+        if (nonNull(list)) {
+            list.add(Pair.of("net.binis.codegen.Execute", source));
+        }
+
+    }
+
     protected void compare(CompilationUnit unit, String resource) {
         if (nonNull(resource)) {
             assertEquals(resource, resourceAsString(resource), getAsString(unit));
         }
+    }
+
+    protected void testSingleExecute(String prototype, String resClass, String resInterface, String resExecute) {
+        testSingleExecute(prototype, resClass, resInterface, null, 1, resExecute);
     }
 
     protected void testSingle(String prototype, String resClass, String resInterface) {
@@ -117,9 +129,13 @@ public abstract class BaseTest {
     }
 
     protected void testSingle(String prototype, String resClass, String resInterface, String pathToSave, int expected) {
+        testSingleExecute(prototype, resClass, resInterface, pathToSave, expected, null);
+    }
+
+    protected void testSingleExecute(String prototype, String resClass, String resInterface, String pathToSave, int expected, String resExecute) {
         var list = newList();
         load(list, prototype);
-        assertTrue(compile(new TestClassLoader(), list));
+        assertTrue(compile(new TestClassLoader(), list, null));
         generate();
 
         assertEquals(expected, lookup.parsed().size());
@@ -141,7 +157,10 @@ public abstract class BaseTest {
 
         }
         var loader = new TestClassLoader();
-        assertTrue(compile(loader, list));
+
+        assertTrue(compile(loader, list, resExecute));
+
+
     }
 
     protected void testMulti(List<Triple<String, String, String>> files) {
@@ -152,41 +171,40 @@ public abstract class BaseTest {
         var list = newList();
         files.forEach(t ->
                 load(list, t.getLeft()));
-        assertTrue(compile(new TestClassLoader(), list));
+        assertTrue(compile(new TestClassLoader(), list, null));
         generate();
 
         assertEquals(files.size(), lookup.parsed().size());
 
 
         var compileList = new ArrayList<Pair<String, String>>();
-        files.forEach(f -> {
-            lookup.findGeneratedByFileName(f.getLeft()).forEach(parsed -> {
-                compare(parsed.getFiles().get(1), f.getRight());
-                compare(parsed.getFiles().get(0), f.getMiddle());
+        files.forEach(f ->
+                lookup.findGeneratedByFileName(f.getLeft()).forEach(parsed -> {
+                    compare(parsed.getFiles().get(1), f.getRight());
+                    compare(parsed.getFiles().get(0), f.getMiddle());
 
-                if (nonNull(pathToSave)) {
-                    if (isNull(parsed.getMixIn())) {
-                        save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
+                    if (nonNull(pathToSave)) {
+                        if (isNull(parsed.getMixIn())) {
+                            save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
+                        }
+                        save(parsed.getProperties().getInterfaceName(), parsed.getFiles().get(1), pathToSave);
                     }
-                    save(parsed.getProperties().getInterfaceName(), parsed.getFiles().get(1), pathToSave);
-                }
 
-                if (isNull(parsed.getMixIn())) {
-                    compileList.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
-                    compileList.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
-                } else {
-                    for (var i = 0; i < compileList.size(); i++) {
-                        if (compileList.get(i).getKey().equals(parsed.getMixIn().getParsedFullName())) {
-                            compileList.add(i, Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
-                            break;
+                    if (isNull(parsed.getMixIn())) {
+                        compileList.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+                        compileList.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+                    } else {
+                        for (var i = 0; i < compileList.size(); i++) {
+                            if (compileList.get(i).getKey().equals(parsed.getMixIn().getParsedFullName())) {
+                                compileList.add(i, Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+                                break;
+                            }
                         }
                     }
-                }
-            });
-        });
+                }));
 
         var loader = new TestClassLoader();
-        assertTrue(compile(loader, compileList));
+        assertTrue(compile(loader, compileList, null));
     }
 
     @SneakyThrows
@@ -201,7 +219,7 @@ public abstract class BaseTest {
         var src = newList();
         load(src, basePrototype);
         load(src, prototype);
-        assertTrue(compile(new TestClassLoader(), src));
+        assertTrue(compile(new TestClassLoader(), src, null));
         generate();
 
         assertEquals(2, lookup.parsed().size());
@@ -224,14 +242,14 @@ public abstract class BaseTest {
             list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
         });
 
-        assertTrue(compile(new TestClassLoader(), list));
+        assertTrue(compile(new TestClassLoader(), list, null));
     }
 
     protected void testSingleWithMixIn(String basePrototype, String baseClassName, String prototype, String className, String baseClass, String baseInterface, String mixInInterface) {
         var src = newList();
         load(src, basePrototype);
         load(src, prototype);
-        assertTrue(compile(new TestClassLoader(), src));
+        assertTrue(compile(new TestClassLoader(), src, null));
         generate();
 
         assertEquals(2, lookup.parsed().size());
@@ -249,12 +267,16 @@ public abstract class BaseTest {
                     list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
                 }));
 
-        assertTrue(compile(new TestClassLoader(), list));
+        assertTrue(compile(new TestClassLoader(), list, null));
     }
 
 
     @SneakyThrows
-    protected boolean compile(TestClassLoader loader, List<Pair<String, String>> files) {
+    protected boolean compile(TestClassLoader loader, List<Pair<String, String>> files, String resExecute) {
+        if (nonNull(resExecute)) {
+            loadExecute(files, resExecute);
+        }
+
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 
         DiagnosticCollector<JavaFileObject> diagnostics =
@@ -281,7 +303,39 @@ public abstract class BaseTest {
                 with(objects.get(f.getKey()), o ->
                         loader.define(f.getKey(), o)));
 
+        if (nonNull(resExecute)) {
+            var cls = loader.findClass("net.binis.codegen.Execute");
+            assertNotNull("Executor class not found!", cls);
+            assertNotNull("Executor doesn't inherit TestExecutor!", cls.getSuperclass());
+            assertEquals("Executor doesn't inherit TestExecutor!", TestExecutor.class, cls.getSuperclass());
+            defineObjects(loader, objects);
+            assertTrue("Test execution failed!", TestExecutor.test((Class<? extends TestExecutor>) cls));
+        }
+
+
         return true;
+    }
+
+    private void defineObjects(TestClassLoader loader, Map<String, JavaByteObject> objects) {
+        defineObjects(loader, objects, objects.size());
+    }
+
+    private void defineObjects(TestClassLoader loader, Map<String, JavaByteObject> objects, int tries) {
+        var error = false;
+
+        for (var entry : objects.entrySet()) {
+            if (isNull(loader.findClass(entry.getKey()))) {
+                try {
+                    loader.define(entry.getKey(), entry.getValue());
+                } catch (NoClassDefFoundError ex) {
+                    error = true;
+                }
+            }
+        }
+
+        if (error && tries > 0) {
+            defineObjects(loader, objects, tries - 1);
+        }
     }
 
     @SneakyThrows

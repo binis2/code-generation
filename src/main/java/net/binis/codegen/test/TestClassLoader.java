@@ -20,16 +20,30 @@ package net.binis.codegen.test;
  * #L%
  */
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static java.util.Objects.nonNull;
+
 public class TestClassLoader extends ClassLoader {
+
+    protected Map<String, Class<?>> classes = new ConcurrentHashMap<>();
 
     public Class<?> define(String name, JavaByteObject byteObject) throws ClassFormatError {
         byte[] bytes = byteObject.getBytes();
-        return defineClass(name, bytes, 0, bytes.length);
+
+        var cls = defineClass(name, bytes, 0, bytes.length);
+
+        if (nonNull(cls)) {
+            classes.put(name, cls);
+        }
+
+        return cls;
     }
 
     @Override
-    public Class<?> findClass(String name) throws ClassNotFoundException {
-        return super.findClass(name);
+    public Class<?> findClass(String name) {
+        return classes.get(name);
     }
 
 }
