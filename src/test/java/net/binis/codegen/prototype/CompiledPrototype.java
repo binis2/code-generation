@@ -38,7 +38,7 @@ public interface CompiledPrototype {
     }
 
     @QueryFragment
-    default String queryPreset(CompiledPrototype parent) {
+    default String __queryPreset(CompiledPrototype parent) {
         return "test(parent.isTest())";
     }
 

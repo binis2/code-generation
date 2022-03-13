@@ -467,10 +467,12 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .filter(m -> m.isAnnotationPresent(QueryFragment.class)).forEach(method ->
                         method.getBody().ifPresent(body -> {
                             if (body.getStatements().size() == 1) {
-                                if ("String".equals(method.getType().asString())) {
-                                    handleStringPreset(description, method, body, select, exec, returnType, implReturnType);
-                                } else {
-                                    handlePreset(description, method, body, select, exec, returnType, implReturnType);
+                                if (!Helpers.methodExists(select, method, calcPresetName(method.getNameAsString()), false)) {
+                                    if ("String".equals(method.getType().asString())) {
+                                        handleStringPreset(description, method, body, select, exec, returnType, implReturnType);
+                                    } else {
+                                        handlePreset(description, method, body, select, exec, returnType, implReturnType);
+                                    }
                                 }
                             } else {
                                 log.error("Invalid Preset expression! Preset expression must be sole expression in method's body!");
@@ -486,10 +488,12 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                                 .filter(Method::isDefault)
                                 .filter(m -> nonNull(m.getAnnotation(QueryFragment.class)))
                                 .forEach(method -> {
-                                    if (String.class.equals(method.getReturnType())) {
-                                        handleCompiledStringPreset(description, method, getCompiledPreset(parsed.getCompiled(), method), select, exec, returnType, implReturnType);
-                                    } else {
-                                        log.warn("Unsupported query preset type in compiled prototype for method '{}.{}'", parsed.getCompiled().getSimpleName(), method.getName());
+                                    if (!Helpers.methodExists(select, calcPresetName(method.getName()), method, false)) {
+                                        if (String.class.equals(method.getReturnType())) {
+                                            handleCompiledStringPreset(description, method, getCompiledPreset(parsed.getCompiled(), method), select, exec, returnType, implReturnType);
+                                        } else {
+                                            log.warn("Unsupported query preset type in compiled prototype for method '{}.{}'", parsed.getCompiled().getSimpleName(), method.getName());
+                                        }
                                     }
                                 });
                     }
@@ -546,13 +550,13 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         if (statement.isReturnStmt() && statement.asReturnStmt().getExpression().isPresent() && statement.asReturnStmt().getExpression().get().isStringLiteralExpr()) {
             var expression = statement.asReturnStmt().getExpression().get().asStringLiteralExpr().asString();
 
-            var mtd = select.addMethod(PRESET_PREFIX + method.getNameAsString())
+            var mtd = select.addMethod(calcPresetName(method.getNameAsString()))
                     .setType(returnType)
                     .setBody(null);
 
             copyParameters(method, mtd);
 
-            var impl = exec.addMethod(PRESET_PREFIX + method.getNameAsString())
+            var impl = exec.addMethod(calcPresetName(method.getNameAsString()))
                     .addModifier(PUBLIC)
                     .setType(implReturnType);
 
@@ -567,13 +571,13 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     private void handlePreset(PrototypeDescription<ClassOrInterfaceDeclaration> description, MethodDeclaration method, BlockStmt body, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration exec, String returnType, String implReturnType) {
         var expression = body.getStatement(0).toString();
         if (expression.startsWith("Preset.declare().")) {
-            var mtd = select.addMethod(PRESET_PREFIX + method.getNameAsString())
+            var mtd = select.addMethod(calcPresetName(method.getNameAsString()))
                     .setType(returnType)
                     .setBody(null);
 
             copyParameters(method, mtd);
 
-            var impl = exec.addMethod(PRESET_PREFIX + method.getNameAsString())
+            var impl = exec.addMethod(calcPresetName(method.getNameAsString()))
                     .addModifier(PUBLIC)
                     .setType(implReturnType);
 
@@ -588,12 +592,12 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     }
 
     private void handleCompiledStringPreset(PrototypeDescription<ClassOrInterfaceDeclaration> description, Method method, String body, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration exec, String returnType, String implReturnType) {
-        var mtd = select.addMethod(PRESET_PREFIX + method.getName())
+        var mtd = select.addMethod(calcPresetName(method.getName()))
                 .setType(returnType)
                 .setBody(null);
         copyCompiledParameters(method, mtd);
 
-        var impl = exec.addMethod(PRESET_PREFIX + method.getName())
+        var impl = exec.addMethod(calcPresetName(method.getName()))
                 .addModifier(PUBLIC)
                 .setType(implReturnType);
 
@@ -664,9 +668,11 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         return expression;
     }
 
-    private void addPresetParam(MethodDeclaration mtd, String name, String type) {
-        if (mtd.getParameterByName(name).isEmpty()) {
-            mtd.addParameter(type, name);
+    private String calcPresetName(String name) {
+        if (name.startsWith(PRESET_PREFIX)) {
+            return name;
+        } else {
+            return PRESET_PREFIX + name;
         }
     }
 
