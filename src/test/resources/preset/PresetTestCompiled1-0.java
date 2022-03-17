@@ -21,7 +21,7 @@ public class PresetTestImpl implements PresetTest {
 
     protected PresetTest parent;
 
-    protected boolean test;
+    protected boolean test = true;
 
     protected String title;
 

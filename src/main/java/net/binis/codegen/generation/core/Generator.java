@@ -766,12 +766,12 @@ public class Generator {
                 if (!defaultMethodExists(declaration, method)) {
                     if (method.getParameterCount() == 0 && method.getName().startsWith("get") || method.getName().startsWith("is") && method.getReturnType().getCanonicalName().equals("boolean")) {
                         var field = addFieldFromGetter(parsed, spec, method, generic);
-                        if (properties.isClassGetters()) {
+                        if (nonNull(field) && properties.isClassGetters()) {
                             addGetterFromGetter(spec, method, true, generic, field);
                         }
                     } else if (method.getParameterCount() == 1 && method.getName().startsWith("set") && method.getReturnType().getCanonicalName().equals("void")) {
                         var field = addFieldFromSetter(parsed, spec, method, generic);
-                        if (properties.isClassSetters()) {
+                        if (nonNull(field) && properties.isClassSetters()) {
                             addSetterFromSetter(spec, method, true, generic, field);
                         }
                     } else {
@@ -793,7 +793,7 @@ public class Generator {
                 intf.findCompilationUnit().get().addImport(parentIntf.getFullyQualifiedName().get());
                 parentSpec.findCompilationUnit().get().addImport(intf.getFullyQualifiedName().get());
                 parentSpec.addImplementedType(intf.getNameAsString());
-                mergeTypes(spec, parentSpec, m -> true, a -> a);
+                mergeTypes(parent, spec, parentSpec, m -> true, a -> a);
                 intf.getExtendedTypes().forEach(t -> condition(t.getNameAsString().endsWith(MIX_IN_EXTENSION), () -> t.setName(t.getNameAsString().replace(MIX_IN_EXTENSION, ""))));
                 if (intf.getExtendedTypes().stream().noneMatch(t -> t.getNameAsString().equals(parentIntf.getNameAsString()))) {
                     intf.addExtendedType(parentIntf.getNameAsString());
@@ -1069,7 +1069,8 @@ public class Generator {
     private static PrototypeField addField(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Type generic) {
         PrototypeField result = null;
         var fieldName = method.getNameAsString();
-        var field = findField(spec, fieldName);
+        var fieldProto = findField(parsed, fieldName);
+        var field = nonNull(fieldProto) ? fieldProto.getDeclaration() : null;
         if (isNull(field)) {
             var prototypeMap = new HashMap<String, PrototypeDescription<ClassOrInterfaceDeclaration>>();
             if (nonNull(generic)) {
@@ -1111,7 +1112,7 @@ public class Generator {
         PrototypeField result = null;
         var genericMethod = !method.getTypeParameters().isEmpty() && method.getTypeAsString().equals(method.getTypeParameter(0).getNameAsString());
         var fieldName = getFieldName(method.getNameAsString());
-        if (!fieldExists(spec, fieldName)) {
+        if (!fieldExists(parsed, fieldName)) {
             FieldDeclaration field;
             if (nonNull(generic) && !generic.isEmpty()) {
                 field = spec.addField(generic.get(method.getTypeAsString()), fieldName, PROTECTED);
@@ -1150,7 +1151,7 @@ public class Generator {
     private static PrototypeField addFieldFromSetter(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Map<String, Type> generic, boolean external) {
         PrototypeField result = null;
         var fieldName = getFieldName(method.getNameAsString());
-        if (!fieldExists(spec, fieldName)) {
+        if (!fieldExists(parsed, fieldName)) {
             FieldDeclaration field;
             if (nonNull(generic)) {
                 field = spec.addField(generic.get(parseMethodSignature(method)), fieldName, PROTECTED);
@@ -1186,7 +1187,7 @@ public class Generator {
         PrototypeField result = null;
         var fieldName = getFieldName(method.getName());
         var genericMethod = false;
-        if (!fieldExists(spec, fieldName)) {
+        if (!fieldExists(parsed, fieldName)) {
             FieldDeclaration field;
             MethodDeclaration description;
             if (nonNull(generic)) {
@@ -1244,7 +1245,7 @@ public class Generator {
         PrototypeField result = null;
         var fieldName = getFieldName(method.getName());
         var genericMethod = false;
-        if (!fieldExists(spec, fieldName)) {
+        if (!fieldExists(parsed, fieldName)) {
             FieldDeclaration field;
             MethodDeclaration description;
             if (nonNull(generic)) {
@@ -1487,11 +1488,11 @@ public class Generator {
         }
     }
 
-    private static void mergeTypes(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Predicate<BodyDeclaration<?>> filter, Function<MethodDeclaration, MethodDeclaration> adjuster) {
+    private static void mergeTypes(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Predicate<BodyDeclaration<?>> filter, Function<MethodDeclaration, MethodDeclaration> adjuster) {
         for (var member : source.getMembers()) {
             if (filter.test(member)) {
                 if (member instanceof FieldDeclaration) {
-                    var field = findField(destination, member.asFieldDeclaration().getVariable(0).getNameAsString());
+                    var field = findField(parsed, member.asFieldDeclaration().getVariable(0).getNameAsString());
                     if (isNull(field)) {
                         destination.addMember(member.clone());
                     } else {

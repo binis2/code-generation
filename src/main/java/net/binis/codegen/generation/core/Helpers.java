@@ -409,12 +409,20 @@ public class Helpers {
         }
     }
 
-    public static boolean fieldExists(ClassOrInterfaceDeclaration spec, String field) {
-        return nonNull(findField(spec, field));
+    public static boolean fieldExists(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, String field) {
+        return nonNull(findField(parsed, field));
     }
 
-    public static FieldDeclaration findField(ClassOrInterfaceDeclaration spec, String field) {
-        return spec.getFields().stream().filter(f -> f.getVariable(0).getNameAsString().equals(field)).findFirst().orElse(null);
+    public static PrototypeField findField(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, String field) {
+        var result = parsed.getFields().stream().filter(f -> f.getName().equals(field)).findFirst();
+        if (result.isPresent()) {
+            return result.get();
+        }
+        if (nonNull(parsed.getBase())) {
+            return findField(parsed.getBase(), field);
+        }
+
+        return null;
     }
 
     public static MethodDeclaration findMethod(ClassOrInterfaceDeclaration spec, String method) {
