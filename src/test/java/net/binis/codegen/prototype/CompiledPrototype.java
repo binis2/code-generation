@@ -21,11 +21,13 @@ package net.binis.codegen.prototype;
  */
 
 import net.binis.codegen.annotation.CodePrototype;
+import net.binis.codegen.annotation.Default;
 import net.binis.codegen.spring.annotation.QueryFragment;
 
 @CodePrototype(generateImplementation = false)
 public interface CompiledPrototype {
 
+    @Default("true")
     boolean test();
 
     default boolean isTestable() {

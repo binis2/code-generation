@@ -930,6 +930,12 @@ public class Generator {
                             } else if (Default.class.isAssignableFrom(ann)) {
                                 if (a.isSingleMemberAnnotationExpr()) {
                                     field.getVariables().iterator().next().setInitializer(a.asSingleMemberAnnotationExpr().getMemberValue().asStringLiteralExpr().asString());
+                                } else if (a.isNormalAnnotationExpr()) {
+                                    a.asNormalAnnotationExpr().getPairs().forEach(p -> {
+                                        if ("value".equals(p.getName().asString())) {
+                                            field.getVariables().iterator().next().setInitializer(p.getValue().asStringLiteralExpr().asString());
+                                        }
+                                    });
                                 }
                             }
 
