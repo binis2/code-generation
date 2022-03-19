@@ -56,6 +56,10 @@ public class PresetTestImpl implements PresetTest {
     public boolean isTest() {
         return test;
     }
+
+    public boolean isTestable() {
+        return !test;
+    }
     // endregion
 
     // region setters

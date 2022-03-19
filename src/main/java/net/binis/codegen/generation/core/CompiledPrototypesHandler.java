@@ -21,8 +21,12 @@ package net.binis.codegen.generation.core;
  */
 
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.annotation.CodeAnnotation;
+import net.binis.codegen.annotation.CodeImplementation;
 import net.binis.codegen.annotation.CodePrototype;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
@@ -32,6 +36,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -59,6 +65,7 @@ public abstract class CompiledPrototypesHandler {
                     var declaration = new CompilationUnit().setPackageDeclaration(c.getPackageName()).addClass(c.getSimpleName()).setInterface(true);
                     handleAnnotations(c, declaration);
                     handleFields(c, declaration);
+                    handleDefaultMethods(c, declaration);
                     var props = handleProperties(declaration, c, ann);
 
                     var parsed = Structures.Parsed.<ClassOrInterfaceDeclaration>builder()
@@ -203,6 +210,21 @@ public abstract class CompiledPrototypesHandler {
         }
     }
 
+    private static void handleMethodAnnotations(Method method, MethodDeclaration mtd) {
+        var unit = mtd.findCompilationUnit().get();
+        for (var ann : method.getAnnotations()) {
+            if (!ann.annotationType().equals(CodeAnnotation.class)) {
+                lookup.getParser().parseAnnotation(ann.toString()).getResult().ifPresent(annotation -> {
+                    unit.addImport(ann.annotationType().getCanonicalName());
+                    annotation.setName(ann.annotationType().getSimpleName());
+                    addAnnotationTypeImports(ann, unit);
+                    mtd.addAnnotation(annotation);
+                });
+            }
+        }
+    }
+
+
     private static void addAnnotationTypeImports(Annotation ann, CompilationUnit unit) {
         for (var method : ann.annotationType().getDeclaredMethods()) {
             if (!"java.lang".equals(method.getReturnType().getPackageName())) {
@@ -237,6 +259,48 @@ public abstract class CompiledPrototypesHandler {
         for (var i = 0; i < Array.getLength(object); i++) {
             handleAnnotationValue(Array.get(object, i), unit);
         }
+    }
+
+    private static void handleDefaultMethods(Class<?> cls, ClassOrInterfaceDeclaration declaration) {
+        var unit = declaration.findCompilationUnit().get();
+
+        for (var method : cls.getDeclaredMethods()) {
+            if (method.isDefault()) {
+                var ann = method.getAnnotation(CodeImplementation.class);
+                if (nonNull(ann)) {
+                    var mtd = declaration.addMethod(method.getName(), Modifier.Keyword.DEFAULT).setType(method.getReturnType().getSimpleName());
+                    Helpers.importClass(unit, method.getReturnType());
+                    for (var par : method.getParameters()) {
+                        mtd.addParameter(par.getType().getSimpleName(), par.getName());
+                        Helpers.importClass(unit, par.getType());
+                    }
+                    handleMethodAnnotations(method, mtd);
+
+                    for (var imprt : ann.imports()) {
+                        unit.addImport(imprt);
+                    }
+
+                    mtd.setBody(lookup.getParser().parseBlock(calcBlock(ann.value())).getResult().get());
+                } else {
+                    if (Arrays.stream(method.getAnnotations()).noneMatch(a -> nonNull(a.annotationType().getAnnotation(CodeAnnotation.class)))) {
+                        log.warn("Compiled default method {}.{} can't be handled!", cls.getSimpleName(), method.getName());
+                    }
+                }
+            }
+        }
+
+        for (var intf : cls.getInterfaces()) {
+            handleDefaultMethods(intf, declaration);
+        }
+    }
+
+    private static String calcBlock(String value) {
+        var result = new StringBuilder().append('{').append(value);
+        if (value.length() > 0 && result.charAt(result.length() - 1) != ';') {
+            result.append(';');
+        }
+        result.append('}');
+        return result.toString();
     }
 
 }

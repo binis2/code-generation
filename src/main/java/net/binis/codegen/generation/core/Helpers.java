@@ -890,4 +890,10 @@ public class Helpers {
         return parsed.getDeclaration().getAnnotations().stream()
                 .map(a -> getExternalClassName(parsed.getDeclaration().findCompilationUnit().get(), a.getNameAsString())).anyMatch(a -> annotation.getCanonicalName().equals(a));
     }
+
+    public static void importClass(CompilationUnit unit, Class<?> cls) {
+        if (!cls.isPrimitive() && !"java.lang".equals(cls.getPackageName())) {
+            unit.addImport(cls.getCanonicalName());
+        }
+    }
 }
