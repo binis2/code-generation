@@ -1,5 +1,11 @@
 # Change Log
 
+**20-03-2022** ver. 0.1.15
+* Generator: Added ability to define method body with string literal.
+* Spring: Fixed projection complex field discovery when inheritance is involved.
+* Generator: Fixed @Default handling when normal annotation expression is used.
+* Generator: Fixed redundant field creation in some cases.
+
 **13-03-2022** ver. 0.1.14
 * Generator: New experimental feature - Query presets.
 * Generator: Added ability to @Keep default method implementations in the generated interface.
