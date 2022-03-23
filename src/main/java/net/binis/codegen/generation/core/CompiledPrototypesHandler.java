@@ -37,7 +37,8 @@ import org.apache.commons.lang3.StringUtils;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -181,9 +182,9 @@ public abstract class CompiledPrototypesHandler {
         var unit = declaration.findCompilationUnit().get();
         for (var method : c.getDeclaredMethods()) {
             if (!method.isDefault() && method.getParameterCount() == 0 && !Void.class.equals(method.getReturnType())) {
-                var mtd = declaration.addMethod(method.getName()).setType(method.getReturnType().getSimpleName()).setBody(null);
+                var mtd = declaration.addMethod(method.getName()).setType(buildType(unit, method.getGenericReturnType(), method.getReturnType())).setBody(null);
                 if (!method.getReturnType().isPrimitive()) {
-                    unit.addImport(method.getReturnType().getCanonicalName());
+                    unit.addImport(method.getReturnType());
                 }
 
                 for (var ann : method.getAnnotations()) {
@@ -195,6 +196,35 @@ public abstract class CompiledPrototypesHandler {
                     });
                 }
             }
+        }
+    }
+
+    private static String buildType(CompilationUnit unit, Type type, Class<?> returnType) {
+        if (type instanceof ParameterizedType) {
+            var t = (ParameterizedType) type;
+            var result = new StringBuilder(returnType.getSimpleName());
+            var generics = t.getActualTypeArguments();
+
+            if (generics.length > 0) {
+                result.append('<');
+                for (var generic : generics) {
+                    if (generic instanceof Class) {
+                        var cls = (Class) generic;
+                        result.append(cls.getSimpleName()).append(", ");
+                        if (!cls.isPrimitive()) {
+                            unit.addImport(cls);
+                        }
+                    } else {
+                        result.append(generic.getTypeName()).append(", ");
+                    }
+                }
+                result.setLength(result.length() - 2);
+                result.append('>');
+            }
+
+            return result.toString();
+        } else {
+            return returnType.getSimpleName();
         }
     }
 

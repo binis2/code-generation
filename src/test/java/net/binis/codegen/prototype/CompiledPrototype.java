@@ -25,11 +25,15 @@ import net.binis.codegen.annotation.CodePrototype;
 import net.binis.codegen.annotation.Default;
 import net.binis.codegen.spring.annotation.QueryFragment;
 
+import java.util.List;
+
 @CodePrototype(generateImplementation = false)
 public interface CompiledPrototype {
 
     @Default("true")
     boolean test();
+
+    List<String> list();
 
     @CodeImplementation("return !test")
     default boolean isTestable() {

@@ -7,7 +7,7 @@
 * Generator: Fixed redundant field creation in some cases.
 
 **13-03-2022** ver. 0.1.14
-* Generator: New experimental feature - Query presets.
+* Generator: New experimental feature - Query fragments.
 * Generator: Added ability to @Keep default method implementations in the generated interface.
 * Validation: Fixed generation of consecutive sanitization annotations.
 

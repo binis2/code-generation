@@ -9,9 +9,9 @@ package net.binis.codegen.generation.core;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -118,7 +118,7 @@ public class CollectionsHandler {
                         .classType("CodeListImpl")
                         .implementor("java.util.ArrayList")
                         .implementorInterface("java.util.List")
-                        .prototypeParam(!type.getTypeArguments().get().get(0).toString().equals(generic.get(0).getKey()));
+                        .prototypeParam(isPrototypeParam(type, generic));
                 break;
             case "Set":
             case "CodeSet":
@@ -127,7 +127,7 @@ public class CollectionsHandler {
                         .classType("CodeSetImpl")
                         .implementor("java.util.HashSet")
                         .implementorInterface("java.util.Set")
-                        .prototypeParam(!type.getTypeArguments().get().get(0).toString().equals(generic.get(0).getKey()));
+                        .prototypeParam(isPrototypeParam(type, generic));
                 break;
             case "Map":
             case "CodeMap":
@@ -156,13 +156,19 @@ public class CollectionsHandler {
         return result;
     }
 
+    private static boolean isPrototypeParam(ClassOrInterfaceType type, List<Pair<String, Boolean>> generic) {
+        var arguments = type.getTypeArguments();
+        if (arguments.isPresent() && arguments.get().isNonEmpty()) {
+            return !arguments.get().get(0).toString().equals(generic.get(0).getKey());
+        }
+        return false;
+    }
+
     public static String getCollectionType(Type type) {
         if (type.isClassOrInterfaceType()) {
             var args = type.asClassOrInterfaceType().getTypeArguments();
-            if (args.isPresent()) {
-                if (args.get().size() == 1) {
-                    return args.get().get(0).asString();
-                }
+            if (args.isPresent() && (args.get().size() == 1)) {
+                return args.get().get(0).asString();
             }
         }
         return "Object";

@@ -143,7 +143,7 @@ public class CodeGen {
             try {
                 var parse = parser.parse(file);
                 var unit = parse.getResult().get();
-                var fileName = unit.getPackageDeclaration().get().getNameAsString().replace('.', '/') + unit.getType(0).getNameAsString();
+                var fileName = unit.getPackageDeclaration().get().getNameAsString().replace('.', '/') + "/" + unit.getType(0).getNameAsString();
                 log.info("Parsed {} - {}", fileName, parse);
                 parse.getResult().ifPresent(u ->
                         u.getTypes().forEach(t ->
