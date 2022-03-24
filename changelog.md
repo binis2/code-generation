@@ -1,5 +1,8 @@
 # Change Log
 
+**24-03-2022** ver. 0.1.16
+* Generator: Fixed field generics handling for compiled prototypes.
+
 **20-03-2022** ver. 0.1.15
 * Generator: Added ability to define method body with string literal.
 * Spring: Fixed projection complex field discovery when inheritance is involved.
