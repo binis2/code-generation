@@ -36,6 +36,7 @@ import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -59,6 +60,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
     private static final String VALUE = "value";
     private static final String PARAMS = "params";
     private static final String MESSAGE = "message";
+    private static final String MESSAGES = "messages";
     private static final String AS_CODE = "asCode";
 
     @Override
@@ -172,6 +174,9 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         case MESSAGE:
                             params.message(pair.getValue().asStringLiteralExpr().asString());
                             break;
+                        case MESSAGES:
+                            params.messages(pair.getValue().asArrayInitializerExpr().getValues().stream().map(e -> e.asStringLiteralExpr().asString()).collect(Collectors.toList()));
+                            break;
                         case PARAMS:
                             params.params(pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).map(StringLiteralExpr::asString).collect(Collectors.toList()));
                             break;
@@ -208,7 +213,16 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                 .findFirst().ifPresent(m ->
                         params.message((String) m.getDefaultValue()));
 
+        var messages = Holder.<List<String>>blank();
+        Arrays.stream(annotationClass.getDeclaredMethods())
+                .filter(m -> MESSAGES.equals(m.getName()))
+                .filter(m -> m.getReturnType().equals(String[].class))
+                .filter(m -> isNull(m.getDeclaredAnnotation(AliasFor.class)))
+                .findFirst().ifPresent(m ->
+                        messages.set(List.of((String[]) m.getDefaultValue())));
+
         parOrder.forEach(p -> list.add(checkAsCode(p.getMiddle(), p.getRight())));
+        var msgs = 0;
 
         for (var node : annotation.getChildNodes()) {
             if (node instanceof MemberValuePair) {
@@ -225,6 +239,22 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         break;
                     case MESSAGE:
                         params.message(pair.getValue().asStringLiteralExpr().asString());
+                        break;
+                    case MESSAGES:
+                        if (pair.getValue().isArrayInitializerExpr()) {
+                            params.messages(pair.getValue().asArrayInitializerExpr().getValues().stream().map(e -> e.asStringLiteralExpr().asString()).collect(Collectors.toList()));
+                        } else if (pair.getValue().isStringLiteralExpr()) {
+                            var msg = pair.getValue().asStringLiteralExpr().asString();
+                            if (messages.isEmpty()) {
+                                messages.set(new ArrayList<>());
+                            }
+                            if (msgs < messages.get().size()) {
+                                messages.get().set(msgs, msg);
+                            } else {
+                                messages.get().add(msg);
+                            }
+                            msgs++;
+                        }
                         break;
                     case AS_CODE:
                         params.asCode(pair.getValue().asStringLiteralExpr().asString());
@@ -285,6 +315,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         if (!list.isEmpty()) {
             params.params(list);
         }
+        params.messages = messages.get();
     }
 
     private Object checkAsCode(Object value, AsCode code) {
@@ -350,7 +381,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                     .append(field.getName())
                     .append("\", ")
                     .append(field.getName())
-                    .append(").validate(")
+                    .append(").validate")
+                    .append(nonNull(params.getMessages()) ? "WithMessages(" : "(")
                     .append(params.getCls())
                     .append(".class, ")
                     .append(calcMessage(params))
@@ -374,7 +406,11 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
     }
 
     private String calcMessage(Params params) {
-        return isNull(params.getMessage()) ? "null" : "\"" + StringEscapeUtils.escapeJava(params.getMessage()) + "\"";
+        if (nonNull(params.getMessages())) {
+            return "new String[] {" + params.messages.stream().map(s -> "\"" + StringEscapeUtils.escapeJava(s) + "\"").collect(Collectors.joining(", ")) + "}";
+        } else {
+            return isNull(params.getMessage()) ? "null" : "\"" + StringEscapeUtils.escapeJava(params.getMessage()) + "\"";
+        }
     }
 
     private void handleSanitizationModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, String key, Params params) {
@@ -588,6 +624,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
     private static class Params {
         private String cls;
         private String message;
+        private List<String> messages;
+
         private List<Object> params;
         private String asCode;
 
