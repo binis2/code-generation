@@ -1,5 +1,11 @@
 # Change Log
 
+**05-04-2022** ver. 0.1.17
+* Spring: Added join() for single relations.
+* Spring: Added group() to aggregations.
+* Spring: **(Breaking change)** distinct() no longer groups by that column.
+* Validation: Added option to create validations with multiple error messages.
+
 **24-03-2022** ver. 0.1.16
 * Generator: Fixed field generics handling for compiled prototypes.
 

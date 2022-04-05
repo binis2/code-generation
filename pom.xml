@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>dev.binis</groupId>
 	<artifactId>code-generator</artifactId>
-	<version>0.1.16</version>
+	<version>0.1.17</version>
 	<name>code-generator</name>
 	<description>Binis Code Generation</description>
 	<url>https://github.com/binis2/code-generation</url>
@@ -64,12 +64,12 @@
 		<dependency>
 			<groupId>dev.binis</groupId>
 			<artifactId>code-generator-core</artifactId>
-			<version>0.1.16</version>
+			<version>0.1.17</version>
 		</dependency>
 		<dependency>
 			<groupId>dev.binis</groupId>
 			<artifactId>code-generator-spring</artifactId>
-			<version>0.1.16</version>
+			<version>0.1.17</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.javaparser</groupId>
