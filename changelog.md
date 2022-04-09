@@ -1,5 +1,12 @@
 # Change Log
 
+**09-04-2022** ver. 0.1.18
+* Generator: Added @Initializer annotation to initialize fields inside default constructor.
+* Generator: Added ability to override fields in base implementation.
+* Generator: Better handling of default annotation params for compiled prototypes.
+* Generator: Added _if() for modifiers.
+* Spring: Added leftJoin() for single relations.
+
 **05-04-2022** ver. 0.1.17
 * Spring: Added join() for single relations.
 * Spring: Added group() to aggregations.
