@@ -24,6 +24,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.MemberValuePair;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.CodeAnnotation;
 import net.binis.codegen.annotation.CodeImplementation;
@@ -54,10 +55,6 @@ import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
 public abstract class CompiledPrototypesHandler {
-
-    private CompiledPrototypesHandler() {
-        //Do nothing
-    }
 
     public static boolean handleCompiledPrototype(String compiledPrototype) {
         var result = Holder.of(false);
@@ -188,7 +185,21 @@ public abstract class CompiledPrototypesHandler {
                 }
 
                 for (var ann : method.getAnnotations()) {
+                    var methods = ann.annotationType().getDeclaredMethods();
                     lookup.getParser().parseAnnotation(ann.toString()).getResult().ifPresent(annotation -> {
+                        for (var m : methods) {
+                            if (nonNull(m.getDefaultValue())) {
+                                annotation.getChildNodes().stream().filter(MemberValuePair.class::isInstance).map(MemberValuePair.class::cast).filter(v -> v.getName().asString().equals(m.getName())).findFirst().ifPresent(pair -> {
+                                    if (m.getDefaultValue() instanceof Class && pair.getValue().toString().equals(((Class) m.getDefaultValue()).getName() + ".class")) {
+                                        annotation.remove(pair);
+                                    } else if (m.getDefaultValue().getClass().equals(String.class) && m.getDefaultValue().toString().equals(pair.getValue().asStringLiteralExpr().asString())) {
+                                        annotation.remove(pair);
+                                    } else if (m.getDefaultValue().toString().equals(pair.getValue().toString())) {
+                                        annotation.remove(pair);
+                                    }
+                                });
+                            }
+                        }
                         unit.addImport(ann.annotationType().getCanonicalName());
                         annotation.setName(ann.annotationType().getSimpleName());
                         addAnnotationTypeImports(ann, unit);

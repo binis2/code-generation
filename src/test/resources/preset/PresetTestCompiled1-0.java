@@ -7,6 +7,7 @@ import net.binis.codegen.spring.query.base.BaseQueryNameImpl;
 import net.binis.codegen.spring.query.*;
 import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.creator.EntityCreator;
+import javax.persistence.OneToOne;
 import javax.annotation.processing.Generated;
 import java.util.function.Function;
 import java.util.Optional;
@@ -24,6 +25,9 @@ public class PresetTestImpl implements PresetTest {
     protected boolean test = true;
 
     protected String title;
+
+    @OneToOne(cascade = {})
+    protected String type;
 
     // region constructor & initializer
     {
@@ -51,6 +55,10 @@ public class PresetTestImpl implements PresetTest {
 
     public String getTitle() {
         return title;
+    }
+
+    public String getType() {
+        return type;
     }
 
     public boolean isTest() {
@@ -81,6 +89,10 @@ public class PresetTestImpl implements PresetTest {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
     // endregion
 
@@ -162,6 +174,14 @@ public class PresetTestImpl implements PresetTest {
             return identifier("title");
         }
 
+        public QuerySelectOperation type(String type) {
+            return identifier("type", type);
+        }
+
+        public QueryFunctions type() {
+            return identifier("type");
+        }
+
         protected class PresetTestQueryOrderImpl extends QueryOrderer implements PresetTest.QueryOrder, PresetTest.QueryAggregate {
 
             protected PresetTestQueryOrderImpl(PresetTestQueryExecutorImpl executor, Function<String, Object> func) {
@@ -182,6 +202,10 @@ public class PresetTestImpl implements PresetTest {
 
             public QueryOrderOperation title() {
                 return (QueryOrderOperation) func.apply("title");
+            }
+
+            public QueryOrderOperation type() {
+                return (QueryOrderOperation) func.apply("type");
             }
         }
     }
@@ -220,6 +244,14 @@ public class PresetTestImpl implements PresetTest {
 
         public QuerySelectOperation title(String title) {
             return executor.identifier("title", title);
+        }
+
+        public QueryFunctions type() {
+            return executor.identifier("type");
+        }
+
+        public QuerySelectOperation type(String type) {
+            return executor.identifier("type", type);
         }
     }
     // endregion

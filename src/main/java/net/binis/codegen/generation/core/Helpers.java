@@ -524,7 +524,6 @@ public class Helpers {
 
     public static String mapGenericMethodSignature(Method method, Map<String, String> types) {
         return mapGenericSignature(method.getGenericReturnType(), types);
-
     }
 
     public static String mapGenericSignature(java.lang.reflect.Type type, Map<String, String> types) {

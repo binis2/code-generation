@@ -17,6 +17,7 @@ public interface Test {
     }
 
     interface Modify extends Test.Fields<Test.Modify> {
+        Test.Modify _if(boolean condition, java.util.function.Consumer<Test.Modify> consumer);
         Test delete();
         Test detach();
         Test done();

@@ -25,10 +25,14 @@ import net.binis.codegen.annotation.CodePrototype;
 import net.binis.codegen.annotation.Default;
 import net.binis.codegen.spring.annotation.QueryFragment;
 
+import javax.persistence.OneToOne;
 import java.util.List;
 
 @CodePrototype(generateImplementation = false)
 public interface CompiledPrototype {
+
+    @OneToOne
+    String type();
 
     @Default("true")
     boolean test();

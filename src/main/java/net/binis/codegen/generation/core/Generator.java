@@ -41,7 +41,9 @@ import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 
+import java.lang.annotation.Annotation;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -234,6 +236,7 @@ public class Generator {
                         checkForDeclaredConstants(intf);
                         checkForClassExpressions(spec, typeDeclaration);
                         checkForClassExpressions(intf, typeDeclaration);
+                        handleInitializations(parse);
 
                         handleMixin(parse);
 
@@ -251,6 +254,31 @@ public class Generator {
         if (prsd != null && processed.get() == 0) {
             ((Structures.Parsed) prsd).setInvalid(true);
         }
+    }
+
+    private static void handleInitializations(Structures.Parsed<ClassOrInterfaceDeclaration> parse) {
+        var list = parse.getDeclaration().getAnnotations().stream().filter(a -> "Initialize".equals(a.getNameAsString())).collect(Collectors.toList());
+        var constructor = parse.getSpec().getDefaultConstructor().orElseGet(
+                () -> parse.getSpec().addConstructor(PUBLIC).setBody(nonNull(parse.getBase()) ? new BlockStmt().addStatement("super();") : new BlockStmt()));
+        var unit = parse.getSpec().findCompilationUnit().get();
+        list.forEach(ann -> {
+            var statement = Holder.of("");
+            ann.getChildNodes().stream().filter(MemberValuePair.class::isInstance).map(MemberValuePair.class::cast).forEach(pair -> {
+                switch (pair.getNameAsString()) {
+                    case "field":
+                        statement.set("this." + pair.getValue().asStringLiteralExpr().asString() + " = " + statement.get());
+                        break;
+                    case "expression" :
+                        statement.set(statement.get() + pair.getValue().asStringLiteralExpr().asString() + ";");
+                        break;
+                    case "imports" : pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
+                        break;
+                    default:
+                        log.warn("Invalid @Initialize member {}", pair.getNameAsString());
+                }
+            });
+            constructor.getBody().addStatement(statement.get());
+        });
     }
 
     public static Optional<AnnotationExpr> getCodeAnnotation(TypeDeclaration<?> type) {
@@ -912,7 +940,7 @@ public class Generator {
         }
     }
 
-    private static void handleFieldAnnotations(CompilationUnit unit, FieldDeclaration field, MethodDeclaration method) {
+    private static void handleFieldAnnotations(CompilationUnit unit, FieldDeclaration field, MethodDeclaration method, boolean compiledAnnotations) {
         method.getAnnotations().forEach(a ->
                 notNull(getExternalClassName(unit, a.getNameAsString()), name -> {
                     var ann = loadClass(name);
@@ -959,7 +987,11 @@ public class Generator {
                                 log.warn("Invalid annotation target {}", name);
                             }
                         } else {
-                            log.warn("Can't process annotation {}", name);
+                            if (compiledAnnotations) {
+                                handleMissingAnnotation(unit, field, a);
+                            } else {
+                                log.warn("Can't process annotation {}", name);
+                            }
                         }
                     }
                 })
@@ -972,6 +1004,13 @@ public class Generator {
         field.addAnnotation(ann);
     }
 
+    private static void handleMissingAnnotation(CompilationUnit unit, FieldDeclaration field, AnnotationExpr ann) {
+        var existing = field.getAnnotations().stream().filter(a -> a.getNameAsString().equals(ann.getNameAsString())).findFirst();
+        if (existing.isEmpty()) {
+            field.addAnnotation(ann);
+        }
+    }
+
     private static void handleAnnotation(CompilationUnit unit, MethodDeclaration method, AnnotationExpr ann) {
         method.getAnnotations().stream().filter(a -> a.getNameAsString().equals(ann.getNameAsString())).findFirst().ifPresent(a ->
                 method.getAnnotations().remove(a));
@@ -980,6 +1019,15 @@ public class Generator {
         notNull(getExternalClassNameIfExists(unit, ann.getNameAsString()), i ->
                 method.findCompilationUnit().ifPresent(u -> u.addImport(i)));
     }
+
+    private static void handleAnnotation(CompilationUnit unit, MethodDeclaration method, AnnotationExpr ann, CompilationUnit destinationUnit) {
+        method.getAnnotations().stream().filter(a -> a.getNameAsString().equals(ann.getNameAsString())).findFirst().ifPresent(a ->
+                method.getAnnotations().remove(a));
+        method.addAnnotation(ann);
+
+        notNull(getExternalClassNameIfExists(unit, ann.getNameAsString()), destinationUnit::addImport);
+    }
+
 
 
     private static void handleMethodAnnotations(MethodDeclaration method, MethodDeclaration declaration) {
@@ -1067,10 +1115,12 @@ public class Generator {
     }
 
     private static PrototypeField addField(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Type generic) {
+        var compiledAnnotations = false;
         PrototypeField result = null;
         var fieldName = method.getNameAsString();
         var fieldProto = findField(parsed, fieldName);
         var field = nonNull(fieldProto) ? fieldProto.getDeclaration() : null;
+        var unit = type.findCompilationUnit().get();
         if (isNull(field)) {
             var prototypeMap = new HashMap<String, PrototypeDescription<ClassOrInterfaceDeclaration>>();
             if (nonNull(generic)) {
@@ -1090,7 +1140,7 @@ public class Generator {
                     .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
                     .ignores(getIgnores(method))
                     .generics(nonNull(generic) ? Map.of(generic.asString(), generic) : null)
-                    .prototype(isNull(generic) ? lookup.findParsed(getExternalClassName(type.findCompilationUnit().get(), method.getType().asString())) : null)
+                    .prototype(isNull(generic) ? lookup.findParsed(getExternalClassName(unit, method.getType().asString())) : null)
                     .typePrototypes(!prototypeMap.isEmpty() ? prototypeMap : null)
                     .type(field.getElementType().asString())
                     .fullType(getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
@@ -1100,11 +1150,27 @@ public class Generator {
             var proto = parsed.getFields().stream().filter(d -> d.getName().equals(fieldName)).findFirst();
             if (proto.isPresent()) {
                 result = proto.get();
-                ((Structures.FieldData) result).setPrototype(isNull(generic) ? lookup.findParsed(getExternalClassName(type.findCompilationUnit().get(), method.getType().asString())) : null);
+                ((Structures.FieldData) result).setPrototype(isNull(generic) ? lookup.findParsed(getExternalClassName(unit, method.getType().asString())) : null);
                 mergeAnnotations(method, result.getDescription());
+            } else {
+                result = fieldProto;
+                var prototypeMap = new HashMap<String, PrototypeDescription<ClassOrInterfaceDeclaration>>();
+                if (nonNull(generic)) {
+                    field = spec.addField(generic, fieldName, PROTECTED);
+                } else {
+                    if (method.getTypeParameters().isEmpty() || !method.getType().asString().equals(method.getTypeParameter(0).asString())) {
+                        field = spec.addField(handleType(type, spec, method.getType(), prototypeMap), fieldName, PROTECTED);
+                    } else {
+                        field = spec.addField("Object", fieldName, PROTECTED);
+                    }
+                }
+                method = method.clone();
+                mergeAnnotations(result.getDescription(), unit, method);
+                compiledAnnotations = true;
+                unit = fieldProto.getDescription().findCompilationUnit().get();
             }
         }
-        handleFieldAnnotations(type.findCompilationUnit().get(), field, method);
+        handleFieldAnnotations(unit, field, method, compiledAnnotations);
         return result;
     }
 
@@ -1454,11 +1520,18 @@ public class Generator {
 
     public static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, Map<String, String> signature, String name) {
         if (!methodExists(spec, declaration, false)) {
+            var unit = spec.findCompilationUnit().get();
             var method = spec.addMethod(declaration.getName());
             method.setType(mapGenericMethodSignature(declaration, signature));
+            var names = new LocalVariableTableParameterNameDiscoverer().getParameterNames(declaration);
             for (var i = 0; i < declaration.getParameterCount(); i++) {
                 var param = declaration.getParameters()[i];
-                method.addParameter(param.getType().getCanonicalName(), param.getName());
+                if (declaration.getGenericParameterTypes()[i] instanceof ParameterizedType) {
+                    method.addParameter(mapGenericSignature(declaration.getGenericParameterTypes()[i], signature), names[i]);
+                } else {
+                    importClass(unit, param.getType());
+                    method.addParameter(param.getType().getSimpleName(), names[i]);
+                }
             }
             method.setBody(null);
         }
@@ -1466,10 +1539,12 @@ public class Generator {
 
     public static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, Map<String, String> signature, String modName, String intfName, Final ann) {
         if (!methodExists(spec, declaration, false)) {
+            var unit = spec.findCompilationUnit().get();
             spec.findCompilationUnit().ifPresent(u -> Arrays.stream(ann.imports()).forEach(u::addImport));
             var method = spec.addMethod(declaration.getName());
             method.setType(mapGenericMethodSignature(declaration, signature));
             var params = ann.description().split(";");
+            var names = new LocalVariableTableParameterNameDiscoverer().getParameterNames(declaration);
             for (var i = 0; i < declaration.getParameterCount(); i++) {
                 var param = declaration.getParameters()[i];
                 if (i < params.length && StringUtils.isNotBlank(params[i])) {
@@ -1478,10 +1553,12 @@ public class Generator {
                     if (idx > -1) {
                         method.addParameter(desc.substring(0, idx), desc.substring(idx + 1));
                     } else {
-                        method.addParameter(param.getType().getCanonicalName(), param.getName());
+                        method.addParameter(param.getType().getSimpleName(), names[i]);
+                        importClass(unit, param.getType());
                     }
                 } else {
-                    method.addParameter(param.getType().getCanonicalName(), param.getName());
+                    method.addParameter(param.getType().getSimpleName(), names[i]);
+                    importClass(unit, param.getType());
                 }
             }
             method.setBody(null);
@@ -1518,6 +1595,27 @@ public class Generator {
             }
         });
     }
+
+    private static void mergeAnnotations(MethodDeclaration source, CompilationUnit destinationUnit, MethodDeclaration destination) {
+        source.findCompilationUnit().ifPresent(unit -> {
+            for (var ann : destination.getAnnotations()) {
+                notNull(getExternalClassNameIfExists(destinationUnit, ann.getNameAsString()), unit::addImport);
+            }
+            for (var ann : source.getAnnotations()) {
+                handleAnnotation(unit, destination, ann, destinationUnit);
+            }
+        });
+    }
+
+
+    private static void mergeAnnotations(FieldDeclaration source, FieldDeclaration destination) {
+        source.findCompilationUnit().ifPresent(unit -> {
+            for (var ann : source.getAnnotations()) {
+                handleAnnotation(unit, destination, ann);
+            }
+        });
+    }
+
 
     @SuppressWarnings("unchecked")
     public static void generateCodeForEnum(CompilationUnit parser) {

@@ -37,6 +37,7 @@ public interface PresetTest extends Compiled {
         QR parent(PresetTest parent);
         QR test(boolean test);
         QR title(String title);
+        QR type(String type);
     }
 
     interface QueryFieldsStart<QR, QS> extends QueryExecute<QR>, QueryWhere<QS>, QueryOperationFields<QueryFieldsStart<QR, QS>> {
@@ -46,6 +47,7 @@ public interface PresetTest extends Compiled {
         QueryFunctions<Integer, QR> data();
         QueryFunctions<Boolean, QR> test();
         QueryFunctions<String, QR> title();
+        QueryFunctions<String, QR> type();
     }
 
     interface QueryName<QS, QO, QR, QF> extends PresetTest.QueryFields<QuerySelectOperation<QS, QO, QR>>, PresetTest.QueryFuncs<QuerySelectOperation<QS, QO, QR>>, QueryFetch<QuerySelectOperation<QS, QO, QR>, QF> {
@@ -57,6 +59,7 @@ public interface PresetTest extends Compiled {
         QR parent();
         QR test();
         QR title();
+        QR type();
     }
 
     interface QueryOrder<QR> extends QueryOperationFields<QueryOrderOperation<PresetTest.QueryOrder<QR>, QR>>, QueryExecute<QR>, QueryScript<QueryOrderOperation<PresetTest.QueryOrder<QR>, QR>> {
