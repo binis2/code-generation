@@ -51,8 +51,7 @@ import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.EMBEDDED_MODIFIER_KEY;
 import static net.binis.codegen.generation.core.Helpers.getExternalClassName;
 import static net.binis.codegen.tools.Reflection.loadClass;
-import static net.binis.codegen.tools.Tools.notNull;
-import static net.binis.codegen.tools.Tools.withRes;
+import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
 public class ValidationEnricherHandler extends BaseEnricher implements ValidationEnricher {
@@ -220,6 +219,22 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                 .filter(m -> isNull(m.getDeclaredAnnotation(AliasFor.class)))
                 .findFirst().ifPresent(m ->
                         messages.set(List.of((String[]) m.getDefaultValue())));
+
+        if (messages.isEmpty()) {
+            Arrays.stream(annotationClass.getDeclaredMethods())
+                    .filter(m -> m.getReturnType().equals(String.class))
+                    .filter(m -> nullCheck(m.getDeclaredAnnotation(AliasFor.class), a -> MESSAGES.equals(a.value()), false))
+                    .forEach(m -> {
+                        if (messages.isEmpty()) {
+                            messages.set(new ArrayList<>());
+                        }
+                        if (nonNull(m.getDefaultValue())) {
+                            messages.get().add(m.getDefaultValue().toString());
+                        } else {
+                            messages.get().add("(%s) Invalid value!");
+                        }
+                    });
+        }
 
         parOrder.forEach(p -> list.add(checkAsCode(p.getMiddle(), p.getRight())));
         var msgs = 0;
