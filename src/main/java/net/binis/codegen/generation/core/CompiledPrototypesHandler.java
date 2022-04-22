@@ -36,10 +36,7 @@ import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Array;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,6 +58,11 @@ public abstract class CompiledPrototypesHandler {
         notNull(loadClass(compiledPrototype), c ->
                 notNull(c.getAnnotation(CodePrototype.class), ann -> {
                     var declaration = new CompilationUnit().setPackageDeclaration(c.getPackageName()).addClass(c.getSimpleName()).setInterface(true);
+
+                    for (var p : c.getTypeParameters()) {
+                        declaration.addTypeParameter(p.getName());
+                    }
+
                     handleAnnotations(c, declaration);
                     handleFields(c, declaration);
                     handleDefaultMethods(c, declaration);
@@ -234,6 +236,8 @@ public abstract class CompiledPrototypesHandler {
             }
 
             return result.toString();
+        } else if (type instanceof TypeVariable) {
+            return ((TypeVariable) type).getName();
         } else {
             return returnType.getSimpleName();
         }

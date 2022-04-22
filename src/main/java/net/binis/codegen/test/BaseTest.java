@@ -67,7 +67,8 @@ public abstract class BaseTest {
     }
 
     protected void generate() {
-        for (var entry : lookup.parsed()) {
+        var parsed = new ArrayList<>(lookup.parsed());
+        for (var entry : parsed) {
             ifNull(entry.getFiles(), () ->
                     Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get(), entry));
         }
@@ -167,14 +168,22 @@ public abstract class BaseTest {
         testMulti(files, null);
     }
 
+    protected void testMulti(List<Triple<String, String, String>> files, int expected) {
+        testMulti(files, expected, null);
+    }
+
     protected void testMulti(List<Triple<String, String, String>> files, String pathToSave) {
+        testMulti(files, files.size(), pathToSave);
+    }
+
+    protected void testMulti(List<Triple<String, String, String>> files, int expected, String pathToSave) {
         var list = newList();
         files.forEach(t ->
                 load(list, t.getLeft()));
         assertTrue(compile(new TestClassLoader(), list, null));
         generate();
 
-        assertEquals(files.size(), lookup.parsed().size());
+        assertEquals(expected, lookup.parsed().size());
 
 
         var compileList = new ArrayList<Pair<String, String>>();

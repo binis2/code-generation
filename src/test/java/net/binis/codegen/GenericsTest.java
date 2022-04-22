@@ -54,6 +54,15 @@ public class GenericsTest extends BaseTest {
     }
 
     @Test
+    public void testGenericsWithCompiledBase() {
+        testMulti(List.of(
+                Triple.of("generics/Prototype4.java", "generics/Prototype4-0.java", "generics/Prototype4-1.java"),
+                Triple.of("generics/Test4.java", "generics/Test4-0.java", "generics/Test4-1.java")
+        ), 3);
+    }
+
+
+    @Test
     public void testGenericsWithBaseAndPrototype() {
         testMulti(List.of(
                 Triple.of("generics/Extended2.java", "generics/Extended1-0.java", "generics/Extended1-1.java"),

@@ -199,7 +199,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     return type;
                 }
             }
-            
+
             if (isNull(field.getDescription())) {
                 return field.getDeclaration().getVariables().get(0).getType();
             } else {

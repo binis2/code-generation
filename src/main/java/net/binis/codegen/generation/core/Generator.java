@@ -141,7 +141,7 @@ public class Generator {
                                     if (eType.getTypeArguments().isEmpty()) {
                                         eType.setTypeArguments(new NodeList<>());
                                     }
-                                    var arg = handleType(parsed.getDeclaration().findCompilationUnit().get(), intf.findCompilationUnit().get(), tt);
+                                    var arg = handleType(parse.getDeclaration().findCompilationUnit().get(), spec.findCompilationUnit().get(), tt);
                                     eType.getTypeArguments().get().add(parsed.getParser().parseClassOrInterfaceType(arg).getResult().get());
                                 }));
 
@@ -184,7 +184,7 @@ public class Generator {
                                                 if (eType.getTypeArguments().isEmpty()) {
                                                     eType.setTypeArguments(new NodeList<>());
                                                 }
-                                                var arg = handleType(parsed.getDeclaration().findCompilationUnit().get(), intf.findCompilationUnit().get(), tt);
+                                                var arg = handleType(parse.getDeclaration().findCompilationUnit().get(), intf.findCompilationUnit().get(), tt);
                                                 eType.getTypeArguments().get().add(parsed.getParser().parseClassOrInterfaceType(arg).getResult().get());
                                             }));
 

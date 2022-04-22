@@ -900,7 +900,11 @@ public class Helpers {
         var generics = new HashMap<String, Type>();
         var i = 0;
         for (var g : cls.getTypeParameters()) {
-            generics.put(g.getNameAsString(), type.getTypeArguments().get().get(i));
+            try {
+                generics.put(g.getNameAsString(), type.getTypeArguments().get().get(i));
+            } catch (NoSuchElementException e) {
+                throw new GenericCodeGenException("Invalid generic type arguments for type " + type.getNameAsString());
+            }
             i++;
         }
         return generics.isEmpty() ? null : generics;
