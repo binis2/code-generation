@@ -45,6 +45,7 @@ import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -165,33 +166,58 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
 
     private void declare(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeData properties, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, ClassOrInterfaceDeclaration modifierFields, PrototypeField field, TypeDeclaration<ClassOrInterfaceDeclaration> classDeclaration, List<Pair<CompilationUnit, String>> imports) {
         if (!field.getIgnores().isForModifier()) {
-            var type = getFieldType(field);
+            var type = getFieldType(description, field);
             if (nonNull(modifierClass)) {
-                addModifier(modifierClass, field, isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), properties.getLongModifierName(), true);
+                addModifier(modifierClass, field, isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), properties.getLongModifierName(), true, type);
             }
             if (CollectionsHandler.isCollection(type)) {
-                addModifier(modifier, field, null, properties.getModifierName(), false);
+                addModifier(modifier, field, null, properties.getModifierName(), false, type);
                 CollectionsHandler.addModifier(modifierClass, field, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true);
                 CollectionsHandler.addModifier(modifier, field, properties.getModifierName(), null, false);
                 notNull(lookup.findParsed(CollectionsHandler.getFullCollectionType(type)), parsed ->
                         lookup.generateEmbeddedModifier(parsed));
             } else {
-                addField(field, modifierFields, imports);
+                addField(field, modifierFields, imports, type);
             }
         }
     }
 
-    private Type getFieldType(PrototypeField field) {
+    private Type getFieldType(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field) {
         if (field.getDescription().getTypeParameters().isEmpty()) {
-            return isNull(field.getDescription()) ? field.getDeclaration().getVariables().get(0).getType() : field.getDescription().getType();
+            if (field.isGenericField()) {
+                var intf = field.getParsed().getIntf();
+                var type = Holder.<Type>blank();
+                description.getIntf().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(intf.getNameAsString())).findFirst().ifPresent(t ->
+                        type.set(buildGeneric(field.getType(), t, intf)));
+                if (type.isPresent()) {
+                    return type.get();
+                }
+            }
+            if (nonNull(field.getGenerics())) {
+                var type = field.getGenerics().get(field.getType());
+                if (nonNull(type)) {
+                    return type;
+                }
+            }
+            
+            if (isNull(field.getDescription())) {
+                return field.getDeclaration().getVariables().get(0).getType();
+            } else {
+                var result = field.getDescription().getType();
+                if (nonNull(lookup.findParsed(Helpers.getExternalClassName(field.getDescription().findCompilationUnit().get(), result.asString())))) {
+                    result = lookup.getParser().parseClassOrInterfaceType(field.getType()).getResult().get();
+                }
+                return result;
+            }
         } else {
             return new ClassOrInterfaceType().setName("Object");
         }
+
     }
 
-    private void addField(PrototypeField field, ClassOrInterfaceDeclaration modifierFields, List<Pair<CompilationUnit, String>> imports) {
+    private void addField(PrototypeField field, ClassOrInterfaceDeclaration modifierFields, List<Pair<CompilationUnit, String>> imports, Type generic) {
         if (nonNull(modifierFields)) {
-            var type = field.getDeclaration().getVariable(0).getType();
+            var type = nonNull(generic) ? generic : field.getDeclaration().getVariable(0).getType();
             modifierFields.addMethod(field.getName())
                     .setType(MODIFIER_FIELD_GENERIC)
                     .addParameter(type, field.getName())
@@ -437,8 +463,8 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         }
     }
 
-    private void addModifier(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierClassName, String modifierName, boolean isClass) {
-        var type = declaration.isGenericMethod() ? "Object" : declaration.getType();
+    private void addModifier(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierClassName, String modifierName, boolean isClass, Type generic) {
+        var type = declaration.isGenericField() ? generic.asString() : declaration.isGenericMethod() ? "Object" : declaration.getType();
         if (isNull(type)) {
             type = isNull(declaration.getDescription()) || "dummy".equals(declaration.getDescription().findCompilationUnit().get().getPackageDeclaration().get().getNameAsString()) ?
                     handleType(declaration.getDeclaration().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDeclaration().getVariables().get(0).getType()) :

@@ -895,4 +895,24 @@ public class Helpers {
             unit.addImport(cls.getCanonicalName());
         }
     }
+
+    public static Map<String, Type> buildGenerics(ClassOrInterfaceType type, ClassOrInterfaceDeclaration cls) {
+        var generics = new HashMap<String, Type>();
+        var i = 0;
+        for (var g : cls.getTypeParameters()) {
+            generics.put(g.getNameAsString(), type.getTypeArguments().get().get(i));
+            i++;
+        }
+        return generics.isEmpty() ? null : generics;
+    }
+
+    public static Type buildGeneric(String type, ClassOrInterfaceType t, ClassOrInterfaceDeclaration cls) {
+        var generics = buildGenerics(t, cls);
+        if (nonNull(generics)) {
+            return generics.get(type);
+        }
+        return null;
+    }
+
+
 }

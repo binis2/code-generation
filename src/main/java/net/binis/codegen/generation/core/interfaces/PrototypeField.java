@@ -39,6 +39,7 @@ public interface PrototypeField {
     boolean isCollection();
     boolean isExternal();
     boolean isGenericMethod();
+    boolean isGenericField();
     Structures.Ignores getIgnores();
     PrototypeDescription<ClassOrInterfaceDeclaration> getPrototype();
     Map<String, Type> getGenerics();
@@ -49,6 +50,8 @@ public interface PrototypeField {
     MethodDeclaration getImplementationSetter();
 
     List<MethodDeclaration> getModifiers();
+
+    PrototypeField getParent();
 
     void addModifier(MethodDeclaration modifier);
     MethodDeclaration generateGetter();

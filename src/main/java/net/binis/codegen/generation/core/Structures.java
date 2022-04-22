@@ -104,6 +104,7 @@ public class Structures {
         private boolean collection;
         private boolean external;
         private boolean genericMethod;
+        private boolean genericField;
         private Structures.Ignores ignores;
         @ToString.Exclude
         private PrototypeDescription<ClassOrInterfaceDeclaration> prototype;
@@ -113,6 +114,9 @@ public class Structures {
         private Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> typePrototypes;
         @ToString.Exclude
         private List<MethodDeclaration> modifiers;
+
+        @ToString.Exclude
+        private PrototypeField parent;
 
         MethodDeclaration interfaceGetter;
         MethodDeclaration interfaceSetter;

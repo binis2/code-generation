@@ -43,7 +43,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 
-import java.lang.annotation.Annotation;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -137,6 +136,14 @@ public class Generator {
                                 }
                                 unit.addImport(parsed.getParsedFullName());
                                 spec.addExtendedType(parsed.getParsedName());
+                                var eType = spec.getExtendedTypes().getLast().get();
+                                t.getTypeArguments().ifPresent(args -> args.forEach(tt -> {
+                                    if (eType.getTypeArguments().isEmpty()) {
+                                        eType.setTypeArguments(new NodeList<>());
+                                    }
+                                    var arg = handleType(parsed.getDeclaration().findCompilationUnit().get(), intf.findCompilationUnit().get(), tt);
+                                    eType.getTypeArguments().get().add(parsed.getParser().parseClassOrInterfaceType(arg).getResult().get());
+                                }));
 
                                 if (parsed.getProperties().isGenerateConstructor() && properties.isGenerateConstructor()) {
                                     spec.findFirst(ConstructorDeclaration.class).ifPresent(c ->
@@ -145,6 +152,8 @@ public class Generator {
                                 }
                             }
                         });
+
+                        handleClassGenerics(parse);
 
                         typeDeclaration.getExtendedTypes().forEach(t -> {
                             var parsed = getParsed(t);
@@ -156,13 +165,13 @@ public class Generator {
                                         var dummy = envelopWithDummyClass(method);
                                         field.getDescription().findCompilationUnit().ifPresent(u -> u.getImports().forEach(dummy::addImport));
 
-                                        addField(parse, parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, method, nonNull(field.getGenerics()) ? field.getGenerics().values().iterator().next() : null);
+                                        addField(parse, parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, method, nonNull(field.getGenerics()) ? field.getGenerics().values().iterator().next() : buildGeneric(field.getType(), t, parsed.getDeclaration().asClassOrInterfaceDeclaration()));
                                     });
                                 }
 
                                 if (isNull(properties.getMixInClass()) || !properties.getMixInClass().equals(t.toString())) {
                                     if (!parsed.getProperties().isBase()) {
-                                        implementPrototype(parse, spec, parsed, null, false);
+                                        implementPrototype(parse, spec, parsed, buildGenerics(t, parsed.getDeclaration().asClassOrInterfaceDeclaration()), false);
                                     }
                                     if (StringUtils.isNotBlank(parsed.getInterfaceName())) {
                                         iUnit.addImport(parsed.getInterfaceFullName());
@@ -170,6 +179,15 @@ public class Generator {
                                             intf.addExtendedType(parsed.getInterfaceName() + MIX_IN_EXTENSION);
                                         } else {
                                             intf.addExtendedType(parsed.getInterfaceName());
+                                            var eType = intf.getExtendedTypes().getLast().get();
+                                            t.getTypeArguments().ifPresent(args -> args.forEach(tt -> {
+                                                if (eType.getTypeArguments().isEmpty()) {
+                                                    eType.setTypeArguments(new NodeList<>());
+                                                }
+                                                var arg = handleType(parsed.getDeclaration().findCompilationUnit().get(), intf.findCompilationUnit().get(), tt);
+                                                eType.getTypeArguments().get().add(parsed.getParser().parseClassOrInterfaceType(arg).getResult().get());
+                                            }));
+
                                         }
                                     }
                                 } else {
@@ -185,8 +203,14 @@ public class Generator {
                         }
 
                         if (properties.isGenerateInterface()) {
-                            spec.addImplementedType(properties.getInterfaceName());
+                            var im = spec.addImplementedType(properties.getInterfaceName()).getImplementedTypes().getLast().get();
                             unit.addImport(getClassName(intf));
+                            spec.getTypeParameters().forEach(t -> {
+                                if (im.getTypeArguments().isEmpty()) {
+                                    im.setTypeArguments(new NodeList<>());
+                                }
+                                im.getTypeArguments().get().add(t.clone().setTypeBound(new NodeList<>()));
+                            });
                         }
 
                         for (var member : type.getMembers()) {
@@ -254,6 +278,18 @@ public class Generator {
         if (prsd != null && processed.get() == 0) {
             ((Structures.Parsed) prsd).setInvalid(true);
         }
+    }
+
+    private static void handleClassGenerics(Structures.Parsed<ClassOrInterfaceDeclaration> parse) {
+        var unit = parse.getDeclaration().findCompilationUnit().get();
+        parse.getDeclaration().asClassOrInterfaceDeclaration().getTypeParameters().forEach(t -> {
+            parse.getSpec().addTypeParameter(t);
+            parse.getIntf().addTypeParameter(t);
+            t.getTypeBound().forEach(tb -> {
+                handleType(unit, parse.getSpec().findCompilationUnit().get(), tb);
+                handleType(unit, parse.getIntf().findCompilationUnit().get(), tb);
+            });
+        });
     }
 
     private static void handleInitializations(Structures.Parsed<ClassOrInterfaceDeclaration> parse) {
@@ -702,15 +738,15 @@ public class Generator {
                             m.isDefault() && m.getNameAsString().equals(method.getNameAsString()) && m.getTypeAsString().equals(method.getTypeAsString()))) {
                         var field = addFieldFromGetter(parse, spec, method, generic, external);
                         if (nonNull(field) && properties.isClassGetters()) {
-                            addGetterFromGetter(spec, method, true, field);
+                            addGetterFromGetter(spec, method, true, generic, field);
                         }
                     }
                 } else if (method.getNameAsString().startsWith("set")) {
                     if (!external || parse.getDeclaration().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).noneMatch(m ->
                             m.isDefault() && m.getNameAsString().equals(method.getNameAsString()) && m.getTypeAsString().equals(method.getTypeAsString()))) {
                         var field = addFieldFromSetter(parse, spec, method, generic, external);
-                        if (nonNull(field) && properties.isClassSetters()) {
-                            addSetterFromSetter(spec, method, true, field);
+                        if (nonNull(field) && properties.isClassSetters() || declaration.getProperties().isInterfaceSetters()) {
+                            addSetterFromSetter(spec, method, true, generic, field);
                         }
                     }
                 }
@@ -751,12 +787,7 @@ public class Generator {
                     if (external.getDeclaration().isClassOrInterfaceDeclaration()) {
                         var ext = external.getDeclaration().asClassOrInterfaceDeclaration();
                         if (ext.isInterface()) {
-                            var generics = new HashMap<String, Type>();
-                            var i = 0;
-                            for (var g : ext.getTypeParameters()) {
-                                generics.put(g.getNameAsString(), type.getTypeArguments().get().get(i));
-                                i++;
-                            }
+                            var generics = buildGenerics(type, ext);
 
                             var org = external.getSpec();
                             ((Structures.Parsed) external).setSpec(org.findCompilationUnit().get().clone().getType(0).asClassOrInterfaceDeclaration());
@@ -1122,6 +1153,7 @@ public class Generator {
         var field = nonNull(fieldProto) ? fieldProto.getDeclaration() : null;
         var unit = type.findCompilationUnit().get();
         if (isNull(field)) {
+            var genericMethod = !method.getTypeParameters().isEmpty() && method.getTypeAsString().equals(method.getTypeParameter(0).getNameAsString());
             var prototypeMap = new HashMap<String, PrototypeDescription<ClassOrInterfaceDeclaration>>();
             if (nonNull(generic)) {
                 field = spec.addField(generic, fieldName, PROTECTED);
@@ -1139,11 +1171,14 @@ public class Generator {
                     .declaration(field)
                     .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
                     .ignores(getIgnores(method))
+                    .genericMethod(genericMethod)
+                    .genericField(isGenericType(method.getType(), parsed.getDeclaration()))
                     .generics(nonNull(generic) ? Map.of(generic.asString(), generic) : null)
                     .prototype(isNull(generic) ? lookup.findParsed(getExternalClassName(unit, method.getType().asString())) : null)
                     .typePrototypes(!prototypeMap.isEmpty() ? prototypeMap : null)
                     .type(field.getElementType().asString())
                     .fullType(getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
+                    .parent(nonNull(parsed.getBase()) ? findField(parsed.getBase(), fieldName) : null)
                     .build();
             parsed.getFields().add(result);
         } else {
@@ -1172,6 +1207,10 @@ public class Generator {
         }
         handleFieldAnnotations(unit, field, method, compiledAnnotations);
         return result;
+    }
+
+    private static boolean isGenericType(Type type, TypeDeclaration<ClassOrInterfaceDeclaration> declaration) {
+        return declaration.asClassOrInterfaceDeclaration().getTypeParameters().stream().anyMatch(p -> p.getNameAsString().equals(type.asString()));
     }
 
     private static PrototypeField addFieldFromGetter(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Map<String, Type> generic, boolean external) {
@@ -1406,10 +1445,18 @@ public class Generator {
     }
 
     private static void addGetterFromGetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
+        addGetterFromGetter(spec, declaration, isClass, null, field);
+    }
+
+    private static void addGetterFromGetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, Map<String, Type> generic, PrototypeField field) {
         if (!methodExists(spec, declaration, isClass)) {
             var method = spec
-                    .addMethod(declaration.getNameAsString())
-                    .setType(declaration.getType());
+                    .addMethod(declaration.getNameAsString());
+            if (nonNull(generic)) {
+                method.setType(generic.get(declaration.getType().asString()));
+            } else {
+                method.setType(declaration.getType());
+            }
             if (isClass) {
                 method
                         .addModifier(PUBLIC)
@@ -1481,10 +1528,20 @@ public class Generator {
     }
 
     private static void addSetterFromSetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
+        addSetterFromSetter(spec, declaration, isClass, null, field);
+    }
+
+    private static void addSetterFromSetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, Map<String, Type> generic, PrototypeField field) {
         if (!methodExists(spec, declaration, isClass)) {
             var method = spec
-                    .addMethod(declaration.getNameAsString())
-                    .addParameter(new Parameter().setName(getFieldName(declaration.getNameAsString())).setType(declaration.getParameter(0).getType()));
+                    .addMethod(declaration.getNameAsString());
+            if (nonNull(generic)) {
+                method.addParameter(new Parameter().setName(field.getName()).setType(generic.get(declaration.getParameter(0).getType().asString())));
+            } else {
+                method.addParameter(new Parameter().setName(field.getName()).setType(declaration.getParameter(0).getType()));
+            }
+
+
             if (isClass) {
                 method
                         .addModifier(PUBLIC)
