@@ -1,5 +1,10 @@
 # Change Log
 
+**24-04-2022** ver. 0.1.19
+* Generator: Added support for nested prototypes.
+* Generator: Added support for generic prototypes.
+* Generator: Fixed @CodeClassAnnotations behavior.
+
 **09-04-2022** ver. 0.1.18
 * Generator: Added @Initializer annotation to initialize fields inside default constructor.
 * Generator: Added ability to override fields in base implementation.
