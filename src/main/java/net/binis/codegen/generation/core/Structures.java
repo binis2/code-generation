@@ -190,6 +190,8 @@ public class Structures {
 
         private boolean nested;
 
+        private String parentClassName;
+
         @EqualsAndHashCode.Exclude
         @Builder.Default
         @ToString.Exclude
@@ -298,15 +300,15 @@ public class Structures {
         return Map.of(
                 "CodePrototype", Structures::defaultBuilder,
                 "CodeBuilder", () -> defaultBuilder()
-                        .predefinedEnrichers(List.of(CreatorModifierEnricher.class, ModifierEnricher.class))
+                        .predefinedEnrichers(List.of(CreatorModifierEnricher.class, ModifierEnricher.class, RegionEnricher.class))
                         .classSetters(false)
                         .interfaceSetters(false),
                 "CodeValidationBuilder", () -> defaultBuilder()
-                        .predefinedEnrichers(List.of(ValidationEnricher.class, CreatorModifierEnricher.class, ModifierEnricher.class))
+                        .predefinedEnrichers(List.of(ValidationEnricher.class, CreatorModifierEnricher.class, ModifierEnricher.class, RegionEnricher.class))
                         .classSetters(false)
                         .interfaceSetters(false),
                 "CodeQueryBuilder", () -> defaultBuilder()
-                        .predefinedEnrichers(List.of(QueryEnricher.class, ValidationEnricher.class, CreatorModifierEnricher.class, ModifierEnricher.class))
+                        .predefinedEnrichers(List.of(QueryEnricher.class, ValidationEnricher.class, CreatorModifierEnricher.class, ModifierEnricher.class, RegionEnricher.class))
                         .classSetters(false)
                         .interfaceSetters(false)
                         .baseModifierClass("net.binis.codegen.spring.BaseEntityModifier"));

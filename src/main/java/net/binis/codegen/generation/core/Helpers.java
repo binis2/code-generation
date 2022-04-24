@@ -155,12 +155,7 @@ public class Helpers {
     }
 
     public static String getClassName(TypeDeclaration<?> type) {
-        var result = Holder.blank();
-        type.findCompilationUnit().flatMap(CompilationUnit::getPackageDeclaration).ifPresent(p -> {
-            result.set(p.getName().asString());
-        });
-
-        return result.get() + "." + type.getNameAsString();
+        return type.getFullyQualifiedName().orElse(type.getNameAsString());
     }
 
     public static String getClassName(ClassOrInterfaceType type) {

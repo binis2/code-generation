@@ -143,7 +143,7 @@ public abstract class BaseTest {
 
         list = newList();
         for (var parsed : lookup.generated()) {
-            if (isNull(parsed.getCompiled())) {
+            if (isNull(parsed.getCompiled()) && (!parsed.isNested() || isNull(parsed.getParentClassName()))) {
                 if (nonNull(pathToSave)) {
                     save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
                     save(parsed.getProperties().getInterfaceName(), parsed.getFiles().get(1), pathToSave);
@@ -153,8 +153,14 @@ public abstract class BaseTest {
                 compare(parsed.getFiles().get(0), resClass);
             }
 
-            list.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
-            list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+            if (!parsed.isNested() || isNull(parsed.getParentClassName())) {
+                if (!classExists(parsed.getInterfaceFullName())) {
+                    list.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+                }
+                if (!classExists(parsed.getParsedFullName())) {
+                    list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+                }
+            }
 
         }
         var loader = new TestClassLoader();
@@ -200,8 +206,10 @@ public abstract class BaseTest {
                     }
 
                     if (isNull(parsed.getMixIn())) {
-                        compileList.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
-                        compileList.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+                        if (!parsed.isNested() || isNull(parsed.getParentClassName())) {
+                            compileList.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+                            compileList.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+                        }
                     } else {
                         for (var i = 0; i < compileList.size(); i++) {
                             if (compileList.get(i).getKey().equals(parsed.getMixIn().getParsedFullName())) {

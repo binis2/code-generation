@@ -9,9 +9,11 @@ import javax.annotation.processing.Generated;
 @Default("net.binis.codegen.TestImpl")
 public interface Test {
 
+    // region starters
     static Test.Modify create() {
         return (Test.Modify) EntityCreatorModifier.create(Test.class).with();
     }
+    // endregion
 
     String getTitle();
 
@@ -19,6 +21,7 @@ public interface Test {
 
     Test.Modify with();
 
+    // region inner classes
     interface Fields<T> {
         T title(String title);
     }
@@ -26,4 +29,5 @@ public interface Test {
     interface Modify extends Test.Fields<Test.Modify> {
         Test done();
     }
+    // endregion
 }

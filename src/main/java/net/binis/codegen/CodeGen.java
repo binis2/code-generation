@@ -90,7 +90,7 @@ public class CodeGen {
 
         var destination = cmd.getOptionValue(DESTINATION);
         var impl_destination = cmd.getOptionValue(IMPL_DESTINATION);
-        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
+        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).filter(p -> !p.isNested() || isNull(p.getParentClassName())).forEach(p -> {
             if (p.getProperties().isGenerateImplementation() && isNull(p.getProperties().getMixInClass()) && isNull(p.getCompiled())) {
                 saveFile(nullCheck(getBasePath(impl_destination, p.getProperties(), true), destination), p.getFiles().get(0));
             }
@@ -196,19 +196,21 @@ public class CodeGen {
 
     @SuppressWarnings("unchecked")
     public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, String className, JavaParser parser) {
-        type.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(nested -> {
-            if (nested.asClassOrInterfaceDeclaration().isInterface() && Generator.getCodeAnnotation(nested).isPresent()) {
-                var parent = type.findCompilationUnit().get();
-                var unit = new CompilationUnit().setPackageDeclaration(parent.getPackageDeclaration().get());
-                var nestedType = nested.clone();
-                parent.getImports().forEach(unit::addImport);
-                unit.addType(nestedType);
+        if (type.isClassOrInterfaceDeclaration() && Generator.getCodeAnnotation(type.asClassOrInterfaceDeclaration()).isEmpty()) {
+            type.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(nested -> {
+                if (nested.asClassOrInterfaceDeclaration().isInterface() && Generator.getCodeAnnotation(nested).isPresent()) {
+                    var parent = type.findCompilationUnit().get();
+                    var unit = new CompilationUnit().setPackageDeclaration(parent.getPackageDeclaration().get());
+                    var nestedType = nested.clone();
+                    parent.getImports().forEach(unit::addImport);
+                    unit.addType(nestedType);
 
-                lookup.registerParsed(getClassName(nestedType),
-                        Structures.Parsed.builder().declaration(nestedType.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).nested(true).build());
+                    lookup.registerParsed(getClassName(nestedType),
+                            Structures.Parsed.builder().declaration(nestedType.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).nested(true).build());
 
-            }
-        });
+                }
+            });
+        }
     }
 
     private static void saveFile(String baseDir, CompilationUnit file) {

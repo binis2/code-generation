@@ -9,6 +9,7 @@ import javax.annotation.processing.Generated;
 @Generated(value = "TestPrototype", comments = "Test")
 public class TestImpl extends GenericImpl<DefaultPayload> implements Test, Modifiable<Test.Modify> {
 
+    // region constructor & initializer
     {
         CodeFactory.registerType(Test.class, TestImpl::new, null);
     }
@@ -16,11 +17,15 @@ public class TestImpl extends GenericImpl<DefaultPayload> implements Test, Modif
     public TestImpl() {
         super();
     }
+    // endregion
 
+    // region getters
     public Test.Modify with() {
         return new TestModifyImpl();
     }
+    // endregion
 
+    // region inner classes
     protected class TestModifyImpl implements Test.Modify {
 
         public Test done() {
@@ -32,4 +37,5 @@ public class TestImpl extends GenericImpl<DefaultPayload> implements Test, Modif
             return this;
         }
     }
+    // endregion
 }

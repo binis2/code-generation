@@ -12,13 +12,16 @@ public class TestAnnotationImpl implements TestAnnotation, Modifiable<TestAnnota
 
     protected String value;
 
+    // region constructor & initializer
     {
         CodeFactory.registerType(TestAnnotation.class, TestAnnotationImpl::new, null);
     }
 
     public TestAnnotationImpl() {
     }
+    // endregion
 
+    // region getters
     public String getDoubleExtended() {
         return this.extended + this.extended;
     }
@@ -34,7 +37,9 @@ public class TestAnnotationImpl implements TestAnnotation, Modifiable<TestAnnota
     public TestAnnotation.Modify with() {
         return new TestAnnotationModifyImpl();
     }
+    // endregion
 
+    // region inner classes
     protected class TestAnnotationModifyImpl implements TestAnnotation.Modify {
 
         public TestAnnotation done() {
@@ -51,4 +56,5 @@ public class TestAnnotationImpl implements TestAnnotation, Modifiable<TestAnnota
             return this;
         }
     }
+    // endregion
 }

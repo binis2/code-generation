@@ -10,17 +10,22 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
 
     protected String title;
 
+    // region constructor & initializer
     {
         CodeFactory.registerType(Test.class, TestImpl::new, null);
     }
 
     public TestImpl() {
     }
+    // endregion
 
+    // region getters
     public String getTitle() {
         return title;
     }
+    // endregion
 
+    // region setters
     public void setTitle(String title) {
         this.title = title;
     }
@@ -28,7 +33,9 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
     public Test.Modify with() {
         return new TestModifyImpl();
     }
+    // endregion
 
+    // region inner classes
     protected class TestModifyImpl implements Test.Modify {
 
         public Test done() {
@@ -40,4 +47,5 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
             return this;
         }
     }
+    // endregion
 }

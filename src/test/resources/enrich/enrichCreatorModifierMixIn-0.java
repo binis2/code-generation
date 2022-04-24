@@ -12,6 +12,7 @@ public class TestImpl implements Test, MixIn, Modifiable<Test.Modify> {
 
     protected String title;
 
+    // region constructor & initializer
     {
         CodeFactory.registerType(Test.class, TestImpl::new, null);
         CodeFactory.registerType(MixIn.class, TestImpl::new, null);
@@ -19,7 +20,9 @@ public class TestImpl implements Test, MixIn, Modifiable<Test.Modify> {
 
     public TestImpl() {
     }
+    // endregion
 
+    // region getters
     public MixIn.Modify asMixIn() {
         return new MixInModifyImpl();
     }
@@ -31,7 +34,9 @@ public class TestImpl implements Test, MixIn, Modifiable<Test.Modify> {
     public String getTitle() {
         return title;
     }
+    // endregion
 
+    // region setters
     public void setSubtitle(String subtitle) {
         this.subtitle = subtitle;
     }
@@ -43,7 +48,9 @@ public class TestImpl implements Test, MixIn, Modifiable<Test.Modify> {
     public Test.Modify with() {
         return new TestModifyImpl();
     }
+    // endregion
 
+    // region inner classes
     protected class MixInModifyImpl implements MixIn.Modify {
 
         public MixIn done() {
@@ -72,4 +79,5 @@ public class TestImpl implements Test, MixIn, Modifiable<Test.Modify> {
             return this;
         }
     }
+    // endregion
 }

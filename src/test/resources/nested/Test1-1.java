@@ -9,14 +9,17 @@ import javax.annotation.processing.Generated;
 @Default("net.binis.codegen.test.TestAnnotationImpl")
 public interface TestAnnotation {
 
+    // region starters
     static TestAnnotation.Modify create() {
         return (TestAnnotation.Modify) EntityCreatorModifier.create(TestAnnotation.class).with();
     }
+    // endregion
 
     String getValue();
 
     TestAnnotation.Modify with();
 
+    // region inner classes
     interface Fields<T> {
         T value(String value);
     }
@@ -24,4 +27,5 @@ public interface TestAnnotation {
     interface Modify extends TestAnnotation.Fields<TestAnnotation.Modify> {
         TestAnnotation done();
     }
+    // endregion
 }
