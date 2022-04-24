@@ -464,7 +464,7 @@ public class Generator {
                     }
 
                     if (parent.isPresent()) {
-                        notNull(lookup.findParsed(getExternalClassName(typeDeclaration.findCompilationUnit().get(), parent.get().getType())), p ->
+                        notNull(parent.get().getPrototype(), p ->
                                 handleDefaultMethodBody(p, n, true));
 
                         return node.replace(method, new FieldAccessExpr().setName(method.getName()));
