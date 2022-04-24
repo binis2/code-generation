@@ -182,39 +182,6 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         }
     }
 
-    private Type getFieldType(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field) {
-        if (field.getDescription().getTypeParameters().isEmpty()) {
-            if (field.isGenericField()) {
-                var intf = field.getParsed().getIntf();
-                var type = Holder.<Type>blank();
-                description.getIntf().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(intf.getNameAsString())).findFirst().ifPresent(t ->
-                        type.set(buildGeneric(field.getType(), t, intf)));
-                if (type.isPresent()) {
-                    return type.get();
-                }
-            }
-            if (nonNull(field.getGenerics())) {
-                var type = field.getGenerics().get(field.getType());
-                if (nonNull(type)) {
-                    return type;
-                }
-            }
-
-            if (isNull(field.getDescription())) {
-                return field.getDeclaration().getVariables().get(0).getType();
-            } else {
-                var result = field.getDescription().getType();
-                if (nonNull(lookup.findParsed(Helpers.getExternalClassName(field.getDescription().findCompilationUnit().get(), result.asString())))) {
-                    result = lookup.getParser().parseClassOrInterfaceType(field.getType()).getResult().get();
-                }
-                return result;
-            }
-        } else {
-            return new ClassOrInterfaceType().setName("Object");
-        }
-
-    }
-
     private void addField(PrototypeField field, ClassOrInterfaceDeclaration modifierFields, List<Pair<CompilationUnit, String>> imports, Type generic) {
         if (nonNull(modifierFields)) {
             var type = nonNull(generic) ? generic : field.getDeclaration().getVariable(0).getType();
@@ -434,7 +401,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     .setBody(null);
 
             var modifierClass = new ClassOrInterfaceDeclaration(
-                    Modifier.createModifierList(PROTECTED, STATIC), false, "Embedded" + actualModifierClass.getNameAsString())
+                    Modifier.createModifierList(parse.isNested() ? new Modifier.Keyword[]{ PROTECTED } : new Modifier.Keyword[]{ PROTECTED, STATIC }), false, "Embedded" + actualModifierClass.getNameAsString())
                     .addTypeParameter("T")
                     .addImplementedType(intf.getNameAsString() + "." + modifier.getNameAsString() + "<T>");
             modifierClass.addField("T", "parent", PROTECTED);

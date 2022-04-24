@@ -837,7 +837,15 @@ public class Generator {
                             ((Structures.Parsed) external).setSpec(org);
                             if (nonNull(intf)) {
                                 intf.addExtendedType(external.getDeclaration().getNameAsString());
-                                intf.findCompilationUnit().get().addImport(external.getDeclaration().getFullyQualifiedName().get()); //TODO: Handle generics
+                                var eType = intf.getExtendedTypes().getLast().get();
+                                type.getTypeArguments().ifPresent(args -> args.forEach(tt -> {
+                                    if (eType.getTypeArguments().isEmpty()) {
+                                        eType.setTypeArguments(new NodeList<>());
+                                    }
+                                    var arg = handleType(parsed.getDeclaration().findCompilationUnit().get(), intf.findCompilationUnit().get(), tt);
+                                    eType.getTypeArguments().get().add(parsed.getParser().parseClassOrInterfaceType(arg).getResult().get());
+                                }));
+                                intf.findCompilationUnit().get().addImport(external.getDeclaration().getFullyQualifiedName().get());
                             }
                             return true;
                         }
@@ -980,6 +988,7 @@ public class Generator {
                 lookup.generateEmbeddedModifier(parse);
                 if (nonNull(prototypeMap)) {
                     prototypeMap.put(parse.getInterfaceName(), parse);
+                    prototypeMap.put(parse.getDeclaration().getNameAsString(), parse);
                     if (isNull(parse.getInterfaceName())) {
                         lookup.addPrototypeMap(parse, prototypeMap);
                     }

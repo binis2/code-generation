@@ -53,6 +53,8 @@ import java.util.Set;
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.Helpers.getFieldType;
+import static net.binis.codegen.generation.core.Helpers.methodExists;
 import static net.binis.codegen.tools.Tools.notNull;
 import static net.binis.codegen.tools.Tools.with;
 
@@ -301,6 +303,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         var field = desc.getDeclaration();
         var fName = field.getVariable(0).getNameAsString();
         var name = checkReserved(fName);
+        var type = getFieldType(description, desc);
 
         if (!declaredFields.contains(name)) {
 
@@ -309,12 +312,16 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
             if (desc.isCollection()) {
 
                 if (!trans) {
-                    var subType = CollectionsHandler.getCollectionType(field.getCommonType());
+                    var subType = CollectionsHandler.getCollectionType(type);
 
                     if (nonNull(desc.getTypePrototypes())) {
+                        var prototype = desc.getTypePrototypes().get(subType);
+                        if (nonNull(prototype)) {
+                            subType = prototype.getInterfaceName();
+                        }
+
                         var returnType = QUERY_JOIN_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">, " + QUERY_JOIN_AGGREGATE_OPERATION + "<" + subType + "." + QUERY_OP_FIELDS + "<" + subType + "." + QUERY_AGGREGATE + "<Number, " + subType + "." + QUERY_SELECT + "<Number>>>, " + subType + "." + QUERY_SELECT + "<Number>>>";
 
-                        var prototype = desc.getTypePrototypes().get(subType);
 
                         select.addMethod(name)
                                 .setType(returnType)
@@ -328,7 +335,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
                         if (nonNull(prototype)) {
                             prototype.registerPostProcessAction(() ->
-                                    Helpers.addInitializer(prototype, prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) prototype.getParser().parseExpression("() -> " + subType + ".find().aggregate()").getResult().get(), null));
+                                    Helpers.addInitializer(prototype, prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) prototype.getParser().parseExpression("() -> " + prototype.getInterfaceName() + ".find().aggregate()").getResult().get(), null));
                         }
                     } else {
                         var returnType = QUERY_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">>";
@@ -344,12 +351,12 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                     }
                 }
             } else {
-                Helpers.importType(field.getCommonType(), fields.findCompilationUnit().get());
+                Helpers.importType(type, fields.findCompilationUnit().get());
 
                 impl.addMethod(name)
                         .setType(QUERY_SELECT_OPERATION)
                         .addModifier(PUBLIC)
-                        .addParameter(field.getCommonType(), fName)
+                        .addParameter(type, fName)
                         .setBody(new BlockStmt()
                                 .addStatement(new ReturnStmt("identifier(\"" + fName + "\", " + fName + ")")));
 
@@ -382,7 +389,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
                 } else {
                     if (!trans) {
-                        funcs.addMethod(name).setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(field.getCommonType()) + "," + QUERY_GENERIC + ">").setBody(null);
+                        funcs.addMethod(name).setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(type) + "," + QUERY_GENERIC + ">").setBody(null);
                         impl.addMethod(name, PUBLIC).setType(QUERY_FUNCTIONS)
                                 .setBody(new BlockStmt()
                                         .addStatement(new ReturnStmt("identifier(\"" + fName + "\")")));
@@ -396,17 +403,17 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                     }
                 }
 
-                if (!Helpers.methodExists(fields, desc, false)) {
+                if (!methodExists(fields, desc, false, type)) {
                     fields.addMethod(name)
                             .setType(QUERY_GENERIC)
                             .setBody(null)
-                            .addParameter(field.getCommonType(), fName);
+                            .addParameter(type, fName);
                 }
 
                 qNameImpl.addMethod(name)
                         .setType(QUERY_SELECT_OPERATION)
                         .addModifier(PUBLIC)
-                        .addParameter(field.getCommonType(), fName)
+                        .addParameter(type, fName)
                         .setBody(new BlockStmt()
                                 .addStatement(new ReturnStmt("executor.identifier(\"" + fName + "\", " + fName + ")")));
 
@@ -467,7 +474,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .filter(m -> m.isAnnotationPresent(QueryFragment.class)).forEach(method ->
                         method.getBody().ifPresent(body -> {
                             if (body.getStatements().size() == 1) {
-                                if (!Helpers.methodExists(select, method, calcPresetName(method.getNameAsString()), false)) {
+                                if (!methodExists(select, method, calcPresetName(method.getNameAsString()), false)) {
                                     if ("String".equals(method.getType().asString())) {
                                         handleStringPreset(description, method, body, select, exec, returnType, implReturnType);
                                     } else {
@@ -488,7 +495,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                                 .filter(Method::isDefault)
                                 .filter(m -> nonNull(m.getAnnotation(QueryFragment.class)))
                                 .forEach(method -> {
-                                    if (!Helpers.methodExists(select, calcPresetName(method.getName()), method, false)) {
+                                    if (!methodExists(select, calcPresetName(method.getName()), method, false)) {
                                         if (String.class.equals(method.getReturnType())) {
                                             handleCompiledStringPreset(description, method, getCompiledPreset(parsed.getCompiled(), method), select, exec, returnType, implReturnType);
                                         } else {
@@ -682,7 +689,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
         base.addImplementedType(mix.getImplementedTypes(0));
         mix.getMembers().forEach(m -> {
-            if (!Helpers.methodExists(base, m.asMethodDeclaration(), true)) {
+            if (!methodExists(base, m.asMethodDeclaration(), true)) {
                 base.addMember(m);
             }
         });

@@ -279,19 +279,27 @@ public class Helpers {
     }
 
     public static boolean methodExists(ClassOrInterfaceDeclaration spec, PrototypeField declaration, boolean isClass) {
+        return methodExists(spec, declaration, isClass, declaration.getDeclaration().getVariable(0).getType());
+    }
+
+    public static boolean methodExists(ClassOrInterfaceDeclaration spec, PrototypeField declaration, boolean isClass, Type type) {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(declaration.getName()) &&
                                 m.getParameters().size() == 1 &&
-                                m.getType().equals(declaration.getDeclaration().getVariable(0).getType())
+                                m.getType().equals(type)
                         //TODO: Match parameter types also
-                ) || !isClass && ancestorMethodExists(spec, declaration, declaration.getName());
+                ) || !isClass && ancestorMethodExists(spec, declaration, declaration.getName(), type);
     }
 
     public static boolean methodSignatureExists(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String methodName) {
+        return methodSignatureExists(spec, declaration, methodName, declaration.getDeclaration().getVariable(0).getType());
+    }
+
+    public static boolean methodSignatureExists(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String methodName, Type returnType) {
         var result = spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(methodName) &&
                         m.getParameters().size() == 1 &&
-                        m.getParameter(0).getType().equals(declaration.getDeclaration().getVariable(0).getType())
+                        m.getParameter(0).getType().equals(returnType)
                 );
 
         if (!result) {
@@ -301,7 +309,7 @@ public class Helpers {
                     if (nonNull(parsed)) {
                         var intf = parsed.getIntf().findAll(ClassOrInterfaceDeclaration.class).stream().filter(c -> c.getNameAsString().equals(type.getNameAsString())).findFirst();
                         if (intf.isPresent()) {
-                            result = methodSignatureExists(intf.get(), declaration, methodName);
+                            result = methodSignatureExists(intf.get(), declaration, methodName, returnType);
                             if (result) {
                                 return true;
                             }
@@ -337,6 +345,10 @@ public class Helpers {
     }
 
     public static boolean ancestorMethodExists(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String methodName) {
+        return ancestorMethodExists(spec, declaration, methodName, declaration.getDeclaration().getVariable(0).getType());
+    }
+
+    public static boolean ancestorMethodExists(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String methodName, Type returnType) {
         //TODO: Check for params and return type
         var unit = spec.findCompilationUnit().get();
         var result = spec.getExtendedTypes().stream()
@@ -351,7 +363,7 @@ public class Helpers {
                 for (var type : spec.getExtendedTypes()) {
                     var inner = parent.get().findAll(ClassOrInterfaceDeclaration.class).stream().filter(c -> c.getNameAsString().equals(type.getNameAsString())).findFirst();
                     if (inner.isPresent() && (type.getScope().isEmpty() || type.getScope().get().getNameAsString().equals(parent.get().getNameAsString()))) {
-                        result = methodSignatureExists(inner.get(), declaration, methodName);
+                        result = methodSignatureExists(inner.get(), declaration, methodName, returnType);
                         if (result) {
                             return true;
                         }
@@ -361,7 +373,6 @@ public class Helpers {
         }
         return result;
     }
-
 
     public static boolean defaultMethodExists(ClassOrInterfaceDeclaration spec, Method method) {
         return spec.getMethods().stream()
@@ -839,13 +850,14 @@ public class Helpers {
 
     public static void importType(Type type, CompilationUnit destination) {
         if (!type.isPrimitiveType()) {
-            var full = Helpers.getExternalClassNameIfExists(type.findCompilationUnit().get(), type.asClassOrInterfaceType().getNameAsString());
+            type.findCompilationUnit().ifPresent(unit -> {
+                var full = Helpers.getExternalClassNameIfExists(type.findCompilationUnit().get(), type.asClassOrInterfaceType().getNameAsString());
 
-            if (nonNull(full)) {
-                destination.addImport(full);
-            }
+                if (nonNull(full)) {
+                    destination.addImport(full);
+                }
+            });
         }
-
     }
 
     public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration embedded) {
@@ -911,6 +923,42 @@ public class Helpers {
             return generics.get(type);
         }
         return null;
+    }
+
+    public static Type getFieldType(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field) {
+        if (field.getDescription().getTypeParameters().isEmpty()) {
+            if (field.isGenericField()) {
+                var intf = field.getParsed().getIntf();
+                var type = Holder.<Type>blank();
+                description.getIntf().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(intf.getNameAsString())).findFirst().ifPresent(t ->
+                        type.set(buildGeneric(field.getType(), t, intf)));
+                if (type.isPresent()) {
+                    return type.get();
+                }
+            }
+            if (nonNull(field.getGenerics())) {
+                var type = field.getGenerics().get(field.getType());
+                if (nonNull(type)) {
+                    return type;
+                }
+                type = field.getGenerics().get(field.getDescription().getType().asString());
+                if (nonNull(type)) {
+                    return type;
+                }
+            }
+
+            if (isNull(field.getDescription())) {
+                return field.getDeclaration().getVariables().get(0).getType();
+            } else {
+                var result = field.getDescription().getType();
+                if (nonNull(lookup.findParsed(Helpers.getExternalClassName(field.getDescription().findCompilationUnit().get(), result.asString())))) {
+                    result = lookup.getParser().parseClassOrInterfaceType(field.getType()).getResult().get();
+                }
+                return result;
+            }
+        } else {
+            return new ClassOrInterfaceType().setName("Object");
+        }
     }
 
 
