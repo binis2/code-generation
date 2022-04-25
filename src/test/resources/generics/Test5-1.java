@@ -20,7 +20,7 @@ public interface AccountOverviewCard extends CompiledGeneric<AccountOverviewCard
     AccountOverviewCard.Modify with();
 
     // region inner classes
-    @Default("net.binis.test.card.AccountOverviewCardImpl.AccountOverviewCardPayloadImpl")
+    @Default("net.binis.test.card.AccountOverviewCardImpl$AccountOverviewCardPayloadImpl")
     public interface AccountOverviewCardPayload extends Payload {
 
         // region starters

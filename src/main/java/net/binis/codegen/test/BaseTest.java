@@ -30,6 +30,7 @@ import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
+import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -116,6 +117,11 @@ public abstract class BaseTest {
     protected void testSingleExecute(String prototype, String resClass, String resInterface, String resExecute) {
         testSingleExecute(prototype, resClass, resInterface, null, 1, resExecute);
     }
+
+    protected void testSingleExecute(String prototype, String resClass, String resInterface, int expected, String resExecute) {
+        testSingleExecute(prototype, resClass, resInterface, null, expected, resExecute);
+    }
+
 
     protected void testSingle(String prototype, String resClass, String resInterface) {
         testSingle(prototype, resClass, resInterface, null, 1);
@@ -287,7 +293,6 @@ public abstract class BaseTest {
         assertTrue(compile(new TestClassLoader(), list, null));
     }
 
-
     @SneakyThrows
     protected boolean compile(TestClassLoader loader, List<Pair<String, String>> files, String resExecute) {
         if (nonNull(resExecute)) {
@@ -326,9 +331,9 @@ public abstract class BaseTest {
             assertNotNull("Executor doesn't inherit TestExecutor!", cls.getSuperclass());
             assertEquals("Executor doesn't inherit TestExecutor!", TestExecutor.class, cls.getSuperclass());
             defineObjects(loader, objects);
-            assertTrue("Test execution failed!", TestExecutor.test((Class<? extends TestExecutor>) cls));
+            Reflection.withLoader(loader, () ->
+                    assertTrue("Test execution failed!", TestExecutor.test((Class<? extends TestExecutor>) cls)));
         }
-
 
         return true;
     }

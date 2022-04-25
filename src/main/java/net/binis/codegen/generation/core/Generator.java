@@ -302,7 +302,7 @@ public class Generator {
 
     private static void mergeNestedPrototypes(Structures.Parsed<ClassOrInterfaceDeclaration> parse) {
         lookup.parsed().stream().filter(p -> p.isNested() && nonNull(p.getParentClassName()) && p.getParentClassName().equals(parse.getPrototypeClassName())).forEach(p -> {
-            parse.getSpec().addMember(p.getSpec());
+            parse.getSpec().addMember(p.getSpec().addModifier(STATIC));
             mergeImports(p.getSpec().findCompilationUnit().get(), parse.getSpec().findCompilationUnit().get());
             parse.getIntf().addMember(p.getIntf());
             mergeImports(p.getIntf().findCompilationUnit().get(), parse.getIntf().findCompilationUnit().get());

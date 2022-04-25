@@ -59,7 +59,7 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
         }
     }
 
-    public class AccountOverviewCardPayloadImpl implements AccountOverviewCardPayload, Modifiable<AccountOverviewCardPayload.Modify> {
+    public static class AccountOverviewCardPayloadImpl implements AccountOverviewCardPayload, Modifiable<AccountOverviewCardPayload.Modify> {
 
         protected int donated;
 

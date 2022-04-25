@@ -73,8 +73,7 @@ public class GenericsTest extends BaseTest {
 
     @Test
     public void testGenericsWithCompiledBaseAndNestedPrototype() {
-        testSingle("generics/Test5.java", "generics/Test5-0.java", "generics/Test5-1.java", 3);
+        testSingleExecute("generics/Test5.java", "generics/Test5-0.java", "generics/Test5-1.java", 3, "generics/Test5-2.java");
     }
-
 
 }

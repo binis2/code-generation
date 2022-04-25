@@ -871,9 +871,20 @@ public class Helpers {
     public static void addDefaultCreation(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         var intf = description.getIntf();
         if (description.getProperties().isGenerateImplementation() && intf.getAnnotationByName("Default").isEmpty()) {
-            intf.addAnnotation(description.getParser().parseAnnotation("@Default(\"" + description.getImplementorFullName() + "\")").getResult().get());
+            var name = description.getImplementorFullName();
+            if (description.isNested() && nonNull(description.getParentClassName())) {
+                name = getBasePackage(description) + '.' + description.getParsedName().replace('.', '$');
+            }
+            intf.addAnnotation(description.getParser().parseAnnotation("@Default(\"" + name + "\")").getResult().get());
             intf.findCompilationUnit().get().addImport(Default.class.getCanonicalName());
         }
+    }
+
+    private static String getBasePackage(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+        if (description.isNested() && nonNull(description.getParentClassName())) {
+            return getBasePackage(lookup.findParsed(description.getParentClassName()));
+        }
+        return description.getProperties().getClassPackage();
     }
 
     private static void addInitializerInternal(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, Node node, ClassOrInterfaceDeclaration embedded) {
