@@ -1,5 +1,8 @@
 # Change Log
 
+**24-04-2022** ver. 0.1.20
+* Generator: Fixed instantiation of nested objects.
+
 **24-04-2022** ver. 0.1.19
 * Generator: Added support for nested prototypes.
 * Generator: Added support for generic prototypes.
