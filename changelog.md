@@ -1,6 +1,9 @@
 # Change Log
 
-**24-04-2022** ver. 0.1.20
+**26-04-2022** ver. 0.1.21
+* Generator: Ensured proper ordering when enriching entities.
+
+**25-04-2022** ver. 0.1.20
 * Generator: Fixed instantiation of nested objects.
 
 **24-04-2022** ver. 0.1.19
