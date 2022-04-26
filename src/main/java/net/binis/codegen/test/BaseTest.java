@@ -76,10 +76,10 @@ public abstract class BaseTest {
 
         lookup.calcPrototypeMaps();
 
-        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
-        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
-        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
-        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
+        with(lookup.parsed().stream().filter(PrototypeDescription::isValid).sorted(Helpers::sortForEnrich).collect(Collectors.toList()), list -> {
+            list.forEach(Helpers::handleEnrichers);
+            list.forEach(Helpers::finalizeEnrichers);
+        });
     }
 
     protected void cleanUp() {

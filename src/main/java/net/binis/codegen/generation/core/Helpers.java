@@ -773,7 +773,15 @@ public class Helpers {
     }
 
     public static void handleEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
-        getEnrichersList(parsed).forEach(e -> e.enrich(parsed));
+        getEnrichersList(parsed).forEach(e -> safeEnrich(e, parsed));
+    }
+
+    private static void safeEnrich(PrototypeEnricher enricher, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        try {
+            enricher.enrich(parsed);
+        } catch (Exception e) {
+            log.error("Failed to enrich {} with {}", parsed.getProperties().getPrototypeName(), enricher.getClass(), e);
+        }
     }
 
     public static void finalizeEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
@@ -971,6 +979,11 @@ public class Helpers {
             return new ClassOrInterfaceType().setName("Object");
         }
     }
+
+    public static int sortForEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> left, PrototypeDescription<ClassOrInterfaceDeclaration> right) {
+        return ((nonNull(left.getMixIn()) ? 2 : 0) + (nonNull(left.getBase()) ? 1 : 0)) - ((nonNull(right.getMixIn()) ? 2 : 0) + (nonNull(right.getBase()) ? 1 : 0));
+    }
+
 
 
 }

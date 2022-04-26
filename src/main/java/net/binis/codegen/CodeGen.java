@@ -50,8 +50,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.generation.core.Structures.Parsed;
-import static net.binis.codegen.tools.Tools.ifNull;
-import static net.binis.codegen.tools.Tools.nullCheck;
+import static net.binis.codegen.tools.Tools.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Slf4j
@@ -131,10 +130,10 @@ public class CodeGen {
 
         lookup.calcPrototypeMaps();
 
-        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
-        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
-        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
-        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
+        with(lookup.parsed().stream().filter(PrototypeDescription::isValid).sorted(Helpers::sortForEnrich).collect(Collectors.toList()), list -> {
+            list.forEach(Helpers::handleEnrichers);
+            list.forEach(Helpers::finalizeEnrichers);
+        });
     }
 
     public static void processSources(List<String> files) {
@@ -168,10 +167,10 @@ public class CodeGen {
 
         lookup.calcPrototypeMaps();
 
-        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
-        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::handleEnrichers);
-        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> isNull(p.getBase()) && isNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
-        lookup.parsed().stream().filter(PrototypeDescription::isValid).filter(p -> nonNull(p.getBase()) || nonNull(p.getMixIn())).forEach(Helpers::finalizeEnrichers);
+        with(lookup.parsed().stream().filter(PrototypeDescription::isValid).sorted(Helpers::sortForEnrich).collect(Collectors.toList()), list -> {
+            list.forEach(Helpers::handleEnrichers);
+            list.forEach(Helpers::finalizeEnrichers);
+        });
     }
 
 
