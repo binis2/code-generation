@@ -54,14 +54,12 @@ public class CreatorEnricherHandler extends BaseEnricher implements CreatorEnric
                 .setBody(new BlockStmt().addStatement(new ReturnStmt(creatorClass + ".create(" + intf.getNameAsString() + ".class)")));
 
         if (!properties.isBase()) {
-            var embedded = description.getRegisteredClass(EMBEDDED_MODIFIER_KEY);
-
             var type = spec;
             if (nonNull(description.getMixIn())) {
                 type = description.getMixIn().getSpec();
             }
 
-            Helpers.addInitializer(description, intf, type, embedded);
+            Helpers.addInitializer(description, intf, type);
         }
     }
 

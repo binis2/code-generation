@@ -181,14 +181,18 @@ public abstract class BaseTest {
     }
 
     protected void testMulti(List<Triple<String, String, String>> files, int expected) {
-        testMulti(files, expected, null);
+        testMultiExecute(files, expected, null, null);
     }
 
     protected void testMulti(List<Triple<String, String, String>> files, String pathToSave) {
-        testMulti(files, files.size(), pathToSave);
+        testMultiExecute(files, files.size(), pathToSave, null);
     }
 
-    protected void testMulti(List<Triple<String, String, String>> files, int expected, String pathToSave) {
+    protected void testMultiExecute(List<Triple<String, String, String>> files, String resExecute) {
+        testMultiExecute(files, files.size(), null, resExecute);
+    }
+
+    protected void testMultiExecute(List<Triple<String, String, String>> files, int expected, String pathToSave, String resExecute) {
         var list = newList();
         files.forEach(t ->
                 load(list, t.getLeft()));
@@ -227,7 +231,7 @@ public abstract class BaseTest {
                 }));
 
         var loader = new TestClassLoader();
-        assertTrue(compile(loader, compileList, null));
+        assertTrue(compile(loader, compileList, resExecute));
     }
 
     @SneakyThrows

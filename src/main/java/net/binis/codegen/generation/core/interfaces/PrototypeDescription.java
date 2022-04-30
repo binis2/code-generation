@@ -65,7 +65,7 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     ClassOrInterfaceDeclaration getSpec();
     ClassOrInterfaceDeclaration getIntf();
 
-    List<Triple<ClassOrInterfaceDeclaration, Node, ClassOrInterfaceDeclaration>> getInitializers();
+    List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> getInitializers();
     List<Consumer<BlockStmt>> getCustomInitializers();
 
     void registerClass(String key, ClassOrInterfaceDeclaration declaration);

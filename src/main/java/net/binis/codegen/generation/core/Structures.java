@@ -212,7 +212,7 @@ public class Structures {
         @Builder.Default
         @EqualsAndHashCode.Exclude
         @ToString.Exclude
-        private List<Triple<ClassOrInterfaceDeclaration, Node, ClassOrInterfaceDeclaration>> initializers = new ArrayList<>();
+        private List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers = new ArrayList<>();
 
         @Builder.Default
         @EqualsAndHashCode.Exclude

@@ -59,6 +59,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.Constants.*;
 import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.tools.Reflection.instantiate;
 import static net.binis.codegen.tools.Reflection.loadClass;
@@ -798,7 +799,7 @@ public class Helpers {
                         .setName("CodeFactory.registerType")
                         .addArgument((i.getLeft().getParentNode().get() instanceof ClassOrInterfaceDeclaration ? ((ClassOrInterfaceDeclaration) i.getLeft().getParentNode().get()).getNameAsString() + "." : "") + i.getLeft().getNameAsString() + ".class")
                         .addArgument(type.getNameAsString() + "::new")
-                        .addArgument(nonNull(i.getRight()) ? "(p, v) -> new " + i.getRight().getNameAsString() + "<>(p, (" + type.getNameAsString() + ") v)" : "null"));
+                        .addArgument(calcModifierExpression(i.getRight())));
             } else if (i.getMiddle() instanceof LambdaExpr && nonNull(i.getLeft())) {
                 var expr = (LambdaExpr) i.getMiddle();
                 getInitializer(isNull(parsed.getMixIn()) ? parsed.getSpec() : parsed.getMixIn().getSpec()).addStatement(new MethodCallExpr()
@@ -815,6 +816,28 @@ public class Helpers {
         Helpers.handleImports(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getSpec());
 
         getEnrichersList(parsed).forEach(e -> e.postProcess(parsed));
+    }
+
+    private static String calcModifierExpression(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+        var modClass = description.getRegisteredClass(MODIFIER_KEY);
+        if (nonNull(modClass)) {
+            var soloClass = description.getRegisteredClass(EMBEDDED_SOLO_MODIFIER_KEY);
+            var collectionClass = description.getRegisteredClass(EMBEDDED_COLLECTION_MODIFIER_KEY);
+            if (nonNull(soloClass) && nonNull(collectionClass)) {
+                soloClass.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.collection.EmbeddedCodeCollection"));
+                return "(p, v) -> p instanceof EmbeddedCodeCollection ? ((" + description.getProperties().getClassName() + ") v).new " + collectionClass.getNameAsString() + "(p) : ((" + description.getProperties().getClassName() + ") v).new " + soloClass.getNameAsString() + "(p)";
+            } else {
+                var cls = modClass;
+                if (nonNull(soloClass)) {
+                    cls = soloClass;
+                } else if (nonNull(collectionClass)) {
+                    cls = collectionClass;
+                }
+                return "(p, v) -> ((" + description.getProperties().getClassName() + ") v).new " + cls.getNameAsString() + "(p)";
+            }
+        } else {
+            return "null";
+        }
     }
 
     public static BlockStmt getInitializer(ClassOrInterfaceDeclaration type) {
@@ -870,12 +893,12 @@ public class Helpers {
         }
     }
 
-    public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration embedded) {
-        addInitializerInternal(description, intf, type, embedded);
+    public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration type) {
+        addInitializerInternal(description, intf, type);
     }
 
-    public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, LambdaExpr expr, ClassOrInterfaceDeclaration embedded) {
-        addInitializerInternal(description, intf, expr, embedded);
+    public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, LambdaExpr expr) {
+        addInitializerInternal(description, intf, expr);
     }
 
     public static void addDefaultCreation(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
@@ -897,20 +920,20 @@ public class Helpers {
         return description.getProperties().getClassPackage();
     }
 
-    private static void addInitializerInternal(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, Node node, ClassOrInterfaceDeclaration embedded) {
+    private static void addInitializerInternal(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, Node node) {
         description.getSpec().findCompilationUnit().get().addImport("net.binis.codegen.factory.CodeFactory");
 
         var list = description.getInitializers();
-        for (var i = 0; i < list.size(); i++) {
-            if (list.get(i).getLeft().getFullyQualifiedName().get().equals(intf.getFullyQualifiedName().get())) {
-                if (isNull(list.get(i).getRight()) && nonNull(embedded)) {
-                    list.set(i, Triple.of(intf, node, embedded));
-                }
-                return;
-            }
-        }
+//        for (var i = 0; i < list.size(); i++) {
+//            if (list.get(i).getLeft().getFullyQualifiedName().get().equals(intf.getFullyQualifiedName().get())) {
+//                if (isNull(list.get(i).getRight()) && nonNull(embedded)) {
+//                    list.set(i, Triple.of(intf, node, embedded));
+//                }
+//                return;
+//            }
+//        }
 
-        list.add(Triple.of(intf, node, embedded));
+        list.add(Triple.of(intf, node, description));
     }
 
     public static boolean hasAnnotation(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, Class<? extends Annotation> annotation) {

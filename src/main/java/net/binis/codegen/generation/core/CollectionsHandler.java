@@ -81,7 +81,7 @@ public class CollectionsHandler {
 
             var method = spec
                     .addMethod(declaration.getName())
-                    .setType(collection.getType() + "<" + (collection.isPrototypeParam() ? generic + ".EmbeddedCollectionModify<" + modifierName + ".EmbeddedModify<T, R>>, " : "") + generic + ", " + modifierName + ".EmbeddedModify<T, R>>");
+                    .setType(collection.getType() + (!isClass ? ("<" + (collection.isPrototypeParam() ? generic + ".EmbeddedCollectionModify<" + modifierName + ".EmbeddedModify<T, R>>, " : "") + generic + ", " + modifierName + ".EmbeddedModify<T, R>>") : ""));
             if (isClass) {
                 var parent = className + ".this." + declaration.getName();
                 var block = new BlockStmt()

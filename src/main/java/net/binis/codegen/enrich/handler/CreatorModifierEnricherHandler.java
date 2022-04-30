@@ -73,14 +73,12 @@ public class CreatorModifierEnricherHandler extends BaseEnricher implements Crea
         intf.findCompilationUnit().get().addImport("net.binis.codegen.creator." + creatorClass);
 
         if (!properties.isBase()) {
-            var embedded = description.getRegisteredClass(Constants.EMBEDDED_MODIFIER_KEY);
-
             var type = spec;
             if (nonNull(description.getMixIn())) {
                 type = description.getMixIn().getSpec();
             }
 
-            Helpers.addInitializer(description, intf, type, embedded);
+            Helpers.addInitializer(description, intf, type);
         }
     }
 
