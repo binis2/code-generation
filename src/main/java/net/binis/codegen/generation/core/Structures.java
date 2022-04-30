@@ -30,6 +30,7 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.Type;
 import lombok.*;
+import net.binis.codegen.annotation.type.EmbeddedModifierType;
 import net.binis.codegen.enrich.*;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
@@ -192,6 +193,9 @@ public class Structures {
 
         private String parentClassName;
 
+        @Builder.Default
+        private EmbeddedModifierType embeddedModifierType = EmbeddedModifierType.NONE;
+
         @EqualsAndHashCode.Exclude
         @Builder.Default
         @ToString.Exclude
@@ -249,6 +253,31 @@ public class Structures {
             return result;
         }
 
+        @Override
+        public void addEmbeddedModifier(EmbeddedModifierType type) {
+            if (!type.equals(embeddedModifierType) && !EmbeddedModifierType.BOTH.equals(embeddedModifierType)) {
+                switch (type) {
+                    case SINGLE:
+                    case COLLECTION:
+                        if (EmbeddedModifierType.NONE.equals(embeddedModifierType)) {
+                            embeddedModifierType = type;
+                        } else {
+                            embeddedModifierType = EmbeddedModifierType.BOTH;
+                        }
+                        break;
+                    case BOTH:
+                        embeddedModifierType = type;
+                        break;
+                    default:
+                        //Do nothing
+                }
+            }
+        }
+
+        @Override
+        public void setEmbeddedModifier(EmbeddedModifierType type) {
+            embeddedModifierType = type;
+        }
     }
 
     @Data

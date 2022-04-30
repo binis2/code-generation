@@ -636,7 +636,7 @@ public class Generator {
                         break;
                     case "baseModifierClass":
                         value = pair.getValue().asClassExpr().getTypeAsString();
-                        if (StringUtils.isNotBlank(value) && !"void".equals(value)) {
+                        if (StringUtils.isNotBlank(value)) {
                             builder.baseModifierClass(value);
                         }
                         break;
@@ -984,15 +984,9 @@ public class Generator {
         if (nonNull(parse)) {
             var processing = processingTypes.get(type);
 
-            if (embedded) {
-                lookup.generateEmbeddedModifier(parse);
-                if (nonNull(prototypeMap)) {
-                    prototypeMap.put(parse.getInterfaceName(), parse);
-                    prototypeMap.put(parse.getDeclaration().getNameAsString(), parse);
-                    if (isNull(parse.getInterfaceName())) {
-                        lookup.addPrototypeMap(parse, prototypeMap);
-                    }
-                }
+            if (embedded && nonNull(prototypeMap)) {
+                prototypeMap.put(parse.getDeclaration().getNameAsString(), parse);
+                lookup.addPrototypeMap(parse, prototypeMap);
             }
 
             if (isNull(processing)) {
@@ -1212,17 +1206,19 @@ public class Generator {
                     field = spec.addField("Object", fieldName, PROTECTED);
                 }
             }
+            var collection = CollectionsHandler.isCollection(field.getVariable(0).getType());
             result = Structures.FieldData.builder()
                     .parsed(parsed)
                     .name(fieldName)
                     .description(method)
                     .declaration(field)
-                    .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
+                    .collection(collection)
                     .ignores(getIgnores(method))
                     .genericMethod(genericMethod)
                     .genericField(isGenericType(method.getType(), parsed.getDeclaration()))
                     .generics(nonNull(generic) ? Map.of(generic.asString(), generic) : null)
-                    .prototype(isNull(generic) ? lookup.findParsed(getExternalClassName(unit, method.getType().asString())) : null)
+                    .prototype(collection ? prototypeMap.get(CollectionsHandler.getCollectionType(method.getType())) :
+                            (isNull(generic) ? lookup.findParsed(getExternalClassName(unit, method.getType().asString())) : null))
                     .typePrototypes(!prototypeMap.isEmpty() ? prototypeMap : null)
                     .type(field.getElementType().asString())
                     .fullType(getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))

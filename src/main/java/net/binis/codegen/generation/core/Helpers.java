@@ -45,9 +45,11 @@ import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Holder;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.TypeVariable;
@@ -911,9 +913,8 @@ public class Helpers {
         list.add(Triple.of(intf, node, embedded));
     }
 
-    public static boolean hasAnnotation(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, Class<?> annotation) {
-        return parsed.getDeclaration().getAnnotations().stream()
-                .map(a -> getExternalClassName(parsed.getDeclaration().findCompilationUnit().get(), a.getNameAsString())).anyMatch(a -> annotation.getCanonicalName().equals(a));
+    public static boolean hasAnnotation(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, Class<? extends Annotation> annotation) {
+        return parsed.getDeclaration().getAnnotationByClass(annotation).isPresent();
     }
 
     public static void importClass(CompilationUnit unit, Class<?> cls) {
@@ -985,5 +986,7 @@ public class Helpers {
     }
 
 
-
+    public static String getAnnotationValue(AnnotationExpr annotation) {
+        throw new NotImplementedException();
+    }
 }

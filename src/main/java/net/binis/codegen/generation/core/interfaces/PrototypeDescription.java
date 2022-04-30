@@ -26,6 +26,7 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import net.binis.codegen.annotation.type.EmbeddedModifierType;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.List;
@@ -79,5 +80,12 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     String getParentClassName();
 
+    EmbeddedModifierType getEmbeddedModifierType();
+
     Optional<PrototypeField> findField(String name);
+
+    void addEmbeddedModifier(EmbeddedModifierType type);
+
+    void setEmbeddedModifier(EmbeddedModifierType type);
 }
+
