@@ -2,6 +2,7 @@
 package net.binis.test.card;
 
 import net.binis.codegen.objects.impl.CompiledGenericImpl;
+import net.binis.codegen.modifier.impl.BaseModifierImpl;
 import net.binis.codegen.modifier.Modifiable;
 import net.binis.codegen.factory.CodeFactory;
 import javax.annotation.processing.Generated;
@@ -22,12 +23,16 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
 
     // region getters
     public AccountOverviewCard.Modify with() {
-        return new AccountOverviewCardModifyImpl();
+        return new AccountOverviewCardModifyImpl(this);
     }
     // endregion
 
     // region inner classes
-    protected class AccountOverviewCardModifyImpl implements AccountOverviewCard.Modify {
+    protected class AccountOverviewCardModifyImpl extends BaseModifierImpl<AccountOverviewCard.Modify, AccountOverviewCard> implements AccountOverviewCard.Modify {
+
+        protected AccountOverviewCardModifyImpl(AccountOverviewCard parent) {
+            super(parent);
+        }
 
         public AccountOverviewCard done() {
             return AccountOverviewCardImpl.this;
@@ -90,19 +95,23 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
         }
 
         public AccountOverviewCardPayload.Modify with() {
-            return new AccountOverviewCardPayloadModifyImpl();
+            return new AccountOverviewCardPayloadModifyImpl(this);
         }
         // endregion
 
         // region inner classes
-        protected class AccountOverviewCardPayloadModifyImpl implements AccountOverviewCardPayload.Modify {
+        protected class AccountOverviewCardPayloadModifyImpl extends BaseModifierImpl<AccountOverviewCard.AccountOverviewCardPayload.Modify, AccountOverviewCard.AccountOverviewCardPayload> implements AccountOverviewCardPayload.Modify {
+
+            protected AccountOverviewCardPayloadModifyImpl(AccountOverviewCardPayload parent) {
+                super(parent);
+            }
 
             public AccountOverviewCardPayload.Modify donated(int donated) {
                 AccountOverviewCardPayloadImpl.this.donated = donated;
                 return this;
             }
 
-            public AccountOverviewCardPayload done() {
+            public AccountOverviewCard.AccountOverviewCardPayload done() {
                 return AccountOverviewCardPayloadImpl.this;
             }
 

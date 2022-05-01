@@ -3,6 +3,7 @@ package net.binis.test.card;
 
 import net.binis.test.cards.payload.AccountOverviewCardPayload;
 import net.binis.codegen.objects.impl.CompiledGenericImpl;
+import net.binis.codegen.modifier.impl.BaseModifierImpl;
 import net.binis.codegen.modifier.Modifiable;
 import net.binis.codegen.factory.CodeFactory;
 import javax.annotation.processing.Generated;
@@ -23,12 +24,16 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
 
     // region getters
     public AccountOverviewCard.Modify with() {
-        return new AccountOverviewCardModifyImpl();
+        return new AccountOverviewCardModifyImpl(this);
     }
     // endregion
 
     // region inner classes
-    protected class AccountOverviewCardModifyImpl implements AccountOverviewCard.Modify {
+    protected class AccountOverviewCardModifyImpl extends BaseModifierImpl<AccountOverviewCard.Modify, AccountOverviewCard> implements AccountOverviewCard.Modify {
+
+        protected AccountOverviewCardModifyImpl(AccountOverviewCard parent) {
+            super(parent);
+        }
 
         public AccountOverviewCard done() {
             return AccountOverviewCardImpl.this;

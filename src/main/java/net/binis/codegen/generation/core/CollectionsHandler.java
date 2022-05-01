@@ -24,6 +24,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
@@ -79,9 +80,10 @@ public class CollectionsHandler {
                 u.addImport(collection.getImplementorInterface());
             });
 
+            var t = Helpers.calcType(spec);
             var method = spec
                     .addMethod(declaration.getName())
-                    .setType(collection.getType() + (!isClass ? ("<" + (collection.isPrototypeParam() ? generic + ".EmbeddedCollectionModify<" + modifierName + ".EmbeddedModify<T, R>>, " : "") + generic + ", " + modifierName + ".EmbeddedModify<T, R>>") : ""));
+                    .setType(collection.getType() + (!isClass ? ("<" + (collection.isPrototypeParam() ? generic + ".EmbeddedCollectionModify<" + modifierName + "." + t + ">, " : "") + generic + ", " + modifierName + "." + t + ">") : ""));
             if (isClass) {
                 var parent = className + ".this." + declaration.getName();
                 var block = new BlockStmt()
@@ -168,11 +170,6 @@ public class CollectionsHandler {
         }
         return "Object";
     }
-
-    public static String getFullCollectionType(Type type) {
-        return getExternalClassName(type.findCompilationUnit().get(), getCollectionType(type));
-    }
-
 
     @Data
     @Builder

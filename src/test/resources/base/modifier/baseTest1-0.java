@@ -1,8 +1,7 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.codegen;
 
-import net.binis.codegen.spring.BaseEntityModifier;
-import net.binis.codegen.modifier.Modifier;
+import net.binis.codegen.spring.modifier.impl.BaseEntityModifierImpl;
 import net.binis.codegen.modifier.Modifiable;
 import javax.annotation.processing.Generated;
 
@@ -23,13 +22,13 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
     }
 
     public Test.Modify with() {
-        return new TestModifyImpl();
+        return new TestModifyImpl(this);
     }
 
-    protected class TestModifyImpl extends BaseEntityModifier<Test.Modify, Test> implements Test.Modify {
+    protected class TestModifyImpl extends BaseEntityModifierImpl<Test.Modify, Test> implements Test.Modify {
 
-        protected TestModifyImpl() {
-            setObject(TestImpl.this);
+        protected TestModifyImpl(Test parent) {
+            super(parent);
         }
 
         public Test done() {

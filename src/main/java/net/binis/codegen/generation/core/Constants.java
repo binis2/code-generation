@@ -54,6 +54,10 @@ public class Constants {
     public static final String QUERY_NAME_KEY = QUERY_KEY + "Name";
     public static final String QUERY_NAME_INTF_KEY = QUERY_KEY + QUERY_NAME_KEY + "Intf";
 
+    public static final String QUERY_FIELDS_INTF_KEY = QUERY_KEY + "FieldsIntf";
+    public static final String QUERY_ORDER_FIELDS_INTF_KEY = QUERY_KEY + "OrderFieldsIntf";
+    public static final String QUERY_FUNCTIONS_INTF_KEY = QUERY_KEY + "FunctionsIntf";
+
     public static final String CLONE_METHOD = "clone";
 
 }

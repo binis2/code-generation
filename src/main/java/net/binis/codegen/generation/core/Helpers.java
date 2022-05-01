@@ -789,7 +789,9 @@ public class Helpers {
 
     public static void finalizeEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
         getEnrichersList(parsed).forEach(e -> e.finalizeEnrich(parsed));
+    }
 
+    public static void postProcessEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
         parsed.processActions();
 
         parsed.getInitializers().forEach(i -> {
@@ -818,26 +820,28 @@ public class Helpers {
         getEnrichersList(parsed).forEach(e -> e.postProcess(parsed));
     }
 
+
     private static String calcModifierExpression(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        var modClass = description.getRegisteredClass(MODIFIER_KEY);
-        if (nonNull(modClass)) {
-            var soloClass = description.getRegisteredClass(EMBEDDED_SOLO_MODIFIER_KEY);
-            var collectionClass = description.getRegisteredClass(EMBEDDED_COLLECTION_MODIFIER_KEY);
-            if (nonNull(soloClass) && nonNull(collectionClass)) {
-                soloClass.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.collection.EmbeddedCodeCollection"));
-                return "(p, v) -> p instanceof EmbeddedCodeCollection ? ((" + description.getProperties().getClassName() + ") v).new " + collectionClass.getNameAsString() + "(p) : ((" + description.getProperties().getClassName() + ") v).new " + soloClass.getNameAsString() + "(p)";
-            } else {
-                var cls = modClass;
-                if (nonNull(soloClass)) {
-                    cls = soloClass;
-                } else if (nonNull(collectionClass)) {
-                    cls = collectionClass;
+        if (nonNull(description)) {
+            var modClass = description.getRegisteredClass(EMBEDDED_MODIFIER_KEY);
+            if (nonNull(modClass)) {
+                var soloClass = description.getRegisteredClass(EMBEDDED_SOLO_MODIFIER_KEY);
+                var collectionClass = description.getRegisteredClass(EMBEDDED_COLLECTION_MODIFIER_KEY);
+                if (nonNull(soloClass) && nonNull(collectionClass)) {
+                    soloClass.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.collection.EmbeddedCodeCollection"));
+                    return "(p, v) -> p instanceof EmbeddedCodeCollection ? ((" + description.getProperties().getClassName() + ") v).new " + collectionClass.getNameAsString() + "(p) : ((" + description.getProperties().getClassName() + ") v).new " + soloClass.getNameAsString() + "(p)";
+                } else {
+                    var cls = modClass;
+                    if (nonNull(soloClass)) {
+                        cls = soloClass;
+                    } else if (nonNull(collectionClass)) {
+                        cls = collectionClass;
+                    }
+                    return "(p, v) -> ((" + description.getProperties().getClassName() + ") v).new " + cls.getNameAsString() + "(p)";
                 }
-                return "(p, v) -> ((" + description.getProperties().getClassName() + ") v).new " + cls.getNameAsString() + "(p)";
             }
-        } else {
-            return "null";
         }
+        return "null";
     }
 
     public static BlockStmt getInitializer(ClassOrInterfaceDeclaration type) {
@@ -893,12 +897,12 @@ public class Helpers {
         }
     }
 
-    public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration type) {
-        addInitializerInternal(description, intf, type);
+    public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration type, boolean embedded) {
+        addInitializerInternal(description, intf, type, embedded);
     }
 
-    public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, LambdaExpr expr) {
-        addInitializerInternal(description, intf, expr);
+    public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, LambdaExpr expr, boolean embedded) {
+        addInitializerInternal(description, intf, expr, embedded);
     }
 
     public static void addDefaultCreation(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
@@ -920,20 +924,20 @@ public class Helpers {
         return description.getProperties().getClassPackage();
     }
 
-    private static void addInitializerInternal(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, Node node) {
+    private static void addInitializerInternal(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, Node node, boolean embedded) {
         description.getSpec().findCompilationUnit().get().addImport("net.binis.codegen.factory.CodeFactory");
 
         var list = description.getInitializers();
-//        for (var i = 0; i < list.size(); i++) {
-//            if (list.get(i).getLeft().getFullyQualifiedName().get().equals(intf.getFullyQualifiedName().get())) {
-//                if (isNull(list.get(i).getRight()) && nonNull(embedded)) {
-//                    list.set(i, Triple.of(intf, node, embedded));
-//                }
-//                return;
-//            }
-//        }
+        for (var i = 0; i < list.size(); i++) {
+            if (list.get(i).getLeft().getFullyQualifiedName().get().equals(intf.getFullyQualifiedName().get())) {
+                if (isNull(list.get(i).getRight()) && embedded) {
+                    list.set(i, Triple.of(intf, node, description));
+                }
+                return;
+            }
+        }
 
-        list.add(Triple.of(intf, node, description));
+        list.add(Triple.of(intf, node, embedded ? description : null));
     }
 
     public static boolean hasAnnotation(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, Class<? extends Annotation> annotation) {
@@ -1008,8 +1012,29 @@ public class Helpers {
         return ((nonNull(left.getMixIn()) ? 2 : 0) + (nonNull(left.getBase()) ? 1 : 0)) - ((nonNull(right.getMixIn()) ? 2 : 0) + (nonNull(right.getBase()) ? 1 : 0));
     }
 
-
     public static String getAnnotationValue(AnnotationExpr annotation) {
-        throw new NotImplementedException();
+        var result = "BOTH";
+        if (annotation.isSingleMemberAnnotationExpr()) {
+            result = annotation.asSingleMemberAnnotationExpr().getMemberValue().toString();
+        } else if (annotation.isNormalAnnotationExpr()) {
+            for (var pair : annotation.asNormalAnnotationExpr().getPairs()) {
+                if ("value".equals(pair.getName().asString())) {
+                    result = pair.getValue().toString();
+                    break;
+                }
+            }
+        }
+
+        return result.substring(Math.max(0, result.lastIndexOf('.') + 1));
     }
+
+    public static String calcType(ClassOrInterfaceDeclaration spec) {
+        var result = spec.getNameAsString();
+        if (spec.getTypeParameters().isNonEmpty()) {
+            result = result + spec.getTypeParameters().stream().map(NodeWithSimpleName::getNameAsString).collect(Collectors.joining(", ", "<", ">"));
+        }
+
+        return result;
+    }
+
 }

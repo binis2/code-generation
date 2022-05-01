@@ -1,6 +1,7 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.test.cards.payload;
 
+import net.binis.codegen.modifier.impl.BaseModifierImpl;
 import net.binis.codegen.modifier.Modifiable;
 import net.binis.codegen.factory.CodeFactory;
 import javax.annotation.processing.Generated;
@@ -37,12 +38,16 @@ public class AccountOverviewCardPayloadImpl implements AccountOverviewCardPayloa
     }
 
     public AccountOverviewCardPayload.Modify with() {
-        return new AccountOverviewCardPayloadModifyImpl();
+        return new AccountOverviewCardPayloadModifyImpl(this);
     }
     // endregion
 
     // region inner classes
-    protected class AccountOverviewCardPayloadModifyImpl implements AccountOverviewCardPayload.Modify {
+    protected class AccountOverviewCardPayloadModifyImpl extends BaseModifierImpl<AccountOverviewCardPayload.Modify, AccountOverviewCardPayload> implements AccountOverviewCardPayload.Modify {
+
+        protected AccountOverviewCardPayloadModifyImpl(AccountOverviewCardPayload parent) {
+            super(parent);
+        }
 
         public AccountOverviewCardPayload.Modify donated(int donated) {
             AccountOverviewCardPayloadImpl.this.donated = donated;

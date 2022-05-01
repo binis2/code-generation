@@ -149,7 +149,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
         addPresets(description, description.getDeclaration(), intf, spec);
 
-        Helpers.addInitializer(description, intf, isNull(description.getMixIn()) ? spec : description.getMixIn().getSpec());
+        Helpers.addInitializer(description, intf, isNull(description.getMixIn()) ? spec : description.getMixIn().getSpec(), false);
     }
 
     @Override
@@ -187,7 +187,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                         .addStatement(new ReturnStmt("(" + QUERY_AGGREGATE_OPERATION + ") aggregateStart(new " + entity + QUERY_ORDER + QUERY_IMPL + "(this, " + entity + QUERY_EXECUTOR + QUERY_IMPL + ".this::aggregateIdentifier))")));
         spec.addMember(impl);
 
-        Helpers.addInitializer(description, select, impl);
+        Helpers.addInitializer(description, select, impl, false);
 
         var orderImpl = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + QUERY_ORDER + QUERY_IMPL)
                 .addModifier(PROTECTED)
@@ -225,11 +225,6 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addTypeParameter(QUERY_GENERIC);
         intf.addMember(qFields);
 
-        var mFields = description.getRegisteredClass(Constants.MODIFIER_FIELDS_KEY);
-        if (nonNull(mFields)) {
-            qFields.addExtendedType(intf.getNameAsString() + "." + mFields.getNameAsString() + "<" + QUERY_GENERIC + ">");
-        }
-
         var qOpFields = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_OP_FIELDS)
                 .addExtendedType(QUERY_SCRIPT + "<" + QUERY_GENERIC + ">")
                 .addTypeParameter(QUERY_GENERIC);
@@ -261,6 +256,40 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addTypeParameter(QUERY_SELECT_GENERIC);
         intf.addMember(fields);
 
+        description.registerClass(Constants.QUERY_EXECUTOR_KEY, impl);
+        description.registerClass(Constants.QUERY_SELECT_INTF_KEY, select);
+        description.registerClass(Constants.QUERY_ORDER_KEY, orderImpl);
+        description.registerClass(Constants.QUERY_ORDER_INTF_KEY, order);
+        description.registerClass(Constants.QUERY_NAME_KEY, qNameImpl);
+        description.registerClass(Constants.QUERY_NAME_INTF_KEY, qName);
+        description.registerClass(Constants.QUERY_FIELDS_INTF_KEY, qFields);
+        description.registerClass(Constants.QUERY_ORDER_FIELDS_INTF_KEY, qOpFields);
+        description.registerClass(Constants.QUERY_FUNCTIONS_INTF_KEY, qFuncs);
+
+        if (Helpers.hasAnnotation(description, Joinable.class)) {
+            Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) description.getParser().parseExpression("() -> " + description.getIntf().getNameAsString() + ".find().aggregate()").getResult().get(), false);
+        }
+    }
+
+    @Override
+    public void finalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+        var entity = description.getProperties().getInterfaceName();
+        var intf = description.getIntf();
+        var impl = description.getRegisteredClass(Constants.QUERY_EXECUTOR_KEY);
+        var select = description.getRegisteredClass(Constants.QUERY_SELECT_INTF_KEY);
+        var orderImpl = description.getRegisteredClass(Constants.QUERY_ORDER_KEY);
+        var order = description.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY);
+        var qNameImpl = description.getRegisteredClass(Constants.QUERY_NAME_KEY);
+        var qName = description.getRegisteredClass(Constants.QUERY_NAME_INTF_KEY);
+        var qFields = description.getRegisteredClass(Constants.QUERY_FIELDS_INTF_KEY);
+        var qOpFields = description.getRegisteredClass(Constants.QUERY_ORDER_FIELDS_INTF_KEY);
+        var qFuncs = description.getRegisteredClass(Constants.QUERY_FUNCTIONS_INTF_KEY);
+
+        var mFields = description.getRegisteredClass(Constants.MODIFIER_FIELDS_KEY);
+        if (nonNull(mFields)) {
+            qFields.addExtendedType(intf.getNameAsString() + "." + mFields.getNameAsString() + "<" + QUERY_GENERIC + ">");
+        }
+
         var declaredFields = new HashSet<String>();
 
         with(description.getBase(), base ->
@@ -279,15 +308,11 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                     declareField(declaredFields, description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs));
         }
 
-        description.registerClass(Constants.QUERY_EXECUTOR_KEY, impl);
-        description.registerClass(Constants.QUERY_SELECT_INTF_KEY, select);
-        description.registerClass(Constants.QUERY_ORDER_KEY, orderImpl);
-        description.registerClass(Constants.QUERY_ORDER_INTF_KEY, order);
-        description.registerClass(Constants.QUERY_NAME_KEY, qNameImpl);
-        description.registerClass(Constants.QUERY_NAME_INTF_KEY, qName);
-
-        if (Helpers.hasAnnotation(description, Joinable.class)) {
-            Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) description.getParser().parseExpression("() -> " + description.getIntf().getNameAsString() + ".find().aggregate()").getResult().get());
+        if (nonNull(description.getMixIn())) {
+            description.getMixIn().getSpec().addMember(description.getRegisteredClass(Constants.QUERY_EXECUTOR_KEY));
+            combineQueryNames(description);
+        } else {
+            Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_NAME_INTF_KEY), description.getRegisteredClass(Constants.QUERY_NAME_KEY), false);
         }
     }
 
@@ -335,7 +360,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
                         if (nonNull(prototype)) {
                             prototype.registerPostProcessAction(() ->
-                                    Helpers.addInitializer(prototype, prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) prototype.getParser().parseExpression("() -> " + prototype.getInterfaceName() + ".find().aggregate()").getResult().get()));
+                                    Helpers.addInitializer(prototype, prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) prototype.getParser().parseExpression("() -> " + prototype.getInterfaceName() + ".find().aggregate()").getResult().get(), false));
                         }
                     } else {
                         var returnType = QUERY_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">>";
@@ -448,16 +473,6 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
             }
         }
         return false;
-    }
-
-    @Override
-    public void finalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        if (nonNull(description.getMixIn())) {
-            description.getMixIn().getSpec().addMember(description.getRegisteredClass(Constants.QUERY_EXECUTOR_KEY));
-            combineQueryNames(description);
-        } else {
-            Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_NAME_INTF_KEY), description.getRegisteredClass(Constants.QUERY_NAME_KEY));
-        }
     }
 
     private void addPresets(PrototypeDescription<ClassOrInterfaceDeclaration> description, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration spec) {
@@ -697,7 +712,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         description.getRegisteredClass(Constants.QUERY_EXECUTOR_KEY).findAll(ObjectCreationExpr.class, n -> n.getType().getNameAsString().equals(mix.getNameAsString())).forEach(n ->
                 n.setType(base.getNameAsString()));
 
-        Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_NAME_INTF_KEY), description.getMixIn().getRegisteredClass(Constants.QUERY_NAME_KEY));
+        Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_NAME_INTF_KEY), description.getMixIn().getRegisteredClass(Constants.QUERY_NAME_KEY), false);
     }
 
     private boolean checkQueryName(PrototypeField desc) {

@@ -3,6 +3,7 @@ package net.binis.test.card;
 
 import net.binis.test.cards.payload.AccountOverviewCardPayload;
 import net.binis.codegen.objects.CompiledGeneric;
+import net.binis.codegen.modifier.BaseModifier;
 import net.binis.codegen.creator.EntityCreatorModifier;
 import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
@@ -28,8 +29,7 @@ public interface AccountOverviewCard extends CompiledGeneric<AccountOverviewCard
         T type(String type);
     }
 
-    interface Modify extends AccountOverviewCard.Fields<AccountOverviewCard.Modify> {
-        AccountOverviewCard done();
+    interface Modify extends AccountOverviewCard.Fields<AccountOverviewCard.Modify>, BaseModifier<AccountOverviewCard.Modify, AccountOverviewCard> {
     }
     // endregion
 }

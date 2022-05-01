@@ -79,6 +79,7 @@ public abstract class BaseTest {
         with(lookup.parsed().stream().filter(PrototypeDescription::isValid).sorted(Helpers::sortForEnrich).collect(Collectors.toList()), list -> {
             list.forEach(Helpers::handleEnrichers);
             list.forEach(Helpers::finalizeEnrichers);
+            list.forEach(Helpers::postProcessEnrichers);
         });
     }
 

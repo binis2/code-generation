@@ -340,7 +340,7 @@ public class Structures {
                         .predefinedEnrichers(List.of(QueryEnricher.class, ValidationEnricher.class, CreatorModifierEnricher.class, ModifierEnricher.class, RegionEnricher.class))
                         .classSetters(false)
                         .interfaceSetters(false)
-                        .baseModifierClass("net.binis.codegen.spring.BaseEntityModifier"));
+                        .baseModifierClass("net.binis.codegen.spring.modifier.BaseEntityModifier"));
     }
 
 }

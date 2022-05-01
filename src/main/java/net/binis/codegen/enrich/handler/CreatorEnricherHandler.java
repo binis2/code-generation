@@ -59,7 +59,7 @@ public class CreatorEnricherHandler extends BaseEnricher implements CreatorEnric
                 type = description.getMixIn().getSpec();
             }
 
-            Helpers.addInitializer(description, intf, type);
+            Helpers.addInitializer(description, intf, type, nonNull(description.getRegisteredClass(EMBEDDED_MODIFIER_KEY)));
         }
     }
 

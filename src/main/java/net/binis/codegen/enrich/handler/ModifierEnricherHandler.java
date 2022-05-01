@@ -34,23 +34,18 @@ import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.Embeddable;
 import net.binis.codegen.annotation.type.EmbeddedModifierType;
-import net.binis.codegen.collection.EmbeddedCodeCollection;
 import net.binis.codegen.enrich.ModifierEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
-import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.Constants;
-import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.github.javaparser.ast.Modifier.Keyword.PROTECTED;
@@ -83,9 +78,6 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         var entity = description.getProperties().getInterfaceName();
 
         var modifier = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, properties.getModifierName());
-        if (nonNull(properties.getBaseModifierClass())) {
-            modifier.addExtendedType(properties.getBaseModifierClass() + "<" + entity + "." + properties.getModifierName() + ", " + entity + ">");
-        }
         description.registerClass(MODIFIER_INTF_KEY, modifier);
 
         ClassOrInterfaceDeclaration embeddedModifier = null;
@@ -127,6 +119,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         if (!description.getProperties().isBase()) {
             modifierClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, defaultModifierClassName(properties.getClassName()))
                     .addImplementedType(entity + "." + modifier.getNameAsString());
+            addConstructor(entity, modifierClass);
             description.registerClass(MODIFIER_KEY, modifierClass);
             spec.addMember(modifierClass);
             intf.addMember(modifier);
@@ -135,15 +128,14 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                         .addTypeParameter(TYPE_PARAMETER)
                         .addTypeParameter(RETURN_PARAMETER)
                         .addImplementedType(entity + "." + EMBEDDED + properties.getModifierName() + "<" + TYPE_PARAMETER + ", " + RETURN_PARAMETER + ">");
-                embeddedModifierClass.addConstructor(PROTECTED).addParameter("Object", "parent").setBody(description.getParser().parseBlock("{this.parent = (R) parent;}").getResult().get());
-                embeddedModifierClass.addConstructor(PROTECTED).setBody(description.getParser().parseBlock("{setObject((R) " + properties.getClassName() + ".this);}").getResult().get());
+                addConstructor(RETURN_PARAMETER, embeddedModifierClass);
                 description.registerClass(EMBEDDED_MODIFIER_KEY, embeddedModifierClass);
                 spec.addMember(embeddedModifierClass);
                 if (embeddedType.isSolo()) {
                     embeddedModifierSoloClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, defaultModifierClassName(properties.getClassName() + SOLO))
                             .addExtendedType(embeddedModifierClass.getNameAsString())
                             .addImplementedType(entity + "." + embeddedModifierSolo.getNameAsString());
-                    embeddedModifierSoloClass.addConstructor(PROTECTED).addParameter("Object", "parent").getBody().addStatement(description.getParser().parseStatement("super(parent);").getResult().get());
+                    addConstructor("Object", embeddedModifierSoloClass);
                     description.registerClass(EMBEDDED_SOLO_MODIFIER_KEY, embeddedModifierSoloClass);
                     spec.addMember(embeddedModifierSoloClass);
                 }
@@ -151,8 +143,9 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     embeddedModifierCollectionClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, defaultModifierClassName(properties.getClassName() + COLLECTION))
                             .addExtendedType(embeddedModifierClass.getNameAsString())
                             .addImplementedType(entity + "." + embeddedModifierCollection.getNameAsString());
-                    embeddedModifierCollectionClass.addConstructor(PROTECTED).addParameter("Object", "parent").getBody().addStatement(description.getParser().parseStatement("super(parent);").getResult().get());
+                    addConstructor("Object", embeddedModifierCollectionClass);
                     embeddedModifierCollectionClass.addMethod("_and", PUBLIC).setType("EmbeddedCodeCollection").setBody(description.getParser().parseBlock("{return (EmbeddedCodeCollection) parent;}").getResult().get());
+                    spec.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.collection.EmbeddedCodeCollection"));
                     description.registerClass(EMBEDDED_COLLECTION_MODIFIER_KEY, embeddedModifierCollectionClass);
                     spec.addMember(embeddedModifierCollectionClass);
                 }
@@ -160,14 +153,15 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
 
             addModifyMethod(methodName, spec, properties.getLongModifierName(), modifierClass.getNameAsString(), true);
             addModifyMethod(methodName, intf, properties.getLongModifierName(), null, false);
-//            addDoneMethod(modifierClass, properties.getInterfaceName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true);
-//            addDoneMethod(modifier, properties.getInterfaceName(), null, false);
-//            handleModifierBaseImplementation(isNull(properties.getMixInClass()) ? description : description.getMixIn(), spec, intf, modifier, modifierClass);
             spec.findCompilationUnit().get().addImport("net.binis.codegen.modifier.Modifiable");
         }
         if (isNull(description.getMixIn()) && !description.getProperties().isBase()) {
             spec.addImplementedType("Modifiable<" + intf.getNameAsString() + "." + modifier.getNameAsString() + ">");
         }
+    }
+
+    private void addConstructor(String entity, ClassOrInterfaceDeclaration cls) {
+        cls.addConstructor(PROTECTED).addParameter(entity, "parent").getBody().addStatement(lookup.getParser().parseStatement("super(parent);").getResult().get());
     }
 
     @Override
@@ -250,6 +244,15 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
             description.getRegisteredClass(EMBEDDED_MODIFIER_KEY).addExtendedType(baseModifier + "<" + TYPE_PARAMETER + ", " + RETURN_PARAMETER + ">");
             modifier.addExtendedType(EMBEDDED + properties.getModifierName() + "<" + description.getInterfaceName() + "." + properties.getModifierName() + ", " + description.getInterfaceName() + ">");
             modifierClass.addExtendedType(description.getRegisteredClass(EMBEDDED_MODIFIER_KEY).getNameAsString() + "<" + description.getInterfaceName() + "." + properties.getModifierName() + ", " + description.getInterfaceName() + ">");
+        } else {
+            if (nonNull(modifierClass)) {
+                modifierClass.addExtendedType(baseModifier + "<" + description.getInterfaceName() + "." + properties.getModifierName() + ", " + description.getInterfaceName() + ">");
+                modifierClass.addMethod("done", PUBLIC).setType(description.getInterfaceName()).setBody(description.getParser().parseBlock("{return " + (isNull(description.getMixIn()) ? description.getProperties().getClassName() : description.getMixIn().getProperties().getClassName()) + ".this;}").getResult().get());
+            }
+        }
+        baseModifier = handleBaseModifier(description);
+        if (!"BaseModifier".equals(baseModifier) || isNull(embedded)) {
+            modifier.addExtendedType(baseModifier + "<" + description.getInterfaceName() + "." + properties.getModifierName() + ", " + description.getInterfaceName() + ">");
         }
     }
 
@@ -261,7 +264,11 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
             }
             return "BaseModifierImpl";
         }
-        var full = getExternalClassName(description.getDeclaration().findCompilationUnit().get(), baseModifier);
+        var full = getExternalClassNameIfExists(description.getDeclaration().findCompilationUnit().get(), baseModifier);
+        if (isNull(full)) {
+            full = baseModifier;
+            baseModifier = full.substring(Math.max(0, full.lastIndexOf('.') + 1));
+        }
         var path = full.substring(0, full.indexOf(baseModifier)) + "impl." + baseModifier + "Impl";
         if (!description.getProperties().isBase()) {
             description.getSpec().findCompilationUnit().ifPresent(u -> u.addImport(path));
@@ -269,6 +276,25 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         return baseModifier + "Impl";
     }
 
+    private String handleBaseModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+        var baseModifier = description.getProperties().getBaseModifierClass();
+        if (isNull(baseModifier)) {
+            if (!description.getProperties().isBase()) {
+                description.getIntf().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.modifier.BaseModifier"));
+            }
+            return "BaseModifier";
+        }
+        if (!description.getProperties().isBase()) {
+            var full = getExternalClassNameIfExists(description.getDeclaration().findCompilationUnit().get(), baseModifier);
+            if (isNull(full)) {
+                full = baseModifier;
+                baseModifier = full.substring(Math.max(0, full.lastIndexOf('.') + 1));
+            }
+            var path = full;
+            description.getIntf().findCompilationUnit().ifPresent(u -> u.addImport(path));
+        }
+        return baseModifier;
+    }
 
     private void calcEmbeddedModifiersType(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         var ann = description.getDeclaration().getAnnotationByClass(Embeddable.class);
@@ -321,12 +347,13 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     if (isNull(modifier)) {
                         modifier = description.getRegisteredClass(MODIFIER_INTF_KEY);
                     }
-                    returnType = field.getPrototype().getInterfaceName() + ".EmbeddedSoloModify<EmbeddedModify<" + TYPE_PARAMETER + ", " + RETURN_PARAMETER + ">>";
+                    returnType = field.getPrototype().getInterfaceName() + ".EmbeddedSoloModify<" + Helpers.calcType(modifier) + ">";
                     modifier.addMethod(field.getName()).setType(returnType).setBody(null);
                     modifierClass.addMethod(field.getName(), PUBLIC).setType(returnType).setBody(description.getParser().parseBlock(
                             "{ if (" + description.getProperties().getClassName() + ".this." + field.getName() + " == null) {" +
                                     description.getProperties().getClassName() + ".this." + field.getName() + " = CodeFactory.create(" + field.getPrototype().getInterfaceName() + ".class);}" +
                                     "return CodeFactory.modify(this, " + description.getProperties().getClassName() + ".this." + field.getName() + ", " + field.getPrototype().getInterfaceName() + ".class); }").getResult().get());
+                    modifierClass.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.factory.CodeFactory"));
 
                     with(description.getRegisteredClass(MODIFIER_INTF_KEY), cls -> {
                         cls.addMethod(field.getName()).setType(properties.getModifierName()).addParameter("Consumer<" + field.getPrototype().getInterfaceName() + ".Modify>", "init").setBody(null);
@@ -348,11 +375,6 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         }
     }
 
-//    private boolean hasEmbeddedCollectionModifier(Type type) {
-//        var prototype = lookup.findParsed(CollectionsHandler.getFullCollectionType(type));
-//        return nonNull(prototype) && nonNull(prototype.getRegisteredClass(EMBEDDED_COLLECTION_MODIFIER_KEY));
-//    }
-
     private void addField(PrototypeField field, ClassOrInterfaceDeclaration modifierFields, List<Pair<CompilationUnit, String>> imports, Type generic) {
         if (nonNull(modifierFields)) {
             var type = nonNull(generic) ? generic : field.getDeclaration().getVariable(0).getType();
@@ -372,7 +394,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         if (isClass) {
             method
                     .addModifier(PUBLIC)
-                    .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + modifierClassName + "()"))));
+                    .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + modifierClassName + "(this)"))));
         } else {
             method.setBody(null);
         }
@@ -391,207 +413,10 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         }
     }
 
-    private static void handleModifierBaseImplementation(PrototypeDescription<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass) {
-//        notNull(Generator.findInheritanceProperty(parse.getDeclaration().asClassOrInterfaceDeclaration(), parse.getProperties(), (s, p) -> nullCheck(p.getBaseModifierClass(), prp -> getExternalClassName(s.findCompilationUnit().get(), prp))), baseClass ->
-//                notNull(loadClass(baseClass), cls -> {
-//                    if (net.binis.codegen.modifier.Modifier.class.isAssignableFrom(cls)) {
-//                        modifierClass.addConstructor(PROTECTED).setBody(new BlockStmt().addStatement("setObject(" + parse.getProperties().getClassName() + ".this);"));
-//                        spec.findCompilationUnit().get().addImport(net.binis.codegen.modifier.Modifier.class);
-//                    }
-//                    spec.findCompilationUnit().get().addImport(baseClass);
-//                    var intfName = intf.getNameAsString();
-//                    var modName = intfName + "." + modifier.getNameAsString();
-//                    var signature = parseGenericClassSignature(cls);
-//                    if (signature.size() != 2) {
-//                        log.error("BaseModifier ({}) should have two generic params!", cls.getCanonicalName());
-//                    }
-//                    var clsSignature = Map.<String, String>of(
-//                            signature.get(0), modName,
-//                            signature.get(1), intfName
-//                    );
-//                    modifierClass.addExtendedType(cls.getSimpleName() + "<" + modName + ", " + intfName + ">");
-//
-//                    for (var method : cls.getDeclaredMethods()) {
-//                        if (java.lang.reflect.Modifier.isPublic(method.getModifiers()) && !java.lang.reflect.Modifier.isStatic(method.getModifiers()) && !"setObject".equals(method.getName())) {
-//                            var ann = method.getAnnotation(Final.class);
-//                            if (nonNull(ann)) {
-//                                if (StringUtils.isBlank(ann.description())) {
-//                                    Generator.addMethod(modifier, method, clsSignature, intfName);
-//                                } else {
-//                                    Generator.addMethod(modifier, method, clsSignature, modName, intfName, ann);
-//                                }
-//                            } else {
-//                                Generator.addMethod(modifier, method, clsSignature, modName);
-//                            }
-//                        }
-//                    }
-//
-//                    if (nonNull(cls.getSuperclass()) && net.binis.codegen.modifier.Modifier.class.isAssignableFrom(cls)) {
-//                        handleSuperModifierBaseImplementation(parse, spec, intf, modifier, modifierClass, cls.getSuperclass(), clsSignature);
-//                    }
-//                })
-//        );
-    }
-
-//    private static void handleSuperModifierBaseImplementation(PrototypeDescription<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration modifier, ClassOrInterfaceDeclaration modifierClass, Class<?> cls, Map<String, String> clsSignature) {
-//
-//        var intfName = intf.getNameAsString();
-//        var modName = intfName + "." + modifier.getNameAsString();
-//
-//        for (var method : cls.getDeclaredMethods()) {
-//            if (java.lang.reflect.Modifier.isPublic(method.getModifiers()) && !java.lang.reflect.Modifier.isStatic(method.getModifiers()) && !"setObject".equals(method.getName())) {
-//                var ann = method.getAnnotation(Final.class);
-//                if (nonNull(ann)) {
-//                    if (StringUtils.isBlank(ann.description())) {
-//                        Generator.addMethod(modifier, method, clsSignature, intfName);
-//                    } else {
-//                        Generator.addMethod(modifier, method, clsSignature, modName, intfName, ann);
-//                    }
-//                } else {
-//                    Generator.addMethod(modifier, method, clsSignature, modName);
-//                }
-//            }
-//        }
-//
-//        if (nonNull(cls.getSuperclass()) && net.binis.codegen.modifier.Modifier.class.isAssignableFrom(cls)) {
-//            handleSuperModifierBaseImplementation(parse, spec, intf, modifier, modifierClass, cls.getSuperclass(), clsSignature);
-//        }
-//    }
-
     @Override
     public int order() {
         return 10000;
     }
-
-//    public static void buildEmbeddedModifier(PrototypeDescription<ClassOrInterfaceDeclaration> parse, boolean isClass) {
-//        var unit = parse.getFiles().get(isClass ? 0 : 1);
-//        var modifier = parse.getRegisteredClass(MODIFIER_INTF_KEY);
-//        var embedded = parse.getRegisteredClass(EMBEDDED_MODIFIER_INTF_KEY);
-//        if (isClass) {
-//            modifier = parse.getRegisteredClass(MODIFIER_KEY);
-//            embedded = parse.getRegisteredClass(EMBEDDED_MODIFIER_KEY);
-//        }
-//        var intfName = unit.getType(0).asClassOrInterfaceDeclaration().isInterface() ? unit.getType(0).getNameAsString() : "void";
-//
-//        if (isNull(embedded)) {
-//            handleEmbeddedModifier(parse, parse.getSpec(), parse.getIntf());
-//            embedded = isClass ? parse.getRegisteredClass(EMBEDDED_MODIFIER_KEY) : parse.getRegisteredClass(EMBEDDED_MODIFIER_INTF_KEY);
-//        }
-//
-//        if (nonNull(embedded)) {
-//            if (isClass) {
-//                embedded.setExtendedTypes(modifier.getExtendedTypes());
-//            } else {
-//                embedded.addExtendedType(parse.getIntf().getNameAsString() + ".Fields<" + parse.getIntf().getNameAsString() + ".EmbeddedModify<" + MODIFIER_FIELD_GENERIC + ">>");
-//            }
-//
-//            var intf = modifier.getNameAsString();
-//            var eIntf = embedded.getNameAsString() + "<T>";
-//            if (modifier.getImplementedTypes().isNonEmpty()) {
-//                intf = modifier.getImplementedTypes(0).toString();
-//                eIntf = embedded.getImplementedTypes(0).toString();
-//            }
-//
-//            for (var old : modifier.getMethods()) {
-//                if (Constants.MODIFIER_INTERFACE_NAME.equals(old.getType().toString()) || (old.getType().toString().endsWith(".Modify")) || old.getTypeAsString().startsWith("EmbeddedCodeCollection<")) {
-//                    var method = embedded.addMethod(old.getNameAsString())
-//                            .setModifiers(old.getModifiers())
-//                            .setParameters(old.getParameters());
-//
-//                    if (old.getType().asString().equals(intf)) {
-//                        method.setType(eIntf);
-//                        if (old.getBody().isPresent()) {
-//                            method.setBody(new BlockStmt()
-//                                    .addStatement(new AssignExpr().setTarget(new NameExpr().setName("entity." + method.getNameAsString())).setValue(new NameExpr().setName(method.getNameAsString())))
-//                                    .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("this"))));
-//                            //TODO: Register modifier to field prototype
-//                        } else {
-//                            method.setBody(null);
-//                        }
-//                    } else if (CollectionsHandler.isCollection(old.getType())) {
-//                        method.setType(old.getType().toString().replace(intf, eIntf));
-//                        if (old.getBody().isPresent()) {
-//                            var collection = CollectionsHandler.getCollectionType(unit, unit, old.getType().asClassOrInterfaceType());
-//                            var parent = "entity." + method.getNameAsString();
-//
-//                            method.setBody(new BlockStmt()
-//                                    .addStatement(new IfStmt().setCondition(new NameExpr().setName(parent + " != null")).setThenStmt(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName(parent)).setValue(new NameExpr().setName("new " + collection.getImplementor() + "<>()")))))
-//                                    .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection.getClassType() + "<>(this, " + parent + ")"))));
-//                        } else {
-//                            method.setBody(null);
-//                        }
-//                    } else if (old.getTypeAsString().startsWith("EmbeddedCodeCollection<")) {
-//                        if (old.getBody().isPresent()) {
-//                            method.setType(old.getType().toString().replace(", " + intf, ", " + eIntf));
-//                            var split = ((NameExpr) old.getBody().get().getChildNodes().get(1).getChildNodes().get(0)).getNameAsString().split("[\\s<.]");
-//                            var collection = split[1];
-//                            var cls = split[6];
-//                            var collectionType = old.getBody().get().getChildNodes().get(0).getChildNodes().get(1).getChildNodes().get(0).toString().split("[\\s<]")[3];
-//                            var parent = "entity." + method.getNameAsString();
-//
-//                            method.setBody(new BlockStmt()
-//                                    .addStatement(new IfStmt().setCondition(new NameExpr().setName(parent + " != null")).setThenStmt(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName(parent)).setValue(new NameExpr().setName("new " + collectionType + "<>()")))))
-//                                    .addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + collection + "<>(this, " + parent + ", " + cls + ".class)"))));
-//                        } else {
-//                            method.setType(old.getType().toString().replace(", Modify>", ", " + intfName + ".EmbeddedModify<T>>"));
-//                            method.setBody(null);
-//                        }
-//                    } else {
-//                        method.setType(old.getType());
-//                        method.setBody(old.getBody().orElse(null));
-//                    }
-//                } else {
-//                    intfName = old.getType().asClassOrInterfaceType().getNameAsString();
-//                }
-//            }
-//        }
-//    }
-
-//    private static void handleEmbeddedModifier(PrototypeDescription<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf) {
-//        var actualModifier = parse.getRegisteredClass(MODIFIER_INTF_KEY);
-//        if (nonNull(actualModifier) && isNull(parse.getRegisteredClass(EMBEDDED_MODIFIER_INTF_KEY))) {
-//            if (nonNull(parse.getProperties().getMixInClass())) {
-//                spec = parse.getMixIn().getSpec();
-//            }
-//
-//            var actualModifierClass = parse.getRegisteredClass(MODIFIER_KEY);
-//            var modifier = new ClassOrInterfaceDeclaration(
-//                    Modifier.createModifierList(), false, "Embedded" + actualModifier.getNameAsString())
-//                    .addTypeParameter("T")
-//                    .setInterface(true);
-//            modifier.addMethod("and")
-//                    .setType("EmbeddedCodeCollection<EmbeddedModify<T>, " + intf.getNameAsString() + ", T>")
-//                    .setBody(null);
-//
-//            var modifierClass = new ClassOrInterfaceDeclaration(
-//                    Modifier.createModifierList(parse.isNested() ? new Modifier.Keyword[]{PROTECTED} : new Modifier.Keyword[]{PROTECTED, STATIC}), false, "Embedded" + actualModifierClass.getNameAsString())
-//                    .addTypeParameter("T")
-//                    .addImplementedType(intf.getNameAsString() + "." + modifier.getNameAsString() + "<T>");
-//            modifierClass.addField("T", "parent", PROTECTED);
-//            modifierClass.addField(spec.getNameAsString(), "entity", PROTECTED);
-//            modifierClass.addConstructor(PROTECTED)
-//                    .addParameter("T", "parent")
-//                    .addParameter(spec.getNameAsString(), "entity")
-//                    .setBody(new BlockStmt()
-//                            .addStatement(new AssignExpr().setTarget(new NameExpr().setName("this.parent")).setValue(new NameExpr().setName("parent")))
-//                            .addStatement(new AssignExpr().setTarget(new NameExpr().setName("this.entity")).setValue(new NameExpr().setName("entity"))));
-//            modifierClass.addMethod("and", PUBLIC)
-//                    .setType("EmbeddedCodeCollection<" + intf.getNameAsString() + ".EmbeddedModify<T>, " + intf.getNameAsString() + ", T>")
-//                    .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("(EmbeddedCodeCollection) parent"))));
-//
-//            spec.addMember(modifierClass);
-//            intf.addMember(modifier);
-//
-//            parse.registerClass(EMBEDDED_MODIFIER_KEY, modifierClass);
-//            parse.registerClass(EMBEDDED_MODIFIER_INTF_KEY, modifier);
-//
-//            intf.findCompilationUnit().get().addImport("net.binis.codegen.collection.EmbeddedCodeCollection");
-//            spec.findCompilationUnit().ifPresent(u -> {
-//                u.addImport("net.binis.codegen.factory.CodeFactory");
-//                u.addImport("net.binis.codegen.collection.EmbeddedCodeCollection");
-//            });
-//        }
-//    }
 
     private void addModifier(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierClassName, String modifierName, boolean isClass, Type generic, String cast) {
         var type = declaration.isGenericField() ? generic.asString() : declaration.isGenericMethod() ? "Object" : declaration.getType();
