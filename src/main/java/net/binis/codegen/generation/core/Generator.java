@@ -1638,34 +1638,6 @@ public class Generator {
         }
     }
 
-//    public static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, Map<String, String> signature, String modName, String intfName, Final ann) {
-//        if (!methodExists(spec, declaration, false)) {
-//            var unit = spec.findCompilationUnit().get();
-//            spec.findCompilationUnit().ifPresent(u -> Arrays.stream(ann.imports()).forEach(u::addImport));
-//            var method = spec.addMethod(declaration.getName());
-//            method.setType(mapGenericMethodSignature(declaration, signature));
-//            var params = ann.description().split(";");
-//            var names = new LocalVariableTableParameterNameDiscoverer().getParameterNames(declaration);
-//            for (var i = 0; i < declaration.getParameterCount(); i++) {
-//                var param = declaration.getParameters()[i];
-//                if (i < params.length && StringUtils.isNotBlank(params[i])) {
-//                    var desc = params[i].replace("{T}", intfName).replace("{R}", modName);
-//                    var idx = desc.lastIndexOf(" ");
-//                    if (idx > -1) {
-//                        method.addParameter(desc.substring(0, idx), desc.substring(idx + 1));
-//                    } else {
-//                        method.addParameter(param.getType().getSimpleName(), names[i]);
-//                        importClass(unit, param.getType());
-//                    }
-//                } else {
-//                    method.addParameter(param.getType().getSimpleName(), names[i]);
-//                    importClass(unit, param.getType());
-//                }
-//            }
-//            method.setBody(null);
-//        }
-//    }
-
     private static void mergeTypes(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Predicate<BodyDeclaration<?>> filter, Function<MethodDeclaration, MethodDeclaration> adjuster) {
         for (var member : source.getMembers()) {
             if (filter.test(member)) {
