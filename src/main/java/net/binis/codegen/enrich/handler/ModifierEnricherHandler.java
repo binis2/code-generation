@@ -245,12 +245,12 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                             var ann = method.getAnnotation(Final.class);
                             if (nonNull(ann)) {
                                 if (StringUtils.isBlank(ann.description())) {
-                                    Generator.addMethod(modifier, method, clsSignature, intfName);
+                                    Generator.addMethod(modifier, method, clsSignature);
                                 } else {
                                     Generator.addMethod(modifier, method, clsSignature, modName, intfName, ann);
                                 }
                             } else {
-                                Generator.addMethod(modifier, method, clsSignature, modName);
+                                Generator.addMethod(modifier, method, clsSignature);
                             }
                         }
                     }
@@ -272,12 +272,12 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                 var ann = method.getAnnotation(Final.class);
                 if (nonNull(ann)) {
                     if (StringUtils.isBlank(ann.description())) {
-                        Generator.addMethod(modifier, method, clsSignature, intfName);
+                        Generator.addMethod(modifier, method, clsSignature);
                     } else {
                         Generator.addMethod(modifier, method, clsSignature, modName, intfName, ann);
                     }
                 } else {
-                    Generator.addMethod(modifier, method, clsSignature, modName);
+                    Generator.addMethod(modifier, method, clsSignature);
                 }
             }
         }
