@@ -1041,23 +1041,14 @@ public class Generator {
                                     });
                                 }
                             }
-
                         }
                     } else {
                         var parsed = lookup.findExternal(name);
                         if (nonNull(parsed) && parsed.getDeclaration().isAnnotationDeclaration()) {
-                            if (parsed.getDeclaration().stream().filter(AnnotationExpr.class::isInstance)
-                                    .map(AnnotationExpr.class::cast)
-                                    .filter(an -> "java.lang.annotation.Target".equals(getExternalClassName(parsed.getDeclaration().findCompilationUnit().get(), an.getNameAsString())))
-                                    .findFirst()
-                                    .map(t -> t.stream().filter(ArrayInitializerExpr.class::isInstance)
-                                            .map(ArrayInitializerExpr.class::cast)
-                                            .findFirst()
-                                            .map(arr -> arr.getValues().stream().map(Object::toString)
-                                                    .anyMatch("ElementType.FIELD"::equals))
-                                            .orElse(false))
-                                    .orElse(true)) {
-                                handleAnnotation(unit, field, a);
+                            if (parsed.getDeclaration().getAnnotationByClass(CodeAnnotation.class).isEmpty()) {
+                                if (Helpers.annotationHasTarget(parsed, "ElementType.FIELD")) {
+                                    handleAnnotation(unit, field, a);
+                                }
                             } else {
                                 log.warn("Invalid annotation target {}", name);
                             }

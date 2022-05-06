@@ -44,11 +44,15 @@ import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.test.JavaByteObject;
+import net.binis.codegen.test.TestClassLoader;
+import net.binis.codegen.test.TestExecutor;
 import net.binis.codegen.tools.Holder;
-import org.apache.commons.lang3.NotImplementedException;
+import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
+import javax.tools.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -64,6 +68,7 @@ import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.tools.Reflection.instantiate;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class Helpers {
@@ -712,6 +717,7 @@ public class Helpers {
         declaredConstants.clear();
         processingTypes.clear();
         recursiveExpr.clear();
+        lookup.registerExternalLookup(null);
     }
 
     @SuppressWarnings("unchecked")
@@ -1039,6 +1045,20 @@ public class Helpers {
         }
 
         return result;
+    }
+
+    public static boolean annotationHasTarget(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, String target) {
+        return parsed.getDeclaration().stream().filter(AnnotationExpr.class::isInstance)
+                .map(AnnotationExpr.class::cast)
+                .filter(an -> "java.lang.annotation.Target".equals(getExternalClassName(parsed.getDeclaration().findCompilationUnit().get(), an.getNameAsString())))
+                .findFirst()
+                .map(t -> t.stream().filter(ArrayInitializerExpr.class::isInstance)
+                        .map(ArrayInitializerExpr.class::cast)
+                        .findFirst()
+                        .map(arr -> arr.getValues().stream().map(Object::toString)
+                                .anyMatch(target::equals))
+                        .orElse(false))
+                .orElse(true);
     }
 
 }
