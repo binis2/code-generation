@@ -330,7 +330,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         var name = checkReserved(fName);
         var type = getFieldType(description, desc);
 
-        if (!declaredFields.contains(name)) {
+        if (!desc.getIgnores().isForQuery() && !declaredFields.contains(name)) {
 
             var trans = isTransient(desc);
 

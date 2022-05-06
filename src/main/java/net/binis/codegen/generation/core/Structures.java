@@ -287,6 +287,8 @@ public class Structures {
         private boolean forClass;
         private boolean forInterface;
         private boolean forModifier;
+
+        private boolean forQuery;
     }
 
     @Data

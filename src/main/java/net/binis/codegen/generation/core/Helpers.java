@@ -579,6 +579,9 @@ public class Helpers {
                                     case "forModifier":
                                         result.forModifier(pair.getValue().asBooleanLiteralExpr().getValue());
                                         break;
+                                    case "forQuery":
+                                        result.forQuery(pair.getValue().asBooleanLiteralExpr().getValue());
+                                        break;
                                     default:
                                 }
                             }
@@ -588,7 +591,8 @@ public class Helpers {
                                 .forField(ann.forField())
                                 .forClass(ann.forClass())
                                 .forInterface(ann.forInterface())
-                                .forModifier(ann.forModifier()));
+                                .forModifier(ann.forModifier())
+                                .forQuery(ann.forQuery()));
                     }
                 })));
         return result.build();
