@@ -103,7 +103,6 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
 
         addSanitization(field, field.getImplementationSetter(), ann, ModifierType.MAIN);
         field.getModifiers().forEach(modifier -> addSanitization(field, modifier, ann, ModifierType.MODIFIER));
-        handleSanitizationModifier(description, field, EMBEDDED_MODIFIER_KEY, ann);
     }
 
     private Params getSanitizationParams(PrototypeField field, AnnotationExpr annotation, Class<?> annotationClass) {
@@ -372,19 +371,6 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
 
         addValidation(field, field.getImplementationSetter(), ann, ModifierType.MAIN);
         field.getModifiers().forEach(modifier -> addValidation(field, modifier, ann, ModifierType.MODIFIER));
-        handleValidationModifier(description, field, EMBEDDED_MODIFIER_KEY, ann);
-    }
-
-    private void handleValidationModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, String key, Params params) {
-        var modifier = description.getRegisteredClass(key);
-        if (nonNull(modifier)) {
-            modifier.getChildNodes().stream()
-                    .filter(MethodDeclaration.class::isInstance)
-                    .map(MethodDeclaration.class::cast)
-                    .filter(m -> m.getNameAsString().equals(field.getName()))
-                    .findFirst().ifPresent(m ->
-                            addValidation(field, m, params, ModifierType.EMBEDDED));
-        }
     }
 
     private void addValidation(PrototypeField field, MethodDeclaration method, Params params, ModifierType modifier) {
@@ -413,7 +399,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             var mCall = block.getStatements().get(0).asExpressionStmt().getExpression().asMethodCallExpr();
             var chain = mCall.getScope().get();
             mCall.removeScope();
-            var m = new MethodCallExpr(chain, "validate").addArgument(params.getCls() + ".class").addArgument(calcMessage(params));
+            var m = new MethodCallExpr(chain, "validate" + (nonNull(params.getMessages()) ? "WithMessages" : "")).addArgument(params.getCls() + ".class").addArgument(calcMessage(params));
             notNull(params.getParams(), p -> p.forEach(param ->
                     m.addArgument(buildParamsStr(param, params, field, modifier))));
             mCall.setScope(m);
@@ -425,18 +411,6 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             return "new String[] {" + params.messages.stream().map(s -> "\"" + StringEscapeUtils.escapeJava(s) + "\"").collect(Collectors.joining(", ")) + "}";
         } else {
             return isNull(params.getMessage()) ? "null" : "\"" + StringEscapeUtils.escapeJava(params.getMessage()) + "\"";
-        }
-    }
-
-    private void handleSanitizationModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, String key, Params params) {
-        var modifier = description.getRegisteredClass(key);
-        if (nonNull(modifier)) {
-            modifier.getChildNodes().stream()
-                    .filter(MethodDeclaration.class::isInstance)
-                    .map(MethodDeclaration.class::cast)
-                    .filter(m -> m.getNameAsString().equals(field.getName()))
-                    .findFirst().ifPresent(m ->
-                            addSanitization(field, m, params, ModifierType.EMBEDDED));
         }
     }
 
@@ -480,19 +454,6 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
 
         addExecution(field, field.getImplementationSetter(), ann, ModifierType.MAIN);
         field.getModifiers().forEach(modifier -> addExecution(field, modifier, ann, ModifierType.MODIFIER));
-        handleExecutionModifier(description, field, EMBEDDED_MODIFIER_KEY, ann);
-    }
-
-    private void handleExecutionModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, String key, Params params) {
-        var modifier = description.getRegisteredClass(key);
-        if (nonNull(modifier)) {
-            modifier.getChildNodes().stream()
-                    .filter(MethodDeclaration.class::isInstance)
-                    .map(MethodDeclaration.class::cast)
-                    .filter(m -> m.getNameAsString().equals(field.getName()))
-                    .findFirst().ifPresent(m ->
-                            addExecution(field, m, params, ModifierType.EMBEDDED));
-        }
     }
 
     private void addExecution(PrototypeField field, MethodDeclaration method, Params params, ModifierType modifier) {
@@ -620,8 +581,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
 
     private static enum ModifierType {
         MAIN("this"),
-        MODIFIER("parent"),
-        EMBEDDED("entity");
+        MODIFIER("parent");
 
         private String value;
 
