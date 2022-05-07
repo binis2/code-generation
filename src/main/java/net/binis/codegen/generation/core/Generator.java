@@ -1048,9 +1048,9 @@ public class Generator {
                             if (parsed.getDeclaration().getAnnotationByClass(CodeAnnotation.class).isEmpty()) {
                                 if (Helpers.annotationHasTarget(parsed, "ElementType.FIELD")) {
                                     handleAnnotation(unit, field, a);
+                                } else {
+                                    log.warn("Invalid annotation target {}", name);
                                 }
-                            } else {
-                                log.warn("Invalid annotation target {}", name);
                             }
                         } else {
                             if (compiledAnnotations) {

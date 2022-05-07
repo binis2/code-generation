@@ -7,6 +7,7 @@ import net.binis.codegen.modifier.BaseModifier;
 import net.binis.codegen.creator.EntityCreatorModifier;
 import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
+import java.util.function.Consumer;
 
 @Generated(value = "AccountOverviewCardPrototype", comments = "AccountOverviewCardImpl")
 @Default("net.binis.test.card.AccountOverviewCardImpl")
@@ -30,6 +31,8 @@ public interface AccountOverviewCard extends CompiledGeneric<AccountOverviewCard
     }
 
     interface Modify extends AccountOverviewCard.Fields<AccountOverviewCard.Modify>, BaseModifier<AccountOverviewCard.Modify, AccountOverviewCard> {
+        AccountOverviewCardPayload.EmbeddedSoloModify<Modify> payload();
+        Modify payload(Consumer<AccountOverviewCardPayload.Modify> init);
     }
     // endregion
 }

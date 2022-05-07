@@ -17,7 +17,7 @@ public class AccountOverviewCardPayloadImpl implements AccountOverviewCardPayloa
 
     // region constructor & initializer
     {
-        CodeFactory.registerType(AccountOverviewCardPayload.class, AccountOverviewCardPayloadImpl::new, null);
+        CodeFactory.registerType(AccountOverviewCardPayload.class, AccountOverviewCardPayloadImpl::new, (p, v) -> ((AccountOverviewCardPayloadImpl) v).new AccountOverviewCardPayloadImplSoloModifyImpl(p));
     }
 
     public AccountOverviewCardPayloadImpl() {
@@ -43,29 +43,39 @@ public class AccountOverviewCardPayloadImpl implements AccountOverviewCardPayloa
     // endregion
 
     // region inner classes
-    protected class AccountOverviewCardPayloadModifyImpl extends BaseModifierImpl<AccountOverviewCardPayload.Modify, AccountOverviewCardPayload> implements AccountOverviewCardPayload.Modify {
+    protected class AccountOverviewCardPayloadImplEmbeddedModifyImpl<T, R> extends BaseModifierImpl<T, R> implements AccountOverviewCardPayload.EmbeddedModify<T, R> {
 
-        protected AccountOverviewCardPayloadModifyImpl(AccountOverviewCardPayload parent) {
+        protected AccountOverviewCardPayloadImplEmbeddedModifyImpl(R parent) {
             super(parent);
         }
 
-        public AccountOverviewCardPayload.Modify donated(int donated) {
+        public T donated(int donated) {
             AccountOverviewCardPayloadImpl.this.donated = donated;
-            return this;
+            return (T) this;
         }
 
-        public AccountOverviewCardPayload done() {
-            return AccountOverviewCardPayloadImpl.this;
-        }
-
-        public AccountOverviewCardPayload.Modify matching(int matching) {
+        public T matching(int matching) {
             AccountOverviewCardPayloadImpl.this.matching = matching;
-            return this;
+            return (T) this;
         }
 
-        public AccountOverviewCardPayload.Modify raised(int raised) {
+        public T raised(int raised) {
             AccountOverviewCardPayloadImpl.this.raised = raised;
-            return this;
+            return (T) this;
+        }
+    }
+
+    protected class AccountOverviewCardPayloadImplSoloModifyImpl extends AccountOverviewCardPayloadImplEmbeddedModifyImpl implements AccountOverviewCardPayload.EmbeddedSoloModify {
+
+        protected AccountOverviewCardPayloadImplSoloModifyImpl(Object parent) {
+            super(parent);
+        }
+    }
+
+    protected class AccountOverviewCardPayloadModifyImpl extends AccountOverviewCardPayloadImplEmbeddedModifyImpl<AccountOverviewCardPayload.Modify, AccountOverviewCardPayload> implements AccountOverviewCardPayload.Modify {
+
+        protected AccountOverviewCardPayloadModifyImpl(AccountOverviewCardPayload parent) {
+            super(parent);
         }
     }
     // endregion

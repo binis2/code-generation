@@ -328,7 +328,8 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         var field = desc.getDeclaration();
         var fName = field.getVariable(0).getNameAsString();
         var name = checkReserved(fName);
-        var type = getFieldType(description, desc);
+        var pair = getFieldType(description, desc);
+        var type = pair.getKey();
 
         if (!desc.getIgnores().isForQuery() && !declaredFields.contains(name)) {
 

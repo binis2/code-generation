@@ -41,6 +41,8 @@ import java.util.stream.Collectors;
 
 import static com.github.javaparser.ast.Modifier.Keyword.PUBLIC;
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.Constants.EMBEDDED_COLLECTION_MODIFIER_INTF_KEY;
 import static net.binis.codegen.generation.core.Generator.getGenericsList;
 import static net.binis.codegen.generation.core.Helpers.getExternalClassName;
 import static net.binis.codegen.generation.core.Helpers.methodExists;
@@ -79,11 +81,18 @@ public class CollectionsHandler {
                 u.addImport(collection.getInterfaceImport());
                 u.addImport(collection.getImplementorInterface());
             });
+            var embedded = false;
+            if (nonNull(declaration.getTypePrototypes())) {
+                var proto = declaration.getTypePrototypes().get(generic);
+                if (nonNull(proto) && nonNull(proto.getRegisteredClass(EMBEDDED_COLLECTION_MODIFIER_INTF_KEY))) {
+                    embedded = true;
+                }
+            }
 
             var t = Helpers.calcType(spec);
             var method = spec
                     .addMethod(declaration.getName())
-                    .setType(collection.getType() + (!isClass ? ("<" + (collection.isPrototypeParam() ? generic + ".EmbeddedCollectionModify<" + modifierName + "." + t + ">, " : "") + generic + ", " + modifierName + "." + t + ">") : ""));
+                    .setType(collection.getType() + (!isClass ? ("<" + (collection.isPrototypeParam() ? generic + (embedded ? ".EmbeddedCollectionModify<" + modifierName + "." + t + ">, " : ".Modify, ") : "") + generic + ", " + modifierName + "." + t + ">") : ""));
             if (isClass) {
                 var parent = className + ".this." + declaration.getName();
                 var block = new BlockStmt()

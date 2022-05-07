@@ -982,39 +982,42 @@ public class Helpers {
         return null;
     }
 
-    public static Type getFieldType(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field) {
+    public static Pair<Type, PrototypeDescription<ClassOrInterfaceDeclaration>> getFieldType(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field) {
         if (field.getDescription().getTypeParameters().isEmpty()) {
             if (field.isGenericField()) {
                 var intf = field.getParsed().getIntf();
                 var type = Holder.<Type>blank();
+                var proto = Holder.<PrototypeDescription<ClassOrInterfaceDeclaration>>blank();
                 description.getIntf().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(intf.getNameAsString())).findFirst().ifPresent(t ->
                         type.set(buildGeneric(field.getType(), t, intf)));
+                description.getDeclaration().asClassOrInterfaceDeclaration().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(field.getParsed().getDeclaration().getNameAsString())).findFirst().ifPresent(t ->
+                        proto.set(lookup.findParsed(getExternalClassName(description.getDeclaration().asClassOrInterfaceDeclaration().findCompilationUnit().get(), buildGeneric(field.getType(), t, intf).asString()))));
                 if (type.isPresent()) {
-                    return type.get();
+                    return Pair.of(type.get(), proto.get());
                 }
             }
             if (nonNull(field.getGenerics())) {
                 var type = field.getGenerics().get(field.getType());
                 if (nonNull(type)) {
-                    return type;
+                    return Pair.of(type, null);
                 }
                 type = field.getGenerics().get(field.getDescription().getType().asString());
                 if (nonNull(type)) {
-                    return type;
+                    return Pair.of(type, null);
                 }
             }
 
             if (isNull(field.getDescription())) {
-                return field.getDeclaration().getVariables().get(0).getType();
+                return Pair.of(field.getDeclaration().getVariables().get(0).getType(), null);
             } else {
                 var result = field.getDescription().getType();
                 if (nonNull(lookup.findParsed(Helpers.getExternalClassName(field.getDescription().findCompilationUnit().get(), result.asString())))) {
                     result = lookup.getParser().parseClassOrInterfaceType(field.getType()).getResult().get();
                 }
-                return result;
+                return Pair.of(result, null);
             }
         } else {
-            return new ClassOrInterfaceType().setName("Object");
+            return Pair.of(new ClassOrInterfaceType().setName("Object"), null);
         }
     }
 
