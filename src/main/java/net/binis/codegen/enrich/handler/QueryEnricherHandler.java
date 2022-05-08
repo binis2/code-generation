@@ -41,8 +41,6 @@ import net.binis.codegen.spring.annotation.Joinable;
 import net.binis.codegen.spring.annotation.QueryFragment;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -524,17 +522,12 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     }
 
     private String getCompiledPreset(Class<?> cls, Method method) {
-        //TODO: Replace with invokeDefault when migrating to jdk 16+
         var result = "Invalid method!";
         InvocationHandler handler = (proxy, mtd, args) -> {
-            final Class declaringClass = mtd.getDeclaringClass();
-            Constructor<MethodHandles.Lookup> constructor = MethodHandles.Lookup.class.getDeclaredConstructor(Class.class, int.class);
-            constructor.setAccessible(true);
-            return
-                    constructor.newInstance(declaringClass, -1)
-                            .unreflectSpecial(mtd, declaringClass)
-                            .bindTo(proxy)
-                            .invokeWithArguments(args);
+            if (mtd.isDefault()) {
+                return InvocationHandler.invokeDefault(proxy, mtd, args);
+            }
+            throw new IllegalStateException("Unable to find default method!");
         };
         try {
             var proxy = cls.cast(Proxy.newProxyInstance(

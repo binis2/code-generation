@@ -52,7 +52,7 @@
 	</scm>
 
 	<properties>
-		<java.version>11</java.version>
+		<java.version>18</java.version>
 		<license.licenseName>apache_v2</license.licenseName>
 		<resource.delimiter>@</resource.delimiter>
 		<maven.compiler.source>${java.version}</maven.compiler.source>
