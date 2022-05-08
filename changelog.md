@@ -1,5 +1,13 @@
 # Change Log
 
+**08-05-2022** ver. 0.2.0
+* Generator: Fully rewritten modifier enrichment logic for better support of embedded object modifiers.
+* Generator: **(Breaking change)** renamed most of the system routines with prefix "_" for consistency and better IDE filtering 
+* Generator: Added @Ignore(forQuery).
+* Spring: Added .isNull() and .isNotNull() routines for @OneToOne relations.
+* Validation: Added basic support for custom validation annotations declared in same module as the prototype it is used on.
+* Validation: Fixed .validateWithMessages() generation.
+
 **26-04-2022** ver. 0.1.21
 * Generator: Ensured proper ordering when enriching entities.
 
