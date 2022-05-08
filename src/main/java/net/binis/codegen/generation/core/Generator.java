@@ -47,10 +47,7 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.function.*;
 import java.util.stream.Collectors;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
@@ -1610,7 +1607,7 @@ public class Generator {
         }
     }
 
-    public static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, Map<String, String> signature, String name) {
+    public static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, Map<String, String> signature) {
         if (!methodExists(spec, declaration, false)) {
             var unit = spec.findCompilationUnit().get();
             var method = spec.addMethod(declaration.getName());
@@ -1629,7 +1626,7 @@ public class Generator {
         }
     }
 
-    private static void mergeTypes(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Predicate<BodyDeclaration<?>> filter, Function<MethodDeclaration, MethodDeclaration> adjuster) {
+    private static void mergeTypes(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Predicate<BodyDeclaration<?>> filter, UnaryOperator<MethodDeclaration> adjuster) {
         for (var member : source.getMembers()) {
             if (filter.test(member)) {
                 if (member instanceof FieldDeclaration) {
