@@ -52,9 +52,6 @@ public interface PrototypeLookup {
 
     List<PrototypeDescription<ClassOrInterfaceDeclaration>> findGeneratedByFileName(String fileName);
 
-    void generateEmbeddedModifier(String type, PrototypeDescription<ClassOrInterfaceDeclaration> parsed);
-    void generateEmbeddedModifier(PrototypeDescription<ClassOrInterfaceDeclaration> parsed);
-    boolean embeddedModifierRequested(PrototypeDescription<ClassOrInterfaceDeclaration> parsed);
     void addPrototypeMap(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap);
 
     void calcPrototypeMaps();

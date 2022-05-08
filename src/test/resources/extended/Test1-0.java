@@ -1,6 +1,7 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.codegen.test;
 
+import net.binis.codegen.modifier.impl.BaseModifierImpl;
 import net.binis.codegen.modifier.Modifiable;
 import net.binis.codegen.factory.CodeFactory;
 import javax.annotation.processing.Generated;
@@ -35,12 +36,16 @@ public class TestAnnotationImpl implements TestAnnotation, Modifiable<TestAnnota
     }
 
     public TestAnnotation.Modify with() {
-        return new TestAnnotationModifyImpl();
+        return new TestAnnotationModifyImpl(this);
     }
     // endregion
 
     // region inner classes
-    protected class TestAnnotationModifyImpl implements TestAnnotation.Modify {
+    protected class TestAnnotationModifyImpl extends BaseModifierImpl<TestAnnotation.Modify, TestAnnotation> implements TestAnnotation.Modify {
+
+        protected TestAnnotationModifyImpl(TestAnnotation parent) {
+            super(parent);
+        }
 
         public TestAnnotation done() {
             return TestAnnotationImpl.this;

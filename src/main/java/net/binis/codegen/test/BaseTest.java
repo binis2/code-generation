@@ -38,14 +38,18 @@ import javax.tools.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.CompileHelper.createFileManager;
+import static net.binis.codegen.generation.core.CompileHelper.getCompilationUnits;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Tools.ifNull;
 import static net.binis.codegen.tools.Tools.with;
@@ -79,6 +83,7 @@ public abstract class BaseTest {
         with(lookup.parsed().stream().filter(PrototypeDescription::isValid).sorted(Helpers::sortForEnrich).collect(Collectors.toList()), list -> {
             list.forEach(Helpers::handleEnrichers);
             list.forEach(Helpers::finalizeEnrichers);
+            list.forEach(Helpers::postProcessEnrichers);
         });
     }
 
@@ -181,14 +186,18 @@ public abstract class BaseTest {
     }
 
     protected void testMulti(List<Triple<String, String, String>> files, int expected) {
-        testMulti(files, expected, null);
+        testMultiExecute(files, expected, null, null);
     }
 
     protected void testMulti(List<Triple<String, String, String>> files, String pathToSave) {
-        testMulti(files, files.size(), pathToSave);
+        testMultiExecute(files, files.size(), pathToSave, null);
     }
 
-    protected void testMulti(List<Triple<String, String, String>> files, int expected, String pathToSave) {
+    protected void testMultiExecute(List<Triple<String, String, String>> files, String resExecute) {
+        testMultiExecute(files, files.size(), null, resExecute);
+    }
+
+    protected void testMultiExecute(List<Triple<String, String, String>> files, int expected, String pathToSave, String resExecute) {
         var list = newList();
         files.forEach(t ->
                 load(list, t.getLeft()));
@@ -227,7 +236,7 @@ public abstract class BaseTest {
                 }));
 
         var loader = new TestClassLoader();
-        assertTrue(compile(loader, compileList, null));
+        assertTrue(compile(loader, compileList, resExecute));
     }
 
     @SneakyThrows
@@ -309,7 +318,7 @@ public abstract class BaseTest {
         StandardJavaFileManager standardFileManager =
                 compiler.getStandardFileManager(diagnostics, null, null);
 
-        JavaFileManager fileManager = createFileManager(loader, standardFileManager, objects);
+        JavaFileManager fileManager = createFileManager(standardFileManager, objects);
 
         JavaCompiler.CompilationTask task = compiler.getTask(null,
                 fileManager, diagnostics, null, null, getCompilationUnits(files));
@@ -370,25 +379,18 @@ public abstract class BaseTest {
         }
     }
 
-    private static JavaFileManager createFileManager(ClassLoader loader, StandardJavaFileManager fileManager, Map<String, JavaByteObject> files) {
-        return new ForwardingJavaFileManager<>(fileManager) {
-            @Override
-            public JavaFileObject getJavaFileForOutput(Location location, String className, JavaFileObject.Kind kind, FileObject sibling) {
-                var pos = className.indexOf('$');
-                if (pos > -1) {
-                    files.put(className, new JavaByteObject(className));
-                }
-                return files.get(className);
-            }
-        };
-    }
-
-    public static Iterable<? extends JavaFileObject> getCompilationUnits(List<Pair<String, String>> files) {
-        return files.stream().map(f -> new JavaSourceObject(f.getKey(), f.getValue())).collect(Collectors.toList());
-    }
-
     protected List<Pair<String, String>> newList() {
         return new ArrayList<>();
+    }
+
+    protected UnaryOperator<String> testSourcesLookup() {
+        return s -> {
+            try {
+                return Files.readString(Path.of("./src/test/java/" + s.replace('.', '/') + ".java"));
+            } catch (Exception e) {
+                return null;
+            }
+        };
     }
 
 }

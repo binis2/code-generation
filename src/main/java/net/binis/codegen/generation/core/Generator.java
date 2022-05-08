@@ -633,7 +633,7 @@ public class Generator {
                         break;
                     case "baseModifierClass":
                         value = pair.getValue().asClassExpr().getTypeAsString();
-                        if (StringUtils.isNotBlank(value) && !"void".equals(value)) {
+                        if (StringUtils.isNotBlank(value)) {
                             builder.baseModifierClass(value);
                         }
                         break;
@@ -981,15 +981,9 @@ public class Generator {
         if (nonNull(parse)) {
             var processing = processingTypes.get(type);
 
-            if (embedded) {
-                lookup.generateEmbeddedModifier(parse);
-                if (nonNull(prototypeMap)) {
-                    prototypeMap.put(parse.getInterfaceName(), parse);
-                    prototypeMap.put(parse.getDeclaration().getNameAsString(), parse);
-                    if (isNull(parse.getInterfaceName())) {
-                        lookup.addPrototypeMap(parse, prototypeMap);
-                    }
-                }
+            if (embedded && nonNull(prototypeMap)) {
+                prototypeMap.put(parse.getDeclaration().getNameAsString(), parse);
+                lookup.addPrototypeMap(parse, prototypeMap);
             }
 
             if (isNull(processing)) {
@@ -1044,25 +1038,16 @@ public class Generator {
                                     });
                                 }
                             }
-
                         }
                     } else {
                         var parsed = lookup.findExternal(name);
                         if (nonNull(parsed) && parsed.getDeclaration().isAnnotationDeclaration()) {
-                            if (parsed.getDeclaration().stream().filter(AnnotationExpr.class::isInstance)
-                                    .map(AnnotationExpr.class::cast)
-                                    .filter(an -> "java.lang.annotation.Target".equals(getExternalClassName(parsed.getDeclaration().findCompilationUnit().get(), an.getNameAsString())))
-                                    .findFirst()
-                                    .map(t -> t.stream().filter(ArrayInitializerExpr.class::isInstance)
-                                            .map(ArrayInitializerExpr.class::cast)
-                                            .findFirst()
-                                            .map(arr -> arr.getValues().stream().map(Object::toString)
-                                                    .anyMatch("ElementType.FIELD"::equals))
-                                            .orElse(false))
-                                    .orElse(true)) {
-                                handleAnnotation(unit, field, a);
-                            } else {
-                                log.warn("Invalid annotation target {}", name);
+                            if (parsed.getDeclaration().getAnnotationByClass(CodeAnnotation.class).isEmpty()) {
+                                if (Helpers.annotationHasTarget(parsed, "ElementType.FIELD")) {
+                                    handleAnnotation(unit, field, a);
+                                } else {
+                                    log.warn("Invalid annotation target {}", name);
+                                }
                             }
                         } else {
                             if (compiledAnnotations) {
@@ -1209,17 +1194,19 @@ public class Generator {
                     field = spec.addField("Object", fieldName, PROTECTED);
                 }
             }
+            var collection = CollectionsHandler.isCollection(field.getVariable(0).getType());
             result = Structures.FieldData.builder()
                     .parsed(parsed)
                     .name(fieldName)
                     .description(method)
                     .declaration(field)
-                    .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
+                    .collection(collection)
                     .ignores(getIgnores(method))
                     .genericMethod(genericMethod)
                     .genericField(isGenericType(method.getType(), parsed.getDeclaration()))
                     .generics(nonNull(generic) ? Map.of(generic.asString(), generic) : null)
-                    .prototype(isNull(generic) ? lookup.findParsed(getExternalClassName(unit, method.getType().asString())) : null)
+                    .prototype(collection ? prototypeMap.get(CollectionsHandler.getCollectionType(method.getType())) :
+                            (isNull(generic) ? lookup.findParsed(getExternalClassName(unit, method.getType().asString())) : null))
                     .typePrototypes(!prototypeMap.isEmpty() ? prototypeMap : null)
                     .type(field.getElementType().asString())
                     .fullType(getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
@@ -1633,34 +1620,6 @@ public class Generator {
                 } else {
                     importClass(unit, param.getType());
                     method.addParameter(param.getType().getSimpleName(), names[i]);
-                }
-            }
-            method.setBody(null);
-        }
-    }
-
-    public static void addMethod(ClassOrInterfaceDeclaration spec, Method declaration, Map<String, String> signature, String modName, String intfName, Final ann) {
-        if (!methodExists(spec, declaration, false)) {
-            var unit = spec.findCompilationUnit().get();
-            spec.findCompilationUnit().ifPresent(u -> Arrays.stream(ann.imports()).forEach(u::addImport));
-            var method = spec.addMethod(declaration.getName());
-            method.setType(mapGenericMethodSignature(declaration, signature));
-            var params = ann.description().split(";");
-            var names = new LocalVariableTableParameterNameDiscoverer().getParameterNames(declaration);
-            for (var i = 0; i < declaration.getParameterCount(); i++) {
-                var param = declaration.getParameters()[i];
-                if (i < params.length && StringUtils.isNotBlank(params[i])) {
-                    var desc = params[i].replace("{T}", intfName).replace("{R}", modName);
-                    var idx = desc.lastIndexOf(" ");
-                    if (idx > -1) {
-                        method.addParameter(desc.substring(0, idx), desc.substring(idx + 1));
-                    } else {
-                        method.addParameter(param.getType().getSimpleName(), names[i]);
-                        importClass(unit, param.getType());
-                    }
-                } else {
-                    method.addParameter(param.getType().getSimpleName(), names[i]);
-                    importClass(unit, param.getType());
                 }
             }
             method.setBody(null);

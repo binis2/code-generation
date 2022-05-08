@@ -1,6 +1,7 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.test.cards.payload;
 
+import net.binis.codegen.modifier.impl.BaseModifierImpl;
 import net.binis.codegen.modifier.Modifiable;
 import net.binis.codegen.factory.CodeFactory;
 import javax.annotation.processing.Generated;
@@ -16,7 +17,7 @@ public class AccountOverviewCardPayloadImpl implements AccountOverviewCardPayloa
 
     // region constructor & initializer
     {
-        CodeFactory.registerType(AccountOverviewCardPayload.class, AccountOverviewCardPayloadImpl::new, null);
+        CodeFactory.registerType(AccountOverviewCardPayload.class, AccountOverviewCardPayloadImpl::new, (p, v) -> ((AccountOverviewCardPayloadImpl) v).new AccountOverviewCardPayloadImplSoloModifyImpl(p));
     }
 
     public AccountOverviewCardPayloadImpl() {
@@ -37,30 +38,44 @@ public class AccountOverviewCardPayloadImpl implements AccountOverviewCardPayloa
     }
 
     public AccountOverviewCardPayload.Modify with() {
-        return new AccountOverviewCardPayloadModifyImpl();
+        return new AccountOverviewCardPayloadModifyImpl(this);
     }
     // endregion
 
     // region inner classes
-    protected class AccountOverviewCardPayloadModifyImpl implements AccountOverviewCardPayload.Modify {
+    protected class AccountOverviewCardPayloadImplEmbeddedModifyImpl<T, R> extends BaseModifierImpl<T, R> implements AccountOverviewCardPayload.EmbeddedModify<T, R> {
 
-        public AccountOverviewCardPayload.Modify donated(int donated) {
+        protected AccountOverviewCardPayloadImplEmbeddedModifyImpl(R parent) {
+            super(parent);
+        }
+
+        public T donated(int donated) {
             AccountOverviewCardPayloadImpl.this.donated = donated;
-            return this;
+            return (T) this;
         }
 
-        public AccountOverviewCardPayload done() {
-            return AccountOverviewCardPayloadImpl.this;
-        }
-
-        public AccountOverviewCardPayload.Modify matching(int matching) {
+        public T matching(int matching) {
             AccountOverviewCardPayloadImpl.this.matching = matching;
-            return this;
+            return (T) this;
         }
 
-        public AccountOverviewCardPayload.Modify raised(int raised) {
+        public T raised(int raised) {
             AccountOverviewCardPayloadImpl.this.raised = raised;
-            return this;
+            return (T) this;
+        }
+    }
+
+    protected class AccountOverviewCardPayloadImplSoloModifyImpl extends AccountOverviewCardPayloadImplEmbeddedModifyImpl implements AccountOverviewCardPayload.EmbeddedSoloModify {
+
+        protected AccountOverviewCardPayloadImplSoloModifyImpl(Object parent) {
+            super(parent);
+        }
+    }
+
+    protected class AccountOverviewCardPayloadModifyImpl extends AccountOverviewCardPayloadImplEmbeddedModifyImpl<AccountOverviewCardPayload.Modify, AccountOverviewCardPayload> implements AccountOverviewCardPayload.Modify {
+
+        protected AccountOverviewCardPayloadModifyImpl(AccountOverviewCardPayload parent) {
+            super(parent);
         }
     }
     // endregion

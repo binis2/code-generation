@@ -2,6 +2,7 @@
 package net.binis.codegen.test;
 
 import net.binis.codegen.objects.DefaultPayload;
+import net.binis.codegen.modifier.BaseModifier;
 import net.binis.codegen.creator.EntityCreatorModifier;
 import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
@@ -25,8 +26,7 @@ public interface Test extends Generic<DefaultPayload> {
         T payload(DefaultPayload payload);
     }
 
-    interface Modify extends Test.Fields<Test.Modify> {
-        Test done();
+    interface Modify extends Test.Fields<Test.Modify>, BaseModifier<Test.Modify, Test> {
     }
     // endregion
 }

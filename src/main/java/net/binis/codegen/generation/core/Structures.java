@@ -30,6 +30,7 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.Type;
 import lombok.*;
+import net.binis.codegen.annotation.type.EmbeddedModifierType;
 import net.binis.codegen.enrich.*;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
@@ -192,6 +193,9 @@ public class Structures {
 
         private String parentClassName;
 
+        @Builder.Default
+        private EmbeddedModifierType embeddedModifierType = EmbeddedModifierType.NONE;
+
         @EqualsAndHashCode.Exclude
         @Builder.Default
         @ToString.Exclude
@@ -208,7 +212,7 @@ public class Structures {
         @Builder.Default
         @EqualsAndHashCode.Exclude
         @ToString.Exclude
-        private List<Triple<ClassOrInterfaceDeclaration, Node, ClassOrInterfaceDeclaration>> initializers = new ArrayList<>();
+        private List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers = new ArrayList<>();
 
         @Builder.Default
         @EqualsAndHashCode.Exclude
@@ -249,6 +253,31 @@ public class Structures {
             return result;
         }
 
+        @Override
+        public void addEmbeddedModifier(EmbeddedModifierType type) {
+            if (!type.equals(embeddedModifierType) && !EmbeddedModifierType.BOTH.equals(embeddedModifierType)) {
+                switch (type) {
+                    case SINGLE:
+                    case COLLECTION:
+                        if (EmbeddedModifierType.NONE.equals(embeddedModifierType)) {
+                            embeddedModifierType = type;
+                        } else {
+                            embeddedModifierType = EmbeddedModifierType.BOTH;
+                        }
+                        break;
+                    case BOTH:
+                        embeddedModifierType = type;
+                        break;
+                    default:
+                        //Do nothing
+                }
+            }
+        }
+
+        @Override
+        public void setEmbeddedModifier(EmbeddedModifierType type) {
+            embeddedModifierType = type;
+        }
     }
 
     @Data
@@ -258,6 +287,8 @@ public class Structures {
         private boolean forClass;
         private boolean forInterface;
         private boolean forModifier;
+
+        private boolean forQuery;
     }
 
     @Data
@@ -311,7 +342,7 @@ public class Structures {
                         .predefinedEnrichers(List.of(QueryEnricher.class, ValidationEnricher.class, CreatorModifierEnricher.class, ModifierEnricher.class, RegionEnricher.class))
                         .classSetters(false)
                         .interfaceSetters(false)
-                        .baseModifierClass("net.binis.codegen.spring.BaseEntityModifier"));
+                        .baseModifierClass("net.binis.codegen.spring.modifier.BaseEntityModifier"));
     }
 
 }

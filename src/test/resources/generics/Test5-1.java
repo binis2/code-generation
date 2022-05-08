@@ -3,9 +3,11 @@ package net.binis.test.card;
 
 import net.binis.codegen.objects.Payload;
 import net.binis.codegen.objects.CompiledGeneric;
+import net.binis.codegen.modifier.BaseModifier;
 import net.binis.codegen.creator.EntityCreatorModifier;
 import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
+import java.util.function.Consumer;
 
 @Generated(value = "AccountOverviewCardPrototype", comments = "AccountOverviewCardImpl")
 @Default("net.binis.test.card.AccountOverviewCardImpl")
@@ -36,14 +38,19 @@ public interface AccountOverviewCard extends CompiledGeneric<AccountOverviewCard
         AccountOverviewCardPayload.Modify with();
 
         // region inner classes
+        interface EmbeddedModify<T, R> extends BaseModifier<T, R>, AccountOverviewCardPayload.Fields<T> {
+        }
+
+        interface EmbeddedSoloModify<R> extends AccountOverviewCardPayload.EmbeddedModify<AccountOverviewCardPayload.EmbeddedSoloModify<R>, R> {
+        }
+
         interface Fields<T> {
             T donated(int donated);
             T matching(int matching);
             T raised(int raised);
         }
 
-        interface Modify extends AccountOverviewCardPayload.Fields<AccountOverviewCardPayload.Modify> {
-            AccountOverviewCardPayload done();
+        interface Modify extends EmbeddedModify<AccountOverviewCard.AccountOverviewCardPayload.Modify, AccountOverviewCard.AccountOverviewCardPayload> {
         }
         // endregion
     }
@@ -56,8 +63,9 @@ public interface AccountOverviewCard extends CompiledGeneric<AccountOverviewCard
         T type(String type);
     }
 
-    interface Modify extends AccountOverviewCard.Fields<AccountOverviewCard.Modify> {
-        AccountOverviewCard done();
+    interface Modify extends AccountOverviewCard.Fields<AccountOverviewCard.Modify>, BaseModifier<AccountOverviewCard.Modify, AccountOverviewCard> {
+        AccountOverviewCard.AccountOverviewCardPayload.EmbeddedSoloModify<Modify> payload();
+        Modify payload(Consumer<AccountOverviewCard.AccountOverviewCardPayload.Modify> init);
     }
     // endregion
 }

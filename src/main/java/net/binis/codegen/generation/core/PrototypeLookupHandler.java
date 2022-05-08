@@ -43,7 +43,6 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> parsed = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> external = new HashMap<>();
-    private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> requestedEmbeddedModifiers = new HashMap<>();
     private final List<Pair<Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>>, PrototypeDescription<ClassOrInterfaceDeclaration>>> prototypeMaps = new ArrayList<>();
 
     @Getter
@@ -139,16 +138,6 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     }
 
     @Override
-    public void generateEmbeddedModifier(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
-        requestedEmbeddedModifiers.putIfAbsent(parsed.getDeclaration().getFullyQualifiedName().get(), parsed);
-    }
-
-    @Override
-    public boolean embeddedModifierRequested(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
-        return requestedEmbeddedModifiers.containsKey(parsed.getDeclaration().getFullyQualifiedName().get());
-    }
-
-    @Override
     public void addPrototypeMap(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
         prototypeMaps.add(Pair.of(prototypeMap, parsed));
     }
@@ -164,24 +153,9 @@ public class PrototypeLookupHandler implements PrototypeLookup {
         return generated.values().stream().filter(g -> fileName.equals(g.getPrototypeFileName())).collect(Collectors.toList());
     }
 
-    @Override
-    public void generateEmbeddedModifier(String type, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
-        if (!Helpers.isJavaType(type)) {
-            var full = Helpers.getExternalClassName(parsed.getDeclaration().findCompilationUnit().get(), type);
-            var p = findParsed(full);
-            if (nonNull(p)) {
-                generateEmbeddedModifier(p);
-            } else {
-                parsed.getSpec().findCompilationUnit().ifPresent(u -> u.addImport(full));
-                parsed.getIntf().findCompilationUnit().ifPresent(u -> u.addImport(full));
-            }
-        }
-    }
-
     public void clean() {
         parsed.clear();
         generated.clear();
-        requestedEmbeddedModifiers.clear();
     }
 
 }

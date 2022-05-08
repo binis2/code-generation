@@ -21,11 +21,10 @@ package net.binis.codegen.generation.core;
  */
 
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
@@ -34,20 +33,19 @@ import com.github.javaparser.ast.type.Type;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.github.javaparser.ast.Modifier.Keyword.*;
+import static com.github.javaparser.ast.Modifier.Keyword.PUBLIC;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.Constants.EMBEDDED_COLLECTION_MODIFIER_INTF_KEY;
 import static net.binis.codegen.generation.core.Generator.getGenericsList;
-import static net.binis.codegen.generation.core.Helpers.*;
+import static net.binis.codegen.generation.core.Helpers.getExternalClassName;
+import static net.binis.codegen.generation.core.Helpers.methodExists;
 
 @Slf4j
 public class CollectionsHandler {
@@ -83,10 +81,18 @@ public class CollectionsHandler {
                 u.addImport(collection.getInterfaceImport());
                 u.addImport(collection.getImplementorInterface());
             });
+            var embedded = false;
+            if (nonNull(declaration.getTypePrototypes())) {
+                var proto = declaration.getTypePrototypes().get(generic);
+                if (nonNull(proto) && nonNull(proto.getRegisteredClass(EMBEDDED_COLLECTION_MODIFIER_INTF_KEY))) {
+                    embedded = true;
+                }
+            }
 
+            var t = Helpers.calcType(spec);
             var method = spec
                     .addMethod(declaration.getName())
-                    .setType(collection.getType() + "<" + (collection.isPrototypeParam() ? generic + ".EmbeddedModify<" + generic + ".Modify>, " : "") + generic + ", " + modifierName + ">");
+                    .setType(collection.getType() + (!isClass ? ("<" + (collection.isPrototypeParam() ? generic + (embedded ? ".EmbeddedCollectionModify<" + modifierName + "." + t + ">, " : ".Modify, ") : "") + generic + ", " + modifierName + "." + t + ">") : ""));
             if (isClass) {
                 var parent = className + ".this." + declaration.getName();
                 var block = new BlockStmt()
@@ -173,11 +179,6 @@ public class CollectionsHandler {
         }
         return "Object";
     }
-
-    public static String getFullCollectionType(Type type) {
-        return getExternalClassName(type.findCompilationUnit().get(), getCollectionType(type));
-    }
-
 
     @Data
     @Builder

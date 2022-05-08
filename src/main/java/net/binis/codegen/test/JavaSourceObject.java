@@ -28,7 +28,7 @@ public class JavaSourceObject extends SimpleJavaFileObject {
 
     private final String source;
 
-    protected JavaSourceObject(String name, String source) {
+    public JavaSourceObject(String name, String source) {
         super(URI.create("string:///" + name.replaceAll("\\.", "/") + Kind.SOURCE.extension), Kind.SOURCE);
         this.source = source;
     }

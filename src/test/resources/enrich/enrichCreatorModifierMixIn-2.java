@@ -1,6 +1,7 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.codegen;
 
+import net.binis.codegen.modifier.BaseModifier;
 import net.binis.codegen.creator.EntityCreatorModifier;
 import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
@@ -22,7 +23,6 @@ public interface MixIn extends Test {
         T subtitle(String subtitle);
     }
 
-    interface Modify extends MixIn.Fields<MixIn.Modify> {
-        MixIn done();
+    interface Modify extends MixIn.Fields<MixIn.Modify>, BaseModifier<MixIn.Modify, MixIn> {
     }
 }

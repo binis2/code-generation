@@ -1,8 +1,8 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.codegen;
 
+import net.binis.codegen.spring.modifier.BaseEntityModifier;
 import javax.annotation.processing.Generated;
-import java.util.function.Function;
 
 @Generated(value = "TestPrototype", comments = "TestImpl")
 public interface Test {
@@ -16,15 +16,6 @@ public interface Test {
         T title(String title);
     }
 
-    interface Modify extends Test.Fields<Test.Modify> {
-        Test.Modify _if(boolean condition, java.util.function.Consumer<Test.Modify> consumer);
-        Test delete();
-        Test detach();
-        Test done();
-        Test merge();
-        Test refresh();
-        Test save();
-        Test saveAndFlush();
-        Test transaction(Function<Test.Modify, Test> function);
+    interface Modify extends Test.Fields<Test.Modify>, BaseEntityModifier<Test.Modify, Test> {
     }
 }

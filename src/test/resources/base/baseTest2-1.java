@@ -1,6 +1,7 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.codegen;
 
+import net.binis.codegen.modifier.BaseModifier;
 import javax.annotation.processing.Generated;
 
 @Generated(value = "TestPrototype", comments = "TestImpl")
@@ -16,7 +17,6 @@ public interface Test extends Base {
         T title(String title);
     }
 
-    interface Modify extends Test.Fields<Test.Modify> {
-        Test done();
+    interface Modify extends Test.Fields<Test.Modify>, BaseModifier<Test.Modify, Test> {
     }
 }

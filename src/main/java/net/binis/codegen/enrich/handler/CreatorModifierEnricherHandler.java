@@ -32,6 +32,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import static com.github.javaparser.ast.Modifier.Keyword.STATIC;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.Constants.EMBEDDED_MODIFIER_KEY;
 
 public class CreatorModifierEnricherHandler extends BaseEnricher implements CreatorModifierEnricher {
 
@@ -73,14 +74,12 @@ public class CreatorModifierEnricherHandler extends BaseEnricher implements Crea
         intf.findCompilationUnit().get().addImport("net.binis.codegen.creator." + creatorClass);
 
         if (!properties.isBase()) {
-            var embedded = description.getRegisteredClass(Constants.EMBEDDED_MODIFIER_KEY);
-
             var type = spec;
             if (nonNull(description.getMixIn())) {
                 type = description.getMixIn().getSpec();
             }
 
-            Helpers.addInitializer(description, intf, type, embedded);
+            Helpers.addInitializer(description, intf, type, nonNull(description.getRegisteredClass(EMBEDDED_MODIFIER_KEY)));
         }
     }
 
