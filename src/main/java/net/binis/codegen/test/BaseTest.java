@@ -23,6 +23,7 @@ package net.binis.codegen.test;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.google.common.collect.Comparators;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.CodeGen;
@@ -152,8 +153,8 @@ public abstract class BaseTest {
 
         assertEquals(expected, lookup.parsed().size());
 
-        list = newList();
-        for (var parsed : lookup.generated()) {
+        var list2 = newList();
+        lookup.generated().stream().sorted((o1, o2) -> Boolean.compare(isNull(o1.getCompiled()), isNull(o2.getCompiled()))).forEach(parsed -> {
             if (isNull(parsed.getCompiled()) && (!parsed.isNested() || isNull(parsed.getParentClassName()))) {
                 if (nonNull(pathToSave)) {
                     save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
@@ -166,18 +167,17 @@ public abstract class BaseTest {
 
             if (!parsed.isNested() || isNull(parsed.getParentClassName())) {
                 if (!classExists(parsed.getInterfaceFullName())) {
-                    list.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+                    list2.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
                 }
                 if (!classExists(parsed.getParsedFullName())) {
-                    list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+                    list2.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
                 }
             }
 
-        }
+        });
         var loader = new TestClassLoader();
 
-        assertTrue(compile(loader, list, resExecute));
-
+        assertTrue(compile(loader, list2, resExecute));
 
     }
 

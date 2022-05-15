@@ -31,9 +31,10 @@ public class PresetTestImpl implements PresetTest {
 
     // region constructor & initializer
     {
-        CodeFactory.registerType(PresetTest.QuerySelect.class, PresetTestQueryExecutorImpl::new, null);
         CodeFactory.registerType(PresetTest.class, PresetTestImpl::new, null);
         CodeFactory.registerType(PresetTest.QueryName.class, PresetTestQueryNameImpl::new, null);
+        CodeFactory.registerType(PresetTest.QuerySelect.class, PresetTestSelectQueryExecutorImpl::new, null);
+        CodeFactory.registerType(PresetTest.QueryOperationFields.class, PresetTestFieldsQueryExecutorImpl::new, null);
     }
 
     public PresetTestImpl() {
@@ -97,10 +98,23 @@ public class PresetTestImpl implements PresetTest {
     // endregion
 
     // region inner classes
-    protected static class PresetTestQueryExecutorImpl extends QueryExecutor implements PresetTest.QuerySelect, PresetTest.QueryFieldsStart {
+    protected static class PresetTestFieldsQueryExecutorImpl extends PresetTestQueryExecutorImpl implements PresetTest.QueryFieldsStart, EmbeddedFields {
+
+        public PresetTest.QueryOperationFields parent() {
+            var result = EntityCreator.create(PresetTest.QueryOperationFields.class, "net.binis.codegen.PresetTestImpl");
+            ((QueryEmbed) result).setParent("parent", this);
+            return result;
+        }
+    }
+
+    protected static abstract class PresetTestQueryExecutorImpl extends QueryExecutor {
 
         protected PresetTestQueryExecutorImpl() {
-            super(PresetTest.class, () -> new PresetTestQueryNameImpl());
+            super(PresetTest.class, () -> new PresetTestQueryNameImpl(), parent -> {
+                var result = new PresetTestFieldsQueryExecutorImpl();
+                result.parent = (QueryExecutor) parent;
+                return result;
+            });
         }
 
         public PresetTestQueryExecutorImpl __queryPreset(Compiled parent) {
@@ -152,12 +166,6 @@ public class PresetTestImpl implements PresetTest {
             return identifier("parent", parent);
         }
 
-        public PresetTest.QueryName parent() {
-            var result = EntityCreator.create(PresetTest.QueryName.class, "net.binis.codegen.PresetTestImpl");
-            ((QueryEmbed) result).setParent("parent", this);
-            return result;
-        }
-
         public QuerySelectOperation test(boolean test) {
             return identifier("test", test);
         }
@@ -192,8 +200,10 @@ public class PresetTestImpl implements PresetTest {
                 return (QueryOrderOperation) func.apply("data");
             }
 
-            public QueryOrderOperation parent() {
-                return (QueryOrderOperation) func.apply("parent");
+            public PresetTest.QueryOperationFields parent() {
+                var result = EntityCreator.create(PresetTest.QueryOperationFields.class, "net.binis.codegen.PresetTestImpl");
+                ((QueryEmbed) result).setParent("parent", executor);
+                return result;
             }
 
             public QueryOrderOperation test() {
@@ -252,6 +262,15 @@ public class PresetTestImpl implements PresetTest {
 
         public QuerySelectOperation type(String type) {
             return executor.identifier("type", type);
+        }
+    }
+
+    protected static class PresetTestSelectQueryExecutorImpl extends PresetTestQueryExecutorImpl implements PresetTest.QuerySelect {
+
+        public PresetTest.QueryName parent() {
+            var result = EntityCreator.create(PresetTest.QueryName.class, "net.binis.codegen.PresetTestImpl");
+            ((QueryEmbed) result).setParent("parent", this);
+            return result;
         }
     }
     // endregion

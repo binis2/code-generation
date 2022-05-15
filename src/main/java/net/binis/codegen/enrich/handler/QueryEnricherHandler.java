@@ -172,11 +172,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         var impl = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + QUERY_EXECUTOR + QUERY_IMPL)
                 .addModifier(PROTECTED)
                 .addModifier(STATIC)
-                .addExtendedType(QUERY_EXECUTOR)
-                .addImplementedType(entity + "." + QUERY_SELECT)
-                .addImplementedType(entity + "." + QUERY_FIELDS_START);
-        impl.addConstructor(PROTECTED)
-                .setBody(new BlockStmt().addStatement("super(" + entity + ".class, () -> new " + entity + QUERY_NAME + QUERY_IMPL + "());"));
+                .addExtendedType(QUERY_EXECUTOR);
         impl.addMethod("order").setType(entity + "." + QUERY_ORDER)
                 .addModifier(PUBLIC)
                 .setBody(new BlockStmt()
@@ -187,7 +183,18 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                         .addStatement(new ReturnStmt("(" + QUERY_AGGREGATE_OPERATION + ") aggregateStart(new " + entity + QUERY_ORDER + QUERY_IMPL + "(this, " + entity + QUERY_EXECUTOR + QUERY_IMPL + ".this::aggregateIdentifier))")));
         spec.addMember(impl);
 
-        Helpers.addInitializer(description, select, impl, false);
+        var qExecSelect = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + "Select" + QUERY_EXECUTOR + QUERY_IMPL)
+                .addModifier(PROTECTED)
+                .addModifier(STATIC)
+                .addExtendedType(impl.getNameAsString())
+                .addImplementedType(entity + "." + QUERY_SELECT);
+
+        var qExecFields = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + "Fields" + QUERY_EXECUTOR + QUERY_IMPL)
+                .addModifier(PROTECTED)
+                .addModifier(STATIC)
+                .addExtendedType(impl.getNameAsString())
+                .addImplementedType(entity + "." + QUERY_FIELDS_START)
+                .addImplementedType("EmbeddedFields");
 
         var orderImpl = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + QUERY_ORDER + QUERY_IMPL)
                 .addModifier(PROTECTED)
@@ -227,6 +234,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
         var qOpFields = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_OP_FIELDS)
                 .addExtendedType(QUERY_SCRIPT + "<" + QUERY_GENERIC + ">")
+                .addExtendedType("QuerySelf" + "<" + QUERY_GENERIC + ">")
                 .addTypeParameter(QUERY_GENERIC);
         intf.addMember(qOpFields);
 
@@ -237,7 +245,6 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         var order = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_ORDER)
                 .addExtendedType(QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
                 .addExtendedType(QUERY_EXECUTE + "<" + QUERY_GENERIC + ">")
-                .addExtendedType(QUERY_SCRIPT + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>")
                 .addTypeParameter(QUERY_GENERIC);
         intf.addMember(order);
 
@@ -257,13 +264,15 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         intf.addMember(fields);
 
         description.registerClass(Constants.QUERY_EXECUTOR_KEY, impl);
+        description.registerClass(Constants.QUERY_EXECUTOR_SELECT_KEY, qExecSelect);
+        description.registerClass(Constants.QUERY_EXECUTOR_FIELDS_KEY, qExecFields);
         description.registerClass(Constants.QUERY_SELECT_INTF_KEY, select);
         description.registerClass(Constants.QUERY_ORDER_KEY, orderImpl);
         description.registerClass(Constants.QUERY_ORDER_INTF_KEY, order);
         description.registerClass(Constants.QUERY_NAME_KEY, qNameImpl);
         description.registerClass(Constants.QUERY_NAME_INTF_KEY, qName);
         description.registerClass(Constants.QUERY_FIELDS_INTF_KEY, qFields);
-        description.registerClass(Constants.QUERY_ORDER_FIELDS_INTF_KEY, qOpFields);
+        description.registerClass(Constants.QUERY_OPERATION_FIELDS_INTF_KEY, qOpFields);
         description.registerClass(Constants.QUERY_FUNCTIONS_INTF_KEY, qFuncs);
 
         if (Helpers.hasAnnotation(description, Joinable.class)) {
@@ -276,13 +285,15 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         var entity = description.getProperties().getInterfaceName();
         var intf = description.getIntf();
         var impl = description.getRegisteredClass(Constants.QUERY_EXECUTOR_KEY);
+        var qExecSelect = description.getRegisteredClass(Constants.QUERY_EXECUTOR_SELECT_KEY);
+        var qExecFields = description.getRegisteredClass(Constants.QUERY_EXECUTOR_FIELDS_KEY);
         var select = description.getRegisteredClass(Constants.QUERY_SELECT_INTF_KEY);
         var orderImpl = description.getRegisteredClass(Constants.QUERY_ORDER_KEY);
         var order = description.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY);
         var qNameImpl = description.getRegisteredClass(Constants.QUERY_NAME_KEY);
         var qName = description.getRegisteredClass(Constants.QUERY_NAME_INTF_KEY);
         var qFields = description.getRegisteredClass(Constants.QUERY_FIELDS_INTF_KEY);
-        var qOpFields = description.getRegisteredClass(Constants.QUERY_ORDER_FIELDS_INTF_KEY);
+        var qOpFields = description.getRegisteredClass(Constants.QUERY_OPERATION_FIELDS_INTF_KEY);
         var qFuncs = description.getRegisteredClass(Constants.QUERY_FUNCTIONS_INTF_KEY);
 
         var mFields = description.getRegisteredClass(Constants.MODIFIER_FIELDS_KEY);
@@ -294,26 +305,53 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
         with(description.getBase(), base ->
                 base.getFields().forEach(desc ->
-                        declareField(declaredFields, description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs)));
+                        declareField(declaredFields, description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs, qExecSelect, qExecFields)));
 
         description.getFields().forEach(desc ->
-                declareField(declaredFields, description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs));
+                declareField(declaredFields, description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs, qExecSelect, qExecFields));
 
         if (nonNull(description.getMixIn())) {
             with(description.getMixIn().getBase(), base ->
                     base.getFields().forEach(desc ->
-                            declareField(declaredFields, description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs)));
+                            declareField(declaredFields, description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs, qExecSelect, qExecFields)));
 
             description.getMixIn().getFields().forEach(desc ->
-                    declareField(declaredFields, description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs));
+                    declareField(declaredFields, description, entity, desc, select, impl, orderImpl, order, qName, qNameImpl, qFields, qOpFields, qFuncs, qExecSelect, qExecFields));
         }
 
         if (nonNull(description.getMixIn())) {
             description.getMixIn().getSpec().addMember(description.getRegisteredClass(Constants.QUERY_EXECUTOR_KEY));
-            combineQueryNames(description);
+            combineQueryNames(description); //TODO: Combine QueryExecutes as well?
         } else {
             Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_NAME_INTF_KEY), description.getRegisteredClass(Constants.QUERY_NAME_KEY), false);
         }
+
+        if (qExecFields.getMethods().isEmpty()) {
+            qExecSelect.getMethods().forEach(impl::addMember);
+            impl.addImplementedType(entity + "." + QUERY_SELECT)
+                    .addImplementedType(entity + "." + QUERY_FIELDS_START);
+
+            var prefix = nonNull(description.getMixIn()) ? description.getMixIn().getInterfaceName() : description.getInterfaceName();
+
+            impl.addConstructor(PROTECTED)
+                    .setBody(new BlockStmt().addStatement("super(" + entity + ".class, () -> new " + prefix + QUERY_NAME + QUERY_IMPL + "(), parent -> parent);"));
+            Helpers.addInitializer(description, select, impl, false);
+            Helpers.addInitializer(description, qOpFields, impl, false);
+        } else {
+            impl.addModifier(ABSTRACT);
+            impl.addConstructor(PROTECTED)
+                    .setBody(new BlockStmt().addStatement("super(" + entity + ".class, () -> new " + entity + QUERY_NAME + QUERY_IMPL + "(), parent -> {" +
+                            "                var result = new " + qExecFields.getNameAsString() + "();" +
+                            "                result.parent = (QueryExecutor) parent;" +
+                            "                return result;" +
+                            "            });"));
+
+            Helpers.addInitializer(description, select, qExecSelect, false);
+            Helpers.addInitializer(description, qOpFields, qExecFields, false);
+            description.getSpec().addMember(qExecSelect);
+            description.getSpec().addMember(qExecFields);
+        }
+
     }
 
     private void addFindMethod(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf) {
@@ -324,7 +362,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + QUERY_START + ") EntityCreator.create(" + entity + "." + QUERY_SELECT + ".class)")));
     }
 
-    private void declareField(Set<String> declaredFields, PrototypeDescription<ClassOrInterfaceDeclaration> description, String entity, PrototypeField desc, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration impl, ClassOrInterfaceDeclaration orderImpl, ClassOrInterfaceDeclaration order, ClassOrInterfaceDeclaration qName, ClassOrInterfaceDeclaration qNameImpl, ClassOrInterfaceDeclaration fields, ClassOrInterfaceDeclaration opFields, ClassOrInterfaceDeclaration funcs) {
+    private void declareField(Set<String> declaredFields, PrototypeDescription<ClassOrInterfaceDeclaration> description, String entity, PrototypeField desc, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration impl, ClassOrInterfaceDeclaration orderImpl, ClassOrInterfaceDeclaration order, ClassOrInterfaceDeclaration qName, ClassOrInterfaceDeclaration qNameImpl, ClassOrInterfaceDeclaration fields, ClassOrInterfaceDeclaration opFields, ClassOrInterfaceDeclaration funcs, ClassOrInterfaceDeclaration qExecSelect, ClassOrInterfaceDeclaration qExecFields) {
         var field = desc.getDeclaration();
         var fName = field.getVariable(0).getNameAsString();
         var name = checkReserved(fName);
@@ -387,20 +425,41 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                                 .addStatement(new ReturnStmt("identifier(\"" + fName + "\", " + fName + ")")));
 
                 if (!trans) {
-                    orderImpl.addMethod(name)
-                            .setType(QUERY_ORDER_OPERATION)
-                            .addModifier(PUBLIC)
-                            .setBody(new BlockStmt()
-                                    .addStatement(new ReturnStmt("(" + QUERY_ORDER_OPERATION + ") func.apply(\"" + fName + "\")")));
+                    if (isNull(desc.getPrototype()) || isNull(desc.getPrototype().getRegisteredClass(Constants.QUERY_OPERATION_FIELDS_INTF_KEY))) {
+                        orderImpl.addMethod(name)
+                                .setType(QUERY_ORDER_OPERATION)
+                                .addModifier(PUBLIC)
+                                .setBody(new BlockStmt()
+                                        .addStatement(new ReturnStmt("(" + QUERY_ORDER_OPERATION + ") func.apply(\"" + fName + "\")")));
 
-                    opFields.addMethod(name)
-                            .setType(QUERY_GENERIC)
-                            .setBody(null);
+                        opFields.addMethod(name)
+                                .setType(QUERY_GENERIC)
+                                .setBody(null);
+                    } else {
+                        var prototype = desc.getPrototype();
+                        orderImpl.addMethod(name)
+                                .setType(desc.getPrototype().getInterfaceName() + "." + QUERY_OP_FIELDS)
+                                .addModifier(PUBLIC)
+                                .setBody(new BlockStmt()
+                                        .addStatement("var result = EntityCreator.create(" + prototype.getInterfaceName() + "." + QUERY_OP_FIELDS + ".class, \"" + prototype.getImplementorFullName() + "\");")
+                                        .addStatement("((QueryEmbed) result).setParent(\"" + fName + "\", executor);")
+                                        .addStatement(new ReturnStmt("result")));
+
+                        opFields.addMethod(name)
+                                .setType(prototype.getInterfaceName() + "." + QUERY_OP_FIELDS + "<" + QUERY_GENERIC + ">")
+                                .setBody(null);
+
+                        qExecFields.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_OP_FIELDS)
+                                .setBody(new BlockStmt()
+                                        .addStatement("var result = EntityCreator.create(" + prototype.getInterfaceName() + "." + QUERY_OP_FIELDS + ".class, \"" + prototype.getImplementorFullName() + "\");")
+                                        .addStatement("((QueryEmbed) result).setParent(\"" + fName + "\", this);")
+                                        .addStatement(new ReturnStmt("result")));
+                    }
                 }
 
                 if (checkQueryName(desc)) {
                     select.addMethod(name).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ", " + desc.getPrototype().getInterfaceName() + ">").setBody(null);
-                    impl.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
+                    qExecSelect.addMethod(name, PUBLIC).setType(desc.getPrototype().getInterfaceName() + "." + QUERY_NAME)
                             .setBody(new BlockStmt()
                                     .addStatement("var result = EntityCreator.create(" + desc.getPrototype().getInterfaceName() + "." + QUERY_NAME + ".class, \"" + desc.getPrototype().getImplementorFullName() + "\");")
                                     .addStatement("((QueryEmbed) result).setParent(\"" + fName + "\", this);")
@@ -538,7 +597,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         };
         try {
             var proxy = cls.cast(Proxy.newProxyInstance(
-                    cls.getClassLoader(), new Class<?>[] {cls}, handler));
+                    cls.getClassLoader(), new Class<?>[]{cls}, handler));
 
             var mtd = Arrays.stream(proxy.getClass().getDeclaredMethods())
                     .filter(m -> m.getName().equals(method.getName()))
@@ -557,7 +616,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         if (m.getParameterCount() == method.getParameterCount()) {
             var params = m.getParameters();
             var params2 = method.getParameters();
-            for (var i = 0; i < m.getParameterCount(); i ++) {
+            for (var i = 0; i < m.getParameterCount(); i++) {
                 if (!params[i].getType().equals(params2[i].getType())) {
                     return false;
                 }
