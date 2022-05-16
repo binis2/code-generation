@@ -54,15 +54,15 @@ public interface PresetTest extends Compiled {
         PresetTest.QueryName<QS, QO, QR, PresetTest> parent();
     }
 
-    interface QueryOperationFields<QR> extends QueryScript<QR> {
+    interface QueryOperationFields<QR> extends QueryScript<QR>, QuerySelf<QR> {
         QR data();
-        QR parent();
+        PresetTest.QueryOperationFields<QR> parent();
         QR test();
         QR title();
         QR type();
     }
 
-    interface QueryOrder<QR> extends QueryOperationFields<QueryOrderOperation<PresetTest.QueryOrder<QR>, QR>>, QueryExecute<QR>, QueryScript<QueryOrderOperation<PresetTest.QueryOrder<QR>, QR>> {
+    interface QueryOrder<QR> extends QueryOperationFields<QueryOrderOperation<PresetTest.QueryOrder<QR>, QR>>, QueryExecute<QR> {
     }
 
     interface QuerySelect<QR> extends QueryExecute<QR>, QueryModifiers<PresetTest.QueryName<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR, PresetTest>>, PresetTest.QueryFields<QuerySelectOperation<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR>>, PresetTest.QueryFuncs<QuerySelectOperation<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR>>, QueryOrderStart<QueryOperationFields<QueryOrderOperation<PresetTest.QueryOrder<QR>, QR>>>, QueryBracket<QuerySelect<QR>> {

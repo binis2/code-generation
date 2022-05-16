@@ -29,6 +29,7 @@ import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.PrimitiveType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
@@ -802,14 +803,18 @@ public class Generator {
                 if (cls.isInterface()) {
                     var generics = cls.getGenericInterfaces();
                     var interfaces = cls.getInterfaces();
+                    Map<String, Type> typeArguments = null;
+                    if (type.getTypeArguments().isPresent()) {
+                        typeArguments = processGenerics(cls, type.getTypeArguments().get());
+                    }
                     for (var i = 0; i < interfaces.length; i++) {
                         java.lang.reflect.Type[] types = null;
                         if (generics[i] instanceof ParameterizedType) {
                             types = ((ParameterizedType) generics[i]).getActualTypeArguments();
                         }
-                        handleExternalInterface(parsed, declaration, spec, interfaces[i], type.getTypeArguments().orElse(null), types);
+                        handleExternalInterface(parsed, declaration, spec, interfaces[i], typeArguments, types);
                     }
-                    handleExternalInterface(parsed, declaration, spec, cls, type.getTypeArguments().orElse(null), null);
+                    handleExternalInterface(parsed, declaration, spec, cls, typeArguments, null);
                     if (nonNull(intf)) {
                         intf.addExtendedType(handleType(declaration.findCompilationUnit().get(), intf.findCompilationUnit().get(), type));
                     } else {
@@ -855,15 +860,18 @@ public class Generator {
         return false;
     }
 
-    private static void handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, NodeList<Type> generics, java.lang.reflect.Type[] generics2) {
-        Map<String, Type> generic = null;
-        if (nonNull(generics)) {
-            generic = processGenerics(cls, generics);
-        } else if (nonNull(generics2)) {
-            generic = processGenerics(cls, generics2);
-        }
+    private static void handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, Map<String, Type> generics, java.lang.reflect.Type[] generics2) {
+        Map<String, Type> generic = nonNull(generics2) ? processGenerics(cls, generics, generics2) : generics;
 
-        Arrays.stream(cls.getInterfaces()).forEach(i -> handleExternalInterface(parsed, declaration, spec, i, generics, generics2)); //TODO: Handle sub generics
+        var genericIntf = cls.getGenericInterfaces();
+        var interfaces = cls.getInterfaces();
+        for (var i = 0; i < interfaces.length; i++) {
+            java.lang.reflect.Type[] types = null;
+            if (genericIntf[i] instanceof ParameterizedType) {
+                types = ((ParameterizedType) genericIntf[i]).getActualTypeArguments();
+            }
+            handleExternalInterface(parsed, declaration, spec, interfaces[i], generic, types);
+        }
 
         var properties = parsed.getProperties();
 
@@ -1327,11 +1335,27 @@ public class Generator {
         if (!fieldExists(parsed, fieldName)) {
             FieldDeclaration field;
             MethodDeclaration description;
+            PrototypeDescription<ClassOrInterfaceDeclaration> prototype = null;
             if (nonNull(generic)) {
-                var type = generic.get(parseMethodSignature(method));
+                var sig = parseMethodSignature(method);
+                var type = generic.get(sig);
+                if (isNull(type)) {
+                    if (Helpers.isPrimitiveType(sig)) {
+                        type = new PrimitiveType().setType(PrimitiveType.Primitive.valueOf(sig.toUpperCase()));
+                    } else {
+                        type = new ClassOrInterfaceType().setName(sig);
+                    }
+                }
+
+                handleType(parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, type);
+                prototype = lookup.findParsed(getExternalClassName(parsed.getDeclaration().findCompilationUnit().get(), type.asString()));
+
+                if (nonNull(prototype)) {
+                    type = new ClassOrInterfaceType().setName(prototype.getInterfaceName());
+                }
+
                 field = spec.addField(type, fieldName, PROTECTED);
                 description = new MethodDeclaration().setName(fieldName).setType(type);
-                handleType(parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, type);
             } else {
                 genericMethod = !method.getReturnType().getCanonicalName().equals(parseMethodSignature(method));
                 field = spec.addField(method.getReturnType(), fieldName, PROTECTED);
@@ -1365,7 +1389,7 @@ public class Generator {
                     .fullType(genericMethod ? null : getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
                     .type(genericMethod ? parseMethodSignature(method) : field.getElementType().asString())
                     //TODO: enable ignores
-                    //TODO: enable prototypes
+                    .prototype(prototype)
                     .build();
             parsed.getFields().add(result);
         } else {

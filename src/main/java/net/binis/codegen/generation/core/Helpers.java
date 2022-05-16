@@ -503,28 +503,50 @@ public class Helpers {
         return result;
     }
 
-    public static Map<String, Type> processGenerics(Class<?> cls, java.lang.reflect.Type[] generics) {
-        Map<String, Type> result = null;
+    public static Map<String, Type> processGenerics(Class<?> cls, Map<String, Type> parent, java.lang.reflect.Type[] generics) {
+        Map<String, Type> result = new HashMap<>();
         var types = parseGenericClassSignature(cls);
-
         if (types.size() != generics.length) {
             log.warn("Generic types miss match for {}", cls.getName());
         }
 
-        result = new HashMap<>();
+        if (nonNull(parent)) {
+            result = new HashMap<>();
+            for (var i = 0; i < types.size(); i++) {
+                Type generic;
+                if (generics[i] instanceof TypeVariable) {
+                    generic = parent.get(generics[i].getTypeName());
+                    var parsed = lookup.findParsed(getExternalClassName(generic.findCompilationUnit().get(), generic.asString()));
+                    if (nonNull(parsed)) {
+                        generic = new ClassOrInterfaceType().setName(parsed.getIntf().getNameAsString());
+                    }
+                } else {
+                    var type = (Class) generics[i];
+                    generic = new ClassOrInterfaceType().setName(type.getSimpleName());
 
-        for (var i = 0; i < types.size(); i++) {
-            var type = (Class) generics[i];
-            var generic = new ClassOrInterfaceType().setName(type.getSimpleName());
-            if (type.isInterface()) {
-                var parsed = lookup.findParsed(type.getCanonicalName());
-                if (nonNull(parsed)) {
-                    generic = new ClassOrInterfaceType().setName(parsed.getIntf().getNameAsString());
+                    if (type.isInterface()) {
+                        var parsed = lookup.findParsed(type.getCanonicalName());
+                        if (nonNull(parsed)) {
+                            generic = new ClassOrInterfaceType().setName(parsed.getIntf().getNameAsString());
+                        }
+                    }
                 }
+                result.put(types.get(i), generic);
             }
-            result.put(types.get(i), generic);
+        } else {
+            for (var i = 0; i < types.size(); i++) {
+                var type = (Class) generics[i];
+                var generic = new ClassOrInterfaceType().setName(type.getSimpleName());
+                if (type.isInterface()) {
+                    var parsed = lookup.findParsed(type.getCanonicalName());
+                    if (nonNull(parsed)) {
+                        generic = new ClassOrInterfaceType().setName(parsed.getIntf().getNameAsString());
+                    }
+                }
+                result.put(types.get(i), generic);
+            }
         }
-        return result;
+        return result.isEmpty() ? null : result;
     }
 
 
@@ -861,6 +883,11 @@ public class Helpers {
     public static boolean isJavaType(String type) {
         return primitiveTypes.contains(type) || classExists("java.lang." + type);
     }
+
+    public static boolean isPrimitiveType(String type) {
+        return primitiveTypes.contains(type);
+    }
+
 
     public static void handleImports(ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration type) {
         declaration.findCompilationUnit().ifPresent(decl ->
