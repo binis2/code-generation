@@ -1,4 +1,9 @@
 # Change Log
+**17-05-2022** ver. 0.2.1
+* Spring: Added selecting, aggregating and ordering by bub property.
+* Spring: Made QueryName queryable. 
+* Spring: Made QueryAggregator scriptable.
+* Generation: Proper handling of cascaded compiled prototypes.
 
 **08-05-2022** ver. 0.2.0
 * Generator: Fully rewritten modifier enrichment logic for better support of embedded object modifiers.
