@@ -13,7 +13,7 @@ import java.util.List;
 public interface PresetTest {
 
     // region starters
-    static QueryStarter<PresetTest, PresetTest.QuerySelect<PresetTest>, QueryAggregateOperation<QueryOperationFields<PresetTest.QueryAggregate<Number, PresetTest.QuerySelect<Number>>>>, QueryFieldsStart<PresetTest, PresetTest.QuerySelect<PresetTest>>> find() {
+    static QueryStarter<PresetTest, PresetTest.QuerySelect<PresetTest>, QueryAggregateOperation<QueryOperationFields<PresetTest.QueryAggregate<Number, PresetTest.QuerySelect<Number>>>>, QueryFieldsStart<PresetTest, PresetTest.QuerySelect<PresetTest>>, QueryUpdate<PresetTest, PresetTest.QuerySelect<PresetTest>>> find() {
         return (QueryStarter) EntityCreator.create(PresetTest.QuerySelect.class);
     }
     // endregion
@@ -66,6 +66,9 @@ public interface PresetTest {
         QuerySelectOperation<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR> __queryTitleString();
         QueryCollectionFunctions<String, QuerySelectOperation<PresetTest.QuerySelect<QR>, QueryOperationFields<QueryOrderOperation<PresetTest.QueryOrder<QR>, QR>>, QR>> _list();
         PresetTest.QueryName<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR, PresetTest> parent();
+    }
+
+    interface QueryUpdate<QR, QS> extends QueryFields<QueryUpdate<QR, QS>>, QueryWhere<QS>, QueryScript<QueryUpdate<QR, QS>>, UpdatableQuery {
     }
     // endregion
 }

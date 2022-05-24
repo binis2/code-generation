@@ -64,6 +64,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     public static final String OPERATION = "Operation";
     private static final String QUERY_START = "QueryStarter";
     private static final String QUERY_SELECT = "QuerySelect";
+    private static final String QUERY_UPDATE = "QueryUpdate";
     private static final String QUERY_SELECT_OPERATION = QUERY_SELECT + OPERATION;
     private static final String QUERY_ORDER = "QueryOrder";
     private static final String QUERY_ORDER_OPERATION = QUERY_ORDER + OPERATION;
@@ -172,7 +173,8 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         var impl = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + QUERY_EXECUTOR + QUERY_IMPL)
                 .addModifier(PROTECTED)
                 .addModifier(STATIC)
-                .addExtendedType(QUERY_EXECUTOR);
+                .addExtendedType(QUERY_EXECUTOR)
+                .addImplementedType(entity + "." + QUERY_UPDATE);
         impl.addMethod("order").setType(entity + "." + QUERY_ORDER)
                 .addModifier(PUBLIC)
                 .setBody(new BlockStmt()
@@ -262,6 +264,16 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addTypeParameter(QUERY_GENERIC)
                 .addTypeParameter(QUERY_SELECT_GENERIC);
         intf.addMember(fields);
+
+        var update = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_UPDATE)
+                .addExtendedType(QUERY_FIELDS + "<" + QUERY_UPDATE + "<" + QUERY_GENERIC + ", " +  QUERY_SELECT_GENERIC + ">>")
+                .addExtendedType(QUERY_WHERE + "<" + QUERY_SELECT_GENERIC + ">")
+                .addExtendedType(QUERY_SCRIPT + "<" + QUERY_UPDATE + "<" + QUERY_GENERIC + ", " +  QUERY_SELECT_GENERIC + ">>")
+                .addExtendedType("UpdatableQuery")
+                .addTypeParameter(QUERY_GENERIC)
+                .addTypeParameter(QUERY_SELECT_GENERIC);
+        intf.addMember(update);
+
 
         description.registerClass(Constants.QUERY_EXECUTOR_KEY, impl);
         description.registerClass(Constants.QUERY_EXECUTOR_SELECT_KEY, qExecSelect);
@@ -358,7 +370,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         Helpers.addDefaultCreation(description);
         var entity = intf.getNameAsString();
         intf.addMethod("find", STATIC)
-                .setType(QUERY_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">, " + QUERY_AGGREGATE_OPERATION + "<" + QUERY_OP_FIELDS + "<" + entity + "." + QUERY_AGGREGATE + "<Number, " + entity + "." + QUERY_SELECT + "<Number>>>>, " + QUERY_FIELDS_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">>>")
+                .setType(QUERY_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">, " + QUERY_AGGREGATE_OPERATION + "<" + QUERY_OP_FIELDS + "<" + entity + "." + QUERY_AGGREGATE + "<Number, " + entity + "." + QUERY_SELECT + "<Number>>>>, " + QUERY_FIELDS_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">>, " + QUERY_UPDATE + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" +entity + ">>>")
                 .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + QUERY_START + ") EntityCreator.create(" + entity + "." + QUERY_SELECT + ".class)")));
     }
 
