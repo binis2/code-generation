@@ -107,7 +107,7 @@ public class PresetTestImpl implements PresetTest {
         }
     }
 
-    protected static abstract class PresetTestQueryExecutorImpl extends QueryExecutor {
+    protected static abstract class PresetTestQueryExecutorImpl extends QueryExecutor implements PresetTest.QueryUpdate {
 
         protected PresetTestQueryExecutorImpl() {
             super(PresetTest.class, () -> new PresetTestQueryNameImpl(), parent -> {
