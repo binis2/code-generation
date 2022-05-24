@@ -1,4 +1,12 @@
 # Change Log
+**24-05-2022** ver. 0.2.2
+* Core: Improved enveloping factory routines.
+* Spring: Added ability to generate update queries.
+* Spring: Added total results counting when single page is requested.
+* Test: Added mockDeleteQuery() routines.
+* Test: Added persistence operation calls counting and intercepting based on class or operation.
+* Spring: Fixed count() execution for prepared queries. 
+
 **17-05-2022** ver. 0.2.1
 * Spring: Added selecting, aggregating and ordering by bub property.
 * Spring: Made QueryName queryable. 
