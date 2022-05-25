@@ -364,12 +364,13 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     if (isNull(modifier)) {
                         modifier = description.getRegisteredClass(MODIFIER_INTF_KEY);
                     }
-                    returnType = proto.getInterfaceName() + ".EmbeddedSoloModify<" + Helpers.calcType(modifier) + ">";
-                    modifier.addMethod(field.getName()).setType(returnType).setBody(null);
-                    modifierClass.addMethod(field.getName(), PUBLIC).setType(returnType).setBody(description.getParser().parseBlock(
-                            "{ if (" + description.getProperties().getClassName() + ".this." + field.getName() + " == null) {" +
-                                    description.getProperties().getClassName() + ".this." + field.getName() + " = CodeFactory.create(" + proto.getInterfaceName() + ".class);}" +
-                                    "return CodeFactory.modify(this, " + description.getProperties().getClassName() + ".this." + field.getName() + ", " + proto.getInterfaceName() + ".class); }").getResult().get());
+                    returnType = Helpers.calcType(modifier);
+                    modifier.addMethod(field.getName()).setType(proto.getInterfaceName() + ".EmbeddedSoloModify<" + returnType + ">").setBody(null);
+                    var className = isNull(description.getMixIn()) ? description.getProperties().getClassName() : description.getMixIn().getProperties().getClassName();
+                    modifierClass.addMethod(field.getName(), PUBLIC).setType(proto.getInterfaceName() + ".EmbeddedSoloModify<" + ((ClassOrInterfaceDeclaration) modifier.getParentNode().get()).getNameAsString() + "." + returnType + ">").setBody(description.getParser().parseBlock(
+                            "{ if (" + className + ".this." + field.getName() + " == null) {" +
+                                    className + ".this." + field.getName() + " = CodeFactory.create(" + proto.getInterfaceName() + ".class);}" +
+                                    "return CodeFactory.modify(this, " + className + ".this." + field.getName() + ", " + proto.getInterfaceName() + ".class); }").getResult().get());
                     modifierClass.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.factory.CodeFactory"));
 
                     with(description.getRegisteredClass(MODIFIER_INTF_KEY), cls -> {
@@ -378,10 +379,11 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     });
 
                     with(description.getRegisteredClass(MODIFIER_KEY), cls -> {
-                        cls.addMethod(field.getName(), PUBLIC).setType(properties.getModifierName()).addParameter("Consumer<" + proto.getInterfaceName() + ".Modify>", "init").setBody(description.getParser().parseBlock(
-                                "{ if (" + description.getProperties().getClassName() + ".this." + field.getName() + " == null) {" +
-                                        description.getProperties().getClassName() + ".this." + field.getName() + " = CodeFactory.create(" + proto.getInterfaceName() + ".class);}" +
-                                        "init.accept(" + description.getProperties().getClassName() + ".this." + field.getName() + ".with());" +
+                        var methodName = isNull(proto.getMixIn()) ? Constants.MODIFIER_METHOD_NAME : Constants.MIXIN_MODIFYING_METHOD_PREFIX + proto.getInterfaceName();
+                        cls.addMethod(field.getName(), PUBLIC).setType(properties.getInterfaceName() + "." + properties.getModifierName()).addParameter("Consumer<" + proto.getInterfaceName() + ".Modify>", "init").setBody(description.getParser().parseBlock(
+                                "{ if (" + className + ".this." + field.getName() + " == null) {" +
+                                        className + ".this." + field.getName() + " = CodeFactory.create(" + proto.getInterfaceName() + ".class);}" +
+                                        "init.accept(" + className + ".this." + field.getName() + "." + methodName + "());" +
                                         "return this;}"
                         ).getResult().get());
                         cls.findCompilationUnit().ifPresent(u -> u.addImport(Consumer.class));
