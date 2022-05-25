@@ -45,14 +45,14 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
             return this;
         }
 
-        public AccountOverviewCardPayload.EmbeddedSoloModify<Modify> payload() {
+        public AccountOverviewCardPayload.EmbeddedSoloModify<AccountOverviewCard.Modify> payload() {
             if (AccountOverviewCardImpl.this.payload == null) {
                 AccountOverviewCardImpl.this.payload = CodeFactory.create(AccountOverviewCardPayload.class);
             }
             return CodeFactory.modify(this, AccountOverviewCardImpl.this.payload, AccountOverviewCardPayload.class);
         }
 
-        public Modify payload(Consumer<AccountOverviewCardPayload.Modify> init) {
+        public AccountOverviewCard.Modify payload(Consumer<AccountOverviewCardPayload.Modify> init) {
             if (AccountOverviewCardImpl.this.payload == null) {
                 AccountOverviewCardImpl.this.payload = CodeFactory.create(AccountOverviewCardPayload.class);
             }

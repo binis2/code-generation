@@ -105,13 +105,15 @@ public abstract class BaseTest {
                         CodeGen.handleType(parser, t, resource)));
     }
 
-    protected void loadExecute(List<Pair<String, String>> list, String resource) {
+    protected String loadExecute(List<Pair<String, String>> list, String resource) {
         var source = resourceAsString(resource);
+        var className = source.substring(source.indexOf("package") + 8, source.indexOf(';')) + ".Execute";
 
         if (nonNull(list)) {
-            list.add(Pair.of("net.binis.codegen.Execute", source));
+            list.add(Pair.of(className, source));
         }
 
+        return className;
     }
 
     protected void compare(CompilationUnit unit, String resource) {
@@ -304,8 +306,9 @@ public abstract class BaseTest {
 
     @SneakyThrows
     protected boolean compile(TestClassLoader loader, List<Pair<String, String>> files, String resExecute) {
+        String className = null;
         if (nonNull(resExecute)) {
-            loadExecute(files, resExecute);
+            className = loadExecute(files, resExecute);
         }
 
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -335,7 +338,7 @@ public abstract class BaseTest {
                         loader.define(f.getKey(), o)));
 
         if (nonNull(resExecute)) {
-            var cls = loader.findClass("net.binis.codegen.Execute");
+            var cls = loader.findClass(className);
             assertNotNull("Executor class not found!", cls);
             assertNotNull("Executor doesn't inherit TestExecutor!", cls.getSuperclass());
             assertEquals("Executor doesn't inherit TestExecutor!", TestExecutor.class, cls.getSuperclass());

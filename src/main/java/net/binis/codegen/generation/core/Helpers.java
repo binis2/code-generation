@@ -859,9 +859,10 @@ public class Helpers {
             if (nonNull(modClass)) {
                 var soloClass = description.getRegisteredClass(EMBEDDED_SOLO_MODIFIER_KEY);
                 var collectionClass = description.getRegisteredClass(EMBEDDED_COLLECTION_MODIFIER_KEY);
+                var className = isNull(description.getMixIn()) ? description.getProperties().getClassName() : description.getMixIn().getProperties().getClassName();
                 if (nonNull(soloClass) && nonNull(collectionClass)) {
                     soloClass.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.collection.EmbeddedCodeCollection"));
-                    return "(p, v) -> p instanceof EmbeddedCodeCollection ? ((" + description.getProperties().getClassName() + ") v).new " + collectionClass.getNameAsString() + "(p) : ((" + description.getProperties().getClassName() + ") v).new " + soloClass.getNameAsString() + "(p)";
+                    return "(p, v) -> p instanceof EmbeddedCodeCollection ? ((" + description.getProperties().getClassName() + ") v).new " + collectionClass.getNameAsString() + "(p) : ((" + className + ") v).new " + soloClass.getNameAsString() + "(p)";
                 } else {
                     var cls = modClass;
                     if (nonNull(soloClass)) {
@@ -869,7 +870,7 @@ public class Helpers {
                     } else if (nonNull(collectionClass)) {
                         cls = collectionClass;
                     }
-                    return "(p, v) -> ((" + description.getProperties().getClassName() + ") v).new " + cls.getNameAsString() + "(p)";
+                    return "(p, v) -> ((" + className + ") v).new " + cls.getNameAsString() + "(p)";
                 }
             }
         }
