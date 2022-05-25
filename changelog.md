@@ -1,4 +1,7 @@
 # Change Log
+**25-05-2022** ver. 0.2.3
+* Generator: Fixed modifier code generation for MixIn prototypes.
+
 **24-05-2022** ver. 0.2.2
 * Core: Improved enveloping factory routines.
 * Spring: Added ability to generate update queries.
