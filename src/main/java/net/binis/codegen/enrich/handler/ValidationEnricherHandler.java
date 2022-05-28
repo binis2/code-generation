@@ -103,20 +103,20 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
     }
 
     private void handleAnnotationFromSource(AnnotationDeclaration decl, PrototypeField field, AnnotationExpr annotation) {
-       var ann = decl.getAnnotationByClass(Validate.class);
-       if (ann.isPresent()) {
-           generateValidation(field, annotation, ann.get(), decl);
-       } else {
-           ann = decl.getAnnotationByClass(Sanitize.class);
-           if (ann.isPresent()) {
-               generateSanitization(field, annotation, ann.get(), decl);
-           } else {
-               ann = decl.getAnnotationByClass(Execute.class);
-               if (ann.isPresent()) {
-                   generateExecution(field, annotation, ann.get(), decl);
-               }
-           }
-       }
+        var ann = decl.getAnnotationByClass(Validate.class);
+        if (ann.isPresent()) {
+            generateValidation(field, annotation, ann.get(), decl);
+        } else {
+            ann = decl.getAnnotationByClass(Sanitize.class);
+            if (ann.isPresent()) {
+                generateSanitization(field, annotation, ann.get(), decl);
+            } else {
+                ann = decl.getAnnotationByClass(Execute.class);
+                if (ann.isPresent()) {
+                    generateExecution(field, annotation, ann.get(), decl);
+                }
+            }
+        }
     }
 
     private void generateSanitization(PrototypeField field, AnnotationExpr annotation, AnnotationExpr ann, AnnotationDeclaration annotationClass) {
@@ -644,7 +644,9 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                 var format = "%s".equals(holder.getFormat()) && !StringUtils.isBlank(params.getAsCode()) ? params.getAsCode() : holder.getFormat();
                 result.append(", ")
                         .append(String.format(format.replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString()),
-                                holder.getValue().replaceAll("\\{entity}", modifier.getValue())));
+                                holder.getValue()
+                                        .replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString())
+                                        .replaceAll("\\{entity}", (ModifierType.MODIFIER.equals(modifier) ? "(" + field.getDeclaration().findAncestor(ClassOrInterfaceDeclaration.class).get().getNameAsString() + ")" : "") + modifier.getValue())));
             } else {
                 result.append(", ")
                         .append(nonNull(param) ? param.toString() : "null");
