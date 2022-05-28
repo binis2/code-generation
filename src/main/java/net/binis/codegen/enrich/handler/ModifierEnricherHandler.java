@@ -260,7 +260,11 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         var baseModifier = description.getProperties().getBaseModifierClass();
         if (isNull(baseModifier)) {
             if (!description.getProperties().isBase()) {
-                description.getSpec().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.modifier.impl.BaseModifierImpl"));
+                var spec = description.getSpec();
+                if (nonNull(description.getMixIn())) {
+                        spec = description.getMixIn().getSpec();
+                }
+                spec.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.modifier.impl.BaseModifierImpl"));
             }
             return "BaseModifierImpl";
         }
