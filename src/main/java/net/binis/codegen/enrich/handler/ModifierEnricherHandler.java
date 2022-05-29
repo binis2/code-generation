@@ -80,14 +80,14 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         var modifier = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, properties.getModifierName());
         description.registerClass(MODIFIER_INTF_KEY, modifier);
 
-        ClassOrInterfaceDeclaration embeddedModifier = null;
+        ClassOrInterfaceDeclaration embeddedModifier;
         ClassOrInterfaceDeclaration embeddedModifierSolo = null;
         ClassOrInterfaceDeclaration embeddedModifierCollection = null;
 
         ClassOrInterfaceDeclaration modifierClass;
-        ClassOrInterfaceDeclaration embeddedModifierClass = null;
-        ClassOrInterfaceDeclaration embeddedModifierSoloClass = null;
-        ClassOrInterfaceDeclaration embeddedModifierCollectionClass = null;
+        ClassOrInterfaceDeclaration embeddedModifierClass;
+        ClassOrInterfaceDeclaration embeddedModifierSoloClass;
+        ClassOrInterfaceDeclaration embeddedModifierCollectionClass;
 
         if (!EmbeddedModifierType.NONE.equals(embeddedType)) {
             intf.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.modifier.BaseModifier"));
@@ -359,8 +359,8 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     returnType = properties.getModifierName();
                 }
                 addModifier(modifier, field, null, returnType, false, type, cast);
-                CollectionsHandler.addModifier(modifierClass, field, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true);
-                CollectionsHandler.addModifier(modifier, field, description.getInterfaceName(), null, false);
+                CollectionsHandler.addModifier(description, modifierClass, field, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true);
+                CollectionsHandler.addModifier(description, modifier, field, description.getInterfaceName(), null, false);
             } else {
                 addField(field, modifierFields, imports, type);
                 var proto = nonNull(pair.getValue()) ? pair.getValue() : field.getPrototype();
