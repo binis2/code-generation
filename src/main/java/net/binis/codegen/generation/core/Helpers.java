@@ -88,6 +88,32 @@ public class Helpers {
             "EmbeddedCodeSetImpl",
             "net.binis.codegen.collection.EmbeddedCodeSetImpl");
 
+    public static final Set<String> reserved = Set.of(
+            "ensure",
+            "reference",
+            "get",
+            "list",
+            "references",
+            "count",
+            "top",
+
+            "page",
+
+            "tuple",
+            "tuples",
+            "prepare",
+
+            "projection",
+            "flush",
+            "lock",
+            "hint",
+            "filter",
+
+            "exists",
+            "delete",
+            "remove");
+
+
     public static final Set<String> primitiveTypes = Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char", "void");
 
     public static final PrototypeLookup lookup = new PrototypeLookupHandler();
@@ -1090,6 +1116,13 @@ public class Helpers {
                                 .anyMatch(target::equals))
                         .orElse(false))
                 .orElse(true);
+    }
+
+    public static String checkReserved(String name) {
+        if (reserved.contains(name)) {
+            return name + "_";
+        }
+        return name;
     }
 
 }
