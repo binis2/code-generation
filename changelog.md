@@ -1,4 +1,12 @@
 # Change Log
+**29-05-2022** ver. 0.2.4
+* Generator: **(Breaking change)** User fields that collides with reserved words has _ suffix instead of _ prefix.   
+* Generator: Fixed return type of certain embedded collections flows.
+* Generator: Fixed BaseModifierImpl import for mixed in prototypes.
+* Generator: Fixed query classes generation for mixed in prototypes.
+* Validation: Fixed @AsCode handling for '{entity}' syntax.
+* Spring: Renamed internal routines to reduce the possibility of clashes with user declared fields.
+
 **25-05-2022** ver. 0.2.3
 * Generator: Fixed modifier code generation for MixIn prototypes.
 

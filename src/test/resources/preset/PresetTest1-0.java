@@ -111,10 +111,6 @@ public class PresetTestImpl implements PresetTest {
             return this;
         }
 
-        public QueryCollectionFunctions _list() {
-            return identifier("list");
-        }
-
         public QueryAggregateOperation aggregate() {
             return (QueryAggregateOperation) aggregateStart(new PresetTestQueryOrderImpl(this, PresetTestQueryExecutorImpl.this::aggregateIdentifier));
         }
@@ -125,6 +121,10 @@ public class PresetTestImpl implements PresetTest {
 
         public QueryFunctions data() {
             return identifier("data");
+        }
+
+        public QueryCollectionFunctions list_() {
+            return identifier("list");
         }
 
         public PresetTest.QueryOrder order() {

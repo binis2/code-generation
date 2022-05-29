@@ -24,7 +24,6 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.NameExpr;
-import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
@@ -33,6 +32,7 @@ import com.github.javaparser.ast.type.Type;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -43,8 +43,8 @@ import static com.github.javaparser.ast.Modifier.Keyword.PUBLIC;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.EMBEDDED_COLLECTION_MODIFIER_INTF_KEY;
+import static net.binis.codegen.generation.core.Constants.EMBEDDED_MODIFIER_INTF_KEY;
 import static net.binis.codegen.generation.core.Generator.getGenericsList;
-import static net.binis.codegen.generation.core.Helpers.getExternalClassName;
 import static net.binis.codegen.generation.core.Helpers.methodExists;
 
 @Slf4j
@@ -70,7 +70,7 @@ public class CollectionsHandler {
         return isListOrSet(type) || "Map".equals(type) || "CodeMap".equals(type);
     }
 
-    public static void addModifier(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierName, String className, boolean isClass) {
+    public static void addModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierName, String className, boolean isClass) {
         if (!methodExists(spec, declaration, isClass)) {
             var type = declaration.getDeclaration().getVariables().get(0).getType().asClassOrInterfaceType();
             var collection = isNull(declaration.getDescription()) ?
@@ -92,7 +92,7 @@ public class CollectionsHandler {
             var t = Helpers.calcType(spec);
             var method = spec
                     .addMethod(declaration.getName())
-                    .setType(collection.getType() + (!isClass ? ("<" + (collection.isPrototypeParam() ? generic + (embedded ? ".EmbeddedCollectionModify<" + modifierName + "." + t + ">, " : ".Modify, ") : "") + generic + ", " + modifierName + "." + t + ">") : ""));
+                    .setType(collection.getType() + (!isClass ? ("<" + (collection.isPrototypeParam() ? generic + (embedded ? ".EmbeddedCollectionModify<" + modifierName + "." + t + ">, " : ".Modify, ") : "") + generic + ", " + (nonNull(description.getRegisteredClass(EMBEDDED_MODIFIER_INTF_KEY)) ? "T" : modifierName + "." + t) + ">") : ""));
             if (isClass) {
                 var parent = className + ".this." + declaration.getName();
                 var block = new BlockStmt()

@@ -64,7 +64,7 @@ public interface PresetTest {
         QuerySelectOperation<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR> __queryString(String title, PresetTest parent, int data);
         QuerySelectOperation<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR> __queryTitle(String title, int data);
         QuerySelectOperation<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR> __queryTitleString();
-        QueryCollectionFunctions<String, QuerySelectOperation<PresetTest.QuerySelect<QR>, QueryOperationFields<QueryOrderOperation<PresetTest.QueryOrder<QR>, QR>>, QR>> _list();
+        QueryCollectionFunctions<String, QuerySelectOperation<PresetTest.QuerySelect<QR>, QueryOperationFields<QueryOrderOperation<PresetTest.QueryOrder<QR>, QR>>, QR>> list_();
         PresetTest.QueryName<PresetTest.QuerySelect<QR>, PresetTest.QueryOrder<QR>, QR, PresetTest> parent();
     }
 

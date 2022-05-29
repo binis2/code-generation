@@ -53,8 +53,7 @@ import java.util.Set;
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.generation.core.Helpers.getFieldType;
-import static net.binis.codegen.generation.core.Helpers.methodExists;
+import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Tools.notNull;
 import static net.binis.codegen.tools.Tools.with;
 
@@ -95,31 +94,6 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     private static final String QUERY_BRACKET = "QueryBracket";
     private static final String QUERY_IMPL = "Impl";
     private static final String PRESET_PREFIX = "__";
-
-    private static final Set<String> reserved = Set.of(
-            "ensure",
-            "reference",
-            "get",
-            "list",
-            "references",
-            "count",
-            "top",
-
-            "page",
-
-            "tuple",
-            "tuples",
-            "prepare",
-
-            "projection",
-            "flush",
-            "lock",
-            "hint",
-            "filter",
-
-            "exists",
-            "delete",
-            "remove");
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
@@ -266,9 +240,9 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         intf.addMember(fields);
 
         var update = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_UPDATE)
-                .addExtendedType(QUERY_FIELDS + "<" + QUERY_UPDATE + "<" + QUERY_GENERIC + ", " +  QUERY_SELECT_GENERIC + ">>")
+                .addExtendedType(QUERY_FIELDS + "<" + QUERY_UPDATE + "<" + QUERY_GENERIC + ", " + QUERY_SELECT_GENERIC + ">>")
                 .addExtendedType(QUERY_WHERE + "<" + QUERY_SELECT_GENERIC + ">")
-                .addExtendedType(QUERY_SCRIPT + "<" + QUERY_UPDATE + "<" + QUERY_GENERIC + ", " +  QUERY_SELECT_GENERIC + ">>")
+                .addExtendedType(QUERY_SCRIPT + "<" + QUERY_UPDATE + "<" + QUERY_GENERIC + ", " + QUERY_SELECT_GENERIC + ">>")
                 .addExtendedType("UpdatableQuery")
                 .addTypeParameter(QUERY_GENERIC)
                 .addTypeParameter(QUERY_SELECT_GENERIC);
@@ -332,7 +306,10 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         }
 
         if (nonNull(description.getMixIn())) {
-            description.getMixIn().getSpec().addMember(description.getRegisteredClass(Constants.QUERY_EXECUTOR_KEY));
+            with(description.getMixIn().getSpec(), mixin ->
+                    mixin.addMember(description.getRegisteredClass(Constants.QUERY_EXECUTOR_KEY))
+                            .addMember(description.getRegisteredClass(Constants.QUERY_EXECUTOR_SELECT_KEY))
+                            .addMember(description.getRegisteredClass(Constants.QUERY_EXECUTOR_FIELDS_KEY)));
             combineQueryNames(description); //TODO: Combine QueryExecutes as well?
         } else {
             Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_NAME_INTF_KEY), description.getRegisteredClass(Constants.QUERY_NAME_KEY), false);
@@ -352,7 +329,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         } else {
             impl.addModifier(ABSTRACT);
             impl.addConstructor(PROTECTED)
-                    .setBody(new BlockStmt().addStatement("super(" + entity + ".class, () -> new " + entity + QUERY_NAME + QUERY_IMPL + "(), parent -> {" +
+                    .setBody(new BlockStmt().addStatement("super(" + entity + ".class, () -> new " + (nonNull(description.getMixIn()) ? description.getMixIn().getInterfaceName() : entity) + QUERY_NAME + QUERY_IMPL + "(), parent -> {" +
                             "                var result = new " + qExecFields.getNameAsString() + "();" +
                             "                result.parent = (QueryExecutor) parent;" +
                             "                return result;" +
@@ -370,7 +347,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         Helpers.addDefaultCreation(description);
         var entity = intf.getNameAsString();
         intf.addMethod("find", STATIC)
-                .setType(QUERY_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">, " + QUERY_AGGREGATE_OPERATION + "<" + QUERY_OP_FIELDS + "<" + entity + "." + QUERY_AGGREGATE + "<Number, " + entity + "." + QUERY_SELECT + "<Number>>>>, " + QUERY_FIELDS_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">>, " + QUERY_UPDATE + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" +entity + ">>>")
+                .setType(QUERY_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">, " + QUERY_AGGREGATE_OPERATION + "<" + QUERY_OP_FIELDS + "<" + entity + "." + QUERY_AGGREGATE + "<Number, " + entity + "." + QUERY_SELECT + "<Number>>>>, " + QUERY_FIELDS_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">>, " + QUERY_UPDATE + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">>>")
                 .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + QUERY_START + ") EntityCreator.create(" + entity + "." + QUERY_SELECT + ".class)")));
     }
 
@@ -525,13 +502,6 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
             declaredFields.add(name);
         }
-    }
-
-    private String checkReserved(String name) {
-        if (reserved.contains(name)) {
-            return "_" + name;
-        }
-        return name;
     }
 
     private boolean isTransient(PrototypeField field) {
@@ -788,9 +758,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     }
 
     private boolean checkQueryName(PrototypeField desc) {
-        return nonNull(desc.getPrototype()) && (desc.getPrototype().getProperties().getEnrichers().stream().anyMatch(e -> QueryEnricherHandler.class.equals(e.getClass())) ||
-                nonNull(desc.getPrototype().getBase()) &&
-                        desc.getPrototype().getBase().getProperties().getInheritedEnrichers().stream().anyMatch(e -> QueryEnricherHandler.class.equals(e.getClass())));
+        return nonNull(desc.getPrototype()) && (nonNull(desc.getPrototype().getRegisteredClass(Constants.QUERY_NAME_INTF_KEY)));
     }
 
 }
