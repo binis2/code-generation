@@ -1,4 +1,7 @@
 # Change Log
+**01-06-2022** ver. 0.2.5
+* Spring: Fixed _self() return object when the selected object is embeddable as well.
+
 **29-05-2022** ver. 0.2.4
 * Generator: **(Breaking change)** User fields that collides with reserved words has _ suffix instead of _ prefix.   
 * Generator: Fixed return type of certain embedded collections flows.
