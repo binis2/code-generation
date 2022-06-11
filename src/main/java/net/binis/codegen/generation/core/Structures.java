@@ -35,6 +35,8 @@ import net.binis.codegen.enrich.*;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.options.CodeOption;
+import net.binis.codegen.options.Options;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.*;
@@ -43,6 +45,9 @@ import java.util.function.Supplier;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.enrich.Enrichers.*;
+import static net.binis.codegen.options.Options.HIDDEN_CREATE_METHOD;
+import static net.binis.codegen.options.Options.VALIDATION_FORM;
 
 public class Structures {
 
@@ -81,6 +86,7 @@ public class Structures {
 
         private List<PrototypeEnricher> enrichers;
         private List<PrototypeEnricher> inheritedEnrichers;
+        private List<Class<? extends CodeOption>> options;
 
         private List<Class<? extends Enricher>> predefinedEnrichers;
         private List<Class<? extends Enricher>> predefinedInheritedEnrichers;
@@ -278,6 +284,11 @@ public class Structures {
         public void setEmbeddedModifier(EmbeddedModifierType type) {
             embeddedModifierType = type;
         }
+
+        @Override
+        public boolean hasOption(Class<? extends CodeOption> option) {
+            return nonNull(getProperties().getOptions()) && getProperties().getOptions().contains(option);
+        }
     }
 
     @Data
@@ -331,18 +342,24 @@ public class Structures {
         return Map.of(
                 "CodePrototype", Structures::defaultBuilder,
                 "CodeBuilder", () -> defaultBuilder()
-                        .predefinedEnrichers(List.of(CreatorModifierEnricher.class, ModifierEnricher.class, RegionEnricher.class))
+                        .predefinedEnrichers(List.of(CREATOR_MODIFIER, MODIFIER, REGION))
                         .classSetters(false)
                         .interfaceSetters(false),
                 "CodeValidationBuilder", () -> defaultBuilder()
-                        .predefinedEnrichers(List.of(ValidationEnricher.class, CreatorModifierEnricher.class, ModifierEnricher.class, RegionEnricher.class))
+                        .predefinedEnrichers(List.of(VALIDATION, CREATOR_MODIFIER, MODIFIER, REGION))
                         .classSetters(false)
                         .interfaceSetters(false),
                 "CodeQueryBuilder", () -> defaultBuilder()
-                        .predefinedEnrichers(List.of(QueryEnricher.class, ValidationEnricher.class, CreatorModifierEnricher.class, ModifierEnricher.class, RegionEnricher.class))
+                        .predefinedEnrichers(List.of(QUERY, VALIDATION, CREATOR_MODIFIER, MODIFIER, REGION))
                         .classSetters(false)
                         .interfaceSetters(false)
-                        .baseModifierClass("net.binis.codegen.spring.modifier.BaseEntityModifier"));
+                        .baseModifierClass("net.binis.codegen.spring.modifier.BaseEntityModifier"),
+                "CodeRequest", () -> defaultBuilder()
+                        .predefinedEnrichers(List.of(VALIDATION, CREATOR, REGION))
+                        .classSetters(false)
+                        .interfaceSetters(false)
+                        .options(List.of(VALIDATION_FORM, HIDDEN_CREATE_METHOD))
+        );
     }
 
 }

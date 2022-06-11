@@ -27,6 +27,7 @@ import net.binis.codegen.enrich.CreatorEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
+import net.binis.codegen.options.Options;
 
 import static com.github.javaparser.ast.Modifier.Keyword.STATIC;
 import static java.util.Objects.nonNull;
@@ -43,15 +44,16 @@ public class CreatorEnricherHandler extends BaseEnricher implements CreatorEnric
         var properties = description.getProperties();
         var spec = description.getSpec();
         var intf = description.getIntf();
-        var creatorClass = "EntityCreator";
-
-        intf.findCompilationUnit().get().addImport("net.binis.codegen.creator." + creatorClass);
 
         Helpers.addDefaultCreation(description);
 
-        intf.addMethod("create", STATIC)
-                .setType(intf.getNameAsString())
-                .setBody(new BlockStmt().addStatement(new ReturnStmt(creatorClass + ".create(" + intf.getNameAsString() + ".class)")));
+        if (!description.hasOption(Options.HIDDEN_CREATE_METHOD)) {
+            var creatorClass = "EntityCreator";
+            intf.findCompilationUnit().get().addImport("net.binis.codegen.creator." + creatorClass);
+            intf.addMethod("create", STATIC)
+                    .setType(intf.getNameAsString())
+                    .setBody(new BlockStmt().addStatement(new ReturnStmt(creatorClass + ".create(" + intf.getNameAsString() + ".class)")));
+        }
 
         if (!properties.isBase()) {
             var type = spec;
