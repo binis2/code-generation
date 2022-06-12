@@ -42,10 +42,7 @@ import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.github.javaparser.ast.Modifier.Keyword.PUBLIC;
@@ -285,9 +282,18 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
     private void handleAliases(AnnotationExpr annotation, Class<?> annotationClass, Params.ParamsBuilder params) {
         var list = new ArrayList<Object>();
         var parOrder = Arrays.stream(annotationClass.getDeclaredMethods())
-                .filter(m -> Arrays.stream(m.getDeclaredAnnotations()).filter(a -> a.annotationType().isAssignableFrom(AliasFor.class)).map(AliasFor.class::cast).anyMatch(a -> PARAMS.equals(a.value())))
-                .map(m -> Triple.of(m.getName(), m.getDefaultValue(), m.getDeclaredAnnotation(AsCode.class)))
+                .filter(m -> Arrays.stream(m.getDeclaredAnnotations())
+                        .filter(a -> a.annotationType().isAssignableFrom(AliasFor.class))
+                        .map(AliasFor.class::cast).anyMatch(a -> PARAMS.equals(a.value())))
+                .map(m -> ParamHolder.builder()
+                        .name(m.getName())
+                        .value(m.getDefaultValue())
+                        .annotation(m.getDeclaredAnnotation(AsCode.class))
+                        .order(m.getDeclaredAnnotation(AliasFor.class).order())
+                        .build())
                 .collect(Collectors.toList());
+
+        parOrder.sort(Comparator.comparing(ParamHolder::getOrder));
 
         Arrays.stream(annotationClass.getDeclaredMethods())
                 .filter(m -> MESSAGE.equals(m.getName()))
@@ -309,18 +315,22 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                     .filter(m -> m.getReturnType().equals(String.class))
                     .filter(m -> nullCheck(m.getDeclaredAnnotation(AliasFor.class), a -> MESSAGES.equals(a.value()), false))
                     .forEach(m -> {
+                        var order = m.getDeclaredAnnotation(AliasFor.class).order();
                         if (messages.isEmpty()) {
                             messages.set(new ArrayList<>());
                         }
-                        if (nonNull(m.getDefaultValue())) {
-                            messages.get().add(m.getDefaultValue().toString());
-                        } else {
-                            messages.get().add("(%s) Invalid value!");
+                        var value = nonNull(m.getDefaultValue()) ? m.getDefaultValue().toString() : "(%s) Invalid value!";
+
+                        var msgs = messages.get();
+                        for (var i = msgs.size(); i <= order; i++) {
+                            msgs.add(null);
                         }
+
+                        msgs.set(order, value);
                     });
         }
 
-        parOrder.forEach(p -> list.add(checkAsCode(p.getMiddle(), p.getRight())));
+        parOrder.forEach(p -> list.add(checkAsCode(p.getValue(), p.getAnnotation())));
         var msgs = 0;
 
         for (var node : annotation.getChildNodes()) {
@@ -375,8 +385,42 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         break;
                     default:
                 }
-            } else if (node instanceof StringLiteralExpr) {
-                var exp = ((StringLiteralExpr) node).asString();
+            } else if (node instanceof LiteralExpr) {
+                var exp = getParamValue((LiteralExpr) node);
+                switch (Arrays.stream(annotationClass.getDeclaredMethods())
+                        .filter(m -> m.getName().equals(VALUE))
+                        .map(m -> m.getDeclaredAnnotation(AliasFor.class))
+                        .filter(Objects::nonNull)
+                        .map(AliasFor::value)
+                        .findFirst()
+                        .orElse(VALUE)) {
+                    case VALUE:
+                        params.cls(exp.toString());
+                        break;
+                    case MESSAGE:
+                        params.message(exp.toString());
+                        break;
+                    case AS_CODE:
+                        params.asCode(exp.toString());
+                        break;
+                    case PARAMS:
+                        var idx = getParamIndex(parOrder, VALUE);
+                        if (idx != -1) {
+                            var triple = parOrder.get(idx);
+                            if (nonNull(triple.getAnnotation())) {
+                                list.set(idx, checkAsCode(exp, triple.getAnnotation()));
+                            } else {
+                                list.set(idx, exp);
+                            }
+                        } else {
+                            throw new GenericCodeGenException("Invalid annotation params! " + annotation);
+                        }
+                        break;
+                    default:
+
+                }
+            } else if (node instanceof IntegerLiteralExpr) {
+                var exp = ((IntegerLiteralExpr) node).getValue();
                 switch (Arrays.stream(annotationClass.getDeclaredMethods())
                         .filter(m -> m.getName().equals(VALUE))
                         .map(m -> m.getDeclaredAnnotation(AliasFor.class))
@@ -397,8 +441,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         var idx = getParamIndex(parOrder, VALUE);
                         if (idx != -1) {
                             var triple = parOrder.get(idx);
-                            if (nonNull(triple.getRight())) {
-                                list.set(idx, checkAsCode(exp, triple.getRight()));
+                            if (nonNull(triple.getAnnotation())) {
+                                list.set(idx, checkAsCode(exp, triple.getAnnotation()));
                             } else {
                                 list.set(idx, exp);
                             }
@@ -438,9 +482,9 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         return null;
     }
 
-    private int getParamIndex(List<Triple<String, Object, AsCode>> list, String name) {
+    private int getParamIndex(List<ParamHolder> list, String name) {
         for (var i = 0; i < list.size(); i++) {
-            if (name.equals(list.get(i).getLeft())) {
+            if (name.equals(list.get(i).getName())) {
                 return i;
             }
         }
@@ -752,5 +796,17 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         private String value;
         private String format;
     }
+
+    @Data
+    @Builder
+    private static class ParamHolder {
+        private String name;
+        private Object value;
+        private AsCode annotation;
+        private int order;
+    }
+
+
+
 
 }
