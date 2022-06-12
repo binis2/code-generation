@@ -1,4 +1,14 @@
 # Change Log
+**12-06-2022** ver. 0.3.0
+* Validation: **(New Feature)** Validation forms.
+* Jackson: **(New Module)** Added Jackson support.
+* Spring Configuration: **(New Module)** Spring Boot configuration to enable deserialization of generated objects via Jackson.
+* Generator: **(Breaking change)** Added '$' suffix to sub-field initializers to remove ambiguity when using null param. 
+* Core: New @CodeRequest object preset.
+* Generator: Added enricher options functionality.
+* Generator: Added "Hide create() option" to CreatorEnricher.
+* Validation: Fixed possible wrong messages and params ordering for multi-message and multi-param validators.
+
 **01-06-2022** ver. 0.2.5
 * Spring: Fixed _self() return object when the selected object is embeddable as well.
 
