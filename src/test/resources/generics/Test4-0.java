@@ -52,7 +52,7 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
             return CodeFactory.modify(this, AccountOverviewCardImpl.this.payload, AccountOverviewCardPayload.class);
         }
 
-        public AccountOverviewCard.Modify payload(Consumer<AccountOverviewCardPayload.Modify> init) {
+        public AccountOverviewCard.Modify payload$(Consumer<AccountOverviewCardPayload.Modify> init) {
             if (AccountOverviewCardImpl.this.payload == null) {
                 AccountOverviewCardImpl.this.payload = CodeFactory.create(AccountOverviewCardPayload.class);
             }

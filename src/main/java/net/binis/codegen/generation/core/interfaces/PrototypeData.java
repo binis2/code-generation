@@ -21,6 +21,7 @@ package net.binis.codegen.generation.core.interfaces;
  */
 
 import net.binis.codegen.enrich.PrototypeEnricher;
+import net.binis.codegen.options.CodeOption;
 
 import java.util.List;
 
@@ -53,6 +54,7 @@ public interface PrototypeData {
 
     List<PrototypeEnricher> getEnrichers();
     List<PrototypeEnricher> getInheritedEnrichers();
+    List<Class<? extends CodeOption>> getOptions();
 
     void setClassGetters(boolean value);
     void setClassSetters(boolean value);

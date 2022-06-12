@@ -378,13 +378,13 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     modifierClass.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.factory.CodeFactory"));
 
                     with(description.getRegisteredClass(MODIFIER_INTF_KEY), cls -> {
-                        cls.addMethod(field.getName()).setType(properties.getModifierName()).addParameter("Consumer<" + proto.getInterfaceName() + ".Modify>", "init").setBody(null);
+                        cls.addMethod(field.getName() + "$").setType(properties.getModifierName()).addParameter("Consumer<" + proto.getInterfaceName() + ".Modify>", "init").setBody(null);
                         cls.findCompilationUnit().ifPresent(u -> u.addImport(Consumer.class));
                     });
 
                     with(description.getRegisteredClass(MODIFIER_KEY), cls -> {
                         var methodName = isNull(proto.getMixIn()) ? Constants.MODIFIER_METHOD_NAME : Constants.MIXIN_MODIFYING_METHOD_PREFIX + proto.getInterfaceName();
-                        cls.addMethod(field.getName(), PUBLIC).setType(properties.getInterfaceName() + "." + properties.getModifierName()).addParameter("Consumer<" + proto.getInterfaceName() + ".Modify>", "init").setBody(description.getParser().parseBlock(
+                        cls.addMethod(field.getName() + "$", PUBLIC).setType(properties.getInterfaceName() + "." + properties.getModifierName()).addParameter("Consumer<" + proto.getInterfaceName() + ".Modify>", "init").setBody(description.getParser().parseBlock(
                                 "{ if (" + className + ".this." + field.getName() + " == null) {" +
                                         className + ".this." + field.getName() + " = CodeFactory.create(" + proto.getInterfaceName() + ".class);}" +
                                         "init.accept(" + className + ".this." + field.getName() + "." + methodName + "());" +

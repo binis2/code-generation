@@ -62,12 +62,14 @@ public class RegionEnricherHandler extends BaseEnricher implements RegionEnriche
         BodyDeclaration<?> region = null;
         String regionDesc = null;
         BodyDeclaration<?> prv = null;
+        var added = false;
 
         for (var member : spec.getMembers()) {
             if (areDifferent(member, region)) {
                 regionDesc = getDescription(member);
                 if (!skipRegionFor.test(member)) {
                     member.setLineComment("region " + regionDesc);
+                    added = true;
                 }
                 if (nonNull(region) && !skipRegionFor.test(prv)) {
                     prv.addOrphanComment(new LineComment("endregion"));
@@ -77,7 +79,7 @@ public class RegionEnricherHandler extends BaseEnricher implements RegionEnriche
             prv = member;
         }
 
-        if (nonNull(region)) {
+        if (nonNull(region) && added) {
             prv.addOrphanComment(new LineComment("endregion"));
         }
     }

@@ -32,7 +32,7 @@ public interface AccountOverviewCard extends CompiledGeneric<AccountOverviewCard
 
     interface Modify extends AccountOverviewCard.Fields<AccountOverviewCard.Modify>, BaseModifier<AccountOverviewCard.Modify, AccountOverviewCard> {
         AccountOverviewCardPayload.EmbeddedSoloModify<Modify> payload();
-        Modify payload(Consumer<AccountOverviewCardPayload.Modify> init);
+        Modify payload$(Consumer<AccountOverviewCardPayload.Modify> init);
     }
     // endregion
 }
