@@ -27,6 +27,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import net.binis.codegen.annotation.type.EmbeddedModifierType;
+import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.options.CodeOption;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -90,5 +91,6 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     void setEmbeddedModifier(EmbeddedModifierType type);
 
     boolean hasOption(Class<? extends CodeOption> option);
+    boolean hasEnricher(Class<? extends Enricher> enricher);
 }
 

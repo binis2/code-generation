@@ -289,6 +289,13 @@ public class Structures {
         public boolean hasOption(Class<? extends CodeOption> option) {
             return nonNull(getProperties().getOptions()) && getProperties().getOptions().contains(option);
         }
+
+        @Override
+        public boolean hasEnricher(Class<? extends Enricher> enricher) {
+            return getProperties().enrichers.stream().anyMatch(e -> enricher.isAssignableFrom(e.getClass())) ||
+                    getProperties().inheritedEnrichers.stream().anyMatch(e -> enricher.isAssignableFrom(e.getClass()));
+        }
+
     }
 
     @Data

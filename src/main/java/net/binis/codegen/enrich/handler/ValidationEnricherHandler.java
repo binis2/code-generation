@@ -31,6 +31,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.validation.*;
+import net.binis.codegen.enrich.Enrichers;
 import net.binis.codegen.enrich.ValidationEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
@@ -91,11 +92,17 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         var form = description.hasOption(Options.VALIDATION_FORM) ? formMethod(field) : null;
         field.getDescription().getAnnotations().stream().filter(this::isValidationAnnotation).forEach(a -> processAnnotation(description, field, a, form));
         if (nonNull(form)) {
+            var isChild = nonNull(field.getPrototype()) && field.getPrototype().hasEnricher(Enrichers.VALIDATION) && field.getPrototype().hasOption(Options.VALIDATION_FORM);
             var exp = form.getBody().get().getStatement(0).toString();
             if (exp.length() > field.getName().length() + 5) {
                 code.append("e -> ").append(exp.replace(".start(", ".start(e, "));
                 code.setLength(code.length() - 1);
+                if (isChild) {
+                    code.insert(code.lastIndexOf(".perform("), ".child()");
+                }
                 code.append(",\n");
+            } else if (isChild) {
+                code.append("e -> Validation.start(e, this.getClass(), \"").append(field.getName()).append("\", ").append(field.getName()).append(").child(),\n");
             }
         }
     }
@@ -805,8 +812,6 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         private AsCode annotation;
         private int order;
     }
-
-
 
 
 }
