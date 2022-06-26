@@ -31,12 +31,12 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.Type;
 import lombok.*;
 import net.binis.codegen.annotation.type.EmbeddedModifierType;
-import net.binis.codegen.enrich.*;
+import net.binis.codegen.enrich.Enricher;
+import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.options.CodeOption;
-import net.binis.codegen.options.Options;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.*;
