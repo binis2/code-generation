@@ -86,7 +86,7 @@ public class Structures {
 
         private List<PrototypeEnricher> enrichers;
         private List<PrototypeEnricher> inheritedEnrichers;
-        private List<Class<? extends CodeOption>> options;
+        private Set<Class<? extends CodeOption>> options;
 
         private List<Class<? extends Enricher>> predefinedEnrichers;
         private List<Class<? extends Enricher>> predefinedInheritedEnrichers;
@@ -365,7 +365,7 @@ public class Structures {
                         .predefinedEnrichers(List.of(VALIDATION, CREATOR, REGION))
                         .classSetters(false)
                         .interfaceSetters(false)
-                        .options(List.of(VALIDATION_FORM, HIDDEN_CREATE_METHOD))
+                        .options(Set.of(VALIDATION_FORM, HIDDEN_CREATE_METHOD))
         );
     }
 

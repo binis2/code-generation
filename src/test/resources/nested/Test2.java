@@ -1,6 +1,7 @@
 package net.binis.codegen.test.objects;
 
 import net.binis.codegen.annotation.builder.CodeRequest;
+import net.binis.codegen.options.HiddenCreateMethodOption;
 
 @CodeRequest
 public interface TestRequestPrototype {
@@ -13,7 +14,7 @@ public interface TestRequestPrototype {
 
     SubRequestPrototype sub();
 
-    @CodeRequest
+    @CodeRequest(options = {HiddenCreateMethodOption.class})
     interface SubRequestPrototype {
 
         String value();

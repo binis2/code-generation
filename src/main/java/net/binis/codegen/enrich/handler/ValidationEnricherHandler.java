@@ -62,12 +62,6 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
     private static final String MESSAGES = "messages";
     private static final String AS_CODE = "asCode";
 
-    private MethodDeclaration formMethod(PrototypeField field) {
-        var result = new MethodDeclaration();
-        result.setBody(lookup.getParser().parseBlock("{ " + field.getName() + " = v; }").getResult().get());
-        return result;
-    }
-
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         //Do nothing
@@ -758,11 +752,22 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         if (form.length() > 0) {
             form.setLength(form.lastIndexOf(","));
             form.append("); }");
-            description.getIntf().addExtendedType("Validatable");
-            description.getIntf().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.validation.Validatable"));
+            if (description.hasOption(Options.EXPOSE_VALIDATE_METHOD)) {
+                description.getIntf().addExtendedType("Validatable");
+                description.getIntf().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.validation.Validatable"));
+            } else {
+                description.getSpec().addImplementedType("Validatable");
+                description.getSpec().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.validation.Validatable"));
+            }
             description.getSpec().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.validation.flow.Validation"));
             description.getSpec().addMethod("validate", PUBLIC).setBody(description.getParser().parseBlock("{ Validation.form(this.getClass(), " + form).getResult().get());
         }
+    }
+
+    private MethodDeclaration formMethod(PrototypeField field) {
+        var result = new MethodDeclaration();
+        result.setBody(lookup.getParser().parseBlock("{ " + field.getName() + " = v; }").getResult().get());
+        return result;
     }
 
     private enum ModifierType {

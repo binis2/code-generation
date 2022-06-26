@@ -24,6 +24,7 @@ import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.options.CodeOption;
 
 import java.util.List;
+import java.util.Set;
 
 public interface PrototypeData {
     String getPrototypeName();
@@ -54,7 +55,7 @@ public interface PrototypeData {
 
     List<PrototypeEnricher> getEnrichers();
     List<PrototypeEnricher> getInheritedEnrichers();
-    List<Class<? extends CodeOption>> getOptions();
+    Set<Class<? extends CodeOption>> getOptions();
 
     void setClassGetters(boolean value);
     void setClassSetters(boolean value);
