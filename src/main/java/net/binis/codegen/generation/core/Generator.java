@@ -39,6 +39,7 @@ import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.options.CodeOption;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -674,6 +675,9 @@ public class Generator {
                     case "inheritedEnrichers":
                         checkEnrichers(builder::inheritedEnrichers, pair.getValue().asArrayInitializerExpr());
                         break;
+                    case "options":
+                        checkOptions(builder::options, pair.getValue().asArrayInitializerExpr());
+                        break;
                     default:
                 }
             }
@@ -720,6 +724,18 @@ public class Generator {
                         }));
         consumer.accept(list);
     }
+
+    private static void checkOptions(Consumer<Set<Class<? extends CodeOption>>> consumer, ArrayInitializerExpr expression) {
+        var set = new HashSet<Class<? extends CodeOption>>();
+        expression.getValues().stream()
+                .filter(Expression::isClassExpr)
+                .map(e -> loadClass(getExternalClassName(expression.findCompilationUnit().get(), e.asClassExpr().getType().asString())))
+                .filter(Objects::nonNull)
+                .filter(CodeOption.class::isAssignableFrom)
+                .forEach(o -> set.add((Class) o));
+        consumer.accept(set);
+    }
+
 
     @SuppressWarnings("unchecked")
     private static void checkEnrichers(List<PrototypeEnricher> list, Class enricher) {

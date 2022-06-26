@@ -31,12 +31,12 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.Type;
 import lombok.*;
 import net.binis.codegen.annotation.type.EmbeddedModifierType;
-import net.binis.codegen.enrich.*;
+import net.binis.codegen.enrich.Enricher;
+import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.options.CodeOption;
-import net.binis.codegen.options.Options;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.*;
@@ -86,7 +86,7 @@ public class Structures {
 
         private List<PrototypeEnricher> enrichers;
         private List<PrototypeEnricher> inheritedEnrichers;
-        private List<Class<? extends CodeOption>> options;
+        private Set<Class<? extends CodeOption>> options;
 
         private List<Class<? extends Enricher>> predefinedEnrichers;
         private List<Class<? extends Enricher>> predefinedInheritedEnrichers;
@@ -289,6 +289,13 @@ public class Structures {
         public boolean hasOption(Class<? extends CodeOption> option) {
             return nonNull(getProperties().getOptions()) && getProperties().getOptions().contains(option);
         }
+
+        @Override
+        public boolean hasEnricher(Class<? extends Enricher> enricher) {
+            return getProperties().enrichers.stream().anyMatch(e -> enricher.isAssignableFrom(e.getClass())) ||
+                    getProperties().inheritedEnrichers.stream().anyMatch(e -> enricher.isAssignableFrom(e.getClass()));
+        }
+
     }
 
     @Data
@@ -358,7 +365,7 @@ public class Structures {
                         .predefinedEnrichers(List.of(VALIDATION, CREATOR, REGION))
                         .classSetters(false)
                         .interfaceSetters(false)
-                        .options(List.of(VALIDATION_FORM, HIDDEN_CREATE_METHOD))
+                        .options(Set.of(VALIDATION_FORM, HIDDEN_CREATE_METHOD))
         );
     }
 

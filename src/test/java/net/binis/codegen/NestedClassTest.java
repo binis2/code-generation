@@ -39,4 +39,10 @@ public class NestedClassTest extends BaseTest {
         testSingle("nested/Test1.java", "nested/Test1-0.java", "nested/Test1-1.java", 2);
     }
 
+    @Test
+    public void testNestedPrototype() {
+        testSingle("nested/Test2.java", "nested/Test2-0.java", "nested/Test2-1.java", 2);
+    }
+
+
 }

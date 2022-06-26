@@ -231,7 +231,49 @@ public class Helpers {
                     .findFirst().orElse(null);
         }
 
+        if (isNull(result)) {
+            result = findLocalType(unit, t);
+        }
+
         return result;
+    }
+
+    public static String findLocalType(CompilationUnit unit, String t) {
+        String result = null;
+        for (var type : unit.getTypes()) {
+            if (t.equals(type.getName().asString())) {
+                return type.getFullyQualifiedName().get();
+            }
+            if (type.isClassOrInterfaceDeclaration()) {
+                result = findLocalType(type.asClassOrInterfaceDeclaration(), t);
+            }
+
+            if (nonNull(result)) {
+                return result;
+            }
+        }
+
+        return null;
+    }
+
+    public static String findLocalType(ClassOrInterfaceDeclaration parent, String t) {
+        String result = null;
+        for (var member : parent.getMembers()) {
+            if (member.isClassOrInterfaceDeclaration()) {
+                var type = member.asClassOrInterfaceDeclaration();
+                if (t.equals(type.getName().asString())) {
+                    return type.getFullyQualifiedName().get();
+                }
+
+                result = findLocalType(type, t);
+
+                if (nonNull(result)) {
+                    return result;
+                }
+            }
+        }
+
+        return null;
     }
 
     public static ImportDeclaration getClassImport(CompilationUnit unit, String type) {
@@ -1067,6 +1109,8 @@ public class Helpers {
                 var result = field.getDescription().getType();
                 if (nonNull(lookup.findParsed(Helpers.getExternalClassName(field.getDescription().findCompilationUnit().get(), result.asString())))) {
                     result = lookup.getParser().parseClassOrInterfaceType(field.getType()).getResult().get();
+                } else if (nonNull(field.getDeclaration())) {
+                    result = field.getDeclaration().getCommonType();
                 }
                 return Pair.of(result, null);
             }
