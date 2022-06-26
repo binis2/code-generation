@@ -1,4 +1,12 @@
 # Change Log
+**26-06-2022** ver. 0.3.1
+* Validation: Forms validation extends over the sub objects as well.
+* Validation: Added options to expose validate() method to the generated interface.
+* Spring: Added script() with params.
+* Spring: Added in(T...).
+* Spring: Fixed script() usage in some corner cases.
+* Spring: Optimized exists() performance.
+
 **12-06-2022** ver. 0.3.0
 * Validation: **(New Feature)** Validation forms.
 * Jackson: **(New Module)** Added Jackson support.
