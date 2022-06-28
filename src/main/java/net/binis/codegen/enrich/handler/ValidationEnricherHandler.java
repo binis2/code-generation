@@ -378,7 +378,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         } else {
                             var idx = getParamIndex(parOrder, pair.getNameAsString());
                             if (idx != -1) {
-                                list.set(idx, getParamValue(pair.getValue()));
+                                var triple = parOrder.get(idx);
+                                list.set(idx, checkAsCode(getParamValue(pair.getValue()), triple.getAnnotation()));
                             } else {
                                 throw new GenericCodeGenException("Invalid annotation params! " + annotation);
                             }
@@ -418,41 +419,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         }
                         break;
                     default:
-
-                }
-            } else if (node instanceof IntegerLiteralExpr) {
-                var exp = ((IntegerLiteralExpr) node).getValue();
-                switch (Arrays.stream(annotationClass.getDeclaredMethods())
-                        .filter(m -> m.getName().equals(VALUE))
-                        .map(m -> m.getDeclaredAnnotation(AliasFor.class))
-                        .filter(Objects::nonNull)
-                        .map(AliasFor::value)
-                        .findFirst()
-                        .orElse(VALUE)) {
-                    case VALUE:
-                        params.cls(exp);
-                        break;
-                    case MESSAGE:
-                        params.message(exp);
-                        break;
-                    case AS_CODE:
-                        params.asCode(exp);
-                        break;
-                    case PARAMS:
-                        var idx = getParamIndex(parOrder, VALUE);
-                        if (idx != -1) {
-                            var triple = parOrder.get(idx);
-                            if (nonNull(triple.getAnnotation())) {
-                                list.set(idx, checkAsCode(exp, triple.getAnnotation()));
-                            } else {
-                                list.set(idx, exp);
-                            }
-                        } else {
-                            throw new GenericCodeGenException("Invalid annotation params! " + annotation);
-                        }
-                        break;
-                    default:
-
+                        //Do nothing
                 }
             }
         }
