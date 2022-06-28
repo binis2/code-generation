@@ -1,4 +1,8 @@
 # Change Log
+**28-06-2022** ver. 0.3.2
+* Validation: Fixed @AsCode validation/sanitization generation in some cases.
+* Validation: Fixed custom validators/sanitizers that inherits @AsCode validators/sanitizers.
+
 **26-06-2022** ver. 0.3.1
 * Validation: Forms validation extends over the sub objects as well.
 * Validation: Added options to expose validate() method to the generated interface.
