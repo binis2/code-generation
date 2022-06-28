@@ -670,25 +670,33 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         }
 
         var result = new StringBuilder();
-        for (var param : list) {
-            if (param instanceof String) {
-                result.append(", \"")
-                        .append(StringEscapeUtils.escapeJava((String) param))
-                        .append("\"");
-            } else if (param instanceof AsCodeHolder) {
-                var holder = (AsCodeHolder) param;
-                var format = "%s".equals(holder.getFormat()) && !StringUtils.isBlank(params.getAsCode()) ? params.getAsCode() : holder.getFormat();
-                result.append(", ")
-                        .append(String.format(format.replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString()),
-                                holder.getValue()
-                                        .replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString())
-                                        .replaceAll("\\{entity}", (ModifierType.MODIFIER.equals(modifier) ? "(" + field.getDeclaration().findAncestor(ClassOrInterfaceDeclaration.class).get().getNameAsString() + ")" : "") + modifier.getValue())));
-            } else {
-                result.append(", ")
-                        .append(nonNull(param) ? param.toString() : "null");
+        if (nonNull(params.getAsCode()) && list.size() == 1 && list.get(0) instanceof String) {
+            formatCode(field, modifier, result, (String) list.get(0), params.getAsCode());
+        } else {
+            for (var param : list) {
+                if (param instanceof String) {
+                    result.append(", \"")
+                            .append(StringEscapeUtils.escapeJava((String) param))
+                            .append("\"");
+                } else if (param instanceof AsCodeHolder) {
+                    var holder = (AsCodeHolder) param;
+                    var format = "%s".equals(holder.getFormat()) && !StringUtils.isBlank(params.getAsCode()) ? params.getAsCode() : holder.getFormat();
+                    formatCode(field, modifier, result, holder.getValue(), format);
+                } else {
+                    result.append(", ")
+                            .append(nonNull(param) ? param.toString() : "null");
+                }
             }
         }
         return result.toString();
+    }
+
+    private void formatCode(PrototypeField field, ModifierType modifier, StringBuilder result, String value, String format) {
+        result.append(", ")
+                .append(String.format(format.replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString()),
+                        value
+                                .replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString())
+                                .replaceAll("\\{entity}", (ModifierType.MODIFIER.equals(modifier) ? "(" + field.getDeclaration().findAncestor(ClassOrInterfaceDeclaration.class).get().getNameAsString() + ")" : "") + modifier.getValue())));
     }
 
     private String buildParamsStr(Object param, Params params, PrototypeField field) {
