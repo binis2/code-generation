@@ -43,6 +43,11 @@ public class BasicsTest extends BaseTest {
     }
 
     @Test
+    public void testForAnnotations() {
+        testSingle("basic/TestFor.java", "basic/TestFor-0.java", "basic/TestFor-1.java");
+    }
+
+    @Test
     public void testExtended() {
         testMulti(List.of(
                 Triple.of("extended/Extended1.java", "extended/Extended1-0.java", "extended/Extended1-1.java"),

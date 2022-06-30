@@ -271,7 +271,7 @@ public class Generator {
         lookup.registerGenerated(getClassName(spec), parse);
 
         cleanUpInterface(typeDeclaration, intf);
-        handleClassAnnotations(typeDeclaration, spec);
+        handleClassAnnotations(typeDeclaration, spec, intf);
         checkForDeclaredConstants(spec);
         checkForDeclaredConstants(intf);
         checkForClassExpressions(spec, typeDeclaration);
@@ -1036,15 +1036,25 @@ public class Generator {
         }
     }
 
-    private static void handleFieldAnnotations(CompilationUnit unit, FieldDeclaration field, MethodDeclaration method, boolean compiledAnnotations) {
+    private static void handleFieldAnnotations(CompilationUnit unit, FieldDeclaration field, MethodDeclaration method, boolean compiledAnnotations, PrototypeField proto) {
+        var next = Holder.of(false);
         method.getAnnotations().forEach(a ->
                 notNull(getExternalClassName(unit, a.getNameAsString()), name -> {
                     var ann = loadClass(name);
                     if (nonNull(ann)) {
-                        if (isNull(ann.getAnnotation(CodeAnnotation.class))) {
+                        if (ForInterface.class.equals(ann)) {
+                            next.set(true);
+                            return;
+                        } else if (isNull(ann.getAnnotation(CodeAnnotation.class))) {
                             var target = ann.getAnnotation(Target.class);
-                            if (target == null || target.toString().contains("FIELD")) {
-                                handleAnnotation(unit, field, a);
+                            if (next.get()) {
+                                if (target == null || target.toString().contains("METHOD")) {
+                                    handleAnnotation(unit, proto.generateInterfaceGetter(), a);
+                                }
+                            } else {
+                                if (target == null || target.toString().contains("FIELD")) {
+                                    handleAnnotation(unit, field, a);
+                                }
                             }
                         } else {
                             if (CodeFieldAnnotations.class.isAssignableFrom(ann)) {
@@ -1067,44 +1077,55 @@ public class Generator {
                         var parsed = lookup.findExternal(name);
                         if (nonNull(parsed) && parsed.getDeclaration().isAnnotationDeclaration()) {
                             if (parsed.getDeclaration().getAnnotationByClass(CodeAnnotation.class).isEmpty()) {
-                                if (Helpers.annotationHasTarget(parsed, "ElementType.FIELD")) {
-                                    handleAnnotation(unit, field, a);
+                                if (next.get()) {
+                                    if (Helpers.annotationHasTarget(parsed, "ElementType.METHOD")) {
+                                        handleAnnotation(unit, proto.generateInterfaceGetter(), a);
+                                    } else {
+                                        log.warn("Invalid annotation target {}", name);
+                                    }
                                 } else {
-                                    log.warn("Invalid annotation target {}", name);
+                                    if (Helpers.annotationHasTarget(parsed, "ElementType.FIELD")) {
+                                        handleAnnotation(unit, field, a);
+                                    } else {
+                                        log.warn("Invalid annotation target {}", name);
+                                    }
                                 }
                             }
                         } else {
                             if (compiledAnnotations) {
-                                handleMissingAnnotation(unit, field, a);
+                                if (next.get()) {
+                                    handleMissingAnnotation(unit, proto.generateInterfaceGetter(), a);
+                                } else {
+                                    handleMissingAnnotation(unit, field, a);
+                                }
                             } else {
                                 log.warn("Can't process annotation {}", name);
                             }
                         }
                     }
+                    next.set(false);
                 })
         );
     }
 
-    private static void handleAnnotation(CompilationUnit unit, FieldDeclaration field, AnnotationExpr ann) {
-        field.getAnnotations().stream().filter(a -> a.getNameAsString().equals(ann.getNameAsString())).findFirst().ifPresent(a ->
-                field.getAnnotations().remove(a));
-        field.addAnnotation(ann);
-    }
-
-    private static void handleMissingAnnotation(CompilationUnit unit, FieldDeclaration field, AnnotationExpr ann) {
-        var existing = field.getAnnotations().stream().filter(a -> a.getNameAsString().equals(ann.getNameAsString())).findFirst();
-        if (existing.isEmpty()) {
-            field.addAnnotation(ann);
-        }
-    }
-
-    private static void handleAnnotation(CompilationUnit unit, MethodDeclaration method, AnnotationExpr ann) {
-        method.getAnnotations().stream().filter(a -> a.getNameAsString().equals(ann.getNameAsString())).findFirst().ifPresent(a ->
-                method.getAnnotations().remove(a));
-        method.addAnnotation(ann);
+    private static void handleAnnotation(CompilationUnit unit, BodyDeclaration<?> body, AnnotationExpr ann) {
+        body.getAnnotations().stream().filter(a -> a.getNameAsString().equals(ann.getNameAsString())).findFirst().ifPresent(a ->
+                body.getAnnotations().remove(a));
+        body.addAnnotation(ann);
 
         notNull(getExternalClassNameIfExists(unit, ann.getNameAsString()), i ->
-                method.findCompilationUnit().ifPresent(u -> u.addImport(i)));
+                body.findCompilationUnit().ifPresent(u -> u.addImport(i)));
+
+    }
+
+    private static void handleMissingAnnotation(CompilationUnit unit, BodyDeclaration<?> body, AnnotationExpr ann) {
+        var existing = body.getAnnotations().stream().filter(a -> a.getNameAsString().equals(ann.getNameAsString())).findFirst();
+        if (existing.isEmpty()) {
+            body.addAnnotation(ann);
+
+            notNull(getExternalClassNameIfExists(unit, ann.getNameAsString()), i ->
+                    body.findCompilationUnit().ifPresent(u -> u.addImport(i)));
+        }
     }
 
     private static void handleAnnotation(CompilationUnit unit, MethodDeclaration method, AnnotationExpr ann, CompilationUnit destinationUnit) {
@@ -1130,16 +1151,25 @@ public class Generator {
         );
     }
 
-    private static void handleClassAnnotations(ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec) {
+    private static void handleClassAnnotations(ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf) {
+        var next = Holder.of(false);
         declaration.findCompilationUnit().ifPresent(unit ->
                 declaration.getAnnotations().forEach(a ->
                         notNull(getExternalClassName(unit, a.getNameAsString()), name -> {
                             var ann = loadClass(name);
                             if (nonNull(ann)) {
+                                if (ForInterface.class.equals(ann)) {
+                                    next.set(true);
+                                    return;
+                                }
                                 if (isNull(ann.getAnnotation(CodeAnnotation.class))) {
                                     var target = ann.getAnnotation(Target.class);
                                     if (target != null && !target.toString().equals("TYPE")) {
-                                        spec.addAnnotation(a);
+                                        if (next.get()) {
+                                            intf.addAnnotation(a);
+                                        } else {
+                                            spec.addAnnotation(a);
+                                        }
                                     }
                                 }
                             } else {
@@ -1164,6 +1194,7 @@ public class Generator {
                                     log.warn("Can't process annotation {}", name);
                                 }
                             }
+                            next.set(false);
                         })
                 ));
     }
@@ -1261,7 +1292,7 @@ public class Generator {
                 unit = fieldProto.getDescription().findCompilationUnit().get();
             }
         }
-        handleFieldAnnotations(unit, field, method, compiledAnnotations);
+        handleFieldAnnotations(unit, field, method, compiledAnnotations, result);
         return result;
     }
 

@@ -155,6 +155,19 @@ public class Structures {
             Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this);
             return implementationSetter;
         }
+
+        @Override
+        public MethodDeclaration generateInterfaceGetter() {
+            Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getIntf(), description, false, this);
+            return interfaceGetter;
+        }
+
+        @Override
+        public MethodDeclaration generateInterfaceSetter() {
+            Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getIntf(), description, false, this);
+            return interfaceSetter;
+        }
+
     }
 
     @Data

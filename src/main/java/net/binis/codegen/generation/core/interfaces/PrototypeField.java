@@ -56,4 +56,7 @@ public interface PrototypeField {
     void addModifier(MethodDeclaration modifier);
     MethodDeclaration generateGetter();
     MethodDeclaration generateSetter();
+    MethodDeclaration generateInterfaceGetter();
+    MethodDeclaration generateInterfaceSetter();
+
 }
