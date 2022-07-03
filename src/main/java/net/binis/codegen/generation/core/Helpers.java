@@ -841,6 +841,8 @@ public class Helpers {
         registerEnricher(ValidationEnricherHandler.class);
         registerEnricher(FluentEnricherHandler.class);
         registerEnricher(RegionEnricherHandler.class);
+        registerEnricher(OpenApiEnricherHandler.class);
+        registerEnricher(JacksonEnricherHandler.class);
     }
 
 

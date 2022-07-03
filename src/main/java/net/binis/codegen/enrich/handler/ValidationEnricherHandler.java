@@ -42,6 +42,7 @@ import net.binis.codegen.options.Options;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -86,7 +87,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         var form = description.hasOption(Options.VALIDATION_FORM) ? formMethod(field) : null;
         field.getDescription().getAnnotations().stream().filter(this::isValidationAnnotation).forEach(a -> processAnnotation(description, field, a, form));
         if (nonNull(form)) {
-            var isChild = nonNull(field.getPrototype()) && field.getPrototype().hasEnricher(Enrichers.VALIDATION) && field.getPrototype().hasOption(Options.VALIDATION_FORM);
+            var isChild = hasChildren(field);
             var exp = form.getBody().get().getStatement(0).toString();
             if (exp.length() > field.getName().length() + 5) {
                 code.append("e -> ").append(exp.replace(".start(", ".start(e, "));
@@ -99,6 +100,18 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                 code.append("e -> Validation.start(e, this.getClass(), \"").append(field.getName()).append("\", ").append(field.getName()).append(").child(),\n");
             }
         }
+    }
+
+    private boolean hasChildren(PrototypeField field) {
+        var result = hasForm(field.getPrototype());
+        if (!result && !CollectionUtils.isEmpty(field.getTypePrototypes())) {
+            result = field.getTypePrototypes().values().stream().anyMatch(this::hasForm);
+        }
+        return result;
+    }
+
+    private boolean hasForm(PrototypeDescription<?> desc) {
+        return nonNull(desc) && desc.hasEnricher(Enrichers.VALIDATION) && desc.hasOption(Options.VALIDATION_FORM);
     }
 
     private void processAnnotation(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, AnnotationExpr annotation, MethodDeclaration form) {
