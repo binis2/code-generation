@@ -1114,7 +1114,7 @@ public class Generator {
         body.addAnnotation(ann);
 
         notNull(getExternalClassNameIfExists(unit, ann.getNameAsString()), i ->
-                body.findCompilationUnit().ifPresent(u -> u.addImport(i)));
+                body.findCompilationUnit().ifPresent(u -> u.addImport(sanitizeImport(i))));
 
     }
 
@@ -1124,7 +1124,7 @@ public class Generator {
             body.addAnnotation(ann);
 
             notNull(getExternalClassNameIfExists(unit, ann.getNameAsString()), i ->
-                    body.findCompilationUnit().ifPresent(u -> u.addImport(i)));
+                    body.findCompilationUnit().ifPresent(u -> u.addImport(sanitizeImport(i))));
         }
     }
 

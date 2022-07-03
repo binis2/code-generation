@@ -1178,4 +1178,8 @@ public class Helpers {
         return name;
     }
 
+    public static String sanitizeImport(String imprt) {
+        return imprt.replace('$', '.');
+    }
+
 }
