@@ -1,4 +1,17 @@
 # Change Log
+**03-07-2022** ver. 0.3.3
+* OpenApi: Added OpenApi enricher.
+* Jackson: Added Jackson enricher.
+* Jackson: Added handling of nested Validatable complex structures.
+* Test: Added mockPageQuery() helper routines.
+* Validation: Added form validation for collections.
+* Spring Configuration: Added properties to enable printing of generated queries.
+* Generation: @ForInterface works for field and type declarations as well.
+* Generation: Fixed handling of nested prototypes is some cases.
+* Generation: Fixed generation of prototype collections if the prototype is not embeddable.
+* Spring: Fixed count() when order() is used.
+* Spring: Fixed count() when page() is set.
+
 **28-06-2022** ver. 0.3.2
 * Validation: Fixed @AsCode validation/sanitization generation in some cases.
 * Validation: Fixed custom validators/sanitizers that inherits @AsCode validators/sanitizers.
