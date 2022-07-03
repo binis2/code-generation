@@ -123,11 +123,11 @@ public abstract class BaseTest {
     }
 
     protected void testSingleExecute(String prototype, String resClass, String resInterface, String resExecute) {
-        testSingleExecute(prototype, resClass, resInterface, null, 1, resExecute);
+        testSingleExecute(prototype, resClass, resInterface, null, 1, resExecute, false);
     }
 
     protected void testSingleExecute(String prototype, String resClass, String resInterface, int expected, String resExecute) {
-        testSingleExecute(prototype, resClass, resInterface, null, expected, resExecute);
+        testSingleExecute(prototype, resClass, resInterface, null, expected, resExecute, false);
     }
 
 
@@ -143,11 +143,16 @@ public abstract class BaseTest {
         testSingle(prototype, resClass, resInterface, null, expected);
     }
 
-    protected void testSingle(String prototype, String resClass, String resInterface, String pathToSave, int expected) {
-        testSingleExecute(prototype, resClass, resInterface, pathToSave, expected, null);
+    protected void testSingle(String prototype, String resClass, String resInterface, int expected, boolean skipCompilation) {
+        testSingleExecute(prototype, resClass, resInterface, null, expected, null, skipCompilation);
     }
 
-    protected void testSingleExecute(String prototype, String resClass, String resInterface, String pathToSave, int expected, String resExecute) {
+
+    protected void testSingle(String prototype, String resClass, String resInterface, String pathToSave, int expected) {
+        testSingleExecute(prototype, resClass, resInterface, pathToSave, expected, null, false);
+    }
+
+    protected void testSingleExecute(String prototype, String resClass, String resInterface, String pathToSave, int expected, String resExecute, boolean skipCompilation) {
         var list = newList();
         load(list, prototype);
         assertTrue(compile(new TestClassLoader(), list, null));
@@ -177,9 +182,11 @@ public abstract class BaseTest {
             }
 
         });
-        var loader = new TestClassLoader();
 
-        assertTrue(compile(loader, list2, resExecute));
+        if (!skipCompilation) {
+            var loader = new TestClassLoader();
+            assertTrue(compile(loader, list2, resExecute));
+        }
 
     }
 

@@ -235,6 +235,13 @@ public class Helpers {
             result = findLocalType(unit, t);
         }
 
+        if (isNull(result)) {
+            var cls = loadClass("java.lang." + t);
+            if (nonNull(cls)) {
+                result = cls.getCanonicalName();
+            }
+        }
+
         return result;
     }
 
@@ -834,6 +841,8 @@ public class Helpers {
         registerEnricher(ValidationEnricherHandler.class);
         registerEnricher(FluentEnricherHandler.class);
         registerEnricher(RegionEnricherHandler.class);
+        registerEnricher(OpenApiEnricherHandler.class);
+        registerEnricher(JacksonEnricherHandler.class);
     }
 
 
@@ -1167,6 +1176,10 @@ public class Helpers {
             return name + "_";
         }
         return name;
+    }
+
+    public static String sanitizeImport(String imprt) {
+        return imprt.replace('$', '.');
     }
 
 }

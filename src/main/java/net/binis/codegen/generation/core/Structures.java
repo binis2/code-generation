@@ -46,8 +46,7 @@ import java.util.function.Supplier;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.enrich.Enrichers.*;
-import static net.binis.codegen.options.Options.HIDDEN_CREATE_METHOD;
-import static net.binis.codegen.options.Options.VALIDATION_FORM;
+import static net.binis.codegen.options.Options.*;
 
 public class Structures {
 
@@ -155,6 +154,19 @@ public class Structures {
             Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this);
             return implementationSetter;
         }
+
+        @Override
+        public MethodDeclaration generateInterfaceGetter() {
+            Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getIntf(), description, false, this);
+            return interfaceGetter;
+        }
+
+        @Override
+        public MethodDeclaration generateInterfaceSetter() {
+            Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getIntf(), description, false, this);
+            return interfaceSetter;
+        }
+
     }
 
     @Data
@@ -362,10 +374,10 @@ public class Structures {
                         .interfaceSetters(false)
                         .baseModifierClass("net.binis.codegen.spring.modifier.BaseEntityModifier"),
                 "CodeRequest", () -> defaultBuilder()
-                        .predefinedEnrichers(List.of(VALIDATION, CREATOR, REGION))
+                        .predefinedEnrichers(List.of(VALIDATION, CREATOR, OPENAPI, JACKSON, REGION))
                         .classSetters(false)
                         .interfaceSetters(false)
-                        .options(Set.of(VALIDATION_FORM, HIDDEN_CREATE_METHOD))
+                        .options(Set.of(VALIDATION_FORM, HIDDEN_CREATE_METHOD, GENERATE_OPENAPI_IF_AVAILABLE, HANDLE_JACKSON_IF_AVAILABLE))
         );
     }
 

@@ -205,10 +205,10 @@ public class CodeGen {
                     var nestedType = nested.clone();
                     parent.getImports().forEach(unit::addImport);
                     unit.addType(nestedType);
+                    var cName = getClassName(nestedType);
 
-                    lookup.registerParsed(getClassName(nestedType),
-                            Structures.Parsed.builder().declaration(nestedType.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).nested(true).build());
-
+                    lookup.registerParsed(cName,
+                            Structures.Parsed.builder().declaration(nestedType.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(cName).parser(parser).nested(true).build());
                 }
             });
         }

@@ -42,6 +42,7 @@ import net.binis.codegen.options.Options;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -86,7 +87,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         var form = description.hasOption(Options.VALIDATION_FORM) ? formMethod(field) : null;
         field.getDescription().getAnnotations().stream().filter(this::isValidationAnnotation).forEach(a -> processAnnotation(description, field, a, form));
         if (nonNull(form)) {
-            var isChild = nonNull(field.getPrototype()) && field.getPrototype().hasEnricher(Enrichers.VALIDATION) && field.getPrototype().hasOption(Options.VALIDATION_FORM);
+            var isChild = hasChildren(field);
             var exp = form.getBody().get().getStatement(0).toString();
             if (exp.length() > field.getName().length() + 5) {
                 code.append("e -> ").append(exp.replace(".start(", ".start(e, "));
@@ -99,6 +100,18 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                 code.append("e -> Validation.start(e, this.getClass(), \"").append(field.getName()).append("\", ").append(field.getName()).append(").child(),\n");
             }
         }
+    }
+
+    private boolean hasChildren(PrototypeField field) {
+        var result = hasForm(field.getPrototype());
+        if (!result && !CollectionUtils.isEmpty(field.getTypePrototypes())) {
+            result = field.getTypePrototypes().values().stream().anyMatch(this::hasForm);
+        }
+        return result;
+    }
+
+    private boolean hasForm(PrototypeDescription<?> desc) {
+        return nonNull(desc) && desc.hasEnricher(Enrichers.VALIDATION) && desc.hasOption(Options.VALIDATION_FORM);
     }
 
     private void processAnnotation(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, AnnotationExpr annotation, MethodDeclaration form) {
@@ -378,7 +391,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         } else {
                             var idx = getParamIndex(parOrder, pair.getNameAsString());
                             if (idx != -1) {
-                                list.set(idx, getParamValue(pair.getValue()));
+                                var triple = parOrder.get(idx);
+                                list.set(idx, checkAsCode(getParamValue(pair.getValue()), triple.getAnnotation()));
                             } else {
                                 throw new GenericCodeGenException("Invalid annotation params! " + annotation);
                             }
@@ -418,41 +432,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         }
                         break;
                     default:
-
-                }
-            } else if (node instanceof IntegerLiteralExpr) {
-                var exp = ((IntegerLiteralExpr) node).getValue();
-                switch (Arrays.stream(annotationClass.getDeclaredMethods())
-                        .filter(m -> m.getName().equals(VALUE))
-                        .map(m -> m.getDeclaredAnnotation(AliasFor.class))
-                        .filter(Objects::nonNull)
-                        .map(AliasFor::value)
-                        .findFirst()
-                        .orElse(VALUE)) {
-                    case VALUE:
-                        params.cls(exp);
-                        break;
-                    case MESSAGE:
-                        params.message(exp);
-                        break;
-                    case AS_CODE:
-                        params.asCode(exp);
-                        break;
-                    case PARAMS:
-                        var idx = getParamIndex(parOrder, VALUE);
-                        if (idx != -1) {
-                            var triple = parOrder.get(idx);
-                            if (nonNull(triple.getAnnotation())) {
-                                list.set(idx, checkAsCode(exp, triple.getAnnotation()));
-                            } else {
-                                list.set(idx, exp);
-                            }
-                        } else {
-                            throw new GenericCodeGenException("Invalid annotation params! " + annotation);
-                        }
-                        break;
-                    default:
-
+                        //Do nothing
                 }
             }
         }
@@ -703,25 +683,33 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         }
 
         var result = new StringBuilder();
-        for (var param : list) {
-            if (param instanceof String) {
-                result.append(", \"")
-                        .append(StringEscapeUtils.escapeJava((String) param))
-                        .append("\"");
-            } else if (param instanceof AsCodeHolder) {
-                var holder = (AsCodeHolder) param;
-                var format = "%s".equals(holder.getFormat()) && !StringUtils.isBlank(params.getAsCode()) ? params.getAsCode() : holder.getFormat();
-                result.append(", ")
-                        .append(String.format(format.replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString()),
-                                holder.getValue()
-                                        .replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString())
-                                        .replaceAll("\\{entity}", (ModifierType.MODIFIER.equals(modifier) ? "(" + field.getDeclaration().findAncestor(ClassOrInterfaceDeclaration.class).get().getNameAsString() + ")" : "") + modifier.getValue())));
-            } else {
-                result.append(", ")
-                        .append(nonNull(param) ? param.toString() : "null");
+        if (nonNull(params.getAsCode()) && list.size() == 1 && list.get(0) instanceof String) {
+            formatCode(field, modifier, result, (String) list.get(0), params.getAsCode());
+        } else {
+            for (var param : list) {
+                if (param instanceof String) {
+                    result.append(", \"")
+                            .append(StringEscapeUtils.escapeJava((String) param))
+                            .append("\"");
+                } else if (param instanceof AsCodeHolder) {
+                    var holder = (AsCodeHolder) param;
+                    var format = "%s".equals(holder.getFormat()) && !StringUtils.isBlank(params.getAsCode()) ? params.getAsCode() : holder.getFormat();
+                    formatCode(field, modifier, result, holder.getValue(), format);
+                } else {
+                    result.append(", ")
+                            .append(nonNull(param) ? param.toString() : "null");
+                }
             }
         }
         return result.toString();
+    }
+
+    private void formatCode(PrototypeField field, ModifierType modifier, StringBuilder result, String value, String format) {
+        result.append(", ")
+                .append(String.format(format.replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString()),
+                        value
+                                .replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString())
+                                .replaceAll("\\{entity}", (ModifierType.MODIFIER.equals(modifier) ? "(" + field.getDeclaration().findAncestor(ClassOrInterfaceDeclaration.class).get().getNameAsString() + ")" : "") + modifier.getValue())));
     }
 
     private String buildParamsStr(Object param, Params params, PrototypeField field) {
