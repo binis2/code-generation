@@ -1,4 +1,8 @@
 # Change Log
+**04-07-2022** ver. 0.3.4
+* Test: Fixed mockExistsQuery() for identifiable entities.
+* Jackson: Fixed validation handling after attempt parsing of invalid json.
+
 **03-07-2022** ver. 0.3.3
 * OpenApi: Added OpenApi enricher.
 * Jackson: Added Jackson enricher.
