@@ -1,4 +1,9 @@
 # Change Log
+**07-07-2022** ver. 0.3.5
+* Spring: Added logging of query processing time.
+* Spring: Fixed mockCountQuery() when order part is set.
+* Spring: Fixed collections size() querying.
+
 **04-07-2022** ver. 0.3.4
 * Test: Fixed mockExistsQuery() for identifiable entities.
 * Jackson: Fixed validation handling after attempt parsing of invalid json.
