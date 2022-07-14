@@ -725,6 +725,7 @@ public class Generator {
         consumer.accept(list);
     }
 
+    @SuppressWarnings("unchecked")
     private static void checkOptions(Consumer<Set<Class<? extends CodeOption>>> consumer, ArrayInitializerExpr expression) {
         var set = new HashSet<Class<? extends CodeOption>>();
         expression.getValues().stream()
@@ -750,6 +751,7 @@ public class Generator {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static void ensureParsedParents(ClassOrInterfaceDeclaration declaration, PrototypeData properties) {
         for (var extended : declaration.getExtendedTypes()) {
             var parsed = getParsed(extended);
@@ -892,21 +894,19 @@ public class Generator {
         var properties = parsed.getProperties();
 
         for (var method : cls.getDeclaredMethods()) {
-            if (!java.lang.reflect.Modifier.isStatic(method.getModifiers()) && !method.isDefault()) {
-                if (!defaultMethodExists(declaration, method)) {
-                    if (method.getParameterCount() == 0 && method.getName().startsWith("get") || method.getName().startsWith("is") && method.getReturnType().getCanonicalName().equals("boolean")) {
-                        var field = addFieldFromGetter(parsed, spec, method, generic);
-                        if (nonNull(field) && properties.isClassGetters()) {
-                            addGetterFromGetter(spec, method, true, generic, field);
-                        }
-                    } else if (method.getParameterCount() == 1 && method.getName().startsWith("set") && method.getReturnType().getCanonicalName().equals("void")) {
-                        var field = addFieldFromSetter(parsed, spec, method, generic);
-                        if (nonNull(field) && properties.isClassSetters()) {
-                            addSetterFromSetter(spec, method, true, generic, field);
-                        }
-                    } else {
-                        log.error("Method {} of {} is nor getter or setter. Not implemented!", method.getName(), cls.getCanonicalName());
+            if (!java.lang.reflect.Modifier.isStatic(method.getModifiers()) && !method.isDefault() && !defaultMethodExists(declaration, method)) {
+                if (method.getParameterCount() == 0 && method.getName().startsWith("get") || method.getName().startsWith("is") && method.getReturnType().getCanonicalName().equals("boolean")) {
+                    var field = addFieldFromGetter(parsed, spec, method, generic);
+                    if (nonNull(field) && properties.isClassGetters()) {
+                        addGetterFromGetter(spec, method, true, generic, field);
                     }
+                } else if (method.getParameterCount() == 1 && method.getName().startsWith("set") && method.getReturnType().getCanonicalName().equals("void")) {
+                    var field = addFieldFromSetter(parsed, spec, method, generic);
+                    if (nonNull(field) && properties.isClassSetters()) {
+                        addSetterFromSetter(spec, method, true, generic, field);
+                    }
+                } else {
+                    log.error("Method {} of {} is nor getter or setter. Not implemented!", method.getName(), cls.getCanonicalName());
                 }
             }
         }
