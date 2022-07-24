@@ -99,7 +99,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         var spec = description.getSpec();
         var intf = description.getIntf();
-        var entity = description.getProperties().getInterfaceName();
+        Helpers.addSuppressWarningsUnchecked(spec);
 
         with(intf.findCompilationUnit().get(), unit -> unit
                 .addImport("java.util.List")
@@ -224,9 +224,10 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addTypeParameter(QUERY_GENERIC);
         intf.addMember(order);
 
+        var aggregateType = entity + "." + QUERY_AGGREGATE + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<Number>>";
         var aggr = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_AGGREGATE)
                 .addExtendedType(QUERY_EXECUTE + "<" + QUERY_GENERIC + ">")
-                .addExtendedType(QUERY_AGGREGATOR + "<" + QUERY_AGGREGATE_GENERIC + ", " + QUERY_AGGREGATE_OPERATION + "<" + QUERY_OP_FIELDS + "<" + entity + "." + QUERY_AGGREGATE + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<Number>>>>>")
+                .addExtendedType(QUERY_AGGREGATOR + "<" + QUERY_AGGREGATE_GENERIC + ", " + QUERY_AGGREGATE_OPERATION + "<" + QUERY_OP_FIELDS + "<" + aggregateType + ">>, " + aggregateType + ">")
                 .addTypeParameter(QUERY_GENERIC)
                 .addTypeParameter(QUERY_AGGREGATE_GENERIC);
         intf.addMember(aggr);
@@ -340,15 +341,15 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
             description.getSpec().addMember(qExecSelect);
             description.getSpec().addMember(qExecFields);
         }
-
     }
 
     private void addFindMethod(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf) {
         Helpers.addDefaultCreation(description);
         var entity = intf.getNameAsString();
-        intf.addMethod("find", STATIC)
-                .setType(QUERY_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">, " + QUERY_AGGREGATE_OPERATION + "<" + QUERY_OP_FIELDS + "<" + entity + "." + QUERY_AGGREGATE + "<Number, " + entity + "." + QUERY_SELECT + "<Number>>>>, " + QUERY_FIELDS_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">>, " + QUERY_UPDATE + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">>>")
-                .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + QUERY_START + ") EntityCreator.create(" + entity + "." + QUERY_SELECT + ".class)")));
+        Helpers.addSuppressWarningsUnchecked(
+                intf.addMethod("find", STATIC)
+                        .setType(QUERY_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">, " + QUERY_AGGREGATE_OPERATION + "<" + QUERY_OP_FIELDS + "<" + entity + "." + QUERY_AGGREGATE + "<Number, " + entity + "." + QUERY_SELECT + "<Number>>>>, " + QUERY_FIELDS_START + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">>, " + QUERY_UPDATE + "<" + entity + ", " + entity + "." + QUERY_SELECT + "<" + entity + ">>>")
+                        .setBody(new BlockStmt().addStatement(new ReturnStmt("(" + QUERY_START + ") EntityCreator.create(" + entity + "." + QUERY_SELECT + ".class)"))));
     }
 
     private void declareField(Set<String> declaredFields, PrototypeDescription<ClassOrInterfaceDeclaration> description, String entity, PrototypeField desc, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration impl, ClassOrInterfaceDeclaration orderImpl, ClassOrInterfaceDeclaration order, ClassOrInterfaceDeclaration qName, ClassOrInterfaceDeclaration qNameImpl, ClassOrInterfaceDeclaration fields, ClassOrInterfaceDeclaration opFields, ClassOrInterfaceDeclaration funcs, ClassOrInterfaceDeclaration qExecSelect, ClassOrInterfaceDeclaration qExecFields) {
