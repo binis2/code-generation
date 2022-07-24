@@ -30,6 +30,7 @@ import com.github.javaparser.utils.StringEscapeUtils;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.annotation.type.EmbeddedModifierType;
 import net.binis.codegen.annotation.validation.*;
 import net.binis.codegen.enrich.Enrichers;
 import net.binis.codegen.enrich.ValidationEnricher;
@@ -41,7 +42,6 @@ import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.options.Options;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -129,6 +129,17 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         } else {
             notNull(lookup.findExternal(name), d ->
                     handleAnnotationFromSource(description, d.getDeclaration().asAnnotationDeclaration(), field, annotation, form));
+        }
+
+        var mod = description.getRegisteredClass("EmbeddedModifier");
+        if (isNull(mod)) {
+            mod = description.getRegisteredClass("Modifier");
+        }
+        if (nonNull(mod)) {
+            Helpers.addSuppressWarningsUnchecked(mod);
+        }
+        if (nonNull(field.getImplementationSetter())) {
+            Helpers.addSuppressWarningsUnchecked(description.getSpec());
         }
     }
 
@@ -704,6 +715,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         return result.toString();
     }
 
+    @SuppressWarnings("unchecked")
     private void formatCode(PrototypeField field, ModifierType modifier, StringBuilder result, String value, String format) {
         result.append(", ")
                 .append(String.format(format.replaceAll("\\{type}", field.getDeclaration().getVariable(0).getTypeAsString()),
@@ -748,7 +760,9 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                 description.getSpec().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.validation.Validatable"));
             }
             description.getSpec().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.validation.flow.Validation"));
-            description.getSpec().addMethod("validate", PUBLIC).setBody(description.getParser().parseBlock("{ Validation.form(this.getClass(), " + form).getResult().get());
+            description.getSpec().addMethod("validate", PUBLIC)
+                    .setBody(description.getParser().parseBlock("{ Validation.form(this.getClass(), " + form).getResult().get());
+            Helpers.addSuppressWarningsUnchecked(description.getSpec());
         }
     }
 

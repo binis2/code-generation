@@ -254,6 +254,7 @@ public abstract class BaseTest {
         BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
         writer.write(getAsString(unit));
         writer.close();
+        log.info("Saving - {}", fileName);
     }
 
     protected void testSingleWithBase(String basePrototype, String baseClassName, String prototype, String className, String baseClass, String baseInterface, String resClass, String resInterface) {
@@ -311,6 +312,7 @@ public abstract class BaseTest {
         assertTrue(compile(new TestClassLoader(), list, null));
     }
 
+    @SuppressWarnings("unchecked")
     @SneakyThrows
     protected boolean compile(TestClassLoader loader, List<Pair<String, String>> files, String resExecute) {
         String className = null;
@@ -331,13 +333,14 @@ public abstract class BaseTest {
         JavaFileManager fileManager = createFileManager(standardFileManager, objects);
 
         JavaCompiler.CompilationTask task = compiler.getTask(null,
-                fileManager, diagnostics, null, null, getCompilationUnits(files));
+                fileManager, diagnostics, List.of("-Xlint:unchecked"), null, getCompilationUnits(files));
 
         if (!task.call()) {
             diagnostics.getDiagnostics().forEach(System.out::println);
             fileManager.close();
             return false;
         }
+        diagnostics.getDiagnostics().forEach(System.out::println);
         fileManager.close();
 
         files.forEach(f ->

@@ -64,12 +64,14 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
         return printer.toString();
     }
 
+    @Override
     protected void printModifiers(final NodeList<Modifier> modifiers) {
         if (!modifiers.isEmpty()) {
             printer.print(modifiers.stream().map(Modifier::getKeyword).map(Modifier.Keyword::asString).collect(joining(" ")) + " ");
         }
     }
 
+    @Override
     protected void printMembers(final NodeList<BodyDeclaration<?>> members, final Void arg) {
         BodyDeclaration<?> prv = null;
         for (final BodyDeclaration<?> member : members) {
@@ -567,7 +569,7 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
         if (!n.getVariables().isEmpty()) {
             Optional<Type> maximumCommonType = n.getMaximumCommonType();
             maximumCommonType.ifPresent(t -> t.accept(this, arg));
-            if (!maximumCommonType.isPresent()) {
+            if (maximumCommonType.isEmpty()) {
                 printer.print("???");
             }
         }
@@ -584,6 +586,7 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
         printer.print(";");
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void visit(final VariableDeclarator n, final Void arg) {
         printOrphanCommentsBeforeThisChildNode(n);
@@ -871,6 +874,7 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
         printer.print("super");
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void visit(final MethodCallExpr n, final Void arg) {
         printOrphanCommentsBeforeThisChildNode(n);
@@ -900,7 +904,7 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
                 }
 
                 // check if the parent is a method call and thus we are in an argument list
-                columnAlignFirstMethodChain.set(!p.filter(MethodCallExpr.class::isInstance).isPresent());
+                columnAlignFirstMethodChain.set(p.filter(MethodCallExpr.class::isInstance).isEmpty());
             }
         }
 
@@ -1789,6 +1793,7 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void visit(NodeList n, Void arg) {
         if (getOption(ConfigOption.ORDER_IMPORTS).isPresent() && !n.isEmpty() && n.get(0) instanceof ImportDeclaration) {

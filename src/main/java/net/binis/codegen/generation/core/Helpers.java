@@ -26,6 +26,7 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.*;
+import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
 import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.stmt.BlockStmt;
@@ -44,15 +45,10 @@ import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
-import net.binis.codegen.test.JavaByteObject;
-import net.binis.codegen.test.TestClassLoader;
-import net.binis.codegen.test.TestExecutor;
 import net.binis.codegen.tools.Holder;
-import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
-import javax.tools.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -68,7 +64,6 @@ import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.tools.Reflection.instantiate;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
-import static org.junit.Assert.*;
 
 @Slf4j
 public class Helpers {
@@ -194,9 +189,8 @@ public class Helpers {
 
     public static String getClassName(ClassOrInterfaceType type) {
         var result = Holder.blank();
-        type.findCompilationUnit().flatMap(CompilationUnit::getPackageDeclaration).ifPresent(p -> {
-            result.set(p.getName().asString());
-        });
+        type.findCompilationUnit().flatMap(CompilationUnit::getPackageDeclaration).ifPresent(p ->
+            result.set(p.getName().asString()));
 
         return result.get() + "." + type.getNameAsString();
     }
@@ -431,6 +425,7 @@ public class Helpers {
         return ancestorMethodExists(spec, declaration, methodName, declaration.getDeclaration().getVariable(0).getType());
     }
 
+    @SuppressWarnings("unchecked")
     public static boolean ancestorMethodExists(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String methodName, Type returnType) {
         //TODO: Check for params and return type
         var unit = spec.findCompilationUnit().get();
@@ -1180,6 +1175,13 @@ public class Helpers {
 
     public static String sanitizeImport(String imprt) {
         return imprt.replace('$', '.');
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void addSuppressWarningsUnchecked(NodeWithAnnotations node) {
+        if (!node.isAnnotationPresent(SuppressWarnings.class)) {
+            node.addAndGetAnnotation(SuppressWarnings.class).addPair("value", "\"unchecked\"");
+        }
     }
 
 }

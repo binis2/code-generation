@@ -14,6 +14,7 @@ import java.util.function.Consumer;
 public interface AccountOverviewCard extends CompiledGeneric<AccountOverviewCard.AccountOverviewCardPayload> {
 
     // region starters
+    @SuppressWarnings(value = "unchecked")
     static AccountOverviewCard.Modify create() {
         return (AccountOverviewCard.Modify) EntityCreatorModifier.create(AccountOverviewCard.class).with();
     }
@@ -26,6 +27,7 @@ public interface AccountOverviewCard extends CompiledGeneric<AccountOverviewCard
     public interface AccountOverviewCardPayload extends Payload {
 
         // region starters
+        @SuppressWarnings(value = "unchecked")
         static AccountOverviewCardPayload.Modify create() {
             return (AccountOverviewCardPayload.Modify) EntityCreatorModifier.create(AccountOverviewCardPayload.class).with();
         }

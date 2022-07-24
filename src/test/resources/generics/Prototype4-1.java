@@ -12,6 +12,7 @@ import javax.annotation.processing.Generated;
 public interface AccountOverviewCardPayload extends Payload {
 
     // region starters
+    @SuppressWarnings(value = "unchecked")
     static AccountOverviewCardPayload.Modify create() {
         return (AccountOverviewCardPayload.Modify) EntityCreatorModifier.create(AccountOverviewCardPayload.class).with();
     }

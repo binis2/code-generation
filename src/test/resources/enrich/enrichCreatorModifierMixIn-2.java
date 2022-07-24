@@ -11,6 +11,7 @@ import javax.annotation.processing.Generated;
 public interface MixIn extends Test {
     MixIn.Modify asMixIn();
 
+    @SuppressWarnings(value = "unchecked")
     static MixIn.Modify create() {
         return ((MixIn) EntityCreatorModifier.create(MixIn.class)).asMixIn();
     }
