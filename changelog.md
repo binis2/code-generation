@@ -1,4 +1,12 @@
 # Change Log
+**25-07-2022** ver. 0.3.6
+* Core: Moved async routines to core module.
+* Generation: Cleaned up some unchecked warnings for generated files.
+* Spring Configuration: Added actuator for monitoring async flows. 
+* Spring: Redesigned exists() implementation.
+* Spring: Added option to set alias for aggregation.
+* Spring: Fixed aggregations for @OneToOne relations.
+
 **07-07-2022** ver. 0.3.5
 * Spring: Added logging of query processing time.
 * Spring: Fixed mockCountQuery() when order part is set.
