@@ -1,4 +1,9 @@
 # Change Log
+**04-08-2022** ver. 0.3.7
+* Spring: Added .notExists() query executor routine.
+* Spring: Added .equal() for @OneToOne relations that accepts nested query.
+* Spring: Fixed exception on .exists() and .count() in some cases.
+
 **25-07-2022** ver. 0.3.6
 * Core: Moved async routines to core module.
 * Generation: Cleaned up some unchecked warnings for generated files.
