@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.List;
 
 @Generated(value = "PresetTestPrototype", comments = "PresetTest")
+@SuppressWarnings(value = "unchecked")
 public class PresetTestImpl implements PresetTest {
 
     protected int data;

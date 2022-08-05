@@ -11,6 +11,7 @@ import javax.annotation.processing.Generated;
 public interface TestAnnotation {
 
     // region starters
+    @SuppressWarnings(value = "unchecked")
     static TestAnnotation.Modify create() {
         return (TestAnnotation.Modify) EntityCreatorModifier.create(TestAnnotation.class).with();
     }

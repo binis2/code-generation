@@ -13,6 +13,7 @@ import java.util.List;
 public interface PresetTest extends Compiled {
 
     // region starters
+    @SuppressWarnings(value = "unchecked")
     static QueryStarter<PresetTest, PresetTest.QuerySelect<PresetTest>, QueryAggregateOperation<QueryOperationFields<PresetTest.QueryAggregate<Number, PresetTest.QuerySelect<Number>>>>, QueryFieldsStart<PresetTest, PresetTest.QuerySelect<PresetTest>>, QueryUpdate<PresetTest, PresetTest.QuerySelect<PresetTest>>> find() {
         return (QueryStarter) EntityCreator.create(PresetTest.QuerySelect.class);
     }
@@ -29,7 +30,7 @@ public interface PresetTest extends Compiled {
     void setTitle(String title);
 
     // region inner classes
-    interface QueryAggregate<QR, QA> extends QueryExecute<QR>, QueryAggregator<QA, QueryAggregateOperation<QueryOperationFields<PresetTest.QueryAggregate<PresetTest, PresetTest.QuerySelect<Number>>>>> {
+    interface QueryAggregate<QR, QA> extends QueryExecute<QR>, QueryAggregator<QA, QueryAggregateOperation<QueryOperationFields<PresetTest.QueryAggregate<PresetTest, PresetTest.QuerySelect<Number>>>>, PresetTest.QueryAggregate<PresetTest, PresetTest.QuerySelect<Number>>> {
     }
 
     interface QueryFields<QR> extends QueryScript<QR> {

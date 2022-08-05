@@ -1,4 +1,26 @@
 # Change Log
+**04-08-2022** ver. 0.3.7
+* Spring: Added .notExists() query executor routine.
+* Spring: Added .equal() for @OneToOne relations that accepts nested query.
+* Spring: Fixed exception on .exists() and .count() in some cases.
+
+**25-07-2022** ver. 0.3.6
+* Core: Moved async routines to core module.
+* Generation: Cleaned up some unchecked warnings for generated files.
+* Spring Configuration: Added actuator for monitoring async flows. 
+* Spring: Redesigned exists() implementation.
+* Spring: Added option to set alias for aggregation.
+* Spring: Fixed aggregations for @OneToOne relations.
+
+**07-07-2022** ver. 0.3.5
+* Spring: Added logging of query processing time.
+* Spring: Fixed mockCountQuery() when order part is set.
+* Spring: Fixed collections size() querying.
+
+**04-07-2022** ver. 0.3.4
+* Test: Fixed mockExistsQuery() for identifiable entities.
+* Jackson: Fixed validation handling after attempt parsing of invalid json.
+
 **03-07-2022** ver. 0.3.3
 * OpenApi: Added OpenApi enricher.
 * Jackson: Added Jackson enricher.
