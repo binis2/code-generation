@@ -9,9 +9,9 @@ package net.binis.codegen.enrich.handler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,9 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import net.binis.codegen.enrich.AsEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
+import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
+import net.binis.codegen.objects.Projectable;
 
 import static com.github.javaparser.ast.Modifier.Keyword.PUBLIC;
 import static net.binis.codegen.generation.core.Constants.MIXIN_MODIFYING_METHOD_PREFIX;
@@ -35,8 +37,10 @@ public class AsEnricherHandler extends BaseEnricher implements AsEnricher {
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        addAsMethod(description.getSpec(), true);
-        addAsMethod(description.getIntf(), false);
+        description.getSpec().findCompilationUnit().ifPresent(u -> u.addImport(CodeFactory.class));
+        description.getIntf().addExtendedType(Projectable.class);
+        addAsMethod(description.getSpec());
+        addCastMethod(description.getSpec());
     }
 
     @Override
@@ -44,19 +48,23 @@ public class AsEnricherHandler extends BaseEnricher implements AsEnricher {
         return 0;
     }
 
-    private static void addAsMethod(ClassOrInterfaceDeclaration spec, boolean isClass) {
-        var method = spec
-                .addMethod(MIXIN_MODIFYING_METHOD_PREFIX)
+    private static void addAsMethod(ClassOrInterfaceDeclaration spec) {
+        spec.addMethod(MIXIN_MODIFYING_METHOD_PREFIX)
                 .setType("T")
                 .addParameter("Class<T>", "cls")
-                .addTypeParameter("T");
-        if (isClass) {
-            method
-                    .addModifier(PUBLIC)
-                    .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("cls.cast(this)"))));
-        } else {
-            method.setBody(null);
-        }
+                .addTypeParameter("T")
+                .addModifier(PUBLIC)
+                .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("CodeFactory.projection(this, cls)"))));
     }
+
+    private static void addCastMethod(ClassOrInterfaceDeclaration spec) {
+        spec.addMethod("cast")
+                .setType("T")
+                .addParameter("Class<T>", "cls")
+                .addTypeParameter("T")
+                .addModifier(PUBLIC)
+                .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("CodeFactory.cast(this, cls)"))));
+    }
+
 
 }
