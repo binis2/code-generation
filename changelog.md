@@ -1,4 +1,11 @@
 # Change Log
+**08-08-2022** ver. 0.3.8
+* Core: Added projection provider support.
+* Generator: AsEnricher now supports projections.
+* Spring: Handles projections via. registered projection provider.
+* Projections: **(New module)** CodeGen own projections support.
+* Spring-Configuration: Registering Spring's Spel projection as system projection provider if one is not present. 
+
 **04-08-2022** ver. 0.3.7
 * Spring: Added .notExists() query executor routine.
 * Spring: Added .equal() for @OneToOne relations that accepts nested query.
