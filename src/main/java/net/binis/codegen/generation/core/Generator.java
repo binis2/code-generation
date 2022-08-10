@@ -1272,6 +1272,7 @@ public class Generator {
             var proto = parsed.getFields().stream().filter(d -> d.getName().equals(fieldName)).findFirst();
             if (proto.isPresent()) {
                 result = proto.get();
+                handleType(type, spec, method.getType());
                 ((Structures.FieldData) result).setPrototype(isNull(generic) ? lookup.findParsed(getExternalClassName(unit, method.getType().asString())) : null);
                 mergeAnnotations(method, result.getDescription());
             } else {
