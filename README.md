@@ -415,7 +415,7 @@ or you can use the annotation processor
 <dependency>
     <groupId>dev.binis</groupId>
     <artifactId>code-generator-annotation</artifactId>
-    <version>0.3.8</version>
+    <version>0.3.9</version>
     <scope>compile</scope>
 </dependency>
 ```
@@ -425,7 +425,7 @@ or you can use the annotation processor
     <dependency>
         <groupId>dev.binis</groupId>
         <artifactId>code-generator</artifactId>
-        <version>0.3.8</version>
+        <version>0.3.9</version>
     </dependency>
 ```
 
@@ -438,3 +438,4 @@ Annotation processor - [https://github.com/binis2/code-generation-annotation]
 Validation and Sanitization extension - [https://github.com/binis2/code-generation-validation]   
 Jackson support - [https://github.com/binis2/code-generation-jackson]   
 Spring Boot configuration - [https://github.com/binis2/code-generation-spring-configuration]   
+Projections support - [https://github.com/binis2/code-generation-projection]   

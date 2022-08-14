@@ -1,4 +1,10 @@
 # Change Log
+**14-08-2022** ver. 0.3.9
+* Core: Added .if() and ._self() routines to BaseModifier that gives access to currently modified object.
+* Spring: Added .save() with projection for BaseEntityModifier
+* Projections: Added projection of List and Set support.
+* Generation: Fixed prototype detection when compiled prototypes are involved.
+
 **08-08-2022** ver. 0.3.8
 * Core: Added projection provider support.
 * Generator: AsEnricher now supports projections.
