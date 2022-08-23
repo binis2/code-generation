@@ -58,6 +58,7 @@ public class Structures {
     public static class PrototypeDataHandler implements PrototypeData {
 
         private String prototypeName;
+        private String prototypeFullName;
         private String name;
         private String className;
         private String classPackage;

@@ -28,6 +28,7 @@ import java.util.Set;
 
 public interface PrototypeData {
     String getPrototypeName();
+    String getPrototypeFullName();
     String getName();
     String getClassName();
     String getClassPackage();

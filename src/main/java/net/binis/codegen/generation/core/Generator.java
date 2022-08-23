@@ -66,6 +66,8 @@ public class Generator {
 
     public static final String MIX_IN_EXTENSION = "$MixIn";
 
+    private static List<Pair<PrototypeData, PrototypeDescription<ClassOrInterfaceDeclaration>>> notProcessed = new ArrayList<>();
+
     private Generator() {
         //Do nothing
     }
@@ -88,6 +90,19 @@ public class Generator {
             }
         }
 
+        if (!notProcessed.isEmpty()) {
+            var i = notProcessed.iterator();
+            while (i.hasNext()) {
+                var item = i.next();
+                if (item.getValue().isProcessed()) {
+                    var parse = (Structures.Parsed<ClassOrInterfaceDeclaration>) lookup.findParsed(item.getKey().getPrototypeFullName());
+                    parse.getDeclaration().asClassOrInterfaceDeclaration().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(item.getValue().getDeclaration().asClassOrInterfaceDeclaration().getNameAsString())).forEach(t ->
+                            handleParsedExtendedType(parse, item.getValue(), parse.getSpec(), parse.getIntf(), parse.getProperties(), t));
+                    i.remove();
+                }
+            }
+        }
+
         if (prsd != null && processed.get() == 0) {
             ((Structures.Parsed) prsd).setInvalid(true);
         }
@@ -102,6 +117,7 @@ public class Generator {
 
         var properties = nonNull(prsd) && nonNull(prsd.getCompiled()) ? (Structures.PrototypeDataHandler) prsd.getProperties() : getProperties(prototype);
         properties.setPrototypeName(typeDeclaration.getNameAsString());
+        properties.setPrototypeFullName(typeDeclaration.getFullyQualifiedName().orElseThrow());
         addProcessingType(typeDeclaration.getNameAsString(), properties.getInterfacePackage(), properties.getInterfaceName(), properties.getClassPackage(), properties.getClassName());
         ensureParsedParents(typeDeclaration, properties);
         handleEnrichersSetup(properties);
@@ -143,7 +159,7 @@ public class Generator {
         typeDeclaration.getExtendedTypes().forEach(t -> {
             var parsed = getParsed(t);
 
-            if (nonNull(parsed) && parsed.getProperties().isBase()) {
+            if (nonNull(parsed) && parsed.isProcessed() && parsed.getProperties().isBase()) {
                 properties.setBaseClassName(parsed.getParsedName());
                 if (isNull(parse.getBase())) {
                     parse.setBase((Structures.Parsed) parsed);
@@ -175,39 +191,8 @@ public class Generator {
             var parsed = getParsed(t);
 
             if (nonNull(parsed)) {
-                if (!parsed.getProperties().isBase() && !parsed.getProperties().getPrototypeName().equals(parse.getProperties().getMixInClass())) {
-                    parsed.getFields().forEach(field -> {
-                        var method = field.getDescription().clone();
-                        var dummy = envelopWithDummyClass(method);
-                        field.getDescription().findCompilationUnit().ifPresent(u -> u.getImports().forEach(dummy::addImport));
-
-                        addField(parse, parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, method, nonNull(field.getGenerics()) ? field.getGenerics().values().iterator().next() : buildGeneric(field.getType(), t, parsed.getDeclaration().asClassOrInterfaceDeclaration()));
-                    });
-                }
-
-                if (isNull(properties.getMixInClass()) || !properties.getMixInClass().equals(t.toString())) {
-                    if (!parsed.getProperties().isBase()) {
-                        implementPrototype(parse, spec, parsed, buildGenerics(t, parsed.getDeclaration().asClassOrInterfaceDeclaration()), false);
-                    }
-                    if (StringUtils.isNotBlank(parsed.getInterfaceName())) {
-                        iUnit.addImport(parsed.getInterfaceFullName());
-                        if (nonNull(properties.getMixInClass())) {
-                            intf.addExtendedType(parsed.getInterfaceName() + MIX_IN_EXTENSION);
-                        } else {
-                            intf.addExtendedType(parsed.getInterfaceName());
-                            var eType = intf.getExtendedTypes().getLast().get();
-                            t.getTypeArguments().ifPresent(args -> args.forEach(tt -> {
-                                if (eType.getTypeArguments().isEmpty()) {
-                                    eType.setTypeArguments(new NodeList<>());
-                                }
-                                var arg = handleType(parse.getDeclaration().findCompilationUnit().get(), intf.findCompilationUnit().get(), tt);
-                                eType.getTypeArguments().get().add(parsed.getParser().parseClassOrInterfaceType(arg).getResult().get());
-                            }));
-
-                        }
-                    }
-                } else {
-                    parse.setMixIn((Structures.Parsed) parsed);
+                if (parsed.isProcessed()) {
+                    handleParsedExtendedType(parse, parsed, spec, intf, properties, t);
                 }
             } else {
                 handleExternalInterface(parse, typeDeclaration, spec, intf, t);
@@ -286,6 +271,43 @@ public class Generator {
 
         processingTypes.remove(typeDeclaration.getNameAsString());
         parse.setProcessed(true);
+    }
+
+    private static void handleParsedExtendedType(Structures.Parsed<ClassOrInterfaceDeclaration> parse, PrototypeDescription<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, PrototypeData properties, ClassOrInterfaceType type) {
+        if (!parsed.getProperties().isBase() && !parsed.getProperties().getPrototypeName().equals(parse.getProperties().getMixInClass())) {
+            parsed.getFields().forEach(field -> {
+                var method = field.getDescription().clone();
+                var dummy = envelopWithDummyClass(method);
+                field.getDescription().findCompilationUnit().ifPresent(u -> u.getImports().forEach(dummy::addImport));
+
+                addField(parse, parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, method, nonNull(field.getGenerics()) ? field.getGenerics().values().iterator().next() : buildGeneric(field.getType(), type, parsed.getDeclaration().asClassOrInterfaceDeclaration()));
+            });
+        }
+
+        if (isNull(properties.getMixInClass()) || !properties.getMixInClass().equals(type.toString())) {
+            if (!parsed.getProperties().isBase()) {
+                implementPrototype(parse, spec, parsed, buildGenerics(type, parsed.getDeclaration().asClassOrInterfaceDeclaration()), false);
+            }
+            if (StringUtils.isNotBlank(parsed.getInterfaceName())) {
+                intf.findCompilationUnit().ifPresent(u -> u.addImport(parsed.getInterfaceFullName()));
+                if (nonNull(properties.getMixInClass())) {
+                    intf.addExtendedType(parsed.getInterfaceName() + MIX_IN_EXTENSION);
+                } else {
+                    intf.addExtendedType(parsed.getInterfaceName());
+                    var eType = intf.getExtendedTypes().getLast().get();
+                    type.getTypeArguments().ifPresent(args -> args.forEach(tt -> {
+                        if (eType.getTypeArguments().isEmpty()) {
+                            eType.setTypeArguments(new NodeList<>());
+                        }
+                        var arg = handleType(parse.getDeclaration().findCompilationUnit().get(), intf.findCompilationUnit().get(), tt);
+                        eType.getTypeArguments().get().add(parsed.getParser().parseClassOrInterfaceType(arg).getResult().get());
+                    }));
+
+                }
+            }
+        } else {
+            parse.setMixIn((Structures.Parsed) parsed);
+        }
     }
 
     private static void adjustNestedPrototypes(Structures.Parsed<ClassOrInterfaceDeclaration> parse) {
@@ -756,7 +778,13 @@ public class Generator {
         for (var extended : declaration.getExtendedTypes()) {
             var parsed = getParsed(extended);
             if (nonNull(parsed)) {
-                ifNull(parsed.getFiles(), () -> generateCodeForClass(parsed.getDeclaration().findCompilationUnit().get(), parsed));
+                if (isNull(parsed.getFiles())) {
+                    generateCodeForClass(parsed.getDeclaration().findCompilationUnit().get(), parsed);
+                } else {
+                    if (!parsed.isProcessed()) {
+                        notProcessed.add(Pair.of(properties, parsed));
+                    }
+                }
             } else {
                 handleCompiledPrototype(getExternalClassName(declaration.findCompilationUnit().get(), extended.getNameAsString()));
             }
