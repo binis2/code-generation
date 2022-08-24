@@ -172,9 +172,15 @@ public class CollectionsHandler {
 
     public static String getCollectionType(Type type) {
         if (type.isClassOrInterfaceType()) {
-            var args = type.asClassOrInterfaceType().getTypeArguments();
-            if (args.isPresent() && (args.get().size() == 1)) {
-                return args.get().get(0).asString();
+            var t = type.asClassOrInterfaceType();
+            var args = t.getTypeArguments();
+            if (args.isPresent()) {
+                if ("Map".equals(t.getNameAsString()) && (args.get().size() == 2)) {
+                    return args.get().get(1).asString();
+                }
+                if (args.get().size() == 1) {
+                    return args.get().get(0).asString();
+                }
             }
         }
         return "Object";
