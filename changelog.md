@@ -1,4 +1,8 @@
 # Change Log
+**24-08-2022** ver. 0.3.10
+* Generator: Added support for circular prototype dependencies.
+* Spring: Added Map<> support for QueryEnricher.
+
 **14-08-2022** ver. 0.3.9
 * Core: Added .if() and ._self() routines to BaseModifier that gives access to currently modified object.
 * Spring: Added .save() with projection for BaseEntityModifier
