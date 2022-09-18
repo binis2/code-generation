@@ -51,7 +51,7 @@ public class CreatorModifierEnricherHandler extends BaseEnricher implements Crea
 
         spec.findCompilationUnit().get().addImport(creatorClass);
 
-        Helpers.addDefaultCreation(description);
+        Helpers.addDefaultCreation(description, null);
 
         if (nonNull(modifier)) {
             var type = intf.getNameAsString() + "." + modifier.getNameAsString();

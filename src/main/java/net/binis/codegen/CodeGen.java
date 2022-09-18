@@ -9,9 +9,9 @@ package net.binis.codegen;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -76,12 +76,6 @@ public class CodeGen {
         addTree(Paths.get(cmd.getOptionValue(SOURCE)), files, cmd.getOptionValue(FILTER));
         processFiles(files);
 
-        enumParsed.values().stream().filter(v -> nonNull(v.getFiles())).forEach(p -> {
-            if (isNull(p.getProperties().getMixInClass()) && isNull(p.getCompiled())) {
-                saveFile(getBasePath(cmd.getOptionValue(DESTINATION), p.getProperties(), true), p.getFiles().get(0));
-            }
-        });
-
         var constants = Generator.generateCodeForConstants();
         if (nonNull(constants)) {
             saveFile(cmd.getOptionValue(DESTINATION), constants);
@@ -112,11 +106,6 @@ public class CodeGen {
             } catch (IOException e) {
                 log.error("Unable to parse {}", file.getFileName(), e);
             }
-        }
-
-        for (var entry : enumParsed.entrySet()) {
-            ifNull(entry.getValue().getFiles(), () ->
-                    Generator.generateCodeForEnum(entry.getValue().getDeclaration().findCompilationUnit().get()));
         }
 
         var entry = lookup.parsed().stream().filter(e -> isNull(e.getFiles()) && !e.isInvalid()).findFirst();
@@ -153,11 +142,6 @@ public class CodeGen {
             }
         }
 
-        for (var entry : enumParsed.entrySet()) {
-            ifNull(entry.getValue().getFiles(), () ->
-                    Generator.generateCodeForEnum(entry.getValue().getDeclaration().findCompilationUnit().get()));
-        }
-
         for (var entry : CollectionUtils.copyList(lookup.parsed())) {
             ifNull(entry.getFiles(), () ->
                     Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get(), entry));
@@ -179,19 +163,14 @@ public class CodeGen {
     @SuppressWarnings("unchecked")
     public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName) {
         var className = t.findCompilationUnit().get().getPackageDeclaration().get().getNameAsString() + '.' + t.getNameAsString();
-        if (t.isEnumDeclaration()) {
-            enumParsed.put(getClassName(t.asEnumDeclaration()),
+        if (t.getAnnotationByName("ConstantPrototype").isPresent()) {
+            constantParsed.put(getClassName(t.asClassOrInterfaceDeclaration()),
                     Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).build());
         } else {
-            if (t.getAnnotationByName("ConstantPrototype").isPresent()) {
-                constantParsed.put(getClassName(t.asClassOrInterfaceDeclaration()),
-                        Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).build());
-            } else {
-                var name = getClassName(t.asClassOrInterfaceDeclaration());
-                checkForNestedClasses(t.asTypeDeclaration(), fileName, className, parser);
-                lookup.registerParsed(name,
-                        Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).build());
-            }
+            var name = getClassName(t);
+            checkForNestedClasses(t.asTypeDeclaration(), fileName, className, parser);
+            lookup.registerParsed(name,
+                    Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).build());
         }
     }
 

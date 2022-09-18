@@ -21,6 +21,7 @@ package net.binis.codegen.generation.core;
  */
 
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
@@ -31,6 +32,8 @@ import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.PrimitiveType;
 import com.github.javaparser.ast.type.Type;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
 import net.binis.codegen.enrich.PrototypeEnricher;
@@ -87,6 +90,11 @@ public class Generator {
                         processed.set(processed.get() + 1);
                     });
                 }
+            } else if (type.isEnumDeclaration()) {
+                getCodeAnnotation(type).ifPresent(prototype -> {
+                    generateCodeForEnum(parser, prsd, type, prototype);
+                    processed.set(processed.get() + 1);
+                });
             }
         }
 
@@ -375,7 +383,7 @@ public class Generator {
                 return ann;
             }
         }
-        if (type.asClassOrInterfaceDeclaration().getAnnotationByClass(CodeClassAnnotations.class).isEmpty()) {
+        if (type.isClassOrInterfaceDeclaration() && type.asClassOrInterfaceDeclaration().getAnnotationByClass(CodeClassAnnotations.class).isEmpty()) {
             log.warn("Type {} is not annotated with Code annotation!", type.getName());
         }
         return Optional.empty();
@@ -472,7 +480,7 @@ public class Generator {
                 parent = parse.getBase().findField(name.toString());
             }
             if (parent.isPresent()) {
-                name.setIdentifier(getGetterName(name.asString(), null));
+                name.setIdentifier(getGetterName(name.asString(), ""));
             }
         } else {
             for (var i = 0; i < node.getChildNodes().size(); i++) {
@@ -514,7 +522,7 @@ public class Generator {
                 parent = parse.getBase().findField(name.toString());
             }
             if (parent.isPresent()) {
-                name.setIdentifier(getGetterName(name.asString(), null));
+                name.setIdentifier(getGetterName(name.asString(), ""));
             }
         } else {
             for (var i = 0; i < node.getChildNodes().size(); i++) {
@@ -806,11 +814,14 @@ public class Generator {
                 }));
     }
 
-    private static void ensureParsedParents(EnumDeclaration declaration, PrototypeData properties) {
-        notNull(properties.getMixInClass(), c ->
-                notNull(getExternalClassName(declaration.findCompilationUnit().get(), c),
-                        name -> notNull(enumParsed.get(name), parse ->
-                                ifNull(parse.getFiles(), () -> generateCodeForEnum(parse.getDeclaration().findCompilationUnit().get())))));
+    private static void ensureParsedParents(EnumDeclaration declaration, PrototypeDescription<?> parse) {
+        if (nonNull(parse) && isNull(parse.getFiles())) {
+            if (parse.getDeclaration().isEnumDeclaration()) {
+                generateCodeForEnum(parse.getDeclaration().findCompilationUnit().get(), parse, parse.getDeclaration(), parse.getDeclaration().getAnnotationByClass(EnumPrototype.class).orElse(null));
+            } else {
+                throw new GenericCodeGenException("Class '" + parse.getDeclaration().getFullyQualifiedName().get() + "' is not enum!");
+            }
+        }
     }
 
     private static void implementPrototype(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, PrototypeDescription<ClassOrInterfaceDeclaration> declaration, Map<String, Type> generic, boolean external) {
@@ -1777,82 +1788,157 @@ public class Generator {
         });
     }
 
+    public static void generateCodeForEnum(CompilationUnit declarationUnit, PrototypeDescription<?> prsd, TypeDeclaration<?> type, AnnotationExpr prototype) {
+        if (type.isEnumDeclaration()) {
+            var typeDeclaration = type.asEnumDeclaration();
 
-    @SuppressWarnings("unchecked")
-    public static void generateCodeForEnum(CompilationUnit parser) {
-        for (var type : parser.getTypes()) {
-            if (type.isEnumDeclaration()) {
-                type.getAnnotationByName("EnumPrototype").ifPresent(prototype -> {
-                    var typeDeclaration = type.asEnumDeclaration();
+            log.info("Processing - {}", typeDeclaration.getNameAsString());
 
-                    log.info("Processing - {}", prototype);
+            var properties = getEnumProperties(prototype);
+            properties.setPrototypeName(typeDeclaration.getNameAsString());
+            properties.setPrototypeFullName(typeDeclaration.getFullyQualifiedName().orElseThrow());
 
-                    var properties = getEnumProperties(prototype);
-                    ensureParsedParents(typeDeclaration, properties);
+            var mixIn = withRes(properties.getMixInClass(), c ->
+                    withRes(getExternalClassName(declarationUnit.findCompilationUnit().get(), c), lookup::findParsed));
 
-                    var unit = new CompilationUnit();
-                    var spec = unit.addEnum(properties.getClassName());
-                    unit.setPackageDeclaration(properties.getClassPackage());
-                    mergeEnums(typeDeclaration, spec);
+            ensureParsedParents(typeDeclaration, mixIn);
 
-                    var parse = (Structures.Parsed) enumParsed.get(getClassName(typeDeclaration));
-                    parse.setParsedName(spec.getNameAsString());
-                    parse.setParsedFullName(spec.getFullyQualifiedName().get());
-                    parse.setProperties(properties);
-                    parse.setFiles(List.of(unit));
-                    enumGenerated.put(getClassName(spec), parse);
+            var iUnit = new CompilationUnit();
+            iUnit.addImport("javax.annotation.processing.Generated");
+            var intf = iUnit.addClass(properties.getInterfaceName()).setInterface(true);
+            iUnit.setPackageDeclaration(properties.getInterfacePackage());
+            intf.addModifier(PUBLIC);
+            iUnit.addImport("net.binis.codegen.objects.base.enumeration.CodeEnum");
+            intf.addExtendedType("CodeEnum");
+            iUnit.addImport(CodeFactory.class);
 
-                    notNull(properties.getMixInClass(), c ->
-                            notNull(getExternalClassName(typeDeclaration.findCompilationUnit().get(), c),
-                                    name -> notNull(enumParsed.get(name), p ->
-                                            mergeEnums(spec, p.getFiles().get(0).findFirst(EnumDeclaration.class).get()))));
-                });
-            } else {
-                log.error("Invalid type " + type.getNameAsString());
+            var unit = new CompilationUnit();
+            unit.addImport("javax.annotation.processing.Generated");
+            var spec = unit.addClass(properties.getClassName());
+            unit.setPackageDeclaration(properties.getClassPackage());
+            spec.addModifier(PUBLIC);
+            unit.addImport("net.binis.codegen.objects.base.enumeration.CodeEnumImpl");
+            spec.addExtendedType("CodeEnumImpl");
+            spec.addImplementedType(intf.getNameAsString());
+
+            var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
+
+            parse.setParsedName(spec.getNameAsString());
+            parse.setParsedFullName(spec.getFullyQualifiedName().get());
+            parse.setInterfaceName(intf.getNameAsString());
+            parse.setInterfaceFullName(intf.getFullyQualifiedName().get());
+            parse.setProperties(properties);
+            parse.setFiles(List.of(unit, iUnit));
+            parse.setSpec(spec);
+            parse.setIntf(intf);
+            parse.setCodeEnum(true);
+
+            if (isNull(prsd) || !prsd.isNested() || isNull(prsd.getParentClassName())) {
+                spec.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeName() + "\", comments=\"" + properties.getInterfaceName() + "\")").getResult().get());
+                intf.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeName() + "\", comments=\"" + (nonNull(mixIn) ? mixIn.getProperties().getClassName() : properties.getClassName()) + "\")").getResult().get());
             }
+
+            unit.setComment(new BlockComment("Generated code by Binis' code generator."));
+            iUnit.setComment(new BlockComment("Generated code by Binis' code generator."));
+
+            processEntries(typeDeclaration, intf, mixIn);
+            processEnumImplementation(typeDeclaration, spec);
+            handleImports(typeDeclaration, spec);
+
+            if (nonNull(mixIn)) {
+                iUnit.addImport(mixIn.getInterfaceFullName());
+            }
+
+            lookup.registerGenerated(getClassName(spec), parse);
+
+            handleImports(typeDeclaration, intf);
+
+            processingTypes.remove(typeDeclaration.getNameAsString());
+
+            addDefaultCreation(parse, mixIn);
+
+            parse.setProcessed(true);
+
+
         }
     }
 
-    private static void mergeEnums(EnumDeclaration source, EnumDeclaration destination) {
-        mergeImports(source.findCompilationUnit().get(), destination.findCompilationUnit().get());
+    private static void processEnumImplementation(EnumDeclaration declaration, ClassOrInterfaceDeclaration spec) {
+        var constructor = spec.addConstructor(PUBLIC)
+                .addParameter(int.class, "ordinal")
+                .addParameter(String.class, "name")
+                .setBody(new BlockStmt().addStatement("super(ordinal, name);"));
 
-        source.getEntries().forEach(entry -> condition(destination.getEntries().stream().noneMatch(e -> e.getNameAsString().equals(entry.getNameAsString())), () -> destination.addEntry(entry)));
-        source.getImplementedTypes().forEach(entry -> condition(destination.getImplementedTypes().stream().noneMatch(e -> e.getNameAsString().equals(entry.getNameAsString())), () -> destination.addImplementedType(entry)));
-        source.getMembers().forEach(member -> mergeEnumMember(member, destination));
-        source.getModifiers().forEach(m -> destination.addModifier(m.getKeyword()));
-        source.getAnnotations().stream().filter(a -> !"EnumPrototype".equals(a.getNameAsString())).forEach(destination::addAnnotation);
-        source.getComment().ifPresent(destination::setComment);
-        source.getOrphanComments().forEach(destination::addOrphanComment);
+        var constructors = declaration.getConstructors();
+        if (!constructors.isEmpty()) {
+            if (constructors.size() > 1) {
+                throw new GenericCodeGenException("Enums with more than one constructors are unsupported!");
+            }
+            var con = constructors.get(0);
+            con.getParameters().forEach(constructor::addParameter);
+            con.getBody().getStatements().forEach(s -> constructor.getBody().addStatement(s));
+        }
+
+        declaration.getMethods().forEach(spec::addMember);
+        declaration.getFields().forEach(spec::addMember);
     }
 
-    private static void mergeEnumMember(BodyDeclaration<?> member, EnumDeclaration destination) {
-        if (member.isConstructorDeclaration()) {
-            if (destination.getConstructors().isEmpty()) {
-                var constructor = destination.addConstructor();
-                var source = member.asConstructorDeclaration();
-                constructor.setModifiers(source.getModifiers());
-                constructor.setParameters(source.getParameters());
-                constructor.setBody(source.getBody());
-                constructor.setAnnotations(source.getAnnotations());
+    private static void processEntries(EnumDeclaration declaration, ClassOrInterfaceDeclaration intf, PrototypeDescription<?> mixIn) {
+        var name = nonNull(mixIn) ? mixIn.getInterfaceName() : intf.getNameAsString();
+
+        for (var i = 0; i < declaration.getEntries().size(); i++) {
+            var entry = declaration.getEntries().get(i);
+            var expression = new StringBuilder("CodeFactory.initializeEnumValue(").append(name).append(".class, \"").append(entry.getNameAsString()).append("\", ").append(i);
+            for (var arg : entry.getArguments()) {
+                expression.append(", ").append(arg.toString());
             }
-        } else if (member.isFieldDeclaration()) {
-            if (destination.getFieldByName(member.asFieldDeclaration().getVariables().get(0).getNameAsString()).isEmpty()) {
-                destination.addMember(member);
-            }
-        } else if (member.isMethodDeclaration()) {
-            if (destination.getMethodsByName(member.asMethodDeclaration().getNameAsString()).isEmpty()) {
-                destination.addMember(member);
-            }
-        } else {
-            throw new GenericCodeGenException("TODO: Unhandled enum mix in type!");
+            expression.append(")");
+            intf.addFieldWithInitializer(name, entry.getNameAsString(), lookup.getParser().parseExpression(expression.toString()).getResult().get(), STATIC, FINAL);
+        }
+        declaration.getFields().stream().filter(f -> f.getModifiers().contains(Modifier.publicModifier()) && f.getModifiers().contains(Modifier.staticModifier()) && f.getModifiers().contains(Modifier.finalModifier())).forEach(f -> {
+            var field = f.clone();
+            field.getModifiers().remove(Modifier.publicModifier());
+            intf.addMember(field);
+        });
+        declaration.getMethods().forEach(m -> {
+            var method = m.clone().setBody(null);
+            method.getModifiers().remove(Modifier.publicModifier());
+            intf.addMember(method);
+        });
+        declaration.getFields().stream().filter(f -> f.isAnnotationPresent(Getter.class)).forEach(f ->
+                intf.addMethod(getGetterName(f.getVariable(0).getNameAsString(), f.getVariable(0).getType())).setType(f.getVariable(0).getType()).setBody(null));
+
+        declaration.getFields().stream().filter(f -> f.isAnnotationPresent(Setter.class)).forEach(f ->
+                intf.addMethod(getSetterName(f.getVariable(0).getNameAsString())).setBody(null));
+
+        intf.addMethod("valueOf", STATIC)
+                .addParameter("String", "name")
+                .setType(name)
+                .setBody(new BlockStmt().addStatement("return CodeFactory.enumValueOf(" + name + ".class, name);"));
+
+        intf.addMethod("valueOf", STATIC)
+                .addParameter("int", "ordinal")
+                .setType(name)
+                .setBody(new BlockStmt().addStatement("return CodeFactory.enumValueOf(" + name + ".class, ordinal);"));
+
+        intf.addMethod("values", STATIC)
+                .setType(name + "[]")
+                .setBody(new BlockStmt().addStatement("return CodeFactory.enumValues(" + name + ".class);"));
+
+        if (nonNull(mixIn)) {
+            mixIn.getDeclaration().asEnumDeclaration().getEntries().forEach(entry ->
+                    intf.addFieldWithInitializer(name, entry.getNameAsString(), lookup.getParser().parseExpression(name + "." + entry.getNameAsString()).getResult().get(), STATIC, FINAL));
         }
     }
 
     private static Structures.PrototypeDataHandler getEnumProperties(AnnotationExpr prototype) {
         var type = (EnumDeclaration) prototype.getParentNode().get();
-        var builder = Structures.PrototypeDataHandler.builder()
-                .className(defaultClassName(type))
-                .classPackage(defaultPackage(type, null));
+        var iName = Holder.of(defaultInterfaceName(type));
+        var cName = defaultClassName(type);
+
+        var builder = Structures.builder(prototype.getNameAsString())
+                .classPackage(defaultClassPackage(type))
+                .interfacePackage(defaultInterfacePackage(type));
         prototype.getChildNodes().forEach(node -> {
             if (node instanceof MemberValuePair) {
                 var pair = (MemberValuePair) node;
@@ -1868,6 +1954,12 @@ public class Generator {
                 }
             }
         });
+
+        if (cName.equals(iName.get())) {
+            cName = iName.get() + "Impl";
+        }
+
+        builder.className(cName).interfaceName(iName.get());
 
         return builder.build();
     }
@@ -1932,49 +2024,49 @@ public class Generator {
     }
 
     private static void mergeConstants(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination) {
-        mergeImports(source.findCompilationUnit().get(), destination.findCompilationUnit().get());
-
-        for (var member : source.getMembers()) {
-            if (member.isFieldDeclaration()) {
-                var type = member.asFieldDeclaration();
-                var field = new FieldDeclaration();
-                field.setModifiers(type.getModifiers());
-                type.getVariables().forEach(v -> {
-                    var variable = new VariableDeclarator().setName(v.getName());
-                    if (v.getType().isClassOrInterfaceType()) {
-                        var enm = getEnumNameFromPrototype(source, v.getType().asClassOrInterfaceType().getNameAsString());
-                        if (nonNull(enm)) {
-                            variable.setType(enm);
-                        } else {
-                            variable.setType(v.getType());
-                        }
-                    } else {
-                        variable.setType(v.getType());
-                    }
-
-                    v.getInitializer().ifPresent(i -> {
-                        if (i.isFieldAccessExpr()) {
-                            var expr = i.asFieldAccessExpr();
-                            if (expr.getScope().isNameExpr()) {
-                                var enm = getEnumNameFromPrototype(source, expr.getScope().asNameExpr().getNameAsString());
-                                if (nonNull(enm)) {
-                                    variable.setInitializer(new FieldAccessExpr().setName(expr.getName()).setScope(new NameExpr(enm)));
-                                } else {
-                                    variable.setInitializer(i);
-                                }
-                            } else {
-                                variable.setInitializer(i);
-                            }
-                        } else {
-                            variable.setInitializer(i);
-                        }
-                    });
-
-                    field.addVariable(variable);
-                });
-                destination.addMember(field);
-            }
-        }
+//        mergeImports(source.findCompilationUnit().get(), destination.findCompilationUnit().get());
+//
+//        for (var member : source.getMembers()) {
+//            if (member.isFieldDeclaration()) {
+//                var type = member.asFieldDeclaration();
+//                var field = new FieldDeclaration();
+//                field.setModifiers(type.getModifiers());
+//                type.getVariables().forEach(v -> {
+//                    var variable = new VariableDeclarator().setName(v.getName());
+//                    if (v.getType().isClassOrInterfaceType()) {
+//                        var enm = getEnumNameFromPrototype(source, v.getType().asClassOrInterfaceType().getNameAsString());
+//                        if (nonNull(enm)) {
+//                            variable.setType(enm);
+//                        } else {
+//                            variable.setType(v.getType());
+//                        }
+//                    } else {
+//                        variable.setType(v.getType());
+//                    }
+//
+//                    v.getInitializer().ifPresent(i -> {
+//                        if (i.isFieldAccessExpr()) {
+//                            var expr = i.asFieldAccessExpr();
+//                            if (expr.getScope().isNameExpr()) {
+//                                var enm = getEnumNameFromPrototype(source, expr.getScope().asNameExpr().getNameAsString());
+//                                if (nonNull(enm)) {
+//                                    variable.setInitializer(new FieldAccessExpr().setName(expr.getName()).setScope(new NameExpr(enm)));
+//                                } else {
+//                                    variable.setInitializer(i);
+//                                }
+//                            } else {
+//                                variable.setInitializer(i);
+//                            }
+//                        } else {
+//                            variable.setInitializer(i);
+//                        }
+//                    });
+//
+//                    field.addVariable(variable);
+//                });
+//                destination.addMember(field);
+//            }
+//        }
     }
 
 }

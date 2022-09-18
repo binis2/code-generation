@@ -210,6 +210,8 @@ public class Structures {
 
         private boolean nested;
 
+        private boolean codeEnum;
+
         private String parentClassName;
 
         @Builder.Default
@@ -378,7 +380,8 @@ public class Structures {
                         .predefinedEnrichers(List.of(VALIDATION, CREATOR, OPENAPI, JACKSON, REGION))
                         .classSetters(false)
                         .interfaceSetters(false)
-                        .options(Set.of(VALIDATION_FORM, HIDDEN_CREATE_METHOD, GENERATE_OPENAPI_IF_AVAILABLE, HANDLE_JACKSON_IF_AVAILABLE))
+                        .options(Set.of(VALIDATION_FORM, HIDDEN_CREATE_METHOD, GENERATE_OPENAPI_IF_AVAILABLE, HANDLE_JACKSON_IF_AVAILABLE)),
+                "EnumPrototype", Structures::defaultBuilder
         );
     }
 

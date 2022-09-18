@@ -43,6 +43,7 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> parsed = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> external = new HashMap<>();
+    private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> enums = new HashMap<>();
     private final List<Pair<Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>>, PrototypeDescription<ClassOrInterfaceDeclaration>>> prototypeMaps = new ArrayList<>();
 
     @Getter
@@ -52,6 +53,9 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     @Override
     public void registerParsed(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
         this.parsed.put(prototype, parsed);
+        if (parsed.isCodeEnum()) {
+            enums.put(parsed.getInterfaceFullName(), parsed);
+        }
     }
 
     @Override
@@ -103,6 +107,11 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     @Override
     public PrototypeDescription<ClassOrInterfaceDeclaration> findByInterfaceName(String name) {
         return parsed.values().stream().filter(p -> p.getInterfaceName().equals(name)).findFirst().orElse(null);
+    }
+
+    @Override
+    public PrototypeDescription<ClassOrInterfaceDeclaration> findEnum(String generated) {
+        return enums.get(generated);
     }
 
     @Override

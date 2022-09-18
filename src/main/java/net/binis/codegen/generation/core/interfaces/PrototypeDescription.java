@@ -80,6 +80,8 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     boolean isNested();
 
+    boolean isCodeEnum();
+
     String getParentClassName();
 
     EmbeddedModifierType getEmbeddedModifierType();

@@ -344,7 +344,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     }
 
     private void addFindMethod(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf) {
-        Helpers.addDefaultCreation(description);
+        Helpers.addDefaultCreation(description, null);
         var entity = intf.getNameAsString();
         Helpers.addSuppressWarningsUnchecked(
                 intf.addMethod("find", STATIC)

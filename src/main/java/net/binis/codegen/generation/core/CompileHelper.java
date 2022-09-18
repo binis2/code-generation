@@ -21,16 +21,18 @@ package net.binis.codegen.generation.core;
  */
 
 import lombok.SneakyThrows;
+import net.binis.codegen.objects.Pair;
 import net.binis.codegen.test.JavaByteObject;
 import net.binis.codegen.test.JavaSourceObject;
 import net.binis.codegen.test.TestClassLoader;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.tools.*;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.util.Objects.nonNull;
+import static net.binis.codegen.tools.Tools.notNull;
 import static net.binis.codegen.tools.Tools.with;
 
 public abstract class CompileHelper {

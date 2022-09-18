@@ -22,8 +22,7 @@ package net.binis.codegen.test;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.google.common.collect.Comparators;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.CodeGen;
@@ -31,8 +30,8 @@ import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
+import net.binis.codegen.objects.Pair;
 import net.binis.codegen.tools.Reflection;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
 import javax.tools.*;
@@ -98,7 +97,9 @@ public abstract class BaseTest {
         var parse = parser.parse(source);
         assertTrue(parse.toString(), parse.isSuccessful());
         if (nonNull(list)) {
-            list.add(Pair.of(parse.getResult().get().findFirst(ClassOrInterfaceDeclaration.class).get().getFullyQualifiedName().get(), source));
+            var result = parse.getResult().get();
+            var name = (String) result.findFirst(TypeDeclaration.class).get().getFullyQualifiedName().get();
+            list.add(Pair.of(name, source));
         }
         parse.getResult().ifPresent(u ->
                 u.getTypes().forEach(t ->
@@ -190,6 +191,10 @@ public abstract class BaseTest {
 
     }
 
+    protected void testMultiPass(List<Pair<List<Triple<String, String, String>>, Integer>> passes) {
+        testMultiPassExecute(passes, null, null);
+    }
+
     protected void testMulti(List<Triple<String, String, String>> files) {
         testMulti(files, null);
     }
@@ -214,7 +219,6 @@ public abstract class BaseTest {
         generate();
 
         assertEquals(expected, lookup.parsed().size());
-
 
         var compileList = new ArrayList<Pair<String, String>>();
         files.forEach(f ->
@@ -247,6 +251,57 @@ public abstract class BaseTest {
         var loader = new TestClassLoader();
         assertTrue(compile(loader, compileList, resExecute));
     }
+
+    protected void testMultiPassExecute(List<Pair<List<Triple<String, String, String>>, Integer>> passes, String pathToSave, String resExecute) {
+        var loader = new TestClassLoader();
+        var list = newList();
+        var compileList = new ArrayList<Pair<String, String>>();
+
+        passes.forEach(pass -> {
+            var files = pass.getKey();
+            var expected = pass.getValue().intValue();
+            files.forEach(t ->
+                    load(list, t.getLeft()));
+            assertTrue(compile(loader, list, null));
+            generate();
+
+            assertEquals(expected, lookup.parsed().size());
+
+            files.forEach(f ->
+                    lookup.findGeneratedByFileName(f.getLeft()).forEach(parsed -> {
+                        compare(parsed.getFiles().get(1), f.getRight());
+                        compare(parsed.getFiles().get(0), f.getMiddle());
+
+                        if (nonNull(pathToSave)) {
+                            if (isNull(parsed.getMixIn())) {
+                                save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
+                            }
+                            save(parsed.getProperties().getInterfaceName(), parsed.getFiles().get(1), pathToSave);
+                        }
+
+                        if (isNull(parsed.getMixIn())) {
+                            if (!parsed.isNested() || isNull(parsed.getParentClassName())) {
+                                var intf = Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1)));
+                                compileList.add(intf);
+                                list.add(intf);
+                                compileList.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+                            }
+                        } else {
+                            for (var i = 0; i < compileList.size(); i++) {
+                                if (compileList.get(i).getKey().equals(parsed.getMixIn().getParsedFullName())) {
+                                    var intf = Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1)));
+                                    compileList.add(intf);
+                                    list.add(intf);
+                                    break;
+                                }
+                            }
+                        }
+                    }));
+
+            assertTrue(compile(loader, compileList, resExecute));
+        });
+    }
+
 
     @SneakyThrows
     protected void save(String name, CompilationUnit unit, String pathToSave) {
@@ -345,7 +400,8 @@ public abstract class BaseTest {
 
         files.forEach(f ->
                 with(objects.get(f.getKey()), o ->
-                        loader.define(f.getKey(), o)));
+                        ifNull(loader.findClass(f.getKey()), () ->
+                                loader.define(f.getKey(), o))));
 
         if (nonNull(resExecute)) {
             var cls = loader.findClass(className);

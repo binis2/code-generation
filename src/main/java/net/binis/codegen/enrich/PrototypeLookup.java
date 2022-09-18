@@ -43,6 +43,7 @@ public interface PrototypeLookup {
     PrototypeDescription<ClassOrInterfaceDeclaration> findGenerated(String prototype);
     PrototypeDescription<ClassOrInterfaceDeclaration> findExternal(String prototype);
     PrototypeDescription<ClassOrInterfaceDeclaration> findByInterfaceName(String name);
+    PrototypeDescription<ClassOrInterfaceDeclaration> findEnum(String generated);
     Optional<PrototypeField> findField(String prototype, String name);
     boolean isParsed(String prototype);
     boolean isGenerated(String prototype);

@@ -31,6 +31,7 @@ import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.PrimitiveType;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.TypeParameter;
 import lombok.extern.slf4j.Slf4j;
@@ -112,8 +113,6 @@ public class Helpers {
     public static final Set<String> primitiveTypes = Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char", "void");
 
     public static final PrototypeLookup lookup = new PrototypeLookupHandler();
-    public static final Map<String, PrototypeDescription<EnumDeclaration>> enumParsed = new HashMap<>();
-    public static final Map<String, PrototypeDescription<EnumDeclaration>> enumGenerated = new HashMap<>();
     public static final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> constantParsed = new HashMap<>();
     public static final Map<String, List<Pair<String, String>>> declaredConstants = new HashMap<>();
     public static final Map<String, Structures.ProcessingType> processingTypes = new HashMap<>();
@@ -132,11 +131,11 @@ public class Helpers {
         }
     }
 
-    public static String defaultInterfacePackage(ClassOrInterfaceDeclaration type) {
+    public static String defaultInterfacePackage(TypeDeclaration<?> type) {
         return defaultPackage(type, null);
     }
 
-    public static String defaultClassPackage(ClassOrInterfaceDeclaration type) {
+    public static String defaultClassPackage(TypeDeclaration<?> type) {
         return defaultPackage(type, null);
     }
 
@@ -144,7 +143,7 @@ public class Helpers {
         return defaultClassName(type).replace("Entity", "");
     }
 
-    public static String defaultInterfaceName(ClassOrInterfaceDeclaration type) {
+    public static String defaultInterfaceName(TypeDeclaration<?> type) {
         return defaultClassName(type).replace("Entity", "");
     }
 
@@ -170,6 +169,15 @@ public class Helpers {
             return "get" + name.substring(0, 1).toUpperCase() + name.substring(1);
         }
     }
+
+    public static String getGetterName(String name, Type type) {
+        if (PrimitiveType.booleanType().equals(type)) {
+            return "is" + name.substring(0, 1).toUpperCase() + name.substring(1);
+        } else {
+            return "get" + name.substring(0, 1).toUpperCase() + name.substring(1);
+        }
+    }
+
 
     public static String getSetterName(String name) {
         return "set" + name.substring(0, 1).toUpperCase() + name.substring(1);
@@ -514,32 +522,11 @@ public class Helpers {
     }
 
     public static void mergeImports(CompilationUnit source, CompilationUnit destination) {
-        source.getImports().stream().filter(i -> !i.getNameAsString().startsWith("net.binis.codegen.annotation")).forEach(i -> {
-            var enm = enumParsed.get(i.getNameAsString());
-            if (nonNull(enm)) {
-                if (isNull(enm.getProperties().getMixInClass())) {
-                    destination.addImport(enm.getParsedFullName());
-                } else {
-                    notNull(enumParsed.get(getExternalClassName(enm.getDeclaration().findCompilationUnit().get(), enm.getProperties().getMixInClass())), p ->
-                            destination.addImport(p.getParsedFullName()));
-                }
-            } else {
-                destination.addImport(i);
-            }
-        });
+        source.getImports().stream().filter(i -> !i.getNameAsString().startsWith("net.binis.codegen.annotation")).forEach(destination::addImport);
     }
 
     public static ClassOrInterfaceDeclaration findModifier(ClassOrInterfaceDeclaration intf) {
         return intf.findFirst(ClassOrInterfaceDeclaration.class, m -> nullCheck(m.getNameAsString(), name -> name.equals(Constants.MODIFIER_INTERFACE_NAME) || name.endsWith(Constants.MODIFIER_CLASS_NAME_SUFFIX))).orElseThrow();
-    }
-
-    public static String getEnumNameFromPrototype(TypeDeclaration<?> type, String prototype) {
-        var result = Holder.<String>blank();
-
-        notNull(enumParsed.get(getExternalClassName(type.findCompilationUnit().get(), prototype)), p ->
-                nullCheck(p.getProperties().getMixInClass(), m -> result.update(getEnumNameFromPrototype(p.getDeclaration(), m)), result.update(p.getParsedName())));
-
-        return result.get();
     }
 
     public static PrototypeDescription<ClassOrInterfaceDeclaration> getParsed(ClassOrInterfaceType type) {
@@ -803,8 +790,6 @@ public class Helpers {
 
     public static void cleanUp() {
         with((PrototypeLookupHandler) lookup, PrototypeLookupHandler::clean);
-        enumParsed.clear();
-        enumGenerated.clear();
         constantParsed.clear();
         declaredConstants.clear();
         processingTypes.clear();
@@ -838,6 +823,7 @@ public class Helpers {
         registerEnricher(RegionEnricherHandler.class);
         registerEnricher(OpenApiEnricherHandler.class);
         registerEnricher(JacksonEnricherHandler.class);
+        registerEnricher(HibernateEnricherHandler.class);
     }
 
 
@@ -918,8 +904,8 @@ public class Helpers {
 
         parsed.getCustomInitializers().forEach(i -> i.accept(getInitializer(parsed.getSpec())));
 
-        Helpers.handleImports(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getIntf());
-        Helpers.handleImports(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getSpec());
+        Helpers.handleImports(parsed.getDeclaration(), parsed.getIntf());
+        Helpers.handleImports(parsed.getDeclaration(), parsed.getSpec());
 
         getEnrichersList(parsed).forEach(e -> e.postProcess(parsed));
     }
@@ -962,7 +948,7 @@ public class Helpers {
     }
 
 
-    public static void handleImports(ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration type) {
+    public static void handleImports(TypeDeclaration<?> declaration, ClassOrInterfaceDeclaration type) {
         declaration.findCompilationUnit().ifPresent(decl ->
                 type.findCompilationUnit().ifPresent(unit ->
                         findUsedTypes(type).stream().map(t -> getClassImport(decl, t)).filter(Objects::nonNull).forEach(unit::addImport)));
@@ -1015,19 +1001,20 @@ public class Helpers {
         addInitializerInternal(description, intf, expr, embedded);
     }
 
-    public static void addDefaultCreation(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+    public static void addDefaultCreation(PrototypeDescription<?> description, PrototypeDescription<?> mixIn) {
         var intf = description.getIntf();
         if (description.getProperties().isGenerateImplementation() && intf.getAnnotationByName("Default").isEmpty()) {
-            var name = description.getImplementorFullName();
-            if (description.isNested() && nonNull(description.getParentClassName())) {
-                name = getBasePackage(description) + '.' + description.getParsedName().replace('.', '$');
+            var parsed = nullCheck(mixIn, description);
+            var name = parsed.getImplementorFullName();
+            if (parsed.isNested() && nonNull(parsed.getParentClassName())) {
+                name = getBasePackage(parsed) + '.' + parsed.getParsedName().replace('.', '$');
             }
             intf.addAnnotation(description.getParser().parseAnnotation("@Default(\"" + name + "\")").getResult().get());
             intf.findCompilationUnit().get().addImport(Default.class.getCanonicalName());
         }
     }
 
-    private static String getBasePackage(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+    private static String getBasePackage(PrototypeDescription<?> description) {
         if (description.isNested() && nonNull(description.getParentClassName())) {
             return getBasePackage(lookup.findParsed(description.getParentClassName()));
         }

@@ -45,7 +45,7 @@ public class CreatorEnricherHandler extends BaseEnricher implements CreatorEnric
         var spec = description.getSpec();
         var intf = description.getIntf();
 
-        Helpers.addDefaultCreation(description);
+        Helpers.addDefaultCreation(description, null);
 
         if (!description.hasOption(Options.HIDDEN_CREATE_METHOD)) {
             var creatorClass = "EntityCreator";
