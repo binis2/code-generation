@@ -950,8 +950,8 @@ public class Helpers {
 
     public static void handleImports(TypeDeclaration<?> declaration, ClassOrInterfaceDeclaration type) {
         declaration.findCompilationUnit().ifPresent(decl ->
-                type.findCompilationUnit().ifPresent(unit ->
-                        findUsedTypes(type).stream().map(t -> getClassImport(decl, t)).filter(Objects::nonNull).forEach(unit::addImport)));
+                notNull(type, tt -> type.findCompilationUnit().ifPresent(unit ->
+                        findUsedTypes(type).stream().map(t -> getClassImport(decl, t)).filter(Objects::nonNull).forEach(unit::addImport))));
     }
 
     public static Set<String> findUsedTypes(ClassOrInterfaceDeclaration type) {
@@ -1004,7 +1004,7 @@ public class Helpers {
     public static void addDefaultCreation(PrototypeDescription<?> description, PrototypeDescription<?> mixIn) {
         var intf = description.getIntf();
         if (description.getProperties().isGenerateImplementation() && intf.getAnnotationByName("Default").isEmpty()) {
-            var parsed = nullCheck(mixIn, description);
+            var parsed = description;
             var name = parsed.getImplementorFullName();
             if (parsed.isNested() && nonNull(parsed.getParentClassName())) {
                 name = getBasePackage(parsed) + '.' + parsed.getParsedName().replace('.', '$');

@@ -35,7 +35,7 @@ public interface PrototypeLookup {
 
     JavaParser getParser();
 
-    void registerParsed(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> parsed);
+    void registerParsed(String prototype, PrototypeDescription<?> parsed);
     void registerGenerated(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> generated);
     void registerExternalLookup(UnaryOperator<String> lookup);
 

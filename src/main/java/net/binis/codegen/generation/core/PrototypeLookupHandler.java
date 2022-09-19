@@ -50,11 +50,12 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     private final JavaParser parser = new JavaParser();
     private UnaryOperator<String> externalLookup;
 
+    @SuppressWarnings("unchecked")
     @Override
-    public void registerParsed(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
-        this.parsed.put(prototype, parsed);
+    public void registerParsed(String prototype, PrototypeDescription<?> parsed) {
+        this.parsed.put(prototype, (PrototypeDescription) parsed);
         if (parsed.isCodeEnum()) {
-            enums.put(parsed.getInterfaceFullName(), parsed);
+            enums.put(parsed.getInterfaceFullName(), (PrototypeDescription) parsed);
         }
     }
 
@@ -165,6 +166,9 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     public void clean() {
         parsed.clear();
         generated.clear();
+        enums.clear();
+        external.clear();
+        prototypeMaps.clear();
     }
 
 }

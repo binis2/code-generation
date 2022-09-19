@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledEnumPrototype;
 import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledPrototype;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Reflection.loadClass;
@@ -815,7 +816,7 @@ public class Generator {
     }
 
     private static void ensureParsedParents(EnumDeclaration declaration, PrototypeDescription<?> parse) {
-        if (nonNull(parse) && isNull(parse.getFiles())) {
+        if (nonNull(parse) && isNull(parse.getCompiled()) &&  isNull(parse.getFiles())) {
             if (parse.getDeclaration().isEnumDeclaration()) {
                 generateCodeForEnum(parse.getDeclaration().findCompilationUnit().get(), parse, parse.getDeclaration(), parse.getDeclaration().getAnnotationByClass(EnumPrototype.class).orElse(null));
             } else {
@@ -1799,7 +1800,7 @@ public class Generator {
             properties.setPrototypeFullName(typeDeclaration.getFullyQualifiedName().orElseThrow());
 
             var mixIn = withRes(properties.getMixInClass(), c ->
-                    withRes(getExternalClassName(declarationUnit.findCompilationUnit().get(), c), lookup::findParsed));
+                    withRes(getExternalClassName(declarationUnit.findCompilationUnit().get(), c), Generator::findEnum));
 
             ensureParsedParents(typeDeclaration, mixIn);
 
@@ -1845,22 +1846,32 @@ public class Generator {
             processEnumImplementation(typeDeclaration, spec);
             handleImports(typeDeclaration, spec);
 
-            if (nonNull(mixIn)) {
+            lookup.registerGenerated(getClassName(spec), parse);
+
+            if (isNull(mixIn)) {
+                addDefaultCreation(parse, mixIn);
+            } else {
                 iUnit.addImport(mixIn.getInterfaceFullName());
             }
-
-            lookup.registerGenerated(getClassName(spec), parse);
 
             handleImports(typeDeclaration, intf);
 
             processingTypes.remove(typeDeclaration.getNameAsString());
 
-            addDefaultCreation(parse, mixIn);
-
             parse.setProcessed(true);
-
-
         }
+    }
+
+    private static PrototypeDescription<?> findEnum(String cls) {
+        var result = lookup.findParsed(cls);
+        if (isNull(result)) {
+            if (handleCompiledEnumPrototype(cls)) {
+                result = lookup.findParsed(cls);
+            } else {
+                throw new GenericCodeGenException("Can't find class '" + cls + "' or it isn't enum class!");
+            }
+        }
+        return result;
     }
 
     private static void processEnumImplementation(EnumDeclaration declaration, ClassOrInterfaceDeclaration spec) {

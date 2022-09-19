@@ -23,12 +23,14 @@ package net.binis.codegen.generation.core;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MemberValuePair;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.CodeAnnotation;
 import net.binis.codegen.annotation.CodeImplementation;
 import net.binis.codegen.annotation.CodePrototype;
+import net.binis.codegen.annotation.EnumPrototype;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.factory.CodeFactory;
@@ -45,6 +47,7 @@ import java.util.Objects;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Generator.generateCodeForClass;
+import static net.binis.codegen.generation.core.Generator.generateCodeForEnum;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.notNull;
@@ -83,6 +86,45 @@ public abstract class CompiledPrototypesHandler {
                     result.set(true);
                 }));
         return result.get();
+    }
+
+    public static boolean handleCompiledEnumPrototype(String compiledPrototype) {
+        var result = Holder.of(false);
+        notNull(loadClass(compiledPrototype), c ->
+                notNull(c.getAnnotation(EnumPrototype.class), ann -> {
+                    if (c.isEnum()) {
+                        var declaration = new CompilationUnit().setPackageDeclaration(c.getPackageName()).addEnum(c.getSimpleName());
+
+                    handleEntries(c, declaration);
+                        var props = handleProperties(declaration, c, ann);
+
+                        var parsed = Structures.Parsed.<EnumDeclaration>builder()
+                                .compiled(c)
+                                .codeEnum(true)
+                                .properties(props)
+                                .parser(lookup.getParser())
+                                .interfaceName(props.getInterfaceName())
+                                .interfaceFullName(props.getInterfacePackage() + "." + props.getInterfaceName())
+                                .declaration(declaration);
+
+                        var prsd = parsed.build();
+                        lookup.registerParsed(compiledPrototype, prsd);
+                        //generateCodeForEnum(declaration.findCompilationUnit().get(), prsd);
+
+                        //TODO: Implement class annotations
+
+                        result.set(true);
+                    } else {
+                        log.warn("'{}' isn't enum class!", compiledPrototype);
+                    }
+                }));
+        return result.get();
+    }
+
+    private static void handleEntries(Class<?> c, EnumDeclaration declaration) {
+        for (var cnst : c.getEnumConstants()) {
+            declaration.addEnumConstant(cnst.toString());
+        }
     }
 
     private static Structures.PrototypeDataHandler handleProperties(ClassOrInterfaceDeclaration type, Class<?> cls, CodePrototype ann) {
@@ -148,6 +190,34 @@ public abstract class CompiledPrototypesHandler {
         return result;
 
     }
+
+    private static Structures.PrototypeDataHandler handleProperties(EnumDeclaration type, Class<?> cls, EnumPrototype ann) {
+        var iName = Holder.of(defaultInterfaceName(type));
+        var cName = defaultClassName(type);
+
+        var builder = Structures.builder(cls.getSimpleName())
+                .classPackage(defaultClassPackage(type))
+                .interfacePackage(defaultInterfacePackage(type));
+
+        if (StringUtils.isNotBlank((ann.name()))) {
+            var intf = ann.name().replace("Entity", "");
+            builder.name(ann.name())
+                    .className(ann.name())
+                    .interfaceName(intf)
+                    .longModifierName(intf + "." + Constants.MODIFIER_INTERFACE_NAME);
+        }
+
+        builder.mixInClass(nonNull(ann.mixIn()) && !void.class.equals(ann.mixIn()) ? ann.mixIn().getCanonicalName() : null);
+
+        if (cName.equals(iName.get())) {
+            cName = iName.get() + "Impl";
+        }
+
+        builder.className(cName).interfaceName(iName.get());
+
+        return builder.build();
+    }
+
 
     private static void checkBaseClassForEnrichers(Class<?> cls, List<PrototypeEnricher> list) {
         for (var intf : cls.getInterfaces()) {
