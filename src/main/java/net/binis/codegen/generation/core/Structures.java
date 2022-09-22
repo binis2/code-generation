@@ -84,6 +84,8 @@ public class Structures {
         private String interfacePath;
         private String implementationPath;
 
+        private int ordinalOffset;
+
         private List<PrototypeEnricher> enrichers;
         private List<PrototypeEnricher> inheritedEnrichers;
         private Set<Class<? extends CodeOption>> options;

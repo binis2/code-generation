@@ -54,6 +54,8 @@ public interface PrototypeData {
     String getInterfacePath();
     String getImplementationPath();
 
+    int getOrdinalOffset();
+
     List<PrototypeEnricher> getEnrichers();
     List<PrototypeEnricher> getInheritedEnrichers();
     Set<Class<? extends CodeOption>> getOptions();

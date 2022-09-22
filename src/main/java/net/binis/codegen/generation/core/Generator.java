@@ -1842,7 +1842,7 @@ public class Generator {
             unit.setComment(new BlockComment("Generated code by Binis' code generator."));
             iUnit.setComment(new BlockComment("Generated code by Binis' code generator."));
 
-            processEntries(typeDeclaration, intf, mixIn);
+            processEntries(typeDeclaration, intf, mixIn, properties.getOrdinalOffset());
             processEnumImplementation(typeDeclaration, spec);
             handleImports(typeDeclaration, spec);
 
@@ -1894,12 +1894,16 @@ public class Generator {
         declaration.getFields().forEach(spec::addMember);
     }
 
-    private static void processEntries(EnumDeclaration declaration, ClassOrInterfaceDeclaration intf, PrototypeDescription<?> mixIn) {
+    private static void processEntries(EnumDeclaration declaration, ClassOrInterfaceDeclaration intf, PrototypeDescription<?> mixIn, long offset) {
         var name = nonNull(mixIn) ? mixIn.getInterfaceName() : intf.getNameAsString();
+
+        if (nonNull(mixIn) && offset == 0L) {
+            offset = mixIn.getProperties().getOrdinalOffset() + mixIn.getDeclaration().asEnumDeclaration().getEntries().size();
+        }
 
         for (var i = 0; i < declaration.getEntries().size(); i++) {
             var entry = declaration.getEntries().get(i);
-            var expression = new StringBuilder("CodeFactory.initializeEnumValue(").append(name).append(".class, \"").append(entry.getNameAsString()).append("\", ").append(i);
+            var expression = new StringBuilder("CodeFactory.initializeEnumValue(").append(name).append(".class, \"").append(entry.getNameAsString()).append("\", ").append(offset + i);
             for (var arg : entry.getArguments()) {
                 expression.append(", ").append(arg.toString());
             }
@@ -1960,6 +1964,9 @@ public class Generator {
                         break;
                     case "mixIn":
                         builder.mixInClass(pair.getValue().asClassExpr().getTypeAsString());
+                        break;
+                    case "ordinalOffset":
+                        builder.ordinalOffset(pair.getValue().asIntegerLiteralExpr().asNumber().intValue());
                         break;
                     default:
                 }

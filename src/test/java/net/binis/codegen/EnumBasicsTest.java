@@ -51,7 +51,8 @@ public class EnumBasicsTest extends BaseTest {
     public void testMixIn() {
         testMulti(List.of(
                 Triple.of("basic/enum/EnumTest3.java", "basic/enum/EnumTest3-0.java", "basic/enum/EnumTest3-1.java"),
-                Triple.of("basic/enum/EnumTest3MixIn.java", null, "basic/enum/EnumTest3MixIn-1.java")));
+                Triple.of("basic/enum/EnumTest3MixIn.java", null, "basic/enum/EnumTest3MixIn-1.java"),
+                Triple.of("basic/enum/EnumTest3MixIn2.java", null, "basic/enum/EnumTest3MixIn2-1.java")));
     }
 
 }
