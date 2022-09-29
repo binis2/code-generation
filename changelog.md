@@ -1,5 +1,12 @@
 # Change Log
-**24-08-2022** ver. 0.3.10
+**29-09-2022** ver. 0.4.1
+* Generator: Added ordinal offset for mixed in enum prototypes.
+
+**19-09-2022** ver. 0.4.0
+* Generator: Reimagined enumerations handling.
+* Hibernate: New module to enable handling of generated enums by Hibernate.
+
+* **24-08-2022** ver. 0.3.10
 * Generator: Added support for circular prototype dependencies.
 * Spring: Added Map<> support for QueryEnricher.
 
