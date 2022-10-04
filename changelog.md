@@ -6,7 +6,7 @@
 * Generator: Reimagined enumerations handling.
 * Hibernate: New module to enable handling of generated enums by Hibernate.
 
-* **24-08-2022** ver. 0.3.10
+**24-08-2022** ver. 0.3.10
 * Generator: Added support for circular prototype dependencies.
 * Spring: Added Map<> support for QueryEnricher.
 
