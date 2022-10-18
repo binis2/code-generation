@@ -1103,11 +1103,11 @@ public class Generator {
                                                 field.addAnnotation(((StringLiteralExpr) n).asStringLiteralExpr().asString())));
                             } else if (Default.class.isAssignableFrom(ann)) {
                                 if (a.isSingleMemberAnnotationExpr()) {
-                                    field.getVariables().iterator().next().setInitializer(a.asSingleMemberAnnotationExpr().getMemberValue().asStringLiteralExpr().asString());
+                                    field.getVariables().iterator().next().setInitializer(handleDefaultValue(field, a.asSingleMemberAnnotationExpr().getMemberValue().asStringLiteralExpr().asString()));
                                 } else if (a.isNormalAnnotationExpr()) {
                                     a.asNormalAnnotationExpr().getPairs().forEach(p -> {
                                         if ("value".equals(p.getName().asString())) {
-                                            field.getVariables().iterator().next().setInitializer(p.getValue().asStringLiteralExpr().asString());
+                                            field.getVariables().iterator().next().setInitializer(handleDefaultValue(field, p.getValue().asStringLiteralExpr().asString()));
                                         }
                                     });
                                 }
@@ -1146,6 +1146,11 @@ public class Generator {
                     next.set(false);
                 })
         );
+    }
+
+    private static String handleDefaultValue(FieldDeclaration field, String value) {
+        return withRes(field.getVariable(0).getType(), t ->
+                "String".equals(t.asString()) ? "\"" + value + "\"" : value);
     }
 
     private static void handleAnnotation(CompilationUnit unit, BodyDeclaration<?> body, AnnotationExpr ann) {
