@@ -1,4 +1,8 @@
 # Change Log
+**20-10-2022** ver. 0.4.2
+* Generator: Added @DefaultString annotation to ease the definition of the default string values.
+* Generator: Fixed imports for compiled prototypes when used in combination with MixIn.
+
 **29-09-2022** ver. 0.4.1
 * Generator: Added ordinal offset for mixed in enum prototypes.
 
