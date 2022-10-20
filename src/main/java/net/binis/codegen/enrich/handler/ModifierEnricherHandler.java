@@ -378,7 +378,12 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                             "{ if (" + className + ".this." + field.getName() + " == null) {" +
                                     className + ".this." + field.getName() + " = CodeFactory.create(" + proto.getInterfaceName() + ".class);}" +
                                     "return CodeFactory.modify(this, " + className + ".this." + field.getName() + ", " + proto.getInterfaceName() + ".class); }").getResult().get());
-                    modifierClass.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.factory.CodeFactory"));
+                    modifierClass.findCompilationUnit().ifPresent(u -> {
+                        u.addImport("net.binis.codegen.factory.CodeFactory");
+                        u.addImport(proto.getInterfaceFullName());
+                    });
+
+                    modifier.findCompilationUnit().ifPresent(u -> u.addImport(proto.getInterfaceFullName()));
 
                     with(description.getRegisteredClass(MODIFIER_INTF_KEY), cls -> {
                         cls.addMethod(field.getName() + "$").setType(properties.getModifierName()).addParameter("Consumer<" + proto.getInterfaceName() + ".Modify>", "init").setBody(null);
@@ -395,7 +400,6 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                         ).getResult().get());
                         cls.findCompilationUnit().ifPresent(u -> u.addImport(Consumer.class));
                     });
-
                 }
             }
         }
