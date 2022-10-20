@@ -6,7 +6,7 @@ import javax.annotation.processing.Generated;
 @Generated(value = "TestPrototype", comments = "Test")
 public class TestImpl implements Test {
 
-    protected String title;
+    protected String title = "asd";
 
     public TestImpl() {
     }
