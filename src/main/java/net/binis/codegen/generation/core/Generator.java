@@ -1886,9 +1886,9 @@ public class Generator {
 
     private static void processEnumImplementation(EnumDeclaration declaration, ClassOrInterfaceDeclaration spec) {
         var constructor = spec.addConstructor(PUBLIC)
-                .addParameter(int.class, "ordinal")
-                .addParameter(String.class, "name")
-                .setBody(new BlockStmt().addStatement("super(ordinal, name);"));
+                .addParameter(int.class, "$ordinal")
+                .addParameter(String.class, "$name")
+                .setBody(new BlockStmt().addStatement("super($ordinal, $name);"));
 
         var constructors = declaration.getConstructors();
         if (!constructors.isEmpty()) {

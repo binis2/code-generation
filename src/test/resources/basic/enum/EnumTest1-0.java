@@ -7,7 +7,7 @@ import javax.annotation.processing.Generated;
 @Generated(value = "TestPrototype", comments = "Test")
 public class TestImpl extends CodeEnumImpl implements Test {
 
-    public TestImpl(int ordinal, String name) {
-        super(ordinal, name);
+    public TestImpl(int $ordinal, String $name) {
+        super($ordinal, $name);
     }
 }

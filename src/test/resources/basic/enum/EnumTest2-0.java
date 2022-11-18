@@ -18,8 +18,8 @@ public class TestImpl extends CodeEnumImpl implements Test {
     @Getter
     private final int value;
 
-    public TestImpl(int ordinal, String name, String label, boolean check, int value) {
-        super(ordinal, name);
+    public TestImpl(int $ordinal, String $name, String label, boolean check, int value) {
+        super($ordinal, $name);
         this.label = label;
         this.check = check;
         this.value = value;
