@@ -17,7 +17,7 @@ public class AccountOverviewCardPayloadImpl implements AccountOverviewCardPayloa
 
     // region constructor & initializer
     {
-        CodeFactory.registerType(AccountOverviewCardPayload.class, AccountOverviewCardPayloadImpl::new, (p, v) -> ((AccountOverviewCardPayloadImpl) v).new AccountOverviewCardPayloadImplSoloModifyImpl(p));
+        CodeFactory.registerType(AccountOverviewCardPayload.class, AccountOverviewCardPayloadImpl::new, (p, v, r) -> ((AccountOverviewCardPayloadImpl) v).new AccountOverviewCardPayloadImplSoloModifyImpl(p));
     }
 
     public AccountOverviewCardPayloadImpl() {

@@ -802,7 +802,7 @@ public class Helpers {
         var reg = false;
         for (var i : enricher.getInterfaces()) {
             if (Enricher.class.isAssignableFrom(i) && !Enricher.class.equals(i.getClass())) {
-                CodeFactory.registerType(i, () -> instantiate(enricher), null);
+                CodeFactory.registerType(i, params -> instantiate(enricher, params), null);
                 reg = true;
             }
         }
@@ -920,7 +920,7 @@ public class Helpers {
                 var className = isNull(description.getMixIn()) ? description.getProperties().getClassName() : description.getMixIn().getProperties().getClassName();
                 if (nonNull(soloClass) && nonNull(collectionClass)) {
                     soloClass.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.collection.EmbeddedCodeCollection"));
-                    return "(p, v) -> p instanceof EmbeddedCodeCollection ? ((" + description.getProperties().getClassName() + ") v).new " + collectionClass.getNameAsString() + "(p) : ((" + className + ") v).new " + soloClass.getNameAsString() + "(p)";
+                    return "(p, v, r) -> p instanceof EmbeddedCodeCollection ? ((" + description.getProperties().getClassName() + ") v).new " + collectionClass.getNameAsString() + "(p) : ((" + className + ") v).new " + soloClass.getNameAsString() + "(p)";
                 } else {
                     var cls = modClass;
                     if (nonNull(soloClass)) {
@@ -928,7 +928,7 @@ public class Helpers {
                     } else if (nonNull(collectionClass)) {
                         cls = collectionClass;
                     }
-                    return "(p, v) -> ((" + className + ") v).new " + cls.getNameAsString() + "(p)";
+                    return "(p, v, r) -> ((" + className + ") v).new " + cls.getNameAsString() + "(p)";
                 }
             }
         }

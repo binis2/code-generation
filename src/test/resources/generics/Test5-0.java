@@ -1,6 +1,7 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.test.card;
 
+import net.binis.test.card.AccountOverviewCard.AccountOverviewCardPayload;
 import net.binis.codegen.objects.impl.CompiledGenericImpl;
 import net.binis.codegen.modifier.impl.BaseModifierImpl;
 import net.binis.codegen.modifier.Modifiable;
@@ -90,7 +91,7 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
 
         // region constructor & initializer
         {
-            CodeFactory.registerType(AccountOverviewCard.AccountOverviewCardPayload.class, AccountOverviewCardPayloadImpl::new, (p, v) -> ((AccountOverviewCardPayloadImpl) v).new AccountOverviewCardPayloadImplSoloModifyImpl(p));
+            CodeFactory.registerType(AccountOverviewCard.AccountOverviewCardPayload.class, AccountOverviewCardPayloadImpl::new, (p, v, r) -> ((AccountOverviewCardPayloadImpl) v).new AccountOverviewCardPayloadImplSoloModifyImpl(p));
         }
 
         public AccountOverviewCardPayloadImpl() {

@@ -1,6 +1,7 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.test.card;
 
+import net.binis.test.card.AccountOverviewCard.AccountOverviewCardPayload;
 import net.binis.codegen.objects.Payload;
 import net.binis.codegen.objects.CompiledGeneric;
 import net.binis.codegen.modifier.BaseModifier;
