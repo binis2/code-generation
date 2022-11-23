@@ -701,10 +701,10 @@ public class Generator {
                         }
                         break;
                     case "enrichers":
-                        checkEnrichers(builder::enrichers, pair.getValue().asArrayInitializerExpr());
+                        checkEnrichers(builder::enrichers, handleEnricherInitializerAnnotation(pair));
                         break;
                     case "inheritedEnrichers":
-                        checkEnrichers(builder::inheritedEnrichers, pair.getValue().asArrayInitializerExpr());
+                        checkEnrichers(builder::inheritedEnrichers, handleEnricherInitializerAnnotation(pair));
                         break;
                     case "options":
                         checkOptions(builder::options, pair.getValue().asArrayInitializerExpr());
@@ -737,6 +737,18 @@ public class Generator {
                 list.forEach(e -> checkEnrichers(result.getInheritedEnrichers(), e)));
 
         return result;
+    }
+
+    private static ArrayInitializerExpr handleEnricherInitializerAnnotation(MemberValuePair pair) {
+        var expression = pair.getValue();
+        if (expression.isClassExpr()) {
+            var expr = new ArrayInitializerExpr();
+            expr.getValues().add(expression);
+            pair.setValue(expr);
+            return expr;
+        } else {
+            return expression.asArrayInitializerExpr();
+        }
     }
 
     private static void checkEnrichers(Consumer<List<PrototypeEnricher>> consumer, ArrayInitializerExpr expression) {
