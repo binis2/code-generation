@@ -32,6 +32,7 @@ import net.binis.codegen.options.CodeOption;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -94,5 +95,7 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     boolean hasOption(Class<? extends CodeOption> option);
     boolean hasEnricher(Class<? extends Enricher> enricher);
+
+    Map<String, PrototypeConstant> getConstants();
 }
 

@@ -70,10 +70,10 @@ import static net.binis.codegen.tools.Tools.*;
 public class Helpers {
 
     public static final Set<String> knownClassAnnotations = Set.of(
-            "javax.persistence.OneToOne",
-            "javax.persistence.ManyToOne",
-            "javax.persistence.OneToMany",
-            "javax.persistence.ManyToMany");
+            "jakarta.persistence.OneToOne",
+            "jakarta.persistence.ManyToOne",
+            "jakarta.persistence.OneToMany",
+            "jakarta.persistence.ManyToMany");
     public static final Map<String, String> knownTypes = Map.of(
             "CodeList",
             "net.binis.codegen.collection.CodeList",
@@ -245,6 +245,14 @@ public class Helpers {
         }
 
         return result;
+    }
+
+    public static Optional<String> getStaticImportIfExists(CompilationUnit unit, String expression) {
+        return unit.getImports().stream()
+                .filter(ImportDeclaration::isStatic)
+                .map(ImportDeclaration::getNameAsString)
+                .filter(i -> i.endsWith("." + expression))
+                .findFirst();
     }
 
     public static String findLocalType(CompilationUnit unit, String t) {

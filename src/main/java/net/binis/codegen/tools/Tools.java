@@ -62,6 +62,13 @@ public class Tools {
         }
     }
 
+    public static <R> void with(R object, Consumer<R> consumer, Runnable defaultRunnable) {
+        if (nonNull(object)) {
+            consumer.accept(object);
+        } else {
+            defaultRunnable.run();
+        }
+    }
 
     public static <R> R ifNull(R object, Supplier<R> supplier) {
         if (object == null) {

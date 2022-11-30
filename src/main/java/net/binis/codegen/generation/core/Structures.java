@@ -33,6 +33,7 @@ import lombok.*;
 import net.binis.codegen.annotation.type.EmbeddedModifierType;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
+import net.binis.codegen.generation.core.interfaces.PrototypeConstant;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
@@ -197,6 +198,11 @@ public class Structures {
         private String interfaceName;
         private String interfaceFullName;
 
+        @EqualsAndHashCode.Exclude
+        @Builder.Default
+        @ToString.Exclude
+        private Map<String, PrototypeConstant> constants = new HashMap<>();
+
         public String getImplementorFullName() {
             if (nonNull(mixIn)) {
                 return mixIn.parsedFullName;
@@ -313,6 +319,15 @@ public class Structures {
                     getProperties().inheritedEnrichers.stream().anyMatch(e -> enricher.isAssignableFrom(e.getClass()));
         }
 
+    }
+
+    @ToString
+    @Data
+    @Builder
+    public static class ConstantData implements PrototypeConstant {
+        protected ClassOrInterfaceDeclaration destination;
+        protected FieldDeclaration field;
+        protected String name;
     }
 
     @Data

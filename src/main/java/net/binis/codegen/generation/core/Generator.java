@@ -253,7 +253,7 @@ public class Generator {
             } else if (member.isClassOrInterfaceDeclaration()) {
                 processInnerClass(parse, typeDeclaration, spec, member.asClassOrInterfaceDeclaration());
             } else if (member.isFieldDeclaration()) {
-                processConstant(typeDeclaration, spec, intf, member.asFieldDeclaration());
+                processConstant(parse, typeDeclaration, spec, intf, member.asFieldDeclaration());
             } else {
                 log.error("Can't process method " + member);
             }
@@ -600,18 +600,22 @@ public class Generator {
         });
     }
 
-    private static void processConstant(ClassOrInterfaceDeclaration prototype, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, FieldDeclaration field) {
+    private static void processConstant(Structures.Parsed parse, ClassOrInterfaceDeclaration prototype, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, FieldDeclaration field) {
         var consts = getConstants(field);
         var f = field.clone();
         var name = field.getVariable(0).getNameAsString();
+        var data = Structures.ConstantData.builder().name(name).field(f);
         f.getAnnotationByName("CodeConstant").ifPresent(f::remove);
         if (consts.isForInterface()) {
             intf.addMember(f);
             addDeclaredConstant(prototype.getNameAsString(), intf.getNameAsString(), name);
+            data.destination(intf);
         } else {
             spec.addMember(f.addModifier(consts.isForPublic() ? PUBLIC : "serialVersionUID".equals(name) ? PRIVATE : PROTECTED).addModifier(STATIC).addModifier(FINAL));
             addDeclaredConstant(prototype.getNameAsString(), spec.getNameAsString(), name);
+            data.destination(spec);
         }
+        parse.getConstants().put(name, data.build());
     }
 
     private static Structures.PrototypeDataHandler getProperties(AnnotationExpr prototype) {
