@@ -480,7 +480,7 @@ public class Helpers {
 
 
     public static String findProperType(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, CompilationUnit unit, ClassExpr expr) {
-        var parent = findParentClassOfType(expr, AnnotationExpr.class, a -> knownClassAnnotations.contains(getExternalClassName(unit, a.getNameAsString())));
+        var parent = findParentClassOfType(expr, AnnotationExpr.class, a -> knownClassAnnotations.contains(getExternalClassName(expr.findCompilationUnit().get(), a.getNameAsString())));
 
         if (isNull(parent)) {
             return parsed.getFiles().get(1).getType(0).getNameAsString();
