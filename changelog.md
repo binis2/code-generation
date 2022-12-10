@@ -1,4 +1,15 @@
 # Change Log
+**12-12-2022** ver. 0.4.3
+* Core: CodeFactory can instantiate objects with parameters.
+* Core: Added if/else routine to BaseModifier.
+* Core: Added functional loop routines.
+* Core: Added projections usability helper.
+* Generator: Code generation for enums with constructors is less likely to fail because of duplicated parameter names.
+* Generator: Added enrichers handling for single class expressions.
+* Generator: Added constants handling for validation annotations.
+* Generator: Fixed JPA annotations discovery when fragments are used. 
+
+
 **20-10-2022** ver. 0.4.2
 * Generator: Added @DefaultString annotation to ease the definition of the default string values.
 * Generator: Fixed imports for compiled prototypes when used in combination with MixIn.
