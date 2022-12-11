@@ -22,18 +22,18 @@ package net.binis.codegen;
 
 import net.binis.codegen.test.BaseTest;
 import net.binis.codegen.generation.core.Helpers;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class WithBaseTest extends BaseTest {
+class WithBaseTest extends BaseTest {
 
-    @Before
+    @BeforeEach
     public void cleanUp() {
         Helpers.cleanUp();
     }
 
     @Test
-    public void base() {
+    void base() {
         testSingleWithBase("base/base1.java", "net.binis.codegen.BaseImpl",
                 "base/baseTest1.java", "net.binis.codegen.TestImpl",
                 "base/base1-0.java", "base/base1-1.java",
@@ -41,7 +41,7 @@ public class WithBaseTest extends BaseTest {
     }
 
     @Test
-    public void baseWithModifier() {
+    void baseWithModifier() {
         testSingleWithBase("base/base1.java", "net.binis.codegen.BaseImpl",
                 "base/baseTest2.java", "net.binis.codegen.TestImpl",
                 "base/base1-0.java", "base/base1-1.java",
@@ -49,7 +49,7 @@ public class WithBaseTest extends BaseTest {
     }
 
     @Test
-    public void baseWithInheritedModifier() {
+    void baseWithInheritedModifier() {
         testSingleWithBase("base/base2.java", "net.binis.codegen.BaseImpl",
                 "base/baseTest3.java", "net.binis.codegen.TestImpl",
                 "base/base2-0.java", "base/base2-1.java",

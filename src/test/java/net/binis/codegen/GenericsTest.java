@@ -24,21 +24,21 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.test.BaseTest;
 import org.apache.commons.lang3.tuple.Triple;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 @Slf4j
-public class GenericsTest extends BaseTest {
+class GenericsTest extends BaseTest {
 
-    @Before
+    @BeforeEach
     public void cleanUp() {
         Helpers.cleanUp();
     }
 
     @Test
-    public void testGenerics() {
+    void testGenerics() {
         testMulti(List.of(
                 Triple.of("generics/Extended1.java", "generics/Extended1-0.java", "generics/Extended1-1.java"),
                 Triple.of("generics/Test1.java", "generics/Test1-0.java", "generics/Test1-1.java")
@@ -46,7 +46,7 @@ public class GenericsTest extends BaseTest {
     }
 
     @Test
-    public void testGenericsWithBase() {
+    void testGenericsWithBase() {
         testMulti(List.of(
                 Triple.of("generics/Extended2.java", "generics/Extended1-0.java", "generics/Extended1-1.java"),
                 Triple.of("generics/Test2.java", "generics/Test2-0.java", "generics/Test2-1.java")
@@ -54,7 +54,7 @@ public class GenericsTest extends BaseTest {
     }
 
     @Test
-    public void testGenericsWithCompiledBase() {
+    void testGenericsWithCompiledBase() {
         testMulti(List.of(
                 Triple.of("generics/Prototype4.java", "generics/Prototype4-0.java", "generics/Prototype4-1.java"),
                 Triple.of("generics/Test4.java", "generics/Test4-0.java", "generics/Test4-1.java")
@@ -63,7 +63,7 @@ public class GenericsTest extends BaseTest {
 
 
     @Test
-    public void testGenericsWithBaseAndPrototype() {
+    void testGenericsWithBaseAndPrototype() {
         testMulti(List.of(
                 Triple.of("generics/Extended2.java", "generics/Extended1-0.java", "generics/Extended1-1.java"),
                 Triple.of("generics/Prototype3.java", "generics/Prototype3-0.java", "generics/Prototype3-1.java"),
@@ -72,7 +72,7 @@ public class GenericsTest extends BaseTest {
     }
 
     @Test
-    public void testGenericsWithCompiledBaseAndNestedPrototype() {
+    void testGenericsWithCompiledBaseAndNestedPrototype() {
         testSingleExecute("generics/Test5.java", "generics/Test5-0.java", "generics/Test5-1.java", 3, "generics/Test5-2.java");
     }
 

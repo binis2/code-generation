@@ -54,7 +54,7 @@ public class HibernateEnricherHandler extends BaseEnricher implements HibernateE
         field.getDeclaration().findCompilationUnit().ifPresent(unit ->
                 unit.addImport("org.hibernate.annotations.Type"));
 
-        field.getDeclaration().addAnnotation(StaticJavaParser.parseAnnotation("@Type(type = \"net.binis.codegen.hibernate.CodeEnumType\")"));
+        field.getDeclaration().addAnnotation(StaticJavaParser.parseAnnotation("@Type(net.binis.codegen.hibernate.CodeEnumType.class)"));
 
         //Silencing missing equals and hashCode Hibernate warning.
         with(field.getPrototype(), prototype -> {

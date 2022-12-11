@@ -24,31 +24,31 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.test.BaseTest;
 import org.apache.commons.lang3.tuple.Triple;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 @Slf4j
-public class EnumBasicsTest extends BaseTest {
+class EnumBasicsTest extends BaseTest {
 
-    @Before
+    @BeforeEach
     public void cleanUp() {
         Helpers.cleanUp();
     }
 
     @Test
-    public void test() {
+    void test() {
         testSingle("basic/enum/EnumTest1.java", "basic/enum/EnumTest1-0.java", "basic/enum/EnumTest1-1.java");
     }
 
     @Test
-    public void testExtended() {
+    void testExtended() {
         testSingle("basic/enum/EnumTest2.java", "basic/enum/EnumTest2-0.java", "basic/enum/EnumTest2-1.java");
     }
 
     @Test
-    public void testMixIn() {
+    void testMixIn() {
         testMulti(List.of(
                 Triple.of("basic/enum/EnumTest3.java", "basic/enum/EnumTest3-0.java", "basic/enum/EnumTest3-1.java"),
                 Triple.of("basic/enum/EnumTest3MixIn.java", null, "basic/enum/EnumTest3MixIn-1.java"),

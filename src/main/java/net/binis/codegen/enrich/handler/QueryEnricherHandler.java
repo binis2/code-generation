@@ -39,10 +39,8 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.spring.annotation.Joinable;
 import net.binis.codegen.spring.annotation.QueryFragment;
-import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
+import org.springframework.core.StandardReflectionParameterNameDiscoverer;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -493,7 +491,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
                 desc.getDescription().getAnnotations().forEach(a -> {
                     var cls = Helpers.getExternalClassNameIfExists(desc.getDescription().findCompilationUnit().get(), a.getNameAsString());
-                    if ("javax.persistence.Id".equals(cls)) {
+                    if ("jakarta.persistence.Id".equals(cls)) {
                         description.getCustomInitializers().add(b ->
                                 b.addStatement("CodeFactory.registerId(" + entity + ".class, \"" + fName + "\", " + field.getVariable(0).getType().asString() + ".class);"));
                     }
@@ -510,7 +508,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
             if ("Transient".equals(name)) {
                 name = Helpers.getExternalClassName(field.getDescription().findCompilationUnit().get(), name);
             }
-            if ("javax.persistence.Transient".equals(name) || "org.springframework.data.annotation.Transient".equals(name)) {
+            if ("jakarta.persistence.Transient".equals(name) || "org.springframework.data.annotation.Transient".equals(name)) {
                 return true;
             }
         }
@@ -565,21 +563,16 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     }
 
     private String getCompiledPreset(Class<?> cls, Method method) {
-        //TODO: Replace with invokeDefault when migrating to jdk 16+
         var result = "Invalid method!";
         InvocationHandler handler = (proxy, mtd, args) -> {
-            final Class declaringClass = mtd.getDeclaringClass();
-            Constructor<MethodHandles.Lookup> constructor = MethodHandles.Lookup.class.getDeclaredConstructor(Class.class, int.class);
-            constructor.setAccessible(true);
-            return
-                    constructor.newInstance(declaringClass, -1)
-                            .unreflectSpecial(mtd, declaringClass)
-                            .bindTo(proxy)
-                            .invokeWithArguments(args);
+            if (mtd.isDefault()) {
+                return InvocationHandler.invokeDefault(proxy, mtd, args);
+            }
+            throw new IllegalStateException("Unable to find default method!");
         };
         try {
             var proxy = cls.cast(Proxy.newProxyInstance(
-                    cls.getClassLoader(), new Class<?>[]{cls}, handler));
+                    cls.getClassLoader(), new Class<?>[] {cls}, handler));
 
             var mtd = Arrays.stream(proxy.getClass().getDeclaredMethods())
                     .filter(m -> m.getName().equals(method.getName()))
@@ -647,7 +640,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
             copyParameters(method, impl);
 
-            expression = handlePresetParameters(description, expression, mtd, impl);
+            expression = handlePresetParameters(description, expression);
 
             impl.setBody(description.getParser().parseBlock("{((" + description.getInterfaceName() + "." + QUERY_SELECT + "<Object>) this)" + expression + "return this;}").getResult().get());
         } else {
@@ -687,7 +680,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     }
 
     private void copyCompiledParameters(Method method, MethodDeclaration dest) {
-        var names = new LocalVariableTableParameterNameDiscoverer().getParameterNames(method);
+        var names = new StandardReflectionParameterNameDiscoverer().getParameterNames(method);
         var params = method.getParameters();
         var unit = dest.findCompilationUnit().get();
         for (var i = 0; i < params.length; i++) {
@@ -704,7 +697,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         }
     }
 
-    private String handlePresetParameters(PrototypeDescription<ClassOrInterfaceDeclaration> description, String expression, MethodDeclaration mtd, MethodDeclaration impl) {
+    private String handlePresetParameters(PrototypeDescription<ClassOrInterfaceDeclaration> description, String expression) {
         var params = expression.split(".field\\(|.prototype\\(|.collection\\(");
 
         if (params.length > 1) {

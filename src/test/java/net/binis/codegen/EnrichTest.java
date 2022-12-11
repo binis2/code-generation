@@ -21,43 +21,39 @@ package net.binis.codegen;
  */
 
 import net.binis.codegen.generation.core.Helpers;
-import net.binis.codegen.objects.Pair;
 import net.binis.codegen.test.BaseTest;
-import org.apache.commons.lang3.tuple.Triple;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.util.List;
+class EnrichTest extends BaseTest {
 
-public class EnrichTest extends BaseTest {
-
-    @Before
+    @BeforeEach
     public void cleanUp() {
         Helpers.cleanUp();
     }
 
     @Test
-    public void enrichAs() {
+    void enrichAs() {
         testSingle("enrich/enrichAs.java", "enrich/enrichAs-0.java", "enrich/enrichAs-1.java");
     }
 
     @Test
-    public void enrichCreator() {
+    void enrichCreator() {
         testSingle("enrich/enrichCreator.java", "enrich/enrichCreator-0.java", "enrich/enrichCreator-1.java");
     }
 
     @Test
-    public void enrichCreatorModifier() {
+    void enrichCreatorModifier() {
         testSingle("enrich/enrichCreatorModifier.java", "enrich/enrichCreatorModifier-0.java", "enrich/enrichCreatorModifier-1.java");
     }
 
     @Test
-    public void enrichCreatorModifierWithoutModifier() {
+    void enrichCreatorModifierWithoutModifier() {
         testSingle("enrich/enrichCreatorModifier2.java", "enrich/enrichCreatorModifier2-0.java", "enrich/enrichCreatorModifier2-1.java");
     }
 
     @Test
-    public void enrichWithBaseWithModifier() {
+    void enrichWithBaseWithModifier() {
         testSingleWithBase("enrich/enrichBase1.java", "net.binis.codegen.BaseImpl",
                 "enrich/enrichBaseTest1.java", "net.binis.codegen.TestImpl",
                 "enrich/enrichBase1-0.java", "enrich/enrichBase1-1.java",
@@ -65,7 +61,7 @@ public class EnrichTest extends BaseTest {
     }
 
     @Test
-    public void enrichCreatorModifierWithMixin() {
+    void enrichCreatorModifierWithMixin() {
         testSingleWithMixIn("enrich/enrichCreatorModifier.java", "net.binis.codegen.TestImpl",
                 "enrich/enrichCreatorModifierMixIn.java", "net.binis.codegen.MixInImpl",
                 "enrich/enrichCreatorModifierMixIn-0.java", "enrich/enrichCreatorModifierMixIn-1.java",
@@ -73,17 +69,17 @@ public class EnrichTest extends BaseTest {
     }
 
     @Test
-    public void enrichClone() {
+    void enrichClone() {
         testSingle("enrich/enrichClone.java", "enrich/enrichClone-0.java", "enrich/enrichClone-1.java");
     }
 
     @Test
-    public void enrichCreatorModifierWithPredefinedProperties() {
+    void enrichCreatorModifierWithPredefinedProperties() {
         testSingle("enrich/enrichCreatorModifierPredefined.java", "enrich/enrichCreatorModifier-0.java", "enrich/enrichCreatorModifier-1.java");
     }
 
     @Test
-    public void enrichFluent() {
+    void enrichFluent() {
         testSingle("enrich/enrichFluent.java", "enrich/enrichFluent-0.java", "enrich/enrichFluent-1.java");
     }
 

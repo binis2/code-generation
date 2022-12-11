@@ -1,5 +1,10 @@
 # Change Log
-**12-12-2022** ver. 0.4.3
+**11-12-2022** ver. 1.0.0
+* All: Migrated to Java 17
+* Hibernate: Migrated to Hibernate 6
+* Spring: Migrated to Spring 6 and Spring Boot 3
+
+**10-12-2022** ver. 0.4.3
 * Core: CodeFactory can instantiate objects with parameters.
 * Core: Added if/else routine to BaseModifier.
 * Core: Added functional loop routines.

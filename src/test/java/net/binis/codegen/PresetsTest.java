@@ -22,23 +22,23 @@ package net.binis.codegen;
 
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.test.BaseTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class PresetsTest extends BaseTest {
+class PresetsTest extends BaseTest {
 
-    @Before
+    @BeforeEach
     public void cleanUp() {
         Helpers.cleanUp();
     }
 
     @Test
-    public void test() {
+    void test() {
         testSingle("preset/PresetTest1.java", "preset/PresetTest1-0.java", "preset/PresetTest1-1.java");
     }
 
     @Test
-    public void testWithCompiledPrototype() {
+    void testWithCompiledPrototype() {
         testSingle("preset/PresetTestCompiled1.java", "preset/PresetTestCompiled1-0.java", "preset/PresetTestCompiled1-1.java", 2);
     }
 

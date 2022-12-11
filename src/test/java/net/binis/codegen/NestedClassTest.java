@@ -23,24 +23,24 @@ package net.binis.codegen;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.test.BaseTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 @Slf4j
-public class NestedClassTest extends BaseTest {
+class NestedClassTest extends BaseTest {
 
-    @Before
+    @BeforeEach
     public void cleanUp() {
         Helpers.cleanUp();
     }
 
     @Test
-    public void test() {
+    void test() {
         testSingle("nested/Test1.java", "nested/Test1-0.java", "nested/Test1-1.java", 2);
     }
 
     @Test
-    public void testNestedPrototype() {
+    void testNestedPrototype() {
         testSingle("nested/Test2.java", "nested/Test2-0.java", "nested/Test2-1.java", 2);
     }
 

@@ -46,7 +46,7 @@ import net.binis.codegen.options.CodeOption;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
+import org.springframework.core.StandardReflectionParameterNameDiscoverer;
 
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
@@ -66,6 +66,7 @@ import static net.binis.codegen.tools.Tools.*;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 @Slf4j
+@SuppressWarnings("unchecked")
 public class Generator {
 
     public static final String MIX_IN_EXTENSION = "$MixIn";
@@ -1750,7 +1751,7 @@ public class Generator {
             var unit = spec.findCompilationUnit().get();
             var method = spec.addMethod(declaration.getName());
             method.setType(mapGenericMethodSignature(declaration, signature));
-            var names = new LocalVariableTableParameterNameDiscoverer().getParameterNames(declaration);
+            var names = new StandardReflectionParameterNameDiscoverer().getParameterNames(declaration);
             for (var i = 0; i < declaration.getParameterCount(); i++) {
                 var param = declaration.getParameters()[i];
                 if (declaration.getGenericParameterTypes()[i] instanceof ParameterizedType) {

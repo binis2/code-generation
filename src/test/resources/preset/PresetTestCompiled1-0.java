@@ -7,11 +7,11 @@ import net.binis.codegen.spring.query.base.BaseQueryNameImpl;
 import net.binis.codegen.spring.query.*;
 import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.creator.EntityCreator;
-import javax.persistence.OneToOne;
 import javax.annotation.processing.Generated;
 import java.util.function.Function;
 import java.util.Optional;
 import java.util.List;
+import jakarta.persistence.OneToOne;
 
 @Generated(value = "PresetTestPrototype", comments = "PresetTest")
 @SuppressWarnings(value = "unchecked")

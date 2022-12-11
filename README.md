@@ -5,7 +5,10 @@ Code generation module for Binis CodeGen Library.
 ### Introduction
 
 This is a code generation library inspired by [lombok](https://projectlombok.org/) with the addition of generating/handling interfaces and reduced manual typing even more.
-There are some extensions that heavily support functional programming.
+There are some extensions that heavily support functional programming.  
+
+**Note: Since version 1.0 the library uses and supports Java 17+ (Spring 6, Spring Boot 3, Hibernate 6 for specific modules) for Java 11+ (Spring 5, Spring Boot 2, Hibernate 5) support use version 0.x of the library.**
+
 ### Basics
 
 CodeGen library is based on object prototypes. Here is simple example.
@@ -243,8 +246,6 @@ So let's declare a base entity first:
 @CodePrototype(
         base = true,
         interfaceName = "BaseInterface",
-        classGetters = false,
-        classSetters = false,
         interfaceSetters = false,
         implementationPackage = "my.project.db.entity",
         enrichers = {AsEnricher.class, ModifierEnricher.class},
@@ -283,12 +284,7 @@ public interface BaseEntityPrototype extends Serializable, Identifiable {
     @Ignore(forInterface = true, forModifier = true)
     @LastModifiedBy
     String modifiedBy();
-
-    @Data
-    @ToString(onlyExplicitlyIncluded = true)
-    public static class BaseClassAnnotations {
-
-    }
+    
 }
 ```
 
@@ -297,8 +293,6 @@ Now an actual entity:
 ```java
 
 @CodePrototype(
-        classGetters = false,
-        classSetters = false,
         interfaceSetters = false,
         implementationPackage = "my.project.db.entity",
         baseModifierClass = BaseEntityModifier.class)
@@ -310,7 +304,6 @@ public interface UserEntityPrototype extends BaseEntityPrototype, Addressable, S
 
     String TABLE_NAME = "users";
 
-    @ToString.Include
     @Column(unique = true)
     String username();
 
@@ -341,12 +334,6 @@ public interface UserEntityPrototype extends BaseEntityPrototype, Addressable, S
         return !CustomerStatus.INACTIVE.equals(status());
     }
 
-    @Data
-    @EqualsAndHashCode(callSuper = true)
-    @ToString(onlyExplicitlyIncluded = true)
-    class ClassAnnotations extends BaseClassAnnotations implements Previewable {
-
-    }
 }
 ```
 Now you can simply write things like this anywhere in your code without need of anything else except importing your new interface
@@ -415,7 +402,7 @@ or you can use the annotation processor
 <dependency>
     <groupId>dev.binis</groupId>
     <artifactId>code-generator-annotation</artifactId>
-    <version>0.4.3</version>
+    <version>1.0.0</version>
     <scope>compile</scope>
 </dependency>
 ```
@@ -425,7 +412,7 @@ or you can use the annotation processor
     <dependency>
         <groupId>dev.binis</groupId>
         <artifactId>code-generator</artifactId>
-        <version>0.4.3</version>
+        <version>1.0.0</version>
     </dependency>
 ```
 

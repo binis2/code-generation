@@ -53,7 +53,7 @@ import static net.binis.codegen.generation.core.CompileHelper.getCompilationUnit
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Tools.ifNull;
 import static net.binis.codegen.tools.Tools.with;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public abstract class BaseTest {
@@ -95,7 +95,7 @@ public abstract class BaseTest {
         var source = resourceAsString(resource);
 
         var parse = parser.parse(source);
-        assertTrue(parse.toString(), parse.isSuccessful());
+        assertTrue(parse.isSuccessful(), parse.toString());
         if (nonNull(list)) {
             var result = parse.getResult().get();
             var name = (String) result.findFirst(TypeDeclaration.class).get().getFullyQualifiedName().get();
@@ -119,7 +119,7 @@ public abstract class BaseTest {
 
     protected void compare(CompilationUnit unit, String resource) {
         if (nonNull(resource)) {
-            assertEquals(resource, resourceAsString(resource), getAsString(unit));
+            assertEquals(resourceAsString(resource), getAsString(unit), resource);
         }
     }
 
@@ -405,12 +405,12 @@ public abstract class BaseTest {
 
         if (nonNull(resExecute)) {
             var cls = loader.findClass(className);
-            assertNotNull("Executor class not found!", cls);
-            assertNotNull("Executor doesn't inherit TestExecutor!", cls.getSuperclass());
-            assertEquals("Executor doesn't inherit TestExecutor!", TestExecutor.class, cls.getSuperclass());
+            assertNotNull(cls, "Executor class not found!");
+            assertNotNull(cls.getSuperclass(), "Executor doesn't inherit TestExecutor!");
+            assertEquals(TestExecutor.class, cls.getSuperclass(), "Executor doesn't inherit TestExecutor!");
             defineObjects(loader, objects);
             Reflection.withLoader(loader, () ->
-                    assertTrue("Test execution failed!", TestExecutor.test((Class<? extends TestExecutor>) cls)));
+                    assertTrue(TestExecutor.test((Class<? extends TestExecutor>) cls), "Test execution failed!"));
         }
 
         return true;
