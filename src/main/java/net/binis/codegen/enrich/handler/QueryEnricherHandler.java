@@ -681,15 +681,19 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
     private void copyCompiledParameters(Method method, MethodDeclaration dest) {
         var names = new StandardReflectionParameterNameDiscoverer().getParameterNames(method);
+        if (isNull(names)) {
+            log.info("Project is compiled without '-parameters' argument. Thus why the actual parameter names can't be extracted!");
+        }
         var params = method.getParameters();
         var unit = dest.findCompilationUnit().get();
         for (var i = 0; i < params.length; i++) {
             var proto = lookup.findParsed(params[i].getType().getCanonicalName());
+            var name = isNull(names) ? params[i].getName() : names[i];
             if (nonNull(proto)) {
-                dest.addParameter(proto.getInterfaceName(), names[i]);
+                dest.addParameter(proto.getInterfaceName(), name);
                 unit.addImport(proto.getInterfaceFullName());
             } else {
-                dest.addParameter(params[i].getType().getSimpleName(), names[i]);
+                dest.addParameter(params[i].getType().getSimpleName(), name);
 //                if (!Helpers.isJavaType(param.getType().getCanonicalName())) {
 //                    unit.addImport(param.getType().getCanonicalName());
 //                }
