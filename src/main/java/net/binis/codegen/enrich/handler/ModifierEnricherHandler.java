@@ -275,7 +275,8 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         }
         var path = full.substring(0, full.indexOf(baseModifier)) + "impl." + baseModifier + "Impl";
         if (!description.getProperties().isBase()) {
-            description.getSpec().findCompilationUnit().ifPresent(u -> u.addImport(path));
+            (isNull(description.getMixIn()) ? description : description.getMixIn())
+                    .getSpec().findCompilationUnit().ifPresent(u -> u.addImport(path));
         }
         return baseModifier + "Impl";
     }
