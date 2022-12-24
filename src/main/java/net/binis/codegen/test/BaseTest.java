@@ -26,8 +26,10 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.CodeGen;
+import net.binis.codegen.discoverer.AnnotationDiscoverer;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
+import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
 import net.binis.codegen.objects.Pair;
@@ -60,6 +62,11 @@ public abstract class BaseTest {
 
     protected JavaParser parser = new JavaParser();
 
+    {
+        AnnotationDiscoverer.findAnnotations().forEach(a ->
+                Structures.registerTemplate(a.getCls()));
+    }
+
     protected String getAsString(CompilationUnit file) {
         var printer = new CodeGenPrettyPrinter();
 
@@ -80,7 +87,7 @@ public abstract class BaseTest {
 
         lookup.calcPrototypeMaps();
 
-        with(lookup.parsed().stream().filter(PrototypeDescription::isValid).sorted(Helpers::sortForEnrich).collect(Collectors.toList()), list -> {
+        with(lookup.parsed().stream().filter(PrototypeDescription::isValid).sorted(Helpers::sortForEnrich).toList(), list -> {
             list.forEach(Helpers::handleEnrichers);
             list.forEach(Helpers::finalizeEnrichers);
             list.forEach(Helpers::postProcessEnrichers);

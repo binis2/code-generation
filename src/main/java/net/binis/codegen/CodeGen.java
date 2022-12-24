@@ -25,6 +25,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.discoverer.AnnotationDiscoverer;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.Structures;
@@ -65,6 +66,9 @@ public class CodeGen {
 
     public static void main(String[] args) throws IOException {
         log.info("Class path: {}", System.getProperty("java.class.path"));
+
+        AnnotationDiscoverer.findAnnotations().forEach(a ->
+            Structures.registerTemplate(a.getCls()));
 
         var cmd = handleArgs(args);
 

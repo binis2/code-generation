@@ -38,11 +38,14 @@ import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.options.CodeOption;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 
+import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -51,7 +54,7 @@ import static net.binis.codegen.options.Options.*;
 
 public class Structures {
 
-    public static final Map<String, Supplier<PrototypeDataHandler.PrototypeDataHandlerBuilder>> defaultProperties = initDefaultProperties();
+    public static final Map<String, Supplier<PrototypeDataHandler.PrototypeDataHandlerBuilder>> defaultProperties = new HashMap<>();//initDefaultProperties();
 
     @Getter
     @Setter
@@ -90,13 +93,20 @@ public class Structures {
         private List<PrototypeEnricher> enrichers;
         private List<PrototypeEnricher> inheritedEnrichers;
         private Set<Class<? extends CodeOption>> options;
+        private Map<String, Object> custom;
 
         private List<Class<? extends Enricher>> predefinedEnrichers;
         private List<Class<? extends Enricher>> predefinedInheritedEnrichers;
 
         //Custom builder to satisfy java-doc
         public static class PrototypeDataHandlerBuilder {
-
+            public PrototypeDataHandlerBuilder custom(String name, Object value) {
+                if (isNull(custom)) {
+                    custom = new HashMap<>();
+                }
+                custom.put(name, value);
+                return this;
+            }
         }
 
     }
@@ -286,19 +296,15 @@ public class Structures {
         public void addEmbeddedModifier(EmbeddedModifierType type) {
             if (!type.equals(embeddedModifierType) && !EmbeddedModifierType.BOTH.equals(embeddedModifierType)) {
                 switch (type) {
-                    case SINGLE:
-                    case COLLECTION:
+                    case SINGLE, COLLECTION -> {
                         if (EmbeddedModifierType.NONE.equals(embeddedModifierType)) {
                             embeddedModifierType = type;
                         } else {
                             embeddedModifierType = EmbeddedModifierType.BOTH;
                         }
-                        break;
-                    case BOTH:
-                        embeddedModifierType = type;
-                        break;
-                    default:
-                        //Do nothing
+                    }
+                    case BOTH -> embeddedModifierType = type;
+                    default -> {/*Do nothing*/}
                 }
             }
         }
@@ -366,7 +372,7 @@ public class Structures {
         return result.get();
     }
 
-    private static PrototypeDataHandler.PrototypeDataHandlerBuilder defaultBuilder() {
+    public static PrototypeDataHandler.PrototypeDataHandlerBuilder defaultBuilder() {
         return Structures.PrototypeDataHandler.builder()
                 .generateConstructor(true)
                 .generateInterface(true)
@@ -377,29 +383,47 @@ public class Structures {
                 .modifierName(net.binis.codegen.generation.core.Constants.MODIFIER_INTERFACE_NAME);
     }
 
-    private static Map<String, Supplier<PrototypeDataHandler.PrototypeDataHandlerBuilder>> initDefaultProperties() {
-        return Map.of(
-                "CodePrototype", Structures::defaultBuilder,
-                "CodeBuilder", () -> defaultBuilder()
-                        .predefinedEnrichers(List.of(CREATOR_MODIFIER, MODIFIER, REGION))
-                        .classSetters(false)
-                        .interfaceSetters(false),
-                "CodeValidationBuilder", () -> defaultBuilder()
-                        .predefinedEnrichers(List.of(VALIDATION, CREATOR_MODIFIER, MODIFIER, REGION))
-                        .classSetters(false)
-                        .interfaceSetters(false),
-                "CodeQueryBuilder", () -> defaultBuilder()
-                        .predefinedEnrichers(List.of(QUERY, VALIDATION, CREATOR_MODIFIER, MODIFIER, REGION))
-                        .classSetters(false)
-                        .interfaceSetters(false)
-                        .baseModifierClass("net.binis.codegen.spring.modifier.BaseEntityModifier"),
-                "CodeRequest", () -> defaultBuilder()
-                        .predefinedEnrichers(List.of(VALIDATION, CREATOR, OPENAPI, JACKSON, REGION))
-                        .classSetters(false)
-                        .interfaceSetters(false)
-                        .options(Set.of(VALIDATION_FORM, HIDDEN_CREATE_METHOD, GENERATE_OPENAPI_IF_AVAILABLE, HANDLE_JACKSON_IF_AVAILABLE)),
-                "EnumPrototype", Structures::defaultBuilder
-        );
+    @SuppressWarnings("unchecked")
+    public static void registerTemplate(Class<? extends Annotation> ann) {
+        defaultProperties.put(ann.getSimpleName(), () -> {
+            var builder = defaultBuilder();
+
+            for (var method : ann.getDeclaredMethods()) {
+                switch (method.getName()) {
+                    case "base" -> builder.base((boolean) method.getDefaultValue());
+                    case "name" -> builder.name(handleString(method.getDefaultValue()));
+                    case "generateConstructor" -> builder.generateConstructor((boolean) method.getDefaultValue());
+                    case "options" -> builder.options((Set) Arrays.stream((Class[]) method.getDefaultValue()).collect(Collectors.toSet()));
+                    case "interfaceName" -> builder.interfaceName(handleString(method.getDefaultValue()));
+                    case "implementationPath" -> builder.implementationPath(handleString(method.getDefaultValue()));
+                    case "enrichers" -> builder.predefinedEnrichers((List) Arrays.stream((Class[]) method.getDefaultValue()).toList());
+                    case "inheritedEnrichers" -> builder.predefinedInheritedEnrichers((List) Arrays.stream((Class[]) method.getDefaultValue()).toList());
+                    case "interfaceSetters" -> builder.interfaceSetters((boolean) method.getDefaultValue());
+                    case "classGetters" -> builder.classGetters((boolean) method.getDefaultValue());
+                    case "classSetters" -> builder.classSetters((boolean) method.getDefaultValue());
+                    case "baseModifierClass" -> builder.baseModifierClass(handleClass(method.getDefaultValue()));
+                    case "mixInClass" -> builder.mixInClass(handleClass(method.getDefaultValue()));
+                    case "interfacePath" -> builder.interfacePath(handleString(method.getDefaultValue()));
+                    case "generateInterface" -> builder.generateInterface((boolean) method.getDefaultValue());
+                    case "basePath" -> builder.basePath(handleString(method.getDefaultValue()));
+                    case "generateImplementation" -> builder.generateImplementation((boolean) method.getDefaultValue());
+                    case "implementationPackage" -> builder.classPackage(handleString(method.getDefaultValue()));
+                    default -> builder.custom(method.getName(), method.getDefaultValue());
+                }
+            }
+
+            return builder;
+        });
+    }
+
+    private static String handleString(Object value) {
+        var val = (String) value;
+        return StringUtils.isBlank(val) ? null : val;
+    }
+
+    private static String handleClass(Object value) {
+        var val = (Class) value;
+        return void.class.equals(val) ? null : val.getCanonicalName();
     }
 
 }
