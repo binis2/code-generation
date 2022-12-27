@@ -23,13 +23,12 @@ package net.binis.codegen.generation.core;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.FieldDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.body.*;
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.Type;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.type.EmbeddedModifierType;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
@@ -51,10 +50,13 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.enrich.Enrichers.*;
 import static net.binis.codegen.options.Options.*;
+import static net.binis.codegen.tools.Reflection.loadClass;
+import static net.binis.codegen.tools.Tools.with;
 
+@Slf4j
 public class Structures {
 
-    public static final Map<String, Supplier<PrototypeDataHandler.PrototypeDataHandlerBuilder>> defaultProperties = new HashMap<>();//initDefaultProperties();
+    public static final Map<String, Supplier<PrototypeDataHandler.PrototypeDataHandlerBuilder>> defaultProperties = new HashMap<>();
 
     @Getter
     @Setter
@@ -393,11 +395,14 @@ public class Structures {
                     case "base" -> builder.base((boolean) method.getDefaultValue());
                     case "name" -> builder.name(handleString(method.getDefaultValue()));
                     case "generateConstructor" -> builder.generateConstructor((boolean) method.getDefaultValue());
-                    case "options" -> builder.options((Set) Arrays.stream((Class[]) method.getDefaultValue()).collect(Collectors.toSet()));
+                    case "options" ->
+                            builder.options((Set) Arrays.stream((Class[]) method.getDefaultValue()).collect(Collectors.toSet()));
                     case "interfaceName" -> builder.interfaceName(handleString(method.getDefaultValue()));
                     case "implementationPath" -> builder.implementationPath(handleString(method.getDefaultValue()));
-                    case "enrichers" -> builder.predefinedEnrichers((List) Arrays.stream((Class[]) method.getDefaultValue()).toList());
-                    case "inheritedEnrichers" -> builder.predefinedInheritedEnrichers((List) Arrays.stream((Class[]) method.getDefaultValue()).toList());
+                    case "enrichers" ->
+                            builder.predefinedEnrichers((List) Arrays.stream((Class[]) method.getDefaultValue()).toList());
+                    case "inheritedEnrichers" ->
+                            builder.predefinedInheritedEnrichers((List) Arrays.stream((Class[]) method.getDefaultValue()).toList());
                     case "interfaceSetters" -> builder.interfaceSetters((boolean) method.getDefaultValue());
                     case "classGetters" -> builder.classGetters((boolean) method.getDefaultValue());
                     case "classSetters" -> builder.classSetters((boolean) method.getDefaultValue());
@@ -414,6 +419,97 @@ public class Structures {
 
             return builder;
         });
+    }
+
+    public static void registerTemplate(AnnotationDeclaration template) {
+        defaultProperties.put(template.getNameAsString(), () -> {
+            var builder = defaultBuilder();
+
+            template.getMembers().stream()
+                    .filter(BodyDeclaration::isAnnotationMemberDeclaration)
+                    .map(BodyDeclaration::asAnnotationMemberDeclaration)
+                    .filter(m -> m.getDefaultValue().isPresent())
+                    .forEach(member -> {
+                        switch (member.getNameAsString()) {
+                            case "base" -> builder.base(handleBooleanExpression(member.getDefaultValue().get()));
+                            case "name" -> builder.name(handleStringExpression(member.getDefaultValue().get()));
+                            case "generateConstructor" ->
+                                    builder.generateConstructor(handleBooleanExpression(member.getDefaultValue().get()));
+                            case "options" ->
+                                    builder.options(handleClassExpression(member.getDefaultValue().get(), Set.class));
+                            case "interfaceName" ->
+                                    builder.interfaceName(handleStringExpression(member.getDefaultValue().get()));
+                            case "implementationPath" ->
+                                    builder.implementationPath(handleStringExpression(member.getDefaultValue().get()));
+                            case "enrichers" ->
+                                    builder.predefinedEnrichers(handleClassExpression(member.getDefaultValue().get(), List.class));
+                            case "inheritedEnrichers" ->
+                                    builder.predefinedInheritedEnrichers(handleClassExpression(member.getDefaultValue().get(), List.class));
+                            case "interfaceSetters" ->
+                                    builder.interfaceSetters(handleBooleanExpression(member.getDefaultValue().get()));
+                            case "classGetters" ->
+                                    builder.classGetters(handleBooleanExpression(member.getDefaultValue().get()));
+                            case "classSetters" ->
+                                    builder.classSetters(handleBooleanExpression(member.getDefaultValue().get()));
+                            case "baseModifierClass" ->
+                                    builder.baseModifierClass(handleClassExpression(member.getDefaultValue().get()));
+                            case "mixInClass" ->
+                                    builder.mixInClass(handleClassExpression(member.getDefaultValue().get()));
+                            case "interfacePath" ->
+                                    builder.interfacePath(handleStringExpression(member.getDefaultValue().get()));
+                            case "generateInterface" ->
+                                    builder.generateInterface(handleBooleanExpression(member.getDefaultValue().get()));
+                            case "basePath" -> builder.basePath(handleStringExpression(member.getDefaultValue().get()));
+                            case "generateImplementation" ->
+                                    builder.generateImplementation(handleBooleanExpression(member.getDefaultValue().get()));
+                            case "implementationPackage" ->
+                                    builder.classPackage(handleStringExpression(member.getDefaultValue().get()));
+                            default -> builder.custom(member.getNameAsString(), member.getDefaultValue().get());
+                        }
+                    });
+
+            return builder;
+        });
+    }
+
+    private static <T extends Collection> T handleClassExpression(Expression value, Class<T> cls) {
+        var result = Set.class.equals(cls) ? new HashSet<>() : new ArrayList<>();
+        if (value.isArrayInitializerExpr()) {
+            value.asArrayInitializerExpr().getValues().forEach(v ->
+                    with(handleClassExpression(v), r ->
+                            with(loadClass(r), c -> result.add(c))));
+        } else if (value.isClassExpr()) {
+            with(handleClassExpression(value), r ->
+                    with(loadClass(r), c -> result.add(c)));
+        } else {
+            log.warn("Class expression not implemented: {}", value.getClass().getCanonicalName());
+        }
+        return (T) result;
+    }
+
+    private static String handleClassExpression(Expression value) {
+        if (value.isClassExpr()) {
+            return Helpers.getExternalClassNameIfExists(value.findCompilationUnit().get(), value.asClassExpr().getType().toString());
+        }
+        log.warn("Class expression not implemented: {}", value.getClass().getCanonicalName());
+        return null;
+    }
+
+    private static String handleStringExpression(Expression expression) {
+        if (expression.isStringLiteralExpr()) {
+            return expression.asStringLiteralExpr().getValue();
+        }
+        log.warn("String expression not implemented: {}", expression.getClass().getCanonicalName());
+        return null;
+    }
+
+    private static boolean handleBooleanExpression(Expression expression) {
+        if (expression.isBooleanLiteralExpr()) {
+            return expression.asBooleanLiteralExpr().getValue();
+        }
+
+        log.warn("Boolean expression not implemented: {}", expression.getClass().getCanonicalName());
+        return false;
     }
 
     private static String handleString(Object value) {

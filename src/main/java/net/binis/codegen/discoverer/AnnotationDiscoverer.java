@@ -18,7 +18,7 @@ import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
-public class AnnotationDiscoverer {
+public abstract class AnnotationDiscoverer {
 
     public static final String TEMPLATE = "template";
     protected static String RESOURCE_PATH = "binis/annotations";

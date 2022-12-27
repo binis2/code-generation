@@ -22,6 +22,7 @@ package net.binis.codegen;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.AnnotationDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
 import net.binis.codegen.tools.CollectionUtils;
 import org.apache.commons.cli.*;
 
+import javax.lang.model.element.Name;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -68,7 +70,7 @@ public class CodeGen {
         log.info("Class path: {}", System.getProperty("java.class.path"));
 
         AnnotationDiscoverer.findAnnotations().forEach(a ->
-            Structures.registerTemplate(a.getCls()));
+                Structures.registerTemplate(a.getCls()));
 
         var cmd = handleArgs(args);
 
@@ -313,4 +315,24 @@ public class CodeGen {
         }
     }
 
+    public static void processTemplate(String name, String source) {
+        log.info("Processing template: {}", name);
+        var parser = new JavaParser();
+        var parse = parser.parse(source);
+        parse.getResult().ifPresentOrElse(u ->
+                        u.getTypes().forEach(CodeGen::handleTemplate),
+                () -> {
+                    log.error("Failed template processing ({}) with:", name);
+                    parse.getProblems().forEach(p ->
+                            log.error("    {}:{} {}", p.getCause().map(Object::toString).orElse(""), p.getMessage(), p.getLocation().map(Object::toString).orElse("")));
+                });
+    }
+
+    private static void handleTemplate(TypeDeclaration<?> t) {
+        if (t instanceof AnnotationDeclaration) {
+            Structures.registerTemplate(t.asAnnotationDeclaration());
+        } else {
+            log.error("Invalid template declaration!");
+        }
+    }
 }
