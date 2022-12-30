@@ -328,7 +328,7 @@ public class CodeGen {
                 });
     }
 
-    private static void handleTemplate(TypeDeclaration<?> t) {
+    public static void handleTemplate(TypeDeclaration<?> t) {
         if (t instanceof AnnotationDeclaration) {
             Structures.registerTemplate(t.asAnnotationDeclaration());
         } else {

@@ -1102,7 +1102,7 @@ public class Generator {
                         if (ForInterface.class.equals(ann)) {
                             next.set(true);
                             return;
-                        } else if (isNull(ann.getAnnotation(CodeAnnotation.class))) {
+                        } else if (isNull(ann.getAnnotation(CodeAnnotation.class)) && isNull(ann.getAnnotation(CodePrototypeTemplate.class))) {
                             var target = ann.getAnnotation(Target.class);
                             if (next.get()) {
                                 if (target == null || target.toString().contains("METHOD")) {
@@ -1143,7 +1143,7 @@ public class Generator {
                     } else {
                         var parsed = lookup.findExternal(name);
                         if (nonNull(parsed) && parsed.getDeclaration().isAnnotationDeclaration()) {
-                            if (parsed.getDeclaration().getAnnotationByClass(CodeAnnotation.class).isEmpty()) {
+                            if (parsed.getDeclaration().getAnnotationByClass(CodeAnnotation.class).isEmpty() && parsed.getDeclaration().getAnnotationByClass(CodePrototypeTemplate.class).isEmpty()) {
                                 if (next.get()) {
                                     if (Helpers.annotationHasTarget(parsed, "ElementType.METHOD")) {
                                         handleAnnotation(unit, proto.generateInterfaceGetter(), a);
@@ -1229,7 +1229,7 @@ public class Generator {
                                     next.set(true);
                                     return;
                                 }
-                                if (isNull(ann.getAnnotation(CodeAnnotation.class))) {
+                                if (isNull(ann.getAnnotation(CodeAnnotation.class)) && isNull(ann.getAnnotation(CodePrototypeTemplate.class))) {
                                     var target = ann.getAnnotation(Target.class);
                                     if (target != null && !target.toString().equals("TYPE")) {
                                         if (next.get()) {
@@ -1253,7 +1253,9 @@ public class Generator {
                                                             .anyMatch("ElementType.TYPE"::equals))
                                                     .orElse(false))
                                             .orElse(true)) {
-                                        spec.addAnnotation(a);
+                                        if (parsed.getDeclaration().getAnnotationByClass(CodePrototypeTemplate.class).isEmpty()) {
+                                            spec.addAnnotation(a);
+                                        }
                                     } else {
                                         log.warn("Invalid annotation target {}", name);
                                     }

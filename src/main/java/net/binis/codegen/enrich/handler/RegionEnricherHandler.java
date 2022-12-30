@@ -94,7 +94,7 @@ public class RegionEnricherHandler extends BaseEnricher implements RegionEnriche
             return false;
         }
 
-        if (member instanceof NodeWithStaticModifier && region instanceof NodeWithStaticModifier && ((NodeWithStaticModifier) member).isStatic() != ((NodeWithStaticModifier) region).isStatic() && !member.isClassOrInterfaceDeclaration() && !region.isClassOrInterfaceDeclaration()) {
+        if (member instanceof NodeWithStaticModifier modifier && region instanceof NodeWithStaticModifier regModifier && modifier.isStatic() != regModifier.isStatic() && !member.isClassOrInterfaceDeclaration() && !region.isClassOrInterfaceDeclaration()) {
             return true;
         }
 

@@ -24,7 +24,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 
-public interface PrototypeEnricher {
+public interface PrototypeEnricher extends Enricher {
 
     void init(PrototypeLookup lookup);
     void setup(PrototypeData properies);

@@ -98,19 +98,27 @@ public abstract class BaseTest {
         Helpers.cleanUp();
     }
 
+    @SuppressWarnings("unchecked")
     protected void load(List<Pair<String, String>> list, String resource) {
         var source = resourceAsString(resource);
 
         var parse = parser.parse(source);
         assertTrue(parse.isSuccessful(), parse.toString());
-        if (nonNull(list)) {
-            var result = parse.getResult().get();
-            var name = (String) result.findFirst(TypeDeclaration.class).get().getFullyQualifiedName().get();
-            list.add(Pair.of(name, source));
-        }
-        parse.getResult().ifPresent(u ->
-                u.getTypes().forEach(t ->
-                        CodeGen.handleType(parser, t, resource)));
+
+        parse.getResult().get().findFirst(TypeDeclaration.class).ifPresent(declaration -> {
+            if (nonNull(list)) {
+                declaration.getFullyQualifiedName().ifPresent(name ->
+                        list.add(Pair.of((String) name, source)));
+            }
+
+            if (declaration.isAnnotationDeclaration()) {
+                Structures.registerTemplate(declaration.asAnnotationDeclaration());
+            }
+
+            parse.getResult().ifPresent(u ->
+                    u.getTypes().forEach(t ->
+                            CodeGen.handleType(parser, t, resource)));
+        });
     }
 
     protected String loadExecute(List<Pair<String, String>> list, String resource) {
@@ -223,6 +231,9 @@ public abstract class BaseTest {
         files.forEach(t ->
                 load(list, t.getLeft()));
         assertTrue(compile(new TestClassLoader(), list, null));
+        lookup.registerExternalLookup(s ->
+                list.stream().filter(e ->
+                        e.getLeft().equals(s)).map(Pair::getRight).findFirst().orElse(null));
         generate();
 
         assertEquals(expected, lookup.parsed().size());
