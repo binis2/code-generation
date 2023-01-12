@@ -1,44 +1,55 @@
 package net.binis.codegen.discoverer;
 
+/*-
+ * #%L
+ * code-generator
+ * %%
+ * Copyright (C) 2021 - 2023 Binis Belev
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
+
 import com.google.common.collect.Sets;
-import com.google.common.io.Closer;
-import lombok.Builder;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.discovery.Discoverer;
 
 import javax.annotation.processing.Filer;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
-import java.io.*;
-import java.lang.annotation.Annotation;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static java.util.Objects.nonNull;
-import static net.binis.codegen.tools.Reflection.loadClass;
-
 @Slf4j
-public abstract class AnnotationDiscoverer {
+public abstract class AnnotationDiscoverer extends Discoverer {
 
-    public static final String TEMPLATE = "template";
-    protected static String RESOURCE_PATH = "binis/annotations";
-
-    protected static List<InputStream> loadResources(
-            final String name, final ClassLoader classLoader) throws IOException {
-        var list = new ArrayList<InputStream>();
-        var systemResources =
-                (classLoader == null ? ClassLoader.getSystemClassLoader() : classLoader)
-                        .getResources(name);
-        while (systemResources.hasMoreElements()) {
-            list.add(systemResources.nextElement().openStream());
-        }
-        return list;
+    private static void loadDefault(List<DiscoveredService> list) {
+        list.add(DiscoveredService.builder().type(TEMPLATE).name("net.binis.codegen.annotation.CodePrototype").build());
+        list.add(DiscoveredService.builder().type(TEMPLATE).name("net.binis.codegen.annotation.EnumPrototype").build());
+        list.add(DiscoveredService.builder().type(TEMPLATE).name("net.binis.codegen.annotation.builder.CodeBuilder").build());
+        list.add(DiscoveredService.builder().type(TEMPLATE).name("net.binis.codegen.spring.annotation.builder.CodeQueryBuilder").build());
+        list.add(DiscoveredService.builder().type(TEMPLATE).name("net.binis.codegen.annotation.builder.CodeValidationBuilder").build());
+        list.add(DiscoveredService.builder().type(TEMPLATE).name("net.binis.codegen.annotation.builder.CodeRequest").build());
     }
 
-    public static List<DiscoveredAnnotation> findAnnotations() {
-        var result = new ArrayList<DiscoveredAnnotation>();
+    public static List<DiscoveredService> findAnnotations() {
+        var result = new ArrayList<DiscoveredService>();
         try {
-            loadResources(RESOURCE_PATH, AnnotationDiscoverer.class.getClassLoader()).forEach(s -> AnnotationDiscoverer.processResource(s, result));
+            loadResources(RESOURCE_PATH, Discoverer.class.getClassLoader()).forEach(s -> Discoverer.processResource(s, result));
         } catch (Exception e) {
             log.error("Unable to discover annotations!");
             loadDefault(result);
@@ -46,45 +57,16 @@ public abstract class AnnotationDiscoverer {
         return result;
     }
 
-    private static void loadDefault(List<DiscoveredAnnotation> list) {
-        list.add(DiscoveredAnnotation.builder().type(TEMPLATE).name("net.binis.codegen.annotation.CodePrototype").build());
-        list.add(DiscoveredAnnotation.builder().type(TEMPLATE).name("net.binis.codegen.annotation.EnumPrototype").build());
-        list.add(DiscoveredAnnotation.builder().type(TEMPLATE).name("net.binis.codegen.annotation.builder.CodeBuilder").build());
-        list.add(DiscoveredAnnotation.builder().type(TEMPLATE).name("net.binis.codegen.spring.annotation.builder.CodeQueryBuilder").build());
-        list.add(DiscoveredAnnotation.builder().type(TEMPLATE).name("net.binis.codegen.annotation.builder.CodeValidationBuilder").build());
-        list.add(DiscoveredAnnotation.builder().type(TEMPLATE).name("net.binis.codegen.annotation.builder.CodeRequest").build());
-    }
-
-    @SuppressWarnings("unchecked")
-    protected static void processResource(InputStream stream, List<DiscoveredAnnotation> annotations) {
-        var reader = new BufferedReader(new InputStreamReader(stream));
-        try {
-            while (reader.ready()) {
-                var line = reader.readLine();
-                var parts = line.split(":");
-                if (parts.length == 2) {
-                    if (TEMPLATE.equals(parts[0])) {
-                        var cls = loadClass(parts[1]);
-                        if (nonNull(cls)) {
-                            if (Annotation.class.isAssignableFrom(cls)) {
-                                annotations.add(DiscoveredAnnotation.builder().type(parts[0]).name(parts[1]).cls((Class<? extends Annotation>) cls).build());
-                            }
-                        } else {
-                            log.warn("Can't load class: {}!", parts[1]);
-                        }
-                    } else {
-                        log.warn("Invalid descriptor type: {}!", parts[0]);
-                    }
-                } else {
-                    log.warn("Invalid descriptor line: {}!", line);
-                }
-            }
-        } catch (IOException e) {
-            log.warn("Failed to process stream!", e);
-        }
-    }
 
     public static void writeTemplate(Filer filer, String className) {
+        writeEntry(TEMPLATE, filer, className);
+    }
+
+    public static void writeConfig(Filer filer, String className) {
+        writeEntry(CONFIG, filer, className);
+    }
+
+    public static void writeEntry(String type, Filer filer, String className) {
         try {
             SortedSet<String> allServices = Sets.newTreeSet();
             try {
@@ -96,7 +78,7 @@ public abstract class AnnotationDiscoverer {
                 //No old file present.
             }
 
-            allServices.add(TEMPLATE + ":" + className);
+            allServices.add(type + ":" + className);
 
             FileObject fileObject =
                     filer.createResource(StandardLocation.CLASS_OUTPUT, "", RESOURCE_PATH);
@@ -105,30 +87,6 @@ public abstract class AnnotationDiscoverer {
             }
         } catch (IOException e) {
             log.error("Failed to write annotations resource!", e);
-        }
-    }
-
-    protected static Set<String> readServiceFile(InputStream input) throws IOException {
-        var serviceClasses = new HashSet<String>();
-        var closer = Closer.create();
-        try {
-            BufferedReader r = closer.register(new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8)));
-            String line;
-            while ((line = r.readLine()) != null) {
-                int commentStart = line.indexOf('#');
-                if (commentStart >= 0) {
-                    line = line.substring(0, commentStart);
-                }
-                line = line.trim();
-                if (!line.isEmpty()) {
-                    serviceClasses.add(line);
-                }
-            }
-            return serviceClasses;
-        } catch (Throwable t) {
-            throw closer.rethrow(t);
-        } finally {
-            closer.close();
         }
     }
 
@@ -141,12 +99,4 @@ public abstract class AnnotationDiscoverer {
         writer.flush();
     }
 
-
-    @Builder
-    @Data
-    public static class DiscoveredAnnotation {
-        protected String type;
-        protected String name;
-        protected Class<? extends Annotation> cls;
-    }
 }

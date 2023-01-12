@@ -27,6 +27,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.CodeGen;
 import net.binis.codegen.discoverer.AnnotationDiscoverer;
+import net.binis.codegen.discovery.Discoverer;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.Structures;
@@ -62,8 +63,8 @@ public abstract class BaseTest {
 
     protected JavaParser parser = new JavaParser();
 
-    {
-        AnnotationDiscoverer.findAnnotations().forEach(a ->
+    static {
+        AnnotationDiscoverer.findAnnotations().stream().filter(Discoverer.DiscoveredService::isTemplate).forEach(a ->
                 Structures.registerTemplate(a.getCls()));
     }
 

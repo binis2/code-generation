@@ -386,39 +386,44 @@ public class Structures {
     }
 
     @SuppressWarnings("unchecked")
-    public static void registerTemplate(Class<? extends Annotation> ann) {
-        defaultProperties.put(ann.getSimpleName(), () -> {
-            var builder = defaultBuilder();
+    public static void registerTemplate(Class<?> ann) {
+        if (Annotation.class.isAssignableFrom(ann)) {
+            defaultProperties.put(ann.getSimpleName(), () -> {
+                var builder = defaultBuilder();
 
-            for (var method : ann.getDeclaredMethods()) {
-                switch (method.getName()) {
-                    case "base" -> builder.base((boolean) method.getDefaultValue());
-                    case "name" -> builder.name(handleString(method.getDefaultValue()));
-                    case "generateConstructor" -> builder.generateConstructor((boolean) method.getDefaultValue());
-                    case "options" ->
-                            builder.options((Set) Arrays.stream((Class[]) method.getDefaultValue()).collect(Collectors.toSet()));
-                    case "interfaceName" -> builder.interfaceName(handleString(method.getDefaultValue()));
-                    case "implementationPath" -> builder.implementationPath(handleString(method.getDefaultValue()));
-                    case "enrichers" ->
-                            builder.predefinedEnrichers((List) Arrays.stream((Class[]) method.getDefaultValue()).toList());
-                    case "inheritedEnrichers" ->
-                            builder.predefinedInheritedEnrichers((List) Arrays.stream((Class[]) method.getDefaultValue()).toList());
-                    case "interfaceSetters" -> builder.interfaceSetters((boolean) method.getDefaultValue());
-                    case "classGetters" -> builder.classGetters((boolean) method.getDefaultValue());
-                    case "classSetters" -> builder.classSetters((boolean) method.getDefaultValue());
-                    case "baseModifierClass" -> builder.baseModifierClass(handleClass(method.getDefaultValue()));
-                    case "mixInClass" -> builder.mixInClass(handleClass(method.getDefaultValue()));
-                    case "interfacePath" -> builder.interfacePath(handleString(method.getDefaultValue()));
-                    case "generateInterface" -> builder.generateInterface((boolean) method.getDefaultValue());
-                    case "basePath" -> builder.basePath(handleString(method.getDefaultValue()));
-                    case "generateImplementation" -> builder.generateImplementation((boolean) method.getDefaultValue());
-                    case "implementationPackage" -> builder.classPackage(handleString(method.getDefaultValue()));
-                    default -> builder.custom(method.getName(), method.getDefaultValue());
+                for (var method : ann.getDeclaredMethods()) {
+                    switch (method.getName()) {
+                        case "base" -> builder.base((boolean) method.getDefaultValue());
+                        case "name" -> builder.name(handleString(method.getDefaultValue()));
+                        case "generateConstructor" -> builder.generateConstructor((boolean) method.getDefaultValue());
+                        case "options" ->
+                                builder.options((Set) Arrays.stream((Class[]) method.getDefaultValue()).collect(Collectors.toSet()));
+                        case "interfaceName" -> builder.interfaceName(handleString(method.getDefaultValue()));
+                        case "implementationPath" -> builder.implementationPath(handleString(method.getDefaultValue()));
+                        case "enrichers" ->
+                                builder.predefinedEnrichers((List) Arrays.stream((Class[]) method.getDefaultValue()).toList());
+                        case "inheritedEnrichers" ->
+                                builder.predefinedInheritedEnrichers((List) Arrays.stream((Class[]) method.getDefaultValue()).toList());
+                        case "interfaceSetters" -> builder.interfaceSetters((boolean) method.getDefaultValue());
+                        case "classGetters" -> builder.classGetters((boolean) method.getDefaultValue());
+                        case "classSetters" -> builder.classSetters((boolean) method.getDefaultValue());
+                        case "baseModifierClass" -> builder.baseModifierClass(handleClass(method.getDefaultValue()));
+                        case "mixInClass" -> builder.mixInClass(handleClass(method.getDefaultValue()));
+                        case "interfacePath" -> builder.interfacePath(handleString(method.getDefaultValue()));
+                        case "generateInterface" -> builder.generateInterface((boolean) method.getDefaultValue());
+                        case "basePath" -> builder.basePath(handleString(method.getDefaultValue()));
+                        case "generateImplementation" ->
+                                builder.generateImplementation((boolean) method.getDefaultValue());
+                        case "implementationPackage" -> builder.classPackage(handleString(method.getDefaultValue()));
+                        default -> builder.custom(method.getName(), method.getDefaultValue());
+                    }
                 }
-            }
 
-            return builder;
-        });
+                return builder;
+            });
+        } else {
+            log.warn("Can't register template '{}' because it isn't annotation!", ann.getCanonicalName());
+        }
     }
 
     public static void registerTemplate(AnnotationDeclaration template) {
