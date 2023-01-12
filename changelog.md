@@ -1,8 +1,13 @@
 # Change Log
-**11-12-2022** ver. 1.0.0
+**12-01-2023** ver. 1.0.0
 * All: Migrated to Java 17
-* Hibernate: Migrated to Hibernate 6
+* Core: Added @CodeConfiguration (Class discovery)
+* Core: CodeFactory improvements.
+* Core: Added objects mapping and conversion support.
 * Spring: Migrated to Spring 6 and Spring Boot 3
+* Generator: Added support for custom prototypes.
+* Hibernate: Migrated to Hibernate 6.1
+* Jackson: Fixed deserialization of prototypes nested in collections.
 
 **10-12-2022** ver. 0.4.3
 * Core: CodeFactory can instantiate objects with parameters.
@@ -13,7 +18,6 @@
 * Generator: Added enrichers handling for single class expressions.
 * Generator: Added constants handling for validation annotations.
 * Generator: Fixed JPA annotations discovery when fragments are used. 
-
 
 **20-10-2022** ver. 0.4.2
 * Generator: Added @DefaultString annotation to ease the definition of the default string values.
