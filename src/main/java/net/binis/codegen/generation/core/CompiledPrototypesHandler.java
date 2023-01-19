@@ -151,6 +151,10 @@ public abstract class CompiledPrototypesHandler {
             builder.classPackage(ann.implementationPackage());
         }
 
+        if (nonNull(ann.strategy())) {
+            builder.strategy(ann.strategy());
+        }
+
         if (StringUtils.isNotBlank(ann.basePath())) {
             builder.basePath(ann.basePath());
         }

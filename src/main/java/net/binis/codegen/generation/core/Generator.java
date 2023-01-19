@@ -36,6 +36,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
+import net.binis.codegen.annotation.type.GenerationStrategy;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.factory.CodeFactory;
@@ -61,6 +62,7 @@ import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledEnumPrototype;
 import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledPrototype;
 import static net.binis.codegen.generation.core.Helpers.*;
+import static net.binis.codegen.generation.core.Helpers.getParsed;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
@@ -71,7 +73,7 @@ public class Generator {
 
     public static final String MIX_IN_EXTENSION = "$MixIn";
 
-    private static List<Pair<PrototypeData, PrototypeDescription<ClassOrInterfaceDeclaration>>> notProcessed = new ArrayList<>();
+    private static final List<Pair<PrototypeData, PrototypeDescription<ClassOrInterfaceDeclaration>>> notProcessed = new ArrayList<>();
 
     private Generator() {
         //Do nothing
@@ -132,6 +134,16 @@ public class Generator {
         ensureParsedParents(typeDeclaration, properties);
         handleEnrichersSetup(properties);
 
+        var parse = switch (properties.getStrategy()) {
+            case CLASSIC -> handleClassicStrategy(prsd, type, typeDeclaration, properties);
+            case IMPLEMENTATION -> handleImplementationStrategy(prsd, type, typeDeclaration, properties);
+        };
+
+        processingTypes.remove(typeDeclaration.getNameAsString());
+        parse.setProcessed(true);
+    }
+
+    private static Structures.Parsed handleClassicStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
         var unit = new CompilationUnit();
         unit.addImport("javax.annotation.processing.Generated");
         var spec = unit.addClass(properties.getClassName());
@@ -278,9 +290,87 @@ public class Generator {
 
         handleImports(typeDeclaration, spec);
         handleImports(typeDeclaration, intf);
+        return parse;
+    }
 
-        processingTypes.remove(typeDeclaration.getNameAsString());
-        parse.setProcessed(true);
+    private static Structures.Parsed handleImplementationStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
+        var unit = new CompilationUnit();
+        unit.addImport("javax.annotation.processing.Generated");
+        var spec = unit.addClass(properties.getClassName());
+        unit.setPackageDeclaration(properties.getClassPackage());
+        spec.addModifier(PUBLIC);
+        spec.addImplementedType(prsd.getDeclaration().getNameAsString());
+        prsd.getDeclaration().getFullyQualifiedName().ifPresent(unit::addImport);
+
+        if (properties.isGenerateConstructor()) {
+            spec.addConstructor(PUBLIC);
+        }
+
+        var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
+
+        parse.setParsedName(spec.getNameAsString());
+        parse.setParsedFullName(spec.getFullyQualifiedName().get());
+        parse.setInterfaceName(type.getNameAsString());
+        parse.setInterfaceFullName(type.getFullyQualifiedName().get());
+        parse.setProperties(properties);
+        var files = new ArrayList<CompilationUnit>();
+        files.add(unit);
+        files.add(null);
+        parse.setFiles(files);
+        parse.setSpec(spec);
+
+        if (isNull(prsd) || !prsd.isNested() || isNull(prsd.getParentClassName())) {
+            spec.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeName() + "\", comments=\"" + properties.getInterfaceName() + "\")").getResult().get());
+        }
+
+        handleClassGenerics(parse);
+
+        for (var member : type.getMembers()) {
+            if (member.isMethodDeclaration()) {
+                var method = member.asMethodDeclaration().clone().setModifiers(PUBLIC);
+                spec.addMember(method.setBody(getDefaultReturnBody(method.getType())));
+            }
+        }
+
+        typeDeclaration.getExtendedTypes().forEach(t -> {
+            var parsed = getParsed(t);
+
+            if (nonNull(parsed)) {
+                if (parsed.isProcessed()) {
+                    //handleParsedExtendedType(parse, parsed, spec, intf, properties, t);
+                }
+            } else {
+                handleExternalInterface(parse, typeDeclaration, spec, null, t);
+            }
+        });
+
+        unit.setComment(new BlockComment("Generated code by Binis' code generator."));
+
+        lookup.registerGenerated(getClassName(spec), parse);
+
+        checkForDeclaredConstants(spec);
+        checkForClassExpressions(spec, typeDeclaration);
+        mergeNestedPrototypes(parse);
+
+        handleImports(typeDeclaration, spec);
+        return parse;
+    }
+
+    private static BlockStmt getDefaultReturnBody(Type type) {
+        if (type.isVoidType()) {
+            return new BlockStmt();
+        } else if (type.isPrimitiveType()) {
+            var result = switch (type.asString()) {
+                case "boolean" -> "false";
+                case "long" -> "0L";
+                case "float" -> "0.0f";
+                case "double" -> "0.0";
+                default -> "0";
+            };
+            return lookup.getParser().parseBlock("{return " + result + ";}").getResult().get();
+        } else {
+            return lookup.getParser().parseBlock("{return null;}").getResult().get();
+        }
     }
 
     private static void handleParsedExtendedType(Structures.Parsed<ClassOrInterfaceDeclaration> parse, PrototypeDescription<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, PrototypeData properties, ClassOrInterfaceType type) {
@@ -344,16 +434,16 @@ public class Generator {
         var unit = parse.getDeclaration().findCompilationUnit().get();
         parse.getDeclaration().asClassOrInterfaceDeclaration().getTypeParameters().forEach(t -> {
             parse.getSpec().addTypeParameter(t);
-            parse.getIntf().addTypeParameter(t);
+            with(parse.getIntf(), intf -> intf.addTypeParameter(t));
             t.getTypeBound().forEach(tb -> {
                 handleType(unit, parse.getSpec().findCompilationUnit().get(), tb);
-                handleType(unit, parse.getIntf().findCompilationUnit().get(), tb);
+                with(parse.getIntf(), intf -> handleType(unit, intf.findCompilationUnit().get(), tb));
             });
         });
     }
 
     private static void handleInitializations(Structures.Parsed<ClassOrInterfaceDeclaration> parse) {
-        var list = parse.getDeclaration().getAnnotations().stream().filter(a -> "Initialize".equals(a.getNameAsString())).collect(Collectors.toList());
+        var list = parse.getDeclaration().getAnnotations().stream().filter(a -> "Initialize".equals(a.getNameAsString())).toList();
         var constructor = parse.getSpec().getDefaultConstructor().orElseGet(
                 () -> parse.getSpec().addConstructor(PUBLIC).setBody(nonNull(parse.getBase()) ? new BlockStmt().addStatement("super();") : new BlockStmt()));
         var unit = parse.getSpec().findCompilationUnit().get();
@@ -361,17 +451,13 @@ public class Generator {
             var statement = Holder.of("");
             ann.getChildNodes().stream().filter(MemberValuePair.class::isInstance).map(MemberValuePair.class::cast).forEach(pair -> {
                 switch (pair.getNameAsString()) {
-                    case "field":
-                        statement.set("this." + pair.getValue().asStringLiteralExpr().asString() + " = " + statement.get());
-                        break;
-                    case "expression":
-                        statement.set(statement.get() + pair.getValue().asStringLiteralExpr().asString() + ";");
-                        break;
-                    case "imports":
-                        pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
-                        break;
-                    default:
-                        log.warn("Invalid @Initialize member {}", pair.getNameAsString());
+                    case "field" ->
+                            statement.set("this." + pair.getValue().asStringLiteralExpr().asString() + " = " + statement.get());
+                    case "expression" ->
+                            statement.set(statement.get() + pair.getValue().asStringLiteralExpr().asString() + ";");
+                    case "imports" ->
+                            pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
+                    default -> log.warn("Invalid @Initialize member {}", pair.getNameAsString());
                 }
             });
             constructor.getBody().addStatement(statement.get());
@@ -628,8 +714,7 @@ public class Generator {
                 .classPackage(defaultClassPackage(type))
                 .interfacePackage(defaultInterfacePackage(type));
         prototype.getChildNodes().forEach(node -> {
-            if (node instanceof MemberValuePair) {
-                var pair = (MemberValuePair) node;
+            if (node instanceof MemberValuePair pair) {
                 var name = pair.getNameAsString();
                 switch (name) {
                     case "name":
@@ -684,9 +769,16 @@ public class Generator {
                     case "implementationPackage":
                         value = pair.getValue().asStringLiteralExpr().asString();
                         if (StringUtils.isNotBlank(value)) {
-                            builder.classPackage(pair.getValue().asStringLiteralExpr().asString());
+                            builder.classPackage(value);
                         }
                         break;
+                    case "strategy": {
+                        value = pair.getValue().asFieldAccessExpr().getNameAsString();
+                        if (StringUtils.isNotBlank(value)) {
+                            builder.strategy(GenerationStrategy.valueOf(value));
+                        }
+                        break;
+                    }
                     case "basePath":
                         value = pair.getValue().asStringLiteralExpr().asString();
                         if (StringUtils.isNotBlank(value)) {
@@ -833,7 +925,7 @@ public class Generator {
     }
 
     private static void ensureParsedParents(EnumDeclaration declaration, PrototypeDescription<?> parse) {
-        if (nonNull(parse) && isNull(parse.getCompiled()) &&  isNull(parse.getFiles())) {
+        if (nonNull(parse) && isNull(parse.getCompiled()) && isNull(parse.getFiles())) {
             if (parse.getDeclaration().isEnumDeclaration()) {
                 generateCodeForEnum(parse.getDeclaration().findCompilationUnit().get(), parse, parse.getDeclaration(), parse.getDeclaration().getAnnotationByClass(EnumPrototype.class).orElse(null));
             } else {
@@ -942,12 +1034,20 @@ public class Generator {
         var interfaces = cls.getInterfaces();
         for (var i = 0; i < interfaces.length; i++) {
             java.lang.reflect.Type[] types = null;
-            if (genericIntf[i] instanceof ParameterizedType) {
-                types = ((ParameterizedType) genericIntf[i]).getActualTypeArguments();
+            if (genericIntf[i] instanceof ParameterizedType type) {
+                types = type.getActualTypeArguments();
             }
             handleExternalInterface(parsed, declaration, spec, interfaces[i], generic, types);
         }
 
+        switch (parsed.getProperties().getStrategy()) {
+            case CLASSIC -> handleExternalMethodClassicStrategy(parsed, declaration, spec, cls, generic);
+            case IMPLEMENTATION -> handleExternalMethodImplementationStrategy(parsed, declaration, spec, cls, generic);
+        }
+
+    }
+
+    private static void handleExternalMethodClassicStrategy(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, Map<String, Type> generic) {
         var properties = parsed.getProperties();
 
         for (var method : cls.getDeclaredMethods()) {
@@ -968,6 +1068,32 @@ public class Generator {
             }
         }
     }
+
+    private static void handleExternalMethodImplementationStrategy(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, Map<String, Type> generic) {
+        for (var method : cls.getDeclaredMethods()) {
+            if (!java.lang.reflect.Modifier.isStatic(method.getModifiers()) && !method.isDefault() && !defaultMethodExists(declaration, method)) {
+                var mtd = new MethodDeclaration().setName(method.getName()).addModifier(PUBLIC);
+                if (generic.containsKey(method.getGenericReturnType().getTypeName())) {
+                    mtd.setType(generic.get(method.getGenericReturnType().getTypeName()));
+                } else {
+                    mtd.setType(method.getReturnType());
+                }
+                for (var p : method.getParameters()) {
+                    if (generic.containsKey(p.getParameterizedType().getTypeName())) {
+                        mtd.addParameter(p.getParameterizedType().getTypeName(), p.getName());
+                    } else {
+                        mtd.addParameter(p.getType(), p.getName());
+                    }
+                }
+
+                if (!methodExists(spec, mtd, false)) {
+                    mtd.setBody(getDefaultReturnBody(mtd.getType()));
+                    spec.addMember(mtd);
+                }
+            }
+        }
+    }
+
 
     private static void handleMixin(PrototypeDescription<ClassOrInterfaceDeclaration> parse) {
         if (nonNull(parse.getProperties().getMixInClass())) {
@@ -992,24 +1118,9 @@ public class Generator {
         }
     }
 
-    private static void setScope(Type type, String scope) {
-        if (type.isClassOrInterfaceType() && type.asClassOrInterfaceType().getScope().isPresent()) {
-            type.asClassOrInterfaceType().getScope().get().setName(scope);
-        }
-    }
-
-    private static String getScope(Type type) {
-        if (type.isClassOrInterfaceType() && type.asClassOrInterfaceType().getScope().isPresent()) {
-            return type.asClassOrInterfaceType().getScope().get().getNameAsString();
-        }
-
-        return null;
-    }
-
     public static String handleType(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Type type) {
         return handleType(source, destination, type, null);
     }
-
 
     public static String handleType(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Type type, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
         return handleType(source.findCompilationUnit().get(), destination.findCompilationUnit().get(), type, prototypeMap);
@@ -1020,7 +1131,7 @@ public class Generator {
     }
 
     public static String handleType(CompilationUnit source, CompilationUnit destination, Type type, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
-        var result = type.toString();
+        var result = type.isClassOrInterfaceType() ? type.asClassOrInterfaceType().getNameAsString() : type.toString();
         if (type.isClassOrInterfaceType()) {
             var generic = handleGenericTypes(source, destination, type.asClassOrInterfaceType(), prototypeMap);
             if (!isEmpty(generic)) {
@@ -1204,11 +1315,12 @@ public class Generator {
     }
 
 
-    private static void handleMethodAnnotations(MethodDeclaration method, MethodDeclaration declaration) {
+    @SuppressWarnings("unchecked")
+    private static void handleMethodAnnotations(MethodDeclaration method, MethodDeclaration declaration, PrototypeField field) {
         declaration.getAnnotations().forEach(a ->
                 notNull(getExternalClassName(declaration.findCompilationUnit().get(), a.getNameAsString()), name -> {
                     var ann = loadClass(name);
-                    if (nonNull(ann) && !ann.isAnnotationPresent(CodeAnnotation.class)) {
+                    if (nonNull(ann) && !ann.isAnnotationPresent(CodeAnnotation.class) && !field.getDeclaration().isAnnotationPresent((Class) ann)) {
                         var target = ann.getAnnotation(Target.class);
                         if (target != null && target.toString().contains("METHOD")) {
                             method.addAnnotation(a);
@@ -1602,7 +1714,7 @@ public class Generator {
                         .addModifier(PUBLIC)
                         .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName(declaration.getName()))));
                 ((Structures.FieldData) field).setImplementationGetter(method);
-                handleMethodAnnotations(method, declaration);
+                handleMethodAnnotations(method, declaration, field);
                 if (declaration.getTypeParameters().isNonEmpty()) {
                     method.setType("Object");
                 }

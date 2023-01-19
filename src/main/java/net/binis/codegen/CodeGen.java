@@ -27,6 +27,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.discoverer.AnnotationDiscoverer;
+import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.Structures;
@@ -36,7 +37,6 @@ import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
 import net.binis.codegen.tools.CollectionUtils;
 import org.apache.commons.cli.*;
 
-import javax.lang.model.element.Name;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -125,7 +125,7 @@ public class CodeGen {
 
         lookup.calcPrototypeMaps();
 
-        with(lookup.parsed().stream().filter(PrototypeDescription::isValid).sorted(Helpers::sortForEnrich).collect(Collectors.toList()), list -> {
+        with(lookup.parsed().stream().filter(PrototypeDescription::isValid).sorted(Helpers::sortForEnrich).toList(), list -> {
             list.forEach(Helpers::handleEnrichers);
             list.forEach(Helpers::finalizeEnrichers);
             list.forEach(Helpers::postProcessEnrichers);
@@ -137,8 +137,9 @@ public class CodeGen {
         for (var file : files) {
             try {
                 var parse = parser.parse(file);
-                var unit = parse.getResult().get();
-                var fileName = unit.getPackageDeclaration().get().getNameAsString().replace('.', '/') + "/" + unit.getType(0).getNameAsString();
+                var unit = parse.getResult().orElseThrow(() -> new GenericCodeGenException("Can't parse file '" + file + "'!"));
+                var pack = unit.getPackageDeclaration().orElseThrow(() -> new GenericCodeGenException("'" + file + "' have no package declaration!"));
+                var fileName = pack.getNameAsString().replace('.', '/') + '/' + unit.getType(0).getNameAsString();
                 log.info("Parsed {} - {}", fileName, parse);
                 parse.getResult().ifPresent(u ->
                         u.getTypes().forEach(t ->
@@ -168,20 +169,21 @@ public class CodeGen {
 
     @SuppressWarnings("unchecked")
     public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName) {
-        var className = t.findCompilationUnit().get().getPackageDeclaration().get().getNameAsString() + '.' + t.getNameAsString();
+        var pack = t.findCompilationUnit().get().getPackageDeclaration().orElseThrow(() -> new GenericCodeGenException("'" + fileName + "' have no package declaration!"));
+        var className = pack.getNameAsString() + '.' + t.getNameAsString();
         if (t.getAnnotationByName("ConstantPrototype").isPresent()) {
             constantParsed.put(getClassName(t.asClassOrInterfaceDeclaration()),
                     Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).build());
         } else {
             var name = getClassName(t);
-            checkForNestedClasses(t.asTypeDeclaration(), fileName, className, parser);
+            checkForNestedClasses(t.asTypeDeclaration(), fileName, parser);
             lookup.registerParsed(name,
                     Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).build());
         }
     }
 
     @SuppressWarnings("unchecked")
-    public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, String className, JavaParser parser) {
+    public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, JavaParser parser) {
         if (type.isClassOrInterfaceDeclaration() && Generator.getCodeAnnotation(type.asClassOrInterfaceDeclaration()).isEmpty()) {
             type.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(nested -> {
                 if (nested.asClassOrInterfaceDeclaration().isInterface() && Generator.getCodeAnnotation(nested).isPresent()) {

@@ -140,13 +140,16 @@ public abstract class BaseTest {
     }
 
     protected void testSingleExecute(String prototype, String resClass, String resInterface, String resExecute) {
-        testSingleExecute(prototype, resClass, resInterface, null, 1, resExecute, false);
+        testSingleExecute(prototype, resClass, resInterface, null, 1, resExecute, false, false);
     }
 
     protected void testSingleExecute(String prototype, String resClass, String resInterface, int expected, String resExecute) {
-        testSingleExecute(prototype, resClass, resInterface, null, expected, resExecute, false);
+        testSingleExecute(prototype, resClass, resInterface, null, expected, resExecute, false, false);
     }
 
+    protected void testSingleImplementation(String prototype, String resClass) {
+        testSingleExecute(prototype, resClass, null, null, 1, null, false, true);
+    }
 
     protected void testSingle(String prototype, String resClass, String resInterface) {
         testSingle(prototype, resClass, resInterface, null, 1);
@@ -161,15 +164,15 @@ public abstract class BaseTest {
     }
 
     protected void testSingle(String prototype, String resClass, String resInterface, int expected, boolean skipCompilation) {
-        testSingleExecute(prototype, resClass, resInterface, null, expected, null, skipCompilation);
+        testSingleExecute(prototype, resClass, resInterface, null, expected, null, skipCompilation, false);
     }
 
 
     protected void testSingle(String prototype, String resClass, String resInterface, String pathToSave, int expected) {
-        testSingleExecute(prototype, resClass, resInterface, pathToSave, expected, null, false);
+        testSingleExecute(prototype, resClass, resInterface, pathToSave, expected, null, false, false);
     }
 
-    protected void testSingleExecute(String prototype, String resClass, String resInterface, String pathToSave, int expected, String resExecute, boolean skipCompilation) {
+    protected void testSingleExecute(String prototype, String resClass, String resInterface, String pathToSave, int expected, String resExecute, boolean skipCompilation, boolean includePrototype) {
         var list = newList();
         load(list, prototype);
         assertTrue(compile(new TestClassLoader(), list, null));
@@ -178,6 +181,9 @@ public abstract class BaseTest {
         assertEquals(expected, lookup.parsed().size());
 
         var list2 = newList();
+        if (includePrototype) {
+            list2.add(list.get(0));
+        }
         lookup.generated().stream().sorted((o1, o2) -> Boolean.compare(isNull(o1.getCompiled()), isNull(o2.getCompiled()))).forEach(parsed -> {
             if (isNull(parsed.getCompiled()) && (!parsed.isNested() || isNull(parsed.getParentClassName()))) {
                 if (nonNull(pathToSave)) {
@@ -191,7 +197,8 @@ public abstract class BaseTest {
 
             if (!parsed.isNested() || isNull(parsed.getParentClassName())) {
                 if (!classExists(parsed.getInterfaceFullName())) {
-                    list2.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+                    with(parsed.getFiles().get(1), file ->
+                            list2.add(Pair.of(parsed.getInterfaceFullName(), getAsString(file))));
                 }
                 if (!classExists(parsed.getParsedFullName())) {
                     list2.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));

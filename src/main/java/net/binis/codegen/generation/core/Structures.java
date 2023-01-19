@@ -30,6 +30,7 @@ import com.github.javaparser.ast.type.Type;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.type.EmbeddedModifierType;
+import net.binis.codegen.annotation.type.GenerationStrategy;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.generation.core.interfaces.PrototypeConstant;
@@ -89,6 +90,8 @@ public class Structures {
         private String basePath;
         private String interfacePath;
         private String implementationPath;
+
+        private GenerationStrategy strategy;
 
         private int ordinalOffset;
 
@@ -375,7 +378,8 @@ public class Structures {
     }
 
     public static PrototypeDataHandler.PrototypeDataHandlerBuilder defaultBuilder() {
-        return Structures.PrototypeDataHandler.builder()
+        return PrototypeDataHandler.builder()
+                .strategy(GenerationStrategy.CLASSIC)
                 .generateConstructor(true)
                 .generateInterface(true)
                 .generateImplementation(true)
@@ -415,6 +419,7 @@ public class Structures {
                         case "generateImplementation" ->
                                 builder.generateImplementation((boolean) method.getDefaultValue());
                         case "implementationPackage" -> builder.classPackage(handleString(method.getDefaultValue()));
+                        case "strategy" -> builder.strategy((GenerationStrategy) method.getDefaultValue());
                         default -> builder.custom(method.getName(), method.getDefaultValue());
                     }
                 }
@@ -469,6 +474,8 @@ public class Structures {
                                     builder.generateImplementation(handleBooleanExpression(member.getDefaultValue().get()));
                             case "implementationPackage" ->
                                     builder.classPackage(handleStringExpression(member.getDefaultValue().get()));
+                            case "strategy" ->
+                                    builder.strategy((GenerationStrategy) handleEnumExpression(member.getDefaultValue().get()));
                             default -> builder.custom(member.getNameAsString(), member.getDefaultValue().get());
                         }
                     });
@@ -506,6 +513,10 @@ public class Structures {
         }
         log.warn("String expression not implemented: {}", expression.getClass().getCanonicalName());
         return null;
+    }
+
+    private static Enum handleEnumExpression(Expression expression) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     private static boolean handleBooleanExpression(Expression expression) {

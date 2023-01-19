@@ -20,7 +20,6 @@ public class TestImpl implements Test {
         return subtitle;
     }
 
-    @Description("description")
     public String getTitle() {
         return title;
     }
