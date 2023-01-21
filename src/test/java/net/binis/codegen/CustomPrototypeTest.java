@@ -20,6 +20,8 @@ package net.binis.codegen;
  * #L%
  */
 
+import net.binis.codegen.generation.core.Structures;
+import net.binis.codegen.objects.CodeExampleBuilder;
 import net.binis.codegen.test.BaseTest;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.Test;
@@ -33,6 +35,19 @@ class CustomPrototypeTest extends BaseTest {
         testMulti(List.of(
                 Triple.of("custom/custom.java", null, null),
                 Triple.of("custom/custom1.java", "custom/custom1-0.java", "custom/custom1-1.java")));
+    }
+
+    @Test
+    void testInherited() {
+        testMultiImplementation(List.of(
+                Triple.of("custom/customInherited.java", null, null),
+                Triple.of("custom/customInherited1.java", "custom/customInherited1-0.java", null)));
+    }
+
+    @Test
+    void testInheritedCompiled() {
+        Structures.registerTemplate(CodeExampleBuilder.class);
+        testSingleImplementation("custom/customInherited2.java", "custom/customInherited2-0.java");
     }
 
 }

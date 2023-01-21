@@ -24,6 +24,7 @@ import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.options.CodeOption;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface PrototypeData {
@@ -55,6 +56,8 @@ public interface PrototypeData {
     String getImplementationPath();
 
     int getOrdinalOffset();
+
+    Map<String, Object> getCustom();
 
     List<PrototypeEnricher> getEnrichers();
     List<PrototypeEnricher> getInheritedEnrichers();

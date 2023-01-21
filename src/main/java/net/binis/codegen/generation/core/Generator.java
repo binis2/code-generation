@@ -63,6 +63,7 @@ import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handle
 import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledPrototype;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.generation.core.Helpers.getParsed;
+import static net.binis.codegen.generation.core.Structures.VALUE;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
@@ -808,6 +809,10 @@ public class Generator {
                         break;
                     default:
                 }
+            } else if (node instanceof Name) {
+                //Continue
+            } else {
+                builder.custom(VALUE, node);
             }
         });
 
@@ -1234,7 +1239,7 @@ public class Generator {
                                     field.getVariables().iterator().next().setInitializer(a.asSingleMemberAnnotationExpr().getMemberValue().asStringLiteralExpr().asString());
                                 } else if (a.isNormalAnnotationExpr()) {
                                     a.asNormalAnnotationExpr().getPairs().forEach(p -> {
-                                        if ("value".equals(p.getName().asString())) {
+                                        if (VALUE.equals(p.getName().asString())) {
                                             field.getVariables().iterator().next().setInitializer(p.getValue().asStringLiteralExpr().asString());
                                         }
                                     });
@@ -1244,7 +1249,7 @@ public class Generator {
                                     field.getVariables().iterator().next().setInitializer("\"" + a.asSingleMemberAnnotationExpr().getMemberValue().asStringLiteralExpr().asString() + "\"");
                                 } else if (a.isNormalAnnotationExpr()) {
                                     a.asNormalAnnotationExpr().getPairs().forEach(p -> {
-                                        if ("value".equals(p.getName().asString())) {
+                                        if (VALUE.equals(p.getName().asString())) {
                                             field.getVariables().iterator().next().setInitializer("\"" + p.getValue().asStringLiteralExpr().asString() + "\"");
                                         }
                                     });

@@ -24,7 +24,10 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.*;
+import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.MemberValuePair;
+import com.github.javaparser.ast.expr.Name;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.Type;
 import lombok.*;
@@ -42,20 +45,23 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.enrich.Enrichers.*;
-import static net.binis.codegen.options.Options.*;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
 public class Structures {
+
+    public static final String VALUE = "value";
 
     public static final Map<String, Supplier<PrototypeDataHandler.PrototypeDataHandlerBuilder>> defaultProperties = new HashMap<>();
 
@@ -395,34 +401,13 @@ public class Structures {
             defaultProperties.put(ann.getSimpleName(), () -> {
                 var builder = defaultBuilder();
 
-                for (var method : ann.getDeclaredMethods()) {
-                    switch (method.getName()) {
-                        case "base" -> builder.base((boolean) method.getDefaultValue());
-                        case "name" -> builder.name(handleString(method.getDefaultValue()));
-                        case "generateConstructor" -> builder.generateConstructor((boolean) method.getDefaultValue());
-                        case "options" ->
-                                builder.options((Set) Arrays.stream((Class[]) method.getDefaultValue()).collect(Collectors.toSet()));
-                        case "interfaceName" -> builder.interfaceName(handleString(method.getDefaultValue()));
-                        case "implementationPath" -> builder.implementationPath(handleString(method.getDefaultValue()));
-                        case "enrichers" ->
-                                builder.predefinedEnrichers((List) Arrays.stream((Class[]) method.getDefaultValue()).toList());
-                        case "inheritedEnrichers" ->
-                                builder.predefinedInheritedEnrichers((List) Arrays.stream((Class[]) method.getDefaultValue()).toList());
-                        case "interfaceSetters" -> builder.interfaceSetters((boolean) method.getDefaultValue());
-                        case "classGetters" -> builder.classGetters((boolean) method.getDefaultValue());
-                        case "classSetters" -> builder.classSetters((boolean) method.getDefaultValue());
-                        case "baseModifierClass" -> builder.baseModifierClass(handleClass(method.getDefaultValue()));
-                        case "mixInClass" -> builder.mixInClass(handleClass(method.getDefaultValue()));
-                        case "interfacePath" -> builder.interfacePath(handleString(method.getDefaultValue()));
-                        case "generateInterface" -> builder.generateInterface((boolean) method.getDefaultValue());
-                        case "basePath" -> builder.basePath(handleString(method.getDefaultValue()));
-                        case "generateImplementation" ->
-                                builder.generateImplementation((boolean) method.getDefaultValue());
-                        case "implementationPackage" -> builder.classPackage(handleString(method.getDefaultValue()));
-                        case "strategy" -> builder.strategy((GenerationStrategy) method.getDefaultValue());
-                        default -> builder.custom(method.getName(), method.getDefaultValue());
+                for (var a : ann.getAnnotations()) {
+                    if (defaultProperties.containsKey(a.annotationType().getSimpleName())) {
+                        readAnnotation(a, a.annotationType(), builder, Structures::readAnnotationValue);
                     }
                 }
+
+                readAnnotation(null, ann, builder, ((method, annotation) -> method.getDefaultValue()));
 
                 return builder;
             });
@@ -434,6 +419,10 @@ public class Structures {
     public static void registerTemplate(AnnotationDeclaration template) {
         defaultProperties.put(template.getNameAsString(), () -> {
             var builder = defaultBuilder();
+
+            template.getAnnotations().stream()
+                    .filter(a -> defaultProperties.containsKey(a.getNameAsString()))
+                    .forEach(a -> readAnnotation(a, builder));
 
             template.getMembers().stream()
                     .filter(BodyDeclaration::isAnnotationMemberDeclaration)
@@ -483,6 +472,148 @@ public class Structures {
             return builder;
         });
     }
+
+    private static void readAnnotation(AnnotationExpr ann, PrototypeDataHandler.PrototypeDataHandlerBuilder builder) {
+        ann.getChildNodes().forEach(node -> {
+            if (node instanceof MemberValuePair pair) {
+                var name = pair.getNameAsString();
+                switch (name) {
+                    case "name":
+                        var value = pair.getValue().asStringLiteralExpr().asString();
+                        if (StringUtils.isNotBlank(value)) {
+                            var intf = value.replace("Entity", "");
+                            builder.name(value)
+                                    .className(value)
+                                    .interfaceName(intf)
+                                    .longModifierName(intf + "." + net.binis.codegen.generation.core.Constants.MODIFIER_INTERFACE_NAME);
+                        }
+                        break;
+                    case "generateConstructor":
+                        builder.generateConstructor(pair.getValue().asBooleanLiteralExpr().getValue());
+                        break;
+                    case "generateImplementation":
+                        builder.generateImplementation(pair.getValue().asBooleanLiteralExpr().getValue());
+                        break;
+                    case "generateInterface":
+                        builder.generateInterface(pair.getValue().asBooleanLiteralExpr().getValue());
+                        break;
+                    case "interfaceName":
+                        value = pair.getValue().asStringLiteralExpr().asString();
+                        break;
+                    case "classGetters":
+                        builder.classGetters(pair.getValue().asBooleanLiteralExpr().getValue());
+                        break;
+                    case "classSetters":
+                        builder.classSetters(pair.getValue().asBooleanLiteralExpr().getValue());
+                        break;
+                    case "interfaceSetters":
+                        builder.interfaceSetters(pair.getValue().asBooleanLiteralExpr().getValue());
+                        break;
+                    case "base":
+                        builder.base(pair.getValue().asBooleanLiteralExpr().getValue());
+                        break;
+                    case "baseModifierClass":
+                        value = pair.getValue().asClassExpr().getTypeAsString();
+                        if (StringUtils.isNotBlank(value)) {
+                            builder.baseModifierClass(value);
+                        }
+                        break;
+                    case "mixInClass":
+                        value = pair.getValue().asClassExpr().getTypeAsString();
+                        if (StringUtils.isNotBlank(value) && !"void".equals(value)) {
+                            builder.mixInClass(value);
+                        }
+                        break;
+                    case "implementationPackage":
+                        value = pair.getValue().asStringLiteralExpr().asString();
+                        if (StringUtils.isNotBlank(value)) {
+                            builder.classPackage(value);
+                        }
+                        break;
+                    case "strategy": {
+                        value = pair.getValue().asFieldAccessExpr().getNameAsString();
+                        if (StringUtils.isNotBlank(value)) {
+                            builder.strategy(GenerationStrategy.valueOf(value));
+                        }
+                        break;
+                    }
+                    case "basePath":
+                        value = pair.getValue().asStringLiteralExpr().asString();
+                        if (StringUtils.isNotBlank(value)) {
+                            builder.basePath(value);
+                        }
+                        break;
+                    case "interfacePath":
+                        value = pair.getValue().asStringLiteralExpr().asString();
+                        if (StringUtils.isNotBlank(value)) {
+                            builder.interfacePath(value);
+                        }
+                        break;
+                    case "implementationPath":
+                        value = pair.getValue().asStringLiteralExpr().asString();
+                        if (StringUtils.isNotBlank(value)) {
+                            builder.implementationPath(value);
+                        }
+                        break;
+                    case "enrichers":
+                        builder.predefinedEnrichers(handleClassExpression(pair.getValue(), List.class));
+                        break;
+                    case "inheritedEnrichers":
+                        builder.predefinedInheritedEnrichers(handleClassExpression(pair.getValue(), List.class));
+                        break;
+                    case "options":
+                        builder.options(handleClassExpression(pair.getValue(), Set.class));
+                        break;
+                    default:
+                }
+            } else if (node instanceof Name) {
+                //Continue
+            } else {
+                builder.custom(VALUE, node);
+            }
+        });
+    }
+
+    private static void readAnnotation(Annotation ann, Class<?> cls,  PrototypeDataHandler.PrototypeDataHandlerBuilder builder, BiFunction<Method, Annotation, Object> func) {
+        for (var method : cls.getDeclaredMethods()) {
+            switch (method.getName()) {
+                case "base" -> builder.base((boolean) func.apply(method, ann));
+                case "name" -> builder.name(handleString(func.apply(method, ann)));
+                case "generateConstructor" -> builder.generateConstructor((boolean) func.apply(method, ann));
+                case "options" ->
+                        builder.options((Set) Arrays.stream((Class[]) func.apply(method, ann)).collect(Collectors.toSet()));
+                case "interfaceName" -> builder.interfaceName(handleString(func.apply(method, ann)));
+                case "implementationPath" -> builder.implementationPath(handleString(func.apply(method, ann)));
+                case "enrichers" ->
+                        builder.predefinedEnrichers((List) Arrays.stream((Class[]) func.apply(method, ann)).toList());
+                case "inheritedEnrichers" ->
+                        builder.predefinedInheritedEnrichers((List) Arrays.stream((Class[]) func.apply(method, ann)).toList());
+                case "interfaceSetters" -> builder.interfaceSetters((boolean) func.apply(method, ann));
+                case "classGetters" -> builder.classGetters((boolean) func.apply(method, ann));
+                case "classSetters" -> builder.classSetters((boolean) func.apply(method, ann));
+                case "baseModifierClass" -> builder.baseModifierClass(handleClass(func.apply(method, ann)));
+                case "mixInClass" -> builder.mixInClass(handleClass(func.apply(method, ann)));
+                case "interfacePath" -> builder.interfacePath(handleString(func.apply(method, ann)));
+                case "generateInterface" -> builder.generateInterface((boolean) func.apply(method, ann));
+                case "basePath" -> builder.basePath(handleString(func.apply(method, ann)));
+                case "generateImplementation" ->
+                        builder.generateImplementation((boolean) func.apply(method, ann));
+                case "implementationPackage" -> builder.classPackage(handleString(func.apply(method, ann)));
+                case "strategy" -> builder.strategy((GenerationStrategy) func.apply(method, ann));
+                default -> builder.custom(method.getName(), func.apply(method, ann));
+            }
+        }
+    }
+
+    private static Object readAnnotationValue(Method method, Annotation ann) {
+        try {
+            return method.invoke(ann);
+        } catch (Exception e) {
+            log.warn("Unable to read value for {}() of annotation {}", method.getName(), ann.annotationType().getCanonicalName());
+            return null;
+        }
+    }
+
 
     private static <T extends Collection> T handleClassExpression(Expression value, Class<T> cls) {
         var result = Set.class.equals(cls) ? new HashSet<>() : new ArrayList<>();

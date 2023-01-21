@@ -223,18 +223,23 @@ public abstract class BaseTest {
     }
 
     protected void testMulti(List<Triple<String, String, String>> files, int expected) {
-        testMultiExecute(files, expected, null, null);
+        testMultiExecute(files, expected, null, null, false);
     }
 
     protected void testMulti(List<Triple<String, String, String>> files, String pathToSave) {
-        testMultiExecute(files, files.size(), pathToSave, null);
+        testMultiExecute(files, files.size(), pathToSave, null, false);
     }
+
+    protected void testMultiImplementation(List<Triple<String, String, String>> files) {
+        testMultiExecute(files, files.size(), null, null, true);
+    }
+
 
     protected void testMultiExecute(List<Triple<String, String, String>> files, String resExecute) {
-        testMultiExecute(files, files.size(), null, resExecute);
+        testMultiExecute(files, files.size(), null, resExecute, false);
     }
 
-    protected void testMultiExecute(List<Triple<String, String, String>> files, int expected, String pathToSave, String resExecute) {
+    protected void testMultiExecute(List<Triple<String, String, String>> files, int expected, String pathToSave, String resExecute, boolean includePrototype) {
         var list = newList();
         files.forEach(t ->
                 load(list, t.getLeft()));
@@ -247,6 +252,9 @@ public abstract class BaseTest {
         assertEquals(expected, lookup.parsed().size());
 
         var compileList = new ArrayList<Pair<String, String>>();
+        if (includePrototype) {
+            compileList.addAll(list);
+        }
         files.forEach(f ->
                 lookup.findGeneratedByFileName(f.getLeft()).forEach(parsed -> {
                     compare(parsed.getFiles().get(1), f.getRight());
@@ -261,7 +269,9 @@ public abstract class BaseTest {
 
                     if (isNull(parsed.getMixIn())) {
                         if (!parsed.isNested() || isNull(parsed.getParentClassName())) {
-                            compileList.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+                            if (nonNull(parsed.getFiles().get(1))) {
+                                compileList.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
+                            }
                             compileList.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
                         }
                     } else {
