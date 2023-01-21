@@ -32,6 +32,7 @@ import java.util.function.Predicate;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.tools.Tools.with;
 
 public class RegionEnricherHandler extends BaseEnricher implements RegionEnricher {
 
@@ -47,14 +48,16 @@ public class RegionEnricherHandler extends BaseEnricher implements RegionEnriche
 
     @Override
     public void postProcess(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        var intf = description.getIntf();
-        Helpers.sortClass(intf);
-        calcRegions(intf, m -> m instanceof MethodDeclaration && !m.asMethodDeclaration().isStatic());
+        with(description.getIntf(), intf -> {
+            Helpers.sortClass(intf);
+            calcRegions(intf, m -> m instanceof MethodDeclaration && !m.asMethodDeclaration().isStatic());
+        });
 
         if (isNull(description.getProperties().getMixInClass())) {
-            var spec = description.getSpec();
-            Helpers.sortClass(spec);
-            calcRegions(spec, m -> m instanceof FieldDeclaration && !m.asFieldDeclaration().isFinal() && !m.asFieldDeclaration().isStatic());
+            with(description.getSpec(), spec -> {
+                Helpers.sortClass(spec);
+                calcRegions(spec, m -> m instanceof FieldDeclaration && !m.asFieldDeclaration().isFinal() && !m.asFieldDeclaration().isStatic());
+            });
         }
     }
 
