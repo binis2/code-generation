@@ -45,6 +45,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.options.CodeOption;
 import net.binis.codegen.tools.Holder;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.core.StandardReflectionParameterNameDiscoverer;
@@ -89,12 +90,14 @@ public class Generator {
 
         for (var type : parser.getTypes()) {
             if (type.isClassOrInterfaceDeclaration()) {
-                if (type.asClassOrInterfaceDeclaration().isInterface()) {
-                    getCodeAnnotation(type).ifPresent(prototype -> {
+                getCodeAnnotation(type).ifPresent(prototype -> {
+                    if (type.asClassOrInterfaceDeclaration().isInterface()) {
                         generateCodeForPrototype(parser, prsd, type, prototype);
                         processed.set(processed.get() + 1);
-                    });
-                }
+                    } else if (processForClass(parser, prsd, type, prototype)) {
+                        processed.set(processed.get() + 1);
+                    }
+                });
             } else if (type.isEnumDeclaration()) {
                 getCodeAnnotation(type).ifPresent(prototype -> {
                     generateCodeForEnum(parser, prsd, type, prototype);
@@ -121,7 +124,20 @@ public class Generator {
         }
     }
 
-    @SuppressWarnings("unchecked")
+    private static boolean processForClass(CompilationUnit parser, PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, AnnotationExpr prototype) {
+        var typeDeclaration = type.asClassOrInterfaceDeclaration();
+        var properties = getProperties(prototype);
+
+        if (GenerationStrategy.NONE.equals(properties.getStrategy())) {
+            log.info("Processing - {}", typeDeclaration.getNameAsString());
+            handleEnrichersSetup(properties);
+            handleNoneStrategy(prsd, type, typeDeclaration, properties);
+            return true;
+        }
+
+        return false;
+    }
+
     public static void generateCodeForPrototype(CompilationUnit parser, PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, AnnotationExpr prototype) {
 
         var typeDeclaration = type.asClassOrInterfaceDeclaration();
@@ -138,6 +154,8 @@ public class Generator {
         var parse = switch (properties.getStrategy()) {
             case CLASSIC -> handleClassicStrategy(prsd, type, typeDeclaration, properties);
             case IMPLEMENTATION -> handleImplementationStrategy(prsd, type, typeDeclaration, properties);
+            case PLAIN -> handlePlainStrategy(prsd, type, typeDeclaration, properties);
+            case NONE -> handleNoneStrategy(prsd, type, typeDeclaration, properties);
         };
 
         processingTypes.remove(typeDeclaration.getNameAsString());
@@ -163,12 +181,7 @@ public class Generator {
 
         var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
 
-        parse.setParsedName(spec.getNameAsString());
-        parse.setParsedFullName(spec.getFullyQualifiedName().get());
-        parse.setInterfaceName(intf.getNameAsString());
-        parse.setInterfaceFullName(intf.getFullyQualifiedName().get());
         parse.setProperties(properties);
-        parse.setFiles(List.of(unit, iUnit));
         parse.setSpec(spec);
         parse.setIntf(intf);
 
@@ -309,18 +322,12 @@ public class Generator {
 
         var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
 
-        parse.setParsedName(spec.getNameAsString());
-        parse.setParsedFullName(spec.getFullyQualifiedName().get());
         parse.setInterfaceName(type.getNameAsString());
         parse.setInterfaceFullName(type.getFullyQualifiedName().get());
         parse.setProperties(properties);
-        var files = new ArrayList<CompilationUnit>();
-        files.add(unit);
-        files.add(null);
-        parse.setFiles(files);
         parse.setSpec(spec);
 
-        if (isNull(prsd) || !prsd.isNested() || isNull(prsd.getParentClassName())) {
+        if (!prsd.isNested() || isNull(prsd.getParentClassName())) {
             spec.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeName() + "\", comments=\"" + properties.getInterfaceName() + "\")").getResult().get());
         }
 
@@ -354,6 +361,17 @@ public class Generator {
         mergeNestedPrototypes(parse);
 
         handleImports(typeDeclaration, spec);
+        return parse;
+    }
+
+    private static Structures.Parsed handlePlainStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
+        throw new NotImplementedException();
+    }
+
+    private static Structures.Parsed handleNoneStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
+        var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
+
+        parse.setProperties(properties);
         return parse;
     }
 
@@ -887,11 +905,9 @@ public class Generator {
     private static void checkEnrichers(List<PrototypeEnricher> list, Class enricher) {
         if (list.stream().noneMatch(e -> enricher.isAssignableFrom(e.getClass()))) {
             var e = CodeFactory.create(enricher);
-            if (e instanceof PrototypeEnricher) {
-                with(((PrototypeEnricher) e), r -> {
-                    r.init(lookup);
-                    list.add(r);
-                });
+            if (e instanceof PrototypeEnricher en) {
+                en.init(lookup);
+                list.add(en);
             }
         }
     }
@@ -901,7 +917,7 @@ public class Generator {
         for (var extended : declaration.getExtendedTypes()) {
             var parsed = getParsed(extended);
             if (nonNull(parsed)) {
-                if (isNull(parsed.getFiles())) {
+                if (!parsed.isProcessed()) {
                     generateCodeForClass(parsed.getDeclaration().findCompilationUnit().get(), parsed);
                 } else {
                     if (!parsed.isProcessed()) {
@@ -916,7 +932,7 @@ public class Generator {
         notNull(properties.getMixInClass(), c ->
                 notNull(getExternalClassName(declaration.findCompilationUnit().get(), c),
                         name -> notNull(lookup.findParsed(name), parse ->
-                                ifNull(parse.getFiles(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get(), parse)))));
+                                condition(!parse.isProcessed(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get(), parse)))));
 
         declaration.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(cls ->
                 Generator.getCodeAnnotation(cls).ifPresent(ann -> {
@@ -925,12 +941,12 @@ public class Generator {
                             Structures.Parsed.builder().declaration(cls.asTypeDeclaration()).parser(lookup.getParser()).nested(true).parentClassName(getClassName(declaration)).build());
 
                     notNull(lookup.findParsed(clsName), parse ->
-                            ifNull(parse.getFiles(), () -> generateCodeForPrototype(declaration.findCompilationUnit().get(), parse, cls, ann)));
+                            condition(!parse.isProcessed(), () -> generateCodeForPrototype(declaration.findCompilationUnit().get(), parse, cls, ann)));
                 }));
     }
 
     private static void ensureParsedParents(EnumDeclaration declaration, PrototypeDescription<?> parse) {
-        if (nonNull(parse) && isNull(parse.getCompiled()) && isNull(parse.getFiles())) {
+        if (nonNull(parse) && isNull(parse.getCompiled()) && !parse.isProcessed()) {
             if (parse.getDeclaration().isEnumDeclaration()) {
                 generateCodeForEnum(parse.getDeclaration().findCompilationUnit().get(), parse, parse.getDeclaration(), parse.getDeclaration().getAnnotationByClass(EnumPrototype.class).orElse(null));
             } else {
@@ -1184,7 +1200,7 @@ public class Generator {
             }
 
             if (isNull(processing)) {
-                if (isNull(parse.getFiles())) {
+                if (!parse.isProcessed()) {
                     generateCodeForClass(parse.getDeclaration().findCompilationUnit().get(), parse);
                 }
 
@@ -1970,12 +1986,7 @@ public class Generator {
 
             var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
 
-            parse.setParsedName(spec.getNameAsString());
-            parse.setParsedFullName(spec.getFullyQualifiedName().get());
-            parse.setInterfaceName(intf.getNameAsString());
-            parse.setInterfaceFullName(intf.getFullyQualifiedName().get());
             parse.setProperties(properties);
-            parse.setFiles(List.of(unit, iUnit));
             parse.setSpec(spec);
             parse.setIntf(intf);
             parse.setCodeEnum(true);
