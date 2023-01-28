@@ -20,12 +20,12 @@ package net.binis.codegen;
  * #L%
  */
 
-import net.binis.codegen.test.BaseTest;
+import net.binis.codegen.test.BaseCodeGenTest;
 import net.binis.codegen.generation.core.Helpers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class WithBaseTest extends BaseTest {
+class WithBaseTest extends BaseCodeGenTest {
 
     @BeforeEach
     public void cleanUp() {

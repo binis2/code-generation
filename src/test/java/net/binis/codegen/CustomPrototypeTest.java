@@ -20,15 +20,22 @@ package net.binis.codegen;
  * #L%
  */
 
+import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.objects.CodeExampleBuilder;
-import net.binis.codegen.test.BaseTest;
+import net.binis.codegen.test.BaseCodeGenTest;
 import org.apache.commons.lang3.tuple.Triple;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-class CustomPrototypeTest extends BaseTest {
+class CustomPrototypeTest extends BaseCodeGenTest {
+
+    @BeforeEach
+    public void cleanUp() {
+        Helpers.cleanUp();
+    }
 
     @Test
     void test() {

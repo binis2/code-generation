@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -59,7 +60,7 @@ import static net.binis.codegen.tools.Tools.with;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-public abstract class BaseTest {
+public abstract class BaseCodeGenTest {
 
     protected JavaParser parser = new JavaParser();
 
@@ -82,8 +83,9 @@ public abstract class BaseTest {
     protected void generate() {
         var parsed = new ArrayList<>(lookup.parsed());
         for (var entry : parsed) {
-            ifNull(entry.getFiles(), () ->
-                    Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get(), entry));
+            if (!entry.isProcessed()) {
+                Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get(), entry);
+            }
         }
 
         lookup.calcPrototypeMaps();
@@ -172,6 +174,7 @@ public abstract class BaseTest {
         testSingleExecute(prototype, resClass, resInterface, pathToSave, expected, null, false, false);
     }
 
+    @SuppressWarnings("unchecked")
     protected void testSingleExecute(String prototype, String resClass, String resInterface, String pathToSave, int expected, String resExecute, boolean skipCompilation, boolean includePrototype) {
         var list = newList();
         load(list, prototype);
@@ -184,7 +187,13 @@ public abstract class BaseTest {
         if (includePrototype) {
             list2.add(list.get(0));
         }
-        lookup.generated().stream().sorted((o1, o2) -> Boolean.compare(isNull(o1.getCompiled()), isNull(o2.getCompiled()))).forEach(parsed -> {
+
+        var stream = lookup.generated().stream();
+        if (lookup.generated().isEmpty()) {
+            stream = (Stream) lookup.custom().stream();
+        }
+
+        stream.sorted((o1, o2) -> Boolean.compare(isNull(o1.getCompiled()), isNull(o2.getCompiled()))).forEach(parsed -> {
             if (isNull(parsed.getCompiled()) && (!parsed.isNested() || isNull(parsed.getParentClassName()))) {
                 if (nonNull(pathToSave)) {
                     save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
@@ -201,7 +210,8 @@ public abstract class BaseTest {
                             list2.add(Pair.of(parsed.getInterfaceFullName(), getAsString(file))));
                 }
                 if (!classExists(parsed.getParsedFullName())) {
-                    list2.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
+                    with(parsed.getFiles().get(0), file ->
+                            list2.add(Pair.of(parsed.getParsedFullName(), getAsString(file))));
                 }
             }
 
@@ -341,10 +351,10 @@ public abstract class BaseTest {
 
     @SneakyThrows
     protected void save(String name, CompilationUnit unit, String pathToSave) {
-        var fileName = pathToSave + "/" + name + ".java";
-        BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-        writer.write(getAsString(unit));
-        writer.close();
+        var fileName = pathToSave + '/' + name + ".java";
+        try (var writer = new BufferedWriter(new FileWriter(fileName))) {
+            writer.write(getAsString(unit));
+        }
         log.info("Saving - {}", fileName);
     }
 

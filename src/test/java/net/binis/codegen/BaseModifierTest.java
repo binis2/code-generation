@@ -22,12 +22,12 @@ package net.binis.codegen;
 
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.generation.core.Helpers;
-import net.binis.codegen.test.BaseTest;
+import net.binis.codegen.test.BaseCodeGenTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @Slf4j
-class BaseModifierTest extends BaseTest {
+class BaseModifierTest extends BaseCodeGenTest {
 
     @BeforeEach
     public void cleanUp() {

@@ -21,11 +21,11 @@ package net.binis.codegen;
  */
 
 import net.binis.codegen.generation.core.Helpers;
-import net.binis.codegen.test.BaseTest;
+import net.binis.codegen.test.BaseCodeGenTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ImplementationStrategyBasicTest extends BaseTest {
+class ImplementationStrategyBasicTest extends BaseCodeGenTest {
 
     @BeforeEach
     public void cleanUp() {

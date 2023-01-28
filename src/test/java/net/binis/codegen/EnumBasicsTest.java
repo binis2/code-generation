@@ -22,7 +22,7 @@ package net.binis.codegen;
 
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.generation.core.Helpers;
-import net.binis.codegen.test.BaseTest;
+import net.binis.codegen.test.BaseCodeGenTest;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 @Slf4j
-class EnumBasicsTest extends BaseTest {
+class EnumBasicsTest extends BaseCodeGenTest {
 
     @BeforeEach
     public void cleanUp() {
