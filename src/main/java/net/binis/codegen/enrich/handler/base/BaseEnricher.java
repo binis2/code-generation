@@ -20,6 +20,7 @@ package net.binis.codegen.enrich.handler.base;
  * #L%
  */
 
+import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.enrich.PrototypeLookup;
@@ -29,10 +30,12 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 public abstract class BaseEnricher implements PrototypeEnricher {
 
     protected PrototypeLookup lookup;
+    protected JavaParser parser;
 
     @Override
     public void init(PrototypeLookup lookup) {
         this.lookup = lookup;
+        parser = lookup.getParser();
     }
 
     @Override

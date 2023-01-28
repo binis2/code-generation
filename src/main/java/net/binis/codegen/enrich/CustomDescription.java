@@ -1,4 +1,4 @@
-package net.binis.codegen.objects;
+package net.binis.codegen.enrich;
 
 /*-
  * #%L
@@ -20,15 +20,14 @@ package net.binis.codegen.objects;
  * #L%
  */
 
-import net.binis.codegen.annotation.CodePrototype;
-import net.binis.codegen.annotation.type.GenerationStrategy;
-import net.binis.codegen.enrich.RegionEnricher;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import net.binis.codegen.generation.core.interfaces.PrototypeData;
+import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+public interface CustomDescription extends PrototypeDescription<ClassOrInterfaceDeclaration> {
 
-@Retention(RetentionPolicy.SOURCE)
-@CodePrototype(strategy = GenerationStrategy.IMPLEMENTATION, enrichers = RegionEnricher.class)
-public @interface CodeExampleBuilder {
-    String value();
+    void setSpec(ClassOrInterfaceDeclaration spec);
+    void setIntf(ClassOrInterfaceDeclaration intf);
+    void setProperties(PrototypeData properties);
+
 }

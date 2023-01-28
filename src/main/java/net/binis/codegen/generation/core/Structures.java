@@ -34,7 +34,9 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.type.EmbeddedModifierType;
 import net.binis.codegen.annotation.type.GenerationStrategy;
+import net.binis.codegen.enrich.CustomDescription;
 import net.binis.codegen.enrich.Enricher;
+import net.binis.codegen.enrich.GeneratedFile;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.generation.core.interfaces.PrototypeConstant;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
@@ -45,7 +47,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.BiFunction;
@@ -202,22 +203,22 @@ public class Structures {
             Helpers.registerKnownEnrichers();
         }
 
-        private boolean processed;
-        private boolean invalid;
+        protected boolean processed;
+        protected boolean invalid;
 
-        private JavaParser parser;
+        protected JavaParser parser;
 
-        private Class<?> compiled;
-        private String prototypeFileName;
-        private String prototypeClassName;
+        protected Class<?> compiled;
+        protected String prototypeFileName;
+        protected String prototypeClassName;
 
-        private PrototypeDataHandler properties;
+        protected PrototypeDataHandler properties;
 
-        private String parsedName;
-        private String parsedFullName;
+        protected String parsedName;
+        protected String parsedFullName;
 
-        private String interfaceName;
-        private String interfaceFullName;
+        protected String interfaceName;
+        protected String interfaceFullName;
 
         @EqualsAndHashCode.Exclude
         @Builder.Default
@@ -231,47 +232,67 @@ public class Structures {
             return parsedFullName;
         }
 
-        private TypeDeclaration<T> declaration;
-        private List<CompilationUnit> files;
-
-        private Parsed<T> base;
-        private Parsed<T> mixIn;
-
-        private boolean nested;
-
-        private boolean codeEnum;
-
-        private String parentClassName;
+        protected TypeDeclaration<T> declaration;
 
         @Builder.Default
-        private EmbeddedModifierType embeddedModifierType = EmbeddedModifierType.NONE;
+        protected List<CompilationUnit> files = initFiles();
+
+        @Builder.Default
+        protected Map<String, GeneratedFileHandler> custom = new HashMap<>();
+
+        protected Parsed<T> base;
+        protected Parsed<T> mixIn;
+
+        protected boolean nested;
+
+        protected boolean codeEnum;
+
+        protected String parentClassName;
+
+        @Builder.Default
+        protected EmbeddedModifierType embeddedModifierType = EmbeddedModifierType.NONE;
 
         @EqualsAndHashCode.Exclude
         @Builder.Default
         @ToString.Exclude
-        private Map<String, ClassOrInterfaceDeclaration> classes = new HashMap<>();
+        protected Map<String, ClassOrInterfaceDeclaration> classes = new HashMap<>();
 
         @EqualsAndHashCode.Exclude
         @Builder.Default
         @ToString.Exclude
-        private List<PrototypeField> fields = new ArrayList<>();
+        protected List<PrototypeField> fields = new ArrayList<>();
 
-        private ClassOrInterfaceDeclaration spec;
-        private ClassOrInterfaceDeclaration intf;
-
-        @Builder.Default
-        @EqualsAndHashCode.Exclude
-        @ToString.Exclude
-        private List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers = new ArrayList<>();
+        protected ClassOrInterfaceDeclaration spec;
+        protected ClassOrInterfaceDeclaration intf;
 
         @Builder.Default
         @EqualsAndHashCode.Exclude
         @ToString.Exclude
-        private List<Consumer<BlockStmt>> customInitializers = new ArrayList<>();
+        protected List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers = new ArrayList<>();
+
+        @Builder.Default
+        @EqualsAndHashCode.Exclude
+        @ToString.Exclude
+        protected List<Consumer<BlockStmt>> customInitializers = new ArrayList<>();
 
         @Builder.Default
         @ToString.Exclude
-        private List<Runnable> postProcessActions = new ArrayList<>();
+        protected List<Runnable> postProcessActions = new ArrayList<>();
+
+        public void setIntf(ClassOrInterfaceDeclaration intf) {
+            this.intf = intf;
+            interfaceName = intf.getNameAsString();
+            interfaceFullName = intf.getFullyQualifiedName().orElse(null);
+            intf.findCompilationUnit().ifPresent(u -> files.set(1, u));
+        }
+
+        public void setSpec(ClassOrInterfaceDeclaration spec) {
+            this.spec = spec;
+            parsedName = spec.getNameAsString();
+            parsedFullName = spec.getFullyQualifiedName().orElse(null);
+            spec.findCompilationUnit().ifPresent(u -> files.set(0, u));
+        }
+
 
         public void registerClass(String key, ClassOrInterfaceDeclaration declaration) {
             classes.put(key, declaration);
@@ -336,6 +357,47 @@ public class Structures {
                     getProperties().inheritedEnrichers.stream().anyMatch(e -> enricher.isAssignableFrom(e.getClass()));
         }
 
+        public GeneratedFileHandler addCustomFile(String id) {
+            return custom.computeIfAbsent(id, k -> GeneratedFileHandler.builder().id(id).build());
+        }
+
+        public GeneratedFileHandler getCustomFile(String id) {
+            return custom.get(id);
+        }
+
+        protected static List<CompilationUnit> initFiles() {
+            var list = new ArrayList<CompilationUnit>(2);
+            list.add(null);
+            list.add(null);
+            return list;
+        }
+
+    }
+
+
+    public static class CustomParsed extends Parsed<ClassOrInterfaceDeclaration> implements CustomDescription {
+        @Getter
+        protected String id;
+
+        @Builder(builderMethodName = "bldr")
+        public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean codeEnum, String parentClassName, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
+            super(processed, invalid, parser, compiled, prototypeFileName, prototypeClassName, properties, parsedName, parsedFullName, interfaceName, interfaceFullName, constants, declaration, files, custom, base, mixIn, nested, codeEnum, parentClassName, embeddedModifierType, classes, fields, spec, intf, initializers, customInitializers, postProcessActions);
+            this.id = id;
+            this.files = initFiles();
+        }
+
+        @Override
+        public void setProperties(PrototypeData properties) {
+            this.properties = (PrototypeDataHandler) properties;
+        }
+    }
+
+    @Data
+    @Builder
+    public static class GeneratedFileHandler implements GeneratedFile {
+        protected String id;
+        protected String path;
+        protected String content;
     }
 
     @ToString
@@ -574,7 +636,7 @@ public class Structures {
         });
     }
 
-    private static void readAnnotation(Annotation ann, Class<?> cls,  PrototypeDataHandler.PrototypeDataHandlerBuilder builder, BiFunction<Method, Annotation, Object> func) {
+    private static void readAnnotation(Annotation ann, Class<?> cls, PrototypeDataHandler.PrototypeDataHandlerBuilder builder, BiFunction<Method, Annotation, Object> func) {
         for (var method : cls.getDeclaredMethods()) {
             switch (method.getName()) {
                 case "base" -> builder.base((boolean) func.apply(method, ann));
@@ -596,8 +658,7 @@ public class Structures {
                 case "interfacePath" -> builder.interfacePath(handleString(func.apply(method, ann)));
                 case "generateInterface" -> builder.generateInterface((boolean) func.apply(method, ann));
                 case "basePath" -> builder.basePath(handleString(func.apply(method, ann)));
-                case "generateImplementation" ->
-                        builder.generateImplementation((boolean) func.apply(method, ann));
+                case "generateImplementation" -> builder.generateImplementation((boolean) func.apply(method, ann));
                 case "implementationPackage" -> builder.classPackage(handleString(func.apply(method, ann)));
                 case "strategy" -> builder.strategy((GenerationStrategy) func.apply(method, ann));
                 default -> builder.custom(method.getName(), func.apply(method, ann));

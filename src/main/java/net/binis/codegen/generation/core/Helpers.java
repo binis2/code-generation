@@ -197,7 +197,7 @@ public class Helpers {
     public static String getClassName(ClassOrInterfaceType type) {
         var result = Holder.blank();
         type.findCompilationUnit().flatMap(CompilationUnit::getPackageDeclaration).ifPresent(p ->
-            result.set(p.getName().asString()));
+                result.set(p.getName().asString()));
 
         return result.get() + "." + type.getNameAsString();
     }
@@ -484,9 +484,8 @@ public class Helpers {
         if (isNull(parent)) {
             return parsed.getFiles().get(1).getType(0).getNameAsString();
         } else {
-            var files = parsed.getFiles();
-            if (nonNull(files)) {
-                var type = files.get(0).getType(0);
+            if (parsed.isProcessed()) {
+                var type = parsed.getFiles().get(0).getType(0);
                 expr.findCompilationUnit().ifPresent(u -> u.addImport(type.getFullyQualifiedName().get()));
                 return type.getNameAsString();
             } else {
@@ -702,25 +701,20 @@ public class Helpers {
         return result.get();
     }
 
-
     public static Structures.Constants getConstants(BodyDeclaration<?> member) {
         var result = Structures.Constants.builder().forPublic(true);
         member.getAnnotations().stream().filter(a -> "CodeConstant".equals(a.getNameAsString())).findFirst().ifPresent(annotation ->
                 annotation.getChildNodes().forEach(node -> {
-                    if (node instanceof MemberValuePair) {
-                        var pair = (MemberValuePair) node;
+                    if (node instanceof MemberValuePair pair) {
                         var name = pair.getNameAsString();
                         switch (name) {
-                            case "isPublic":
-                                result.forPublic(pair.getValue().asBooleanLiteralExpr().getValue());
-                                break;
-                            case "forClass":
-                                result.forClass(pair.getValue().asBooleanLiteralExpr().getValue());
-                                break;
-                            case "forInterface":
-                                result.forInterface(pair.getValue().asBooleanLiteralExpr().getValue());
-                                break;
-                            default:
+                            case "isPublic" -> result.forPublic(pair.getValue().asBooleanLiteralExpr().getValue());
+                            case "forClass" -> result.forClass(pair.getValue().asBooleanLiteralExpr().getValue());
+                            case "forInterface" ->
+                                    result.forInterface(pair.getValue().asBooleanLiteralExpr().getValue());
+                            default -> {
+                                //Do nothing
+                            }
                         }
                     }
                 }));
@@ -759,10 +753,10 @@ public class Helpers {
     private static int compareMembers(BodyDeclaration<?> m1, BodyDeclaration<?> m2) {
         var result = memberIndex(m2) - memberIndex(m1);
         if (result == 0) {
-            if (m1 instanceof NodeWithSimpleName) {
-                return ((NodeWithSimpleName) m1).getNameAsString().compareTo(((NodeWithSimpleName) m2).getNameAsString());
-            } else if (m1 instanceof NodeWithVariables) {
-                return ((NodeWithVariables) m1).getVariable(0).getNameAsString().compareTo(((NodeWithVariables) m2).getVariable(0).getNameAsString());
+            if (m1 instanceof NodeWithSimpleName m) {
+                return m.getNameAsString().compareTo(((NodeWithSimpleName) m2).getNameAsString());
+            } else if (m1 instanceof NodeWithVariables m) {
+                return m.getVariable(0).getNameAsString().compareTo(((NodeWithVariables) m2).getVariable(0).getNameAsString());
             }
         }
         return result;
@@ -968,21 +962,17 @@ public class Helpers {
     }
 
     private static void findUsedTypesInternal(Set<String> types, Node node) {
-        if (node instanceof ClassOrInterfaceType) {
-            var type = (ClassOrInterfaceType) node;
+        if (node instanceof ClassOrInterfaceType type) {
             types.add(type.getNameAsString());
             type.getTypeArguments().ifPresent(a -> a.forEach(n -> findUsedTypesInternal(types, n)));
-        } else if (node instanceof AnnotationExpr) {
-            types.add(((AnnotationExpr) node).getNameAsString());
-        } else if (node instanceof NameExpr) {
-            types.add(((NameExpr) node).getNameAsString());
-        } else if (node instanceof SimpleName) {
-            Arrays.stream(((SimpleName) node).asString().split("[.()<\\s]")).filter(s -> !"".equals(s)).forEach(types::add);
-        } else if (node instanceof VariableDeclarator) {
-            var declarator = (VariableDeclarator) node;
-            if (declarator.getType() instanceof ClassOrInterfaceType) {
-                types.add(((ClassOrInterfaceType) declarator.getType()).getNameAsString());
-            }
+        } else if (node instanceof AnnotationExpr ann) {
+            types.add(ann.getNameAsString());
+        } else if (node instanceof NameExpr name) {
+            types.add(name.getNameAsString());
+        } else if (node instanceof SimpleName name) {
+            Arrays.stream(name.asString().split("[.()<\\s]")).filter(s -> !"".equals(s)).forEach(types::add);
+        } else if (node instanceof VariableDeclarator declarator && declarator.getType() instanceof ClassOrInterfaceType type) {
+            types.add(type.getNameAsString());
         }
 
         node.getChildNodes().forEach(n -> findUsedTypesInternal(types, n));
@@ -1011,10 +1001,9 @@ public class Helpers {
     public static void addDefaultCreation(PrototypeDescription<?> description, PrototypeDescription<?> mixIn) {
         var intf = description.getIntf();
         if (description.getProperties().isGenerateImplementation() && intf.getAnnotationByName("Default").isEmpty()) {
-            var parsed = description;
-            var name = parsed.getImplementorFullName();
-            if (parsed.isNested() && nonNull(parsed.getParentClassName())) {
-                name = getBasePackage(parsed) + '.' + parsed.getParsedName().replace('.', '$');
+            var name = description.getImplementorFullName();
+            if (description.isNested() && nonNull(description.getParentClassName())) {
+                name = getBasePackage(description) + '.' + description.getParsedName().replace('.', '$');
             }
             intf.addAnnotation(description.getParser().parseAnnotation("@Default(\"" + name + "\")").getResult().get());
             intf.findCompilationUnit().get().addImport(Default.class.getCanonicalName());

@@ -89,14 +89,21 @@ public class CodeGen {
 
         var destination = cmd.getOptionValue(DESTINATION);
         var impl_destination = cmd.getOptionValue(IMPL_DESTINATION);
-        lookup.parsed().stream().filter(v -> nonNull(v.getFiles())).filter(p -> !p.isNested() || isNull(p.getParentClassName())).forEach(p -> {
-            if (p.getProperties().isGenerateImplementation() && isNull(p.getProperties().getMixInClass()) && isNull(p.getCompiled())) {
-                saveFile(nullCheck(getBasePath(impl_destination, p.getProperties(), true), destination), p.getFiles().get(0));
-            }
-            if (p.getProperties().isGenerateInterface() && isNull(p.getCompiled())) {
-                saveFile(getBasePath(destination, p.getProperties(), false), p.getFiles().get(1));
-            }
+        lookup.parsed().stream().filter(PrototypeDescription::isProcessed).filter(p -> !p.isNested() || isNull(p.getParentClassName())).forEach(p -> {
+            saveParsed(destination, impl_destination, p);
         });
+        lookup.custom().forEach(p -> {
+            saveParsed(destination, impl_destination, p);
+        });
+    }
+
+    private static void saveParsed(String destination, String impl_destination, PrototypeDescription<ClassOrInterfaceDeclaration> p) {
+        if (p.getProperties().isGenerateImplementation() && isNull(p.getProperties().getMixInClass()) && isNull(p.getCompiled())) {
+            saveFile(nullCheck(getBasePath(impl_destination, p.getProperties(), true), destination), p.getFiles().get(0));
+        }
+        if (p.getProperties().isGenerateInterface() && isNull(p.getCompiled())) {
+            saveFile(getBasePath(destination, p.getProperties(), false), p.getFiles().get(1));
+        }
     }
 
     public static void processFiles(List<Path> files) {
@@ -114,10 +121,10 @@ public class CodeGen {
             }
         }
 
-        var entry = lookup.parsed().stream().filter(e -> isNull(e.getFiles()) && !e.isInvalid()).findFirst();
+        var entry = lookup.parsed().stream().filter(e -> !e.isProcessed() && !e.isInvalid()).findFirst();
         while (entry.isPresent()) {
             Generator.generateCodeForClass(entry.get().getDeclaration().findCompilationUnit().get(), entry.get());
-            entry = lookup.parsed().stream().filter(e -> isNull(e.getFiles()) && !e.isInvalid()).findFirst();
+            entry = lookup.parsed().stream().filter(e -> !e.isProcessed() && !e.isInvalid()).findFirst();
         }
 
         recursiveExpr.forEach(pair ->
@@ -150,8 +157,9 @@ public class CodeGen {
         }
 
         for (var entry : CollectionUtils.copyList(lookup.parsed())) {
-            ifNull(entry.getFiles(), () ->
-                    Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get(), entry));
+            if (!entry.isProcessed()) {
+                Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get(), entry);
+            }
         }
 
         recursiveExpr.forEach(pair ->
@@ -159,7 +167,7 @@ public class CodeGen {
 
         lookup.calcPrototypeMaps();
 
-        with(lookup.parsed().stream().filter(PrototypeDescription::isValid).sorted(Helpers::sortForEnrich).collect(Collectors.toList()), list -> {
+        with(lookup.parsed().stream().filter(PrototypeDescription::isValid).sorted(Helpers::sortForEnrich).toList(), list -> {
             list.forEach(Helpers::handleEnrichers);
             list.forEach(Helpers::finalizeEnrichers);
             list.forEach(Helpers::postProcessEnrichers);

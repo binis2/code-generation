@@ -1,4 +1,4 @@
-package net.binis.codegen.objects;
+package net.binis.codegen.enrich;
 
 /*-
  * #%L
@@ -20,15 +20,12 @@ package net.binis.codegen.objects;
  * #L%
  */
 
-import net.binis.codegen.annotation.CodePrototype;
-import net.binis.codegen.annotation.type.GenerationStrategy;
-import net.binis.codegen.enrich.RegionEnricher;
+public interface GeneratedFile {
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+    String getId();
+    String getPath();
+    String getContent();
+    void setPath(String path);
+    void setContent(String content);
 
-@Retention(RetentionPolicy.SOURCE)
-@CodePrototype(strategy = GenerationStrategy.IMPLEMENTATION, enrichers = RegionEnricher.class)
-public @interface CodeExampleBuilder {
-    String value();
 }

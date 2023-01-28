@@ -23,12 +23,15 @@ package net.binis.codegen.generation.core;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.enrich.CustomDescription;
 import net.binis.codegen.enrich.PrototypeLookup;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.annotation.processing.ProcessingEnvironment;
 import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -44,11 +47,16 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> external = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> enums = new HashMap<>();
+    private final Map<String, CustomDescription> custom = new HashMap<>();
     private final List<Pair<Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>>, PrototypeDescription<ClassOrInterfaceDeclaration>>> prototypeMaps = new ArrayList<>();
 
     @Getter
     private final JavaParser parser = new JavaParser();
     private UnaryOperator<String> externalLookup;
+
+    @Getter
+    @Setter
+    private ProcessingEnvironment processingEnvironment;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -67,6 +75,23 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     @Override
     public void registerExternalLookup(UnaryOperator<String> lookup) {
         externalLookup = lookup;
+    }
+
+    @Override
+    public CustomDescription createCustomDescription(String id) {
+        return custom.computeIfAbsent(id, k -> Structures.CustomParsed.bldr()
+                .id(id)
+                .properties(Structures.defaultBuilder().build())
+                .build());
+    }
+
+    @Override
+    public CustomDescription getCustomDescription(String id) {
+        return custom.get(id);
+    }
+
+    public Collection<CustomDescription> custom() {
+        return custom.values();
     }
 
     @Override

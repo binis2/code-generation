@@ -156,6 +156,20 @@ public class Tools {
         }
     }
 
+    public static <T> void as(Object obj, Class<T> intf, Consumer<T> consumer) {
+        if (nonNull(obj) && intf.isAssignableFrom(obj.getClass())) {
+            consumer.accept(intf.cast(obj));
+        }
+    }
+
+    public static <T, R> R asRes(Object obj, Class<T> intf, Function<T, R> func) {
+        if (nonNull(obj) && intf.isAssignableFrom(obj.getClass())) {
+            return func.apply(intf.cast(obj));
+        }
+
+        return null;
+    }
+
     public static boolean anyNull(Object... values) {
         return !allNotNull(values);
     }

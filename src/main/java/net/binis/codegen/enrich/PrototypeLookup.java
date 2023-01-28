@@ -25,6 +25,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
+import javax.annotation.processing.ProcessingEnvironment;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -56,4 +57,12 @@ public interface PrototypeLookup {
     void addPrototypeMap(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap);
 
     void calcPrototypeMaps();
+
+    ProcessingEnvironment getProcessingEnvironment();
+    void setProcessingEnvironment(ProcessingEnvironment processingEnv);
+
+    CustomDescription createCustomDescription(String id);
+    CustomDescription getCustomDescription(String id);
+    Collection<CustomDescription> custom();
+
 }
