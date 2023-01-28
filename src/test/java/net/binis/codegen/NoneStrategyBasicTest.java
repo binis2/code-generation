@@ -45,7 +45,7 @@ class NoneStrategyBasicTest extends BaseCodeGenTest {
         testSingleImplementation("strategy/none2.java", null);
         assertEquals(1, lookup.custom().size());
         var custom = lookup.custom().stream().findFirst().get();
-        compare(custom.getIntf().findCompilationUnit().get(), "strategy/none2.java");
+        compare(custom.getIntf().findCompilationUnit().get(), "strategy/none2-1.java");
     }
 
 
