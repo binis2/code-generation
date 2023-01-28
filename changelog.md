@@ -1,4 +1,15 @@
 # Change Log
+**28-01-2023** ver. 1.0.1
+* Core: Added inheritance of custom prototypes.
+* Core: Added class based mappings.
+* Core: Added enum conversions.
+* Generator: Added new code generation strategies: IMPLEMENTATION, NONE
+* Generator: Added ability to create custom generated files.
+* Jackson: Added fast routine to set up ObjectMapper to be aware of CodeGen objects.
+* Spring: Fixed broken Async routines
+* Annotation Processor: Fixed binis.properties serialization when multiple custom services are presented.  
+* Annotation Processor: Fixed @CodeConfiguration service discovery in some cases.
+
 **12-01-2023** ver. 1.0.0
 * All: Migrated to Java 17
 * Core: Added @CodeConfiguration (Class discovery)
