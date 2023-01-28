@@ -9,9 +9,9 @@ package net.binis.codegen.discoverer;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,15 +27,18 @@ import net.binis.codegen.discovery.Discoverer;
 import javax.annotation.processing.Filer;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static java.util.Objects.isNull;
+
 @Slf4j
 public abstract class AnnotationDiscoverer extends Discoverer {
+
+    private static InputStream read;
+    private static OutputStream write;
+    private static final SortedSet<String> allServices = Sets.newTreeSet();
 
     private static void loadDefault(List<DiscoveredService> list) {
         list.add(DiscoveredService.builder().type(TEMPLATE).name("net.binis.codegen.annotation.CodePrototype").build());
@@ -68,23 +71,25 @@ public abstract class AnnotationDiscoverer extends Discoverer {
 
     public static void writeEntry(String type, Filer filer, String className) {
         try {
-            SortedSet<String> allServices = Sets.newTreeSet();
-            try {
-                var existingFile =
-                        filer.getResource(StandardLocation.CLASS_OUTPUT, "", RESOURCE_PATH);
-                Set<String> oldServices = readServiceFile(existingFile.openInputStream());
-                allServices.addAll(oldServices);
-            } catch (IOException e) {
-                //No old file present.
+            if (isNull(read)) {
+                try {
+                    var file = filer.getResource(StandardLocation.CLASS_OUTPUT, "", RESOURCE_PATH);
+                    read = file.openInputStream();
+                    Set<String> oldServices = readServiceFile(read);
+                    allServices.addAll(oldServices);
+                } catch (IOException e) {
+                    //No old file present.
+                }
             }
 
-            allServices.add(type + ":" + className);
+            var service = type + ":" + className;
 
-            FileObject fileObject =
-                    filer.createResource(StandardLocation.CLASS_OUTPUT, "", RESOURCE_PATH);
-            try (OutputStream out = fileObject.openOutputStream()) {
-                writeServiceFile(allServices, out);
+            allServices.add(service);
+
+            if (isNull(write)) {
+                write = filer.createResource(StandardLocation.CLASS_OUTPUT, "", RESOURCE_PATH).openOutputStream();
             }
+            writeService(service, write);
         } catch (IOException e) {
             log.error("Failed to write annotations resource!", e);
         }
@@ -98,5 +103,13 @@ public abstract class AnnotationDiscoverer extends Discoverer {
         }
         writer.flush();
     }
+
+    protected static void writeService(String service, OutputStream output) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(output, StandardCharsets.UTF_8));
+        writer.write(service);
+        writer.newLine();
+        writer.flush();
+    }
+
 
 }
