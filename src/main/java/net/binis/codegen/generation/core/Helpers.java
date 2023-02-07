@@ -208,9 +208,18 @@ public class Helpers {
         }
 
         var result = getExternalClassNameIfExists(unit, type);
+
+        if (isNull(result)) {
+            var imprt = forceGetClassImport(unit, type);
+            if (nonNull(imprt)) {
+                result = imprt.getNameAsString() + '.' + type;
+            }
+        }
+
         if (isNull(result)) {
             result = unit.getPackageDeclaration().get().getNameAsString() + "." + type;
         }
+
         return result;
     }
 
@@ -317,8 +326,19 @@ public class Helpers {
     }
 
     private static ImportDeclaration forceGetClassImport(CompilationUnit unit, String type) {
-        return unit.getImports().stream().filter(ImportDeclaration::isAsterisk).filter(i ->
+        var result = unit.getImports().stream().filter(ImportDeclaration::isAsterisk).filter(i ->
                 nonNull(loadClass(i.getNameAsString() + "." + type))).findFirst().orElse(null);
+        if (isNull(result)) {
+            result = unit.getImports().stream().filter(ImportDeclaration::isAsterisk).filter(i ->
+                    nonNull(lookup.findExternal(i.getNameAsString() + "." + type))).findFirst().orElse(null);
+        }
+
+        if (isNull(result)) {
+            result = unit.getImports().stream().filter(ImportDeclaration::isAsterisk).filter(i ->
+                    nonNull(lookup.findGenerated(i.getNameAsString() + "." + type))).findFirst().orElse(null);
+        }
+
+        return result;
     }
 
     public static boolean methodExists(ClassOrInterfaceDeclaration spec, String name, Method declaration, boolean isClass) {
