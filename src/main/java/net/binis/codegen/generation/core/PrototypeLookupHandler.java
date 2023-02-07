@@ -45,6 +45,7 @@ public class PrototypeLookupHandler implements PrototypeLookup {
 
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> parsed = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
+    private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> generatedInterfaces = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> external = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> enums = new HashMap<>();
     private final Map<String, CustomDescription> custom = new HashMap<>();
@@ -70,6 +71,9 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     @Override
     public void registerGenerated(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> generated) {
         this.generated.put(prototype, generated);
+        if (nonNull(generated.getIntf())) {
+            this.generatedInterfaces.put(generated.getInterfaceFullName(), generated);
+        }
     }
 
     @Override
@@ -121,7 +125,11 @@ public class PrototypeLookupHandler implements PrototypeLookup {
 
     @Override
     public PrototypeDescription<ClassOrInterfaceDeclaration> findGenerated(String prototype) {
-        return generated.get(prototype);
+        var result = generated.get(prototype);
+        if (isNull(result)) {
+            result = generatedInterfaces.get(prototype);
+        }
+        return result;
     }
 
     @Override
