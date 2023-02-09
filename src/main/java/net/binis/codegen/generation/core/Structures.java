@@ -183,13 +183,13 @@ public class Structures {
 
         @Override
         public MethodDeclaration generateInterfaceGetter() {
-            Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getIntf(), description, false, this);
+            Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getInterface(), description, false, this);
             return interfaceGetter;
         }
 
         @Override
         public MethodDeclaration generateInterfaceSetter() {
-            Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getIntf(), description, false, this);
+            Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getInterface(), description, false, this);
             return interfaceSetter;
         }
 
@@ -230,6 +230,16 @@ public class Structures {
                 return mixIn.parsedFullName;
             }
             return parsedFullName;
+        }
+
+        @Override
+        public ClassOrInterfaceDeclaration getImplementation() {
+            return spec;
+        }
+
+        @Override
+        public ClassOrInterfaceDeclaration getInterface() {
+            return intf;
         }
 
         protected TypeDeclaration<T> declaration;
@@ -279,20 +289,19 @@ public class Structures {
         @ToString.Exclude
         protected List<Runnable> postProcessActions = new ArrayList<>();
 
-        public void setIntf(ClassOrInterfaceDeclaration intf) {
+        public void setInterface(ClassOrInterfaceDeclaration intf) {
             this.intf = intf;
             interfaceName = intf.getNameAsString();
             interfaceFullName = intf.getFullyQualifiedName().orElse(null);
             intf.findCompilationUnit().ifPresent(u -> files.set(1, u));
         }
 
-        public void setSpec(ClassOrInterfaceDeclaration spec) {
+        public void setImplementation(ClassOrInterfaceDeclaration spec) {
             this.spec = spec;
             parsedName = spec.getNameAsString();
             parsedFullName = spec.getFullyQualifiedName().orElse(null);
             spec.findCompilationUnit().ifPresent(u -> files.set(0, u));
         }
-
 
         public void registerClass(String key, ClassOrInterfaceDeclaration declaration) {
             classes.put(key, declaration);

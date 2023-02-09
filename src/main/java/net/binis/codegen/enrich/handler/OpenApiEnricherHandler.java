@@ -47,7 +47,7 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
     @Override
     public void finalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         if (generate(description)) {
-            var intf = description.getIntf();
+            var intf = description.getInterface();
             intf.findCompilationUnit().ifPresent(unit -> {
                 unit.addImport("io.swagger.v3.oas.annotations.media", false, true);
                 description.getFields().forEach(this::enrichField);

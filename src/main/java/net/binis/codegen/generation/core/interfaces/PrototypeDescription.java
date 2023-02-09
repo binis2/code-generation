@@ -66,8 +66,8 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     List<PrototypeField> getFields();
 
-    ClassOrInterfaceDeclaration getSpec();
-    ClassOrInterfaceDeclaration getIntf();
+    ClassOrInterfaceDeclaration getImplementation();
+    ClassOrInterfaceDeclaration getInterface();
 
     List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> getInitializers();
     List<Consumer<BlockStmt>> getCustomInitializers();

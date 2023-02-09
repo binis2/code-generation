@@ -40,7 +40,7 @@ public class JacksonEnricherHandler extends BaseEnricher implements JacksonEnric
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         if (generate(description)) {
-            var spec = description.getSpec();
+            var spec = description.getImplementation();
             spec.findCompilationUnit().ifPresent(unit -> {
                 unit.addImport("com.fasterxml.jackson.databind.annotation", false, true);
                 description.getFields().forEach(f -> enrichField(unit, f));

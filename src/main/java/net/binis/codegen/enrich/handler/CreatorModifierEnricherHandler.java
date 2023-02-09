@@ -43,8 +43,8 @@ public class CreatorModifierEnricherHandler extends BaseEnricher implements Crea
     @Override
     public void finalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         var properties = description.getProperties();
-        var spec = description.getSpec();
-        var intf = description.getIntf();
+        var spec = description.getImplementation();
+        var intf = description.getInterface();
         var modifier = description.getRegisteredClass(Constants.MODIFIER_INTF_KEY);
 
         var creatorClass = "EntityCreatorModifier";
@@ -75,7 +75,7 @@ public class CreatorModifierEnricherHandler extends BaseEnricher implements Crea
         if (!properties.isBase()) {
             var type = spec;
             if (nonNull(description.getMixIn())) {
-                type = description.getMixIn().getSpec();
+                type = description.getMixIn().getImplementation();
             }
 
             Helpers.addInitializer(description, intf, type, nonNull(description.getRegisteredClass(EMBEDDED_MODIFIER_KEY)));

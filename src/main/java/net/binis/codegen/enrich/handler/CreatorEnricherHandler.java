@@ -42,8 +42,8 @@ public class CreatorEnricherHandler extends BaseEnricher implements CreatorEnric
     @Override
     public void finalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         var properties = description.getProperties();
-        var spec = description.getSpec();
-        var intf = description.getIntf();
+        var spec = description.getImplementation();
+        var intf = description.getInterface();
 
         Helpers.addDefaultCreation(description, null);
 
@@ -59,7 +59,7 @@ public class CreatorEnricherHandler extends BaseEnricher implements CreatorEnric
         if (!properties.isBase()) {
             var type = spec;
             if (nonNull(description.getMixIn())) {
-                type = description.getMixIn().getSpec();
+                type = description.getMixIn().getImplementation();
             }
 
             Helpers.addInitializer(description, intf, type, nonNull(description.getRegisteredClass(EMBEDDED_MODIFIER_KEY)));

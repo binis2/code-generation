@@ -419,7 +419,7 @@ public class Helpers {
                 if (type.getScope().isPresent()) {
                     var parsed = lookup.findByInterfaceName(type.getScope().get().getNameAsString());
                     if (nonNull(parsed)) {
-                        var intf = parsed.getIntf().findAll(ClassOrInterfaceDeclaration.class).stream().filter(c -> c.getNameAsString().equals(type.getNameAsString())).findFirst();
+                        var intf = parsed.getInterface().findAll(ClassOrInterfaceDeclaration.class).stream().filter(c -> c.getNameAsString().equals(type.getNameAsString())).findFirst();
                         if (intf.isPresent()) {
                             result = methodSignatureExists(intf.get(), declaration, methodName, returnType);
                             if (result) {
@@ -578,7 +578,7 @@ public class Helpers {
             if (generic.isClassOrInterfaceType()) {
                 var parsed = getParsed(generic.asClassOrInterfaceType());
                 if (nonNull(parsed)) {
-                    generic = new ClassOrInterfaceType().setName(parsed.getIntf().getNameAsString());
+                    generic = new ClassOrInterfaceType().setName(parsed.getInterface().getNameAsString());
                 }
             }
             result.put(types.get(i), generic);
@@ -601,7 +601,7 @@ public class Helpers {
                     generic = parent.get(generics[i].getTypeName());
                     var parsed = lookup.findParsed(getExternalClassName(generic.findCompilationUnit().get(), generic.asString()));
                     if (nonNull(parsed)) {
-                        generic = new ClassOrInterfaceType().setName(parsed.getIntf().getNameAsString());
+                        generic = new ClassOrInterfaceType().setName(parsed.getInterface().getNameAsString());
                     }
                 } else {
                     var type = (Class) generics[i];
@@ -610,7 +610,7 @@ public class Helpers {
                     if (type.isInterface()) {
                         var parsed = lookup.findParsed(type.getCanonicalName());
                         if (nonNull(parsed)) {
-                            generic = new ClassOrInterfaceType().setName(parsed.getIntf().getNameAsString());
+                            generic = new ClassOrInterfaceType().setName(parsed.getInterface().getNameAsString());
                         }
                     }
                 }
@@ -623,7 +623,7 @@ public class Helpers {
                 if (type.isInterface()) {
                     var parsed = lookup.findParsed(type.getCanonicalName());
                     if (nonNull(parsed)) {
-                        generic = new ClassOrInterfaceType().setName(parsed.getIntf().getNameAsString());
+                        generic = new ClassOrInterfaceType().setName(parsed.getInterface().getNameAsString());
                     }
                 }
                 result.put(types.get(i), generic);
@@ -908,14 +908,14 @@ public class Helpers {
         parsed.getInitializers().forEach(i -> {
             if (i.getMiddle() instanceof ClassOrInterfaceDeclaration) {
                 var type = (ClassOrInterfaceDeclaration) i.getMiddle();
-                getInitializer(isNull(parsed.getMixIn()) ? parsed.getSpec() : parsed.getMixIn().getSpec()).addStatement(new MethodCallExpr()
+                getInitializer(isNull(parsed.getMixIn()) ? parsed.getImplementation() : parsed.getMixIn().getImplementation()).addStatement(new MethodCallExpr()
                         .setName("CodeFactory.registerType")
                         .addArgument((i.getLeft().getParentNode().get() instanceof ClassOrInterfaceDeclaration ? ((ClassOrInterfaceDeclaration) i.getLeft().getParentNode().get()).getNameAsString() + "." : "") + i.getLeft().getNameAsString() + ".class")
                         .addArgument(type.getNameAsString() + "::new")
                         .addArgument(calcModifierExpression(i.getRight())));
             } else if (i.getMiddle() instanceof LambdaExpr && nonNull(i.getLeft())) {
                 var expr = (LambdaExpr) i.getMiddle();
-                getInitializer(isNull(parsed.getMixIn()) ? parsed.getSpec() : parsed.getMixIn().getSpec()).addStatement(new MethodCallExpr()
+                getInitializer(isNull(parsed.getMixIn()) ? parsed.getImplementation() : parsed.getMixIn().getImplementation()).addStatement(new MethodCallExpr()
                         .setName("CodeFactory.registerType")
                         .addArgument((i.getLeft().getParentNode().get() instanceof ClassOrInterfaceDeclaration ? ((ClassOrInterfaceDeclaration) i.getLeft().getParentNode().get()).getNameAsString() + "." : "") + i.getLeft().getNameAsString() + ".class")
                         .addArgument(expr)
@@ -923,10 +923,10 @@ public class Helpers {
             }
         });
 
-        parsed.getCustomInitializers().forEach(i -> i.accept(getInitializer(parsed.getSpec())));
+        parsed.getCustomInitializers().forEach(i -> i.accept(getInitializer(parsed.getImplementation())));
 
-        Helpers.handleImports(parsed.getDeclaration(), parsed.getIntf());
-        Helpers.handleImports(parsed.getDeclaration(), parsed.getSpec());
+        Helpers.handleImports(parsed.getDeclaration(), parsed.getInterface());
+        Helpers.handleImports(parsed.getDeclaration(), parsed.getImplementation());
 
         getEnrichersList(parsed).forEach(e -> e.postProcess(parsed));
     }
@@ -1019,7 +1019,7 @@ public class Helpers {
     }
 
     public static void addDefaultCreation(PrototypeDescription<?> description, PrototypeDescription<?> mixIn) {
-        var intf = description.getIntf();
+        var intf = description.getInterface();
         if (description.getProperties().isGenerateImplementation() && intf.getAnnotationByName("Default").isEmpty()) {
             var name = description.getImplementorFullName();
             if (description.isNested() && nonNull(description.getParentClassName())) {
@@ -1038,7 +1038,7 @@ public class Helpers {
     }
 
     private static void addInitializerInternal(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, Node node, boolean embedded) {
-        description.getSpec().findCompilationUnit().get().addImport("net.binis.codegen.factory.CodeFactory");
+        description.getImplementation().findCompilationUnit().get().addImport("net.binis.codegen.factory.CodeFactory");
 
         var list = description.getInitializers();
         for (var i = 0; i < list.size(); i++) {
@@ -1088,10 +1088,10 @@ public class Helpers {
     public static Pair<Type, PrototypeDescription<ClassOrInterfaceDeclaration>> getFieldType(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field) {
         if (field.getDescription().getTypeParameters().isEmpty()) {
             if (field.isGenericField()) {
-                var intf = field.getParsed().getIntf();
+                var intf = field.getParsed().getInterface();
                 var type = Holder.<Type>blank();
                 var proto = Holder.<PrototypeDescription<ClassOrInterfaceDeclaration>>blank();
-                description.getIntf().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(intf.getNameAsString())).findFirst().ifPresent(t ->
+                description.getInterface().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(intf.getNameAsString())).findFirst().ifPresent(t ->
                         type.set(buildGeneric(field.getType(), t, intf)));
                 description.getDeclaration().asClassOrInterfaceDeclaration().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(field.getParsed().getDeclaration().getNameAsString())).findFirst().ifPresent(t ->
                         proto.set(lookup.findParsed(getExternalClassName(description.getDeclaration().asClassOrInterfaceDeclaration().findCompilationUnit().get(), buildGeneric(field.getType(), t, intf).asString()))));

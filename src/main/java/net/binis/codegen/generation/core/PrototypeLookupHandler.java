@@ -71,7 +71,7 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     @Override
     public void registerGenerated(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> generated) {
         this.generated.put(prototype, generated);
-        if (nonNull(generated.getIntf())) {
+        if (nonNull(generated.getInterface())) {
             this.generatedInterfaces.put(generated.getInterfaceFullName(), generated);
         }
     }

@@ -40,7 +40,7 @@ public class TestNoneStrategyEnricher extends BaseEnricher {
         var unit = new CompilationUnit().setPackageDeclaration("net.binis.codegen");
         var intf = new ClassOrInterfaceDeclaration().setName("Test");
         unit.addType(intf);
-        desc.setIntf(intf);
+        desc.setInterface(intf);
     }
 
     @Override

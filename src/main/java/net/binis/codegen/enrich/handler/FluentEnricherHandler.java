@@ -64,10 +64,10 @@ public class FluentEnricherHandler extends BaseEnricher implements FluentEnriche
     private void declareField(PrototypeField field, PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         var properties = description.getProperties();
         if (properties.isGenerateInterface()) {
-            addMethod(description.getDeclaration().asClassOrInterfaceDeclaration(), description.getIntf(), false, field);
+            addMethod(description.getDeclaration().asClassOrInterfaceDeclaration(), description.getInterface(), false, field);
         }
         if (properties.isGenerateImplementation()) {
-            addMethod(description.getDeclaration().asClassOrInterfaceDeclaration(), description.getSpec(), true, field);
+            addMethod(description.getDeclaration().asClassOrInterfaceDeclaration(), description.getImplementation(), true, field);
         }
     }
 

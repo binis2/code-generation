@@ -48,13 +48,13 @@ public class RegionEnricherHandler extends BaseEnricher implements RegionEnriche
 
     @Override
     public void postProcess(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        with(description.getIntf(), intf -> {
+        with(description.getInterface(), intf -> {
             Helpers.sortClass(intf);
             calcRegions(intf, m -> m instanceof MethodDeclaration && !m.asMethodDeclaration().isStatic());
         });
 
         if (isNull(description.getProperties().getMixInClass())) {
-            with(description.getSpec(), spec -> {
+            with(description.getImplementation(), spec -> {
                 Helpers.sortClass(spec);
                 calcRegions(spec, m -> m instanceof FieldDeclaration && !m.asFieldDeclaration().isFinal() && !m.asFieldDeclaration().isStatic());
             });

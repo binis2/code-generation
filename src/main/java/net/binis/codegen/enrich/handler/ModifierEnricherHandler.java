@@ -69,11 +69,11 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         calcEmbeddedModifiersType(description);
         var embeddedType = description.getEmbeddedModifierType();
 
-        var spec = description.getSpec();
+        var spec = description.getImplementation();
         if (nonNull(description.getProperties().getMixInClass())) {
-            spec = description.getMixIn().getSpec();
+            spec = description.getMixIn().getImplementation();
         }
-        var intf = description.getIntf();
+        var intf = description.getInterface();
         var properties = description.getProperties();
         var entity = description.getProperties().getInterfaceName();
 
@@ -167,7 +167,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
     @Override
     public void finalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         var imports = new ArrayList<Pair<CompilationUnit, String>>();
-        var intf = description.getIntf();
+        var intf = description.getInterface();
         var properties = description.getProperties();
 
         var modifier = description.getRegisteredClass(MODIFIER_INTF_KEY);
@@ -260,9 +260,9 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         var baseModifier = description.getProperties().getBaseModifierClass();
         if (isNull(baseModifier)) {
             if (!description.getProperties().isBase()) {
-                var spec = description.getSpec();
+                var spec = description.getImplementation();
                 if (nonNull(description.getMixIn())) {
-                        spec = description.getMixIn().getSpec();
+                        spec = description.getMixIn().getImplementation();
                 }
                 spec.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.modifier.impl.BaseModifierImpl"));
             }
@@ -276,7 +276,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         var path = full.substring(0, full.indexOf(baseModifier)) + "impl." + baseModifier + "Impl";
         if (!description.getProperties().isBase()) {
             (isNull(description.getMixIn()) ? description : description.getMixIn())
-                    .getSpec().findCompilationUnit().ifPresent(u -> u.addImport(path));
+                    .getImplementation().findCompilationUnit().ifPresent(u -> u.addImport(path));
         }
         return baseModifier + "Impl";
     }
@@ -285,7 +285,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         var baseModifier = description.getProperties().getBaseModifierClass();
         if (isNull(baseModifier)) {
             if (!description.getProperties().isBase()) {
-                description.getIntf().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.modifier.BaseModifier"));
+                description.getInterface().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.modifier.BaseModifier"));
             }
             return "BaseModifier";
         }
@@ -296,7 +296,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                 baseModifier = full.substring(Math.max(0, full.lastIndexOf('.') + 1));
             }
             var path = full;
-            description.getIntf().findCompilationUnit().ifPresent(u -> u.addImport(path));
+            description.getInterface().findCompilationUnit().ifPresent(u -> u.addImport(path));
         }
         return baseModifier;
     }

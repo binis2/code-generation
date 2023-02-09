@@ -95,8 +95,8 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        var spec = description.getSpec();
-        var intf = description.getIntf();
+        var spec = description.getImplementation();
+        var intf = description.getInterface();
         Helpers.addSuppressWarningsUnchecked(spec);
 
         with(intf.findCompilationUnit().get(), unit -> unit
@@ -122,7 +122,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
         addPresets(description, description.getDeclaration(), intf, spec);
 
-        Helpers.addInitializer(description, intf, isNull(description.getMixIn()) ? spec : description.getMixIn().getSpec(), false);
+        Helpers.addInitializer(description, intf, isNull(description.getMixIn()) ? spec : description.getMixIn().getImplementation(), false);
     }
 
     @Override
@@ -261,14 +261,14 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         description.registerClass(Constants.QUERY_FUNCTIONS_INTF_KEY, qFuncs);
 
         if (Helpers.hasAnnotation(description, Joinable.class)) {
-            Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) description.getParser().parseExpression("() -> " + description.getIntf().getNameAsString() + ".find().aggregate()").getResult().get(), false);
+            Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) description.getParser().parseExpression("() -> " + description.getInterface().getNameAsString() + ".find().aggregate()").getResult().get(), false);
         }
     }
 
     @Override
     public void finalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         var entity = description.getProperties().getInterfaceName();
-        var intf = description.getIntf();
+        var intf = description.getInterface();
         var impl = description.getRegisteredClass(Constants.QUERY_EXECUTOR_KEY);
         var qExecSelect = description.getRegisteredClass(Constants.QUERY_EXECUTOR_SELECT_KEY);
         var qExecFields = description.getRegisteredClass(Constants.QUERY_EXECUTOR_FIELDS_KEY);
@@ -305,7 +305,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         }
 
         if (nonNull(description.getMixIn())) {
-            with(description.getMixIn().getSpec(), mixin ->
+            with(description.getMixIn().getImplementation(), mixin ->
                     mixin.addMember(description.getRegisteredClass(Constants.QUERY_EXECUTOR_KEY))
                             .addMember(description.getRegisteredClass(Constants.QUERY_EXECUTOR_SELECT_KEY))
                             .addMember(description.getRegisteredClass(Constants.QUERY_EXECUTOR_FIELDS_KEY)));
@@ -336,8 +336,8 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
             Helpers.addInitializer(description, select, qExecSelect, false);
             Helpers.addInitializer(description, qOpFields, qExecFields, false);
-            description.getSpec().addMember(qExecSelect);
-            description.getSpec().addMember(qExecFields);
+            description.getImplementation().addMember(qExecSelect);
+            description.getImplementation().addMember(qExecFields);
         }
     }
 

@@ -50,10 +50,10 @@ public class CloneEnricherHandler extends BaseEnricher implements CloneEnricher 
     }
 
     private static void addCloneMethod(PrototypeDescription<ClassOrInterfaceDeclaration> description, boolean isClass) {
-        var spec = isClass ? description.getSpec() : description.getIntf();
+        var spec = isClass ? description.getImplementation() : description.getInterface();
         var method = spec
                 .addMethod(CLONE_METHOD)
-                .setType(description.getIntf().getNameAsString());
+                .setType(description.getInterface().getNameAsString());
         if (isClass) {
             var body = new BlockStmt()
                     .addStatement(new VariableDeclarationExpr().addVariable(new VariableDeclarator().setType("var").setName("result").setInitializer("new " + spec.getNameAsString() + "()")));

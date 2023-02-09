@@ -37,10 +37,10 @@ public class AsEnricherHandler extends BaseEnricher implements AsEnricher {
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        description.getSpec().findCompilationUnit().ifPresent(u -> u.addImport(CodeFactory.class));
-        description.getIntf().addExtendedType(Projectable.class);
-        addAsMethod(description.getSpec());
-        addCastMethod(description.getSpec());
+        description.getImplementation().findCompilationUnit().ifPresent(u -> u.addImport(CodeFactory.class));
+        description.getInterface().addExtendedType(Projectable.class);
+        addAsMethod(description.getImplementation());
+        addCastMethod(description.getImplementation());
     }
 
     @Override

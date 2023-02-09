@@ -139,7 +139,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             Helpers.addSuppressWarningsUnchecked(mod);
         }
         if (nonNull(field.getImplementationSetter())) {
-            Helpers.addSuppressWarningsUnchecked(description.getSpec());
+            Helpers.addSuppressWarningsUnchecked(description.getImplementation());
         }
     }
 
@@ -797,16 +797,16 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             form.setLength(form.lastIndexOf(","));
             form.append("); }");
             if (description.hasOption(Options.EXPOSE_VALIDATE_METHOD)) {
-                description.getIntf().addExtendedType("Validatable");
-                description.getIntf().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.validation.Validatable"));
+                description.getInterface().addExtendedType("Validatable");
+                description.getInterface().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.validation.Validatable"));
             } else {
-                description.getSpec().addImplementedType("Validatable");
-                description.getSpec().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.validation.Validatable"));
+                description.getImplementation().addImplementedType("Validatable");
+                description.getImplementation().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.validation.Validatable"));
             }
-            description.getSpec().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.validation.flow.Validation"));
-            description.getSpec().addMethod("validate", PUBLIC)
+            description.getImplementation().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.validation.flow.Validation"));
+            description.getImplementation().addMethod("validate", PUBLIC)
                     .setBody(description.getParser().parseBlock("{ Validation.form(this.getClass(), " + form).getResult().get());
-            Helpers.addSuppressWarningsUnchecked(description.getSpec());
+            Helpers.addSuppressWarningsUnchecked(description.getImplementation());
         }
     }
 

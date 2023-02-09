@@ -26,8 +26,8 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 
 public interface CustomDescription extends PrototypeDescription<ClassOrInterfaceDeclaration> {
 
-    void setSpec(ClassOrInterfaceDeclaration spec);
-    void setIntf(ClassOrInterfaceDeclaration intf);
+    void setImplementation(ClassOrInterfaceDeclaration impl);
+    void setInterface(ClassOrInterfaceDeclaration intf);
     void setProperties(PrototypeData properties);
 
 }

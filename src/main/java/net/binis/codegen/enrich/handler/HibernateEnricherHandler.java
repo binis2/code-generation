@@ -58,7 +58,7 @@ public class HibernateEnricherHandler extends BaseEnricher implements HibernateE
 
         //Silencing missing equals and hashCode Hibernate warning.
         with(field.getPrototype(), prototype -> {
-            var intf = prototype.getIntf();
+            var intf = prototype.getInterface();
             if (!Helpers.methodExists(intf, EQUALS, false)) {
                 intf.addMethod("equals")
                         .setType(PrimitiveType.booleanType())

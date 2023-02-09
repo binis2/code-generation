@@ -113,7 +113,7 @@ public class Generator {
                 if (item.getValue().isProcessed()) {
                     var parse = (Structures.Parsed<ClassOrInterfaceDeclaration>) lookup.findParsed(item.getKey().getPrototypeFullName());
                     parse.getDeclaration().asClassOrInterfaceDeclaration().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(item.getValue().getDeclaration().asClassOrInterfaceDeclaration().getNameAsString())).forEach(t ->
-                            handleParsedExtendedType(parse, item.getValue(), parse.getSpec(), parse.getIntf(), parse.getProperties(), t));
+                            handleParsedExtendedType(parse, item.getValue(), parse.getImplementation(), parse.getInterface(), parse.getProperties(), t));
                     i.remove();
                 }
             }
@@ -182,8 +182,8 @@ public class Generator {
         var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
 
         parse.setProperties(properties);
-        parse.setSpec(spec);
-        parse.setIntf(intf);
+        parse.setImplementation(spec);
+        parse.setInterface(intf);
 
         if (isNull(prsd) || !prsd.isNested() || isNull(prsd.getParentClassName())) {
             spec.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeName() + "\", comments=\"" + properties.getInterfaceName() + "\")").getResult().get());
@@ -325,7 +325,7 @@ public class Generator {
         parse.setInterfaceName(type.getNameAsString());
         parse.setInterfaceFullName(type.getFullyQualifiedName().get());
         parse.setProperties(properties);
-        parse.setSpec(spec);
+        parse.setImplementation(spec);
 
         if (!prsd.isNested() || isNull(prsd.getParentClassName())) {
             spec.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeName() + "\", comments=\"" + properties.getInterfaceName() + "\")").getResult().get());
@@ -442,30 +442,30 @@ public class Generator {
 
     private static void mergeNestedPrototypes(Structures.Parsed<ClassOrInterfaceDeclaration> parse) {
         lookup.parsed().stream().filter(p -> p.isNested() && nonNull(p.getParentClassName()) && p.getParentClassName().equals(parse.getPrototypeClassName())).forEach(p -> {
-            parse.getSpec().addMember(p.getSpec().addModifier(STATIC));
-            mergeImports(p.getSpec().findCompilationUnit().get(), parse.getSpec().findCompilationUnit().get());
-            parse.getIntf().addMember(p.getIntf());
-            mergeImports(p.getIntf().findCompilationUnit().get(), parse.getIntf().findCompilationUnit().get());
+            parse.getImplementation().addMember(p.getImplementation().addModifier(STATIC));
+            mergeImports(p.getImplementation().findCompilationUnit().get(), parse.getImplementation().findCompilationUnit().get());
+            parse.getInterface().addMember(p.getInterface());
+            mergeImports(p.getInterface().findCompilationUnit().get(), parse.getInterface().findCompilationUnit().get());
         });
     }
 
     private static void handleClassGenerics(Structures.Parsed<ClassOrInterfaceDeclaration> parse) {
         var unit = parse.getDeclaration().findCompilationUnit().get();
         parse.getDeclaration().asClassOrInterfaceDeclaration().getTypeParameters().forEach(t -> {
-            parse.getSpec().addTypeParameter(t);
-            with(parse.getIntf(), intf -> intf.addTypeParameter(t));
+            parse.getImplementation().addTypeParameter(t);
+            with(parse.getInterface(), intf -> intf.addTypeParameter(t));
             t.getTypeBound().forEach(tb -> {
-                handleType(unit, parse.getSpec().findCompilationUnit().get(), tb);
-                with(parse.getIntf(), intf -> handleType(unit, intf.findCompilationUnit().get(), tb));
+                handleType(unit, parse.getImplementation().findCompilationUnit().get(), tb);
+                with(parse.getInterface(), intf -> handleType(unit, intf.findCompilationUnit().get(), tb));
             });
         });
     }
 
     private static void handleInitializations(Structures.Parsed<ClassOrInterfaceDeclaration> parse) {
         var list = parse.getDeclaration().getAnnotations().stream().filter(a -> "Initialize".equals(a.getNameAsString())).toList();
-        var constructor = parse.getSpec().getDefaultConstructor().orElseGet(
-                () -> parse.getSpec().addConstructor(PUBLIC).setBody(nonNull(parse.getBase()) ? new BlockStmt().addStatement("super();") : new BlockStmt()));
-        var unit = parse.getSpec().findCompilationUnit().get();
+        var constructor = parse.getImplementation().getDefaultConstructor().orElseGet(
+                () -> parse.getImplementation().addConstructor(PUBLIC).setBody(nonNull(parse.getBase()) ? new BlockStmt().addStatement("super();") : new BlockStmt()));
+        var unit = parse.getImplementation().findCompilationUnit().get();
         list.forEach(ann -> {
             var statement = Holder.of("");
             ann.getChildNodes().stream().filter(MemberValuePair.class::isInstance).map(MemberValuePair.class::cast).forEach(pair -> {
@@ -729,9 +729,7 @@ public class Generator {
         var iName = Holder.of(defaultInterfaceName(type));
         var cName = defaultClassName(type);
 
-        var builder = Structures.builder(prototype.getNameAsString())
-                .classPackage(defaultClassPackage(type))
-                .interfacePackage(defaultInterfacePackage(type));
+        var builder = Structures.builder(prototype.getNameAsString());
         prototype.getChildNodes().forEach(node -> {
             if (node instanceof MemberValuePair pair) {
                 var name = pair.getNameAsString();
@@ -841,6 +839,14 @@ public class Generator {
         builder.className(cName).interfaceName(iName.get()).longModifierName(iName.get() + ".Modify");
 
         var result = builder.build();
+
+        if (isNull(result.getClassPackage())) {
+            result.setClassPackage(defaultClassPackage(type));
+        }
+
+        if (isNull(result.getInterfacePackage())) {
+            result.setInterfacePackage(defaultInterfacePackage(type));
+        }
 
         if (isNull(result.getEnrichers())) {
             result.setEnrichers(new ArrayList<>());
@@ -957,7 +963,7 @@ public class Generator {
 
     private static void implementPrototype(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, PrototypeDescription<ClassOrInterfaceDeclaration> declaration, Map<String, Type> generic, boolean external) {
         var properties = parse.getProperties();
-        for (var method : declaration.getSpec().getMethods()) {
+        for (var method : declaration.getImplementation().getMethods()) {
             if (declaration.isValid() && declaration.getDeclaration().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).anyMatch(m -> m.getNameAsString().equals(method.getNameAsString()))) {
                 spec.addMember(method.clone());
             } else {
@@ -980,7 +986,7 @@ public class Generator {
                 }
             }
         }
-        handleImports(declaration.getSpec(), spec);
+        handleImports(declaration.getImplementation(), spec);
     }
 
     private static boolean handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceType type) {
@@ -1021,10 +1027,10 @@ public class Generator {
                         if (ext.isInterface()) {
                             var generics = buildGenerics(type, ext);
 
-                            var org = external.getSpec();
-                            ((Structures.Parsed) external).setSpec(org.findCompilationUnit().get().clone().getType(0).asClassOrInterfaceDeclaration());
+                            var org = external.getImplementation();
+                            ((Structures.Parsed) external).setImplementation(org.findCompilationUnit().get().clone().getType(0).asClassOrInterfaceDeclaration());
                             implementPrototype(parsed, spec, external, generics, true);
-                            ((Structures.Parsed) external).setSpec(org);
+                            ((Structures.Parsed) external).setImplementation(org);
                             if (nonNull(intf)) {
                                 intf.addExtendedType(external.getDeclaration().getNameAsString());
                                 var eType = intf.getExtendedTypes().getLast().get();
@@ -1120,10 +1126,10 @@ public class Generator {
         if (nonNull(parse.getProperties().getMixInClass())) {
             var parent = lookup.findParsed(getExternalClassName(parse.getDeclaration().findCompilationUnit().get(), parse.getProperties().getMixInClass()));
             if (parent != null) {
-                var spec = parse.getSpec();
-                var intf = parse.getIntf();
-                var parentSpec = parent.getSpec();
-                var parentIntf = parent.getIntf();
+                var spec = parse.getImplementation();
+                var intf = parse.getInterface();
+                var parentSpec = parent.getImplementation();
+                var parentIntf = parent.getInterface();
                 intf.findCompilationUnit().get().addImport(parentIntf.getFullyQualifiedName().get());
                 parentSpec.findCompilationUnit().get().addImport(intf.getFullyQualifiedName().get());
                 parentSpec.addImplementedType(intf.getNameAsString());
@@ -1204,7 +1210,7 @@ public class Generator {
                     generateCodeForClass(parse.getDeclaration().findCompilationUnit().get(), parse);
                 }
 
-                destination.addImport(parse.getIntf().getFullyQualifiedName().get());
+                destination.addImport(parse.getInterface().getFullyQualifiedName().get());
 
                 return parse.getInterfaceName();
             } else {
@@ -1987,8 +1993,8 @@ public class Generator {
             var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
 
             parse.setProperties(properties);
-            parse.setSpec(spec);
-            parse.setIntf(intf);
+            parse.setImplementation(spec);
+            parse.setInterface(intf);
             parse.setCodeEnum(true);
 
             if (isNull(prsd) || !prsd.isNested() || isNull(prsd.getParentClassName())) {
