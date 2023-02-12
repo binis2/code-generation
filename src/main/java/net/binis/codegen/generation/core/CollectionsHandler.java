@@ -106,6 +106,7 @@ public class CollectionsHandler {
                         .addModifier(PUBLIC)
                         .setBody(block);
                 spec.findCompilationUnit().get().addImport(collection.getClassImport());
+                Helpers.addSuppressWarningsUnchecked(method);
             } else {
                 method.setBody(null);
             }

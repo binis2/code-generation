@@ -11,10 +11,10 @@ import java.util.function.Consumer;
 
 @Generated(value = "AccountOverviewCardPrototype", comments = "AccountOverviewCardImpl")
 @Default("net.binis.test.card.AccountOverviewCardImpl")
+@SuppressWarnings("unchecked")
 public interface AccountOverviewCard extends CompiledGeneric<AccountOverviewCardPayload> {
 
     // region starters
-    @SuppressWarnings(value = "unchecked")
     static AccountOverviewCard.Modify create() {
         return (AccountOverviewCard.Modify) EntityCreatorModifier.create(AccountOverviewCard.class).with();
     }

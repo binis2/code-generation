@@ -46,6 +46,7 @@ import java.util.Objects;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.EnrichHelpers.block;
 import static net.binis.codegen.generation.core.Generator.generateCodeForClass;
 import static net.binis.codegen.generation.core.Generator.generateCodeForEnum;
 import static net.binis.codegen.generation.core.Helpers.*;
@@ -70,16 +71,18 @@ public abstract class CompiledPrototypesHandler {
                     handleFields(c, declaration);
                     handleDefaultMethods(c, declaration);
                     var props = handleProperties(declaration, c, ann);
+                    var unit = declaration.findCompilationUnit().orElse(null);
 
                     var parsed = Structures.Parsed.<ClassOrInterfaceDeclaration>builder()
                             .compiled(c)
                             .properties(props)
                             .parser(lookup.getParser())
-                            .declaration(declaration);
+                            .declaration(declaration)
+                            .declarationUnit(unit);
 
                     var prsd = parsed.build();
                     lookup.registerParsed(compiledPrototype, prsd);
-                    generateCodeForClass(declaration.findCompilationUnit().get(), prsd);
+                    generateCodeForClass(unit, prsd);
 
                     //TODO: Implement class annotations
 
@@ -105,7 +108,8 @@ public abstract class CompiledPrototypesHandler {
                                 .parser(lookup.getParser())
                                 .interfaceName(props.getInterfaceName())
                                 .interfaceFullName(props.getInterfacePackage() + "." + props.getInterfaceName())
-                                .declaration(declaration);
+                                .declaration(declaration)
+                                .declarationUnit(declaration.findCompilationUnit().orElse(null));
 
                         var prsd = parsed.build();
                         lookup.registerParsed(compiledPrototype, prsd);
@@ -399,7 +403,7 @@ public abstract class CompiledPrototypesHandler {
                         unit.addImport(imprt);
                     }
 
-                    mtd.setBody(lookup.getParser().parseBlock(calcBlock(ann.value())).getResult().get());
+                    mtd.setBody(block(calcBlock(ann.value())));
                 } else {
                     if (Arrays.stream(method.getAnnotations()).noneMatch(a -> nonNull(a.annotationType().getAnnotation(CodeAnnotation.class)))) {
                         log.warn("Compiled default method {}.{} can't be handled!", cls.getSimpleName(), method.getName());

@@ -66,11 +66,15 @@ public class Structures {
 
     public static final Map<String, Supplier<PrototypeDataHandler.PrototypeDataHandlerBuilder>> defaultProperties = new HashMap<>();
 
+    private Structures() {
+        //Do nothing
+    }
+
     @Getter
     @Setter
     @Builder
     public static class PrototypeDataHandler implements PrototypeData {
-
+        private Class<? extends Annotation> prototypeAnnotation;
         private String prototypeName;
         private String prototypeFullName;
         private String name;
@@ -243,6 +247,7 @@ public class Structures {
         }
 
         protected TypeDeclaration<T> declaration;
+        protected CompilationUnit declarationUnit;
 
         @Builder.Default
         protected List<CompilationUnit> files = initFiles();
@@ -274,6 +279,8 @@ public class Structures {
 
         protected ClassOrInterfaceDeclaration spec;
         protected ClassOrInterfaceDeclaration intf;
+        protected CompilationUnit interfaceUnit;
+        protected CompilationUnit implementationUnit;
 
         @Builder.Default
         @EqualsAndHashCode.Exclude
@@ -293,14 +300,16 @@ public class Structures {
             this.intf = intf;
             interfaceName = intf.getNameAsString();
             interfaceFullName = intf.getFullyQualifiedName().orElse(null);
-            intf.findCompilationUnit().ifPresent(u -> files.set(1, u));
+            interfaceUnit = intf.findCompilationUnit().orElse(null);
+            files.set(1, interfaceUnit);
         }
 
         public void setImplementation(ClassOrInterfaceDeclaration spec) {
             this.spec = spec;
             parsedName = spec.getNameAsString();
             parsedFullName = spec.getFullyQualifiedName().orElse(null);
-            spec.findCompilationUnit().ifPresent(u -> files.set(0, u));
+            implementationUnit = spec.findCompilationUnit().orElse(null);
+            files.set(0, implementationUnit);
         }
 
         public void registerClass(String key, ClassOrInterfaceDeclaration declaration) {
@@ -389,8 +398,8 @@ public class Structures {
         protected String id;
 
         @Builder(builderMethodName = "bldr")
-        public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean codeEnum, String parentClassName, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
-            super(processed, invalid, parser, compiled, prototypeFileName, prototypeClassName, properties, parsedName, parsedFullName, interfaceName, interfaceFullName, constants, declaration, files, custom, base, mixIn, nested, codeEnum, parentClassName, embeddedModifierType, classes, fields, spec, intf, initializers, customInitializers, postProcessActions);
+        public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, CompilationUnit declarationUnit, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean codeEnum, String parentClassName, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, CompilationUnit interfaceUnit, CompilationUnit implementationUnit, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
+            super(processed, invalid, parser, compiled, prototypeFileName, prototypeClassName, properties, parsedName, parsedFullName, interfaceName, interfaceFullName, constants, declaration, declarationUnit, files, custom, base, mixIn, nested, codeEnum, parentClassName, embeddedModifierType, classes, fields, spec, intf, interfaceUnit, implementationUnit, initializers, customInitializers, postProcessActions);
             this.id = id;
             this.files = initFiles();
         }
@@ -478,7 +487,7 @@ public class Structures {
                     }
                 }
 
-                readAnnotation(null, ann, builder, ((method, annotation) -> method.getDefaultValue()));
+                readAnnotation(null, ann, builder, Structures::annotationDefaultValue);
 
                 return builder;
             });
@@ -487,6 +496,7 @@ public class Structures {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static void registerTemplate(AnnotationDeclaration template) {
         defaultProperties.put(template.getNameAsString(), () -> {
             var builder = defaultBuilder();
@@ -544,6 +554,7 @@ public class Structures {
         });
     }
 
+    @SuppressWarnings("unchecked")
     private static void readAnnotation(AnnotationExpr ann, PrototypeDataHandler.PrototypeDataHandlerBuilder builder) {
         ann.getChildNodes().forEach(node -> {
             if (node instanceof MemberValuePair pair) {
@@ -645,6 +656,7 @@ public class Structures {
         });
     }
 
+    @SuppressWarnings("unchecked")
     private static void readAnnotation(Annotation ann, Class<?> cls, PrototypeDataHandler.PrototypeDataHandlerBuilder builder, BiFunction<Method, Annotation, Object> func) {
         for (var method : cls.getDeclaredMethods()) {
             switch (method.getName()) {
@@ -685,6 +697,7 @@ public class Structures {
     }
 
 
+    @SuppressWarnings("unchecked")
     private static <T extends Collection> T handleClassExpression(Expression value, Class<T> cls) {
         var result = Set.class.equals(cls) ? new HashSet<>() : new ArrayList<>();
         if (value.isArrayInitializerExpr()) {
@@ -710,7 +723,8 @@ public class Structures {
 
     private static String handleStringExpression(Expression expression) {
         if (expression.isStringLiteralExpr()) {
-            return expression.asStringLiteralExpr().getValue();
+            var value = expression.asStringLiteralExpr().getValue();
+            return StringUtils.isBlank(value) ? null : value;
         }
         log.warn("String expression not implemented: {}", expression.getClass().getCanonicalName());
         return null;
@@ -735,8 +749,23 @@ public class Structures {
     }
 
     private static String handleClass(Object value) {
-        var val = (Class) value;
-        return void.class.equals(val) ? null : val.getCanonicalName();
+        if (nonNull(value)) {
+            var val = (Class) value;
+            return void.class.equals(val) ? null : val.getCanonicalName();
+        }
+        return null;
     }
+
+    private static Object annotationDefaultValue(Method method, Annotation annotation) {
+        var value = method.getDefaultValue();
+        if (value instanceof String s && StringUtils.isEmpty(s)) {
+            value = null;
+        } else
+        if (value instanceof Class c && void.class.equals(c)) {
+            value = null;
+        }
+        return value;
+    }
+
 
 }

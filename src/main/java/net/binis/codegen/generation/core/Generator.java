@@ -37,6 +37,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
 import net.binis.codegen.annotation.type.GenerationStrategy;
+import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.factory.CodeFactory;
@@ -62,6 +63,8 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledEnumPrototype;
 import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledPrototype;
+import static net.binis.codegen.generation.core.EnrichHelpers.expression;
+import static net.binis.codegen.generation.core.EnrichHelpers.returnBlock;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.generation.core.Helpers.getParsed;
 import static net.binis.codegen.generation.core.Structures.VALUE;
@@ -386,9 +389,9 @@ public class Generator {
                 case "double" -> "0.0";
                 default -> "0";
             };
-            return lookup.getParser().parseBlock("{return " + result + ";}").getResult().get();
+            return returnBlock(result);
         } else {
-            return lookup.getParser().parseBlock("{return null;}").getResult().get();
+            return returnBlock("null");
         }
     }
 
@@ -724,12 +727,17 @@ public class Generator {
         parse.getConstants().put(name, data.build());
     }
 
+    @SuppressWarnings("unchecked")
     private static Structures.PrototypeDataHandler getProperties(AnnotationExpr prototype) {
         var type = (ClassOrInterfaceDeclaration) prototype.getParentNode().get();
         var iName = Holder.of(defaultInterfaceName(type));
         var cName = defaultClassName(type);
 
         var builder = Structures.builder(prototype.getNameAsString());
+
+        nullCheck(getExternalClassNameIfExists(prototype, prototype.getNameAsString()), clsName ->
+                nullCheck(loadClass(clsName), cls -> builder.prototypeAnnotation((Class) cls)));
+
         prototype.getChildNodes().forEach(node -> {
             if (node instanceof MemberValuePair pair) {
                 var name = pair.getNameAsString();
@@ -824,11 +832,12 @@ public class Generator {
                         checkOptions(builder::options, pair.getValue().asArrayInitializerExpr());
                         break;
                     default:
+                        builder.custom(name, getExpressionValue(pair.getValue()));
                 }
             } else if (node instanceof Name) {
                 //Continue
             } else {
-                builder.custom(VALUE, node);
+                builder.custom(VALUE, getExpressionValue(node));
             }
         });
 
@@ -878,20 +887,28 @@ public class Generator {
     }
 
     private static void checkEnrichers(Consumer<List<PrototypeEnricher>> consumer, ArrayInitializerExpr expression) {
-        var list = new ArrayList<PrototypeEnricher>();
+        var map = new HashMap<Class<? extends Enricher>, PrototypeEnricher>();
         expression.getValues().stream()
                 .filter(Expression::isClassExpr)
                 .map(e -> loadClass(getExternalClassName(expression.findCompilationUnit().get(), e.asClassExpr().getType().asString())))
                 .filter(Objects::nonNull)
+                .filter(Enricher.class::isAssignableFrom)
+                .forEach(enricher -> initEnricher(enricher, map));
+
+        consumer.accept(new ArrayList<>(map.values()));
+    }
+
+    private static void initEnricher(Class enricher, Map<Class<? extends Enricher>, PrototypeEnricher> map) {
+        Optional.of(enricher)
                 .map(CodeFactory::create)
                 .filter(Objects::nonNull)
                 .filter(i -> PrototypeEnricher.class.isAssignableFrom(i.getClass()))
-                .forEach(e ->
-                        with(((PrototypeEnricher) e), enricher -> {
-                            enricher.init(lookup);
-                            list.add(enricher);
+                .ifPresent(e ->
+                        with((PrototypeEnricher) e, enr -> {
+                            enr.init(lookup);
+                            map.put(enr.getClass(), enr);
+                            enr.dependencies().forEach(d -> initEnricher(d, map));
                         }));
-        consumer.accept(list);
     }
 
     @SuppressWarnings("unchecked")
@@ -914,6 +931,8 @@ public class Generator {
             if (e instanceof PrototypeEnricher en) {
                 en.init(lookup);
                 list.add(en);
+                en.dependencies().forEach(d ->
+                        checkEnrichers(list, d));
             }
         }
     }
@@ -944,7 +963,13 @@ public class Generator {
                 Generator.getCodeAnnotation(cls).ifPresent(ann -> {
                     var clsName = getClassName(cls);
                     lookup.registerParsed(clsName,
-                            Structures.Parsed.builder().declaration(cls.asTypeDeclaration()).parser(lookup.getParser()).nested(true).parentClassName(getClassName(declaration)).build());
+                            Structures.Parsed.builder()
+                                    .declaration(cls.asTypeDeclaration())
+                                    .declarationUnit(cls.findCompilationUnit().orElse(null))
+                                    .parser(lookup.getParser())
+                                    .nested(true)
+                                    .parentClassName(getClassName(declaration))
+                                    .build());
 
                     notNull(lookup.findParsed(clsName), parse ->
                             condition(!parse.isProcessed(), () -> generateCodeForPrototype(declaration.findCompilationUnit().get(), parse, cls, ann)));
@@ -1185,7 +1210,7 @@ public class Generator {
             return Collections.singletonList(Pair.of("Object", false));
         } else {
             return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), true)).map(t ->
-                    Pair.of(t, lookup.parsed().stream().anyMatch(p -> getExternalClassName(destination, t).equals(p.getInterfaceFullName())))).collect(Collectors.toList());
+                    Pair.of(t, lookup.parsed().stream().anyMatch(p -> getExternalClassName(destination, t).equals(p.getInterfaceFullName())))).toList();
         }
     }
 
@@ -1682,14 +1707,12 @@ public class Generator {
 
             var dummy = envelopWithDummyClass(description);
 
-            if (method.getDeclaredAnnotations().length > 0) {
-                for (var ann : method.getDeclaredAnnotations()) {
-                    description.addAnnotation(ann.annotationType());
-                    dummy.addImport(ann.annotationType().getPackageName());
-                    field.addAnnotation(ann.annotationType());
-                    //TODO: Check if the annotation can be applied to field.
-                    //TODO: Handle annotation params
-                }
+            for (var ann : method.getDeclaredAnnotations()) {
+                description.addAnnotation(ann.annotationType());
+                dummy.addImport(ann.annotationType().getPackageName());
+                field.addAnnotation(ann.annotationType());
+                //TODO: Check if the annotation can be applied to field.
+                //TODO: Handle annotation params
             }
 
             result = Structures.FieldData.builder()
@@ -2071,7 +2094,7 @@ public class Generator {
                 expression.append(", ").append(arg.toString());
             }
             expression.append(")");
-            intf.addFieldWithInitializer(name, entry.getNameAsString(), lookup.getParser().parseExpression(expression.toString()).getResult().get(), STATIC, FINAL);
+            intf.addFieldWithInitializer(name, entry.getNameAsString(), EnrichHelpers.expression(expression.toString()), STATIC, FINAL);
         }
         declaration.getFields().stream().filter(f -> f.getModifiers().contains(Modifier.publicModifier()) && f.getModifiers().contains(Modifier.staticModifier()) && f.getModifiers().contains(Modifier.finalModifier())).forEach(f -> {
             var field = f.clone();
@@ -2105,7 +2128,7 @@ public class Generator {
 
         if (nonNull(mixIn)) {
             mixIn.getDeclaration().asEnumDeclaration().getEntries().forEach(entry ->
-                    intf.addFieldWithInitializer(name, entry.getNameAsString(), lookup.getParser().parseExpression(name + "." + entry.getNameAsString()).getResult().get(), STATIC, FINAL));
+                    intf.addFieldWithInitializer(name, entry.getNameAsString(), expression(name + "." + entry.getNameAsString()), STATIC, FINAL));
         }
     }
 
@@ -2178,7 +2201,7 @@ public class Generator {
                     type.getAnnotationByName("ConstantPrototype").ifPresent(prototype -> {
                         var typeDeclaration = type.asClassOrInterfaceDeclaration();
 
-                        log.info("Processing - {}", prototype.toString());
+                        log.info("Processing - {}", prototype);
 
                         var properties = getConstantProperties(prototype);
 

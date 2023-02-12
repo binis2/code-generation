@@ -8,10 +8,10 @@ import javax.annotation.processing.Generated;
 
 @Generated(value = "MixInPrototype", comments = "MixInImpl")
 @Default("net.binis.codegen.TestImpl")
+@SuppressWarnings("unchecked")
 public interface MixIn extends Test {
     MixIn.Modify asMixIn();
 
-    @SuppressWarnings(value = "unchecked")
     static MixIn.Modify create() {
         return ((MixIn) EntityCreatorModifier.create(MixIn.class)).asMixIn();
     }

@@ -8,10 +8,10 @@ import javax.annotation.processing.Generated;
 
 @Generated(value = "TestPrototype", comments = "TestImpl")
 @Default("net.binis.codegen.test.TestImpl")
+@SuppressWarnings("unchecked")
 public interface Test extends Generic<TestPayload> {
 
     // region starters
-    @SuppressWarnings(value = "unchecked")
     static Test.Modify create() {
         return (Test.Modify) EntityCreatorModifier.create(Test.class).with();
     }

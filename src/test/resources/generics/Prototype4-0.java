@@ -43,6 +43,7 @@ public class AccountOverviewCardPayloadImpl implements AccountOverviewCardPayloa
     // endregion
 
     // region inner classes
+    @SuppressWarnings("unchecked")
     protected class AccountOverviewCardPayloadImplEmbeddedModifyImpl<T, R> extends BaseModifierImpl<T, R> implements AccountOverviewCardPayload.EmbeddedModify<T, R> {
 
         protected AccountOverviewCardPayloadImplEmbeddedModifyImpl(R parent) {
@@ -65,6 +66,7 @@ public class AccountOverviewCardPayloadImpl implements AccountOverviewCardPayloa
         }
     }
 
+    @SuppressWarnings("unchecked")
     protected class AccountOverviewCardPayloadImplSoloModifyImpl extends AccountOverviewCardPayloadImplEmbeddedModifyImpl implements AccountOverviewCardPayload.EmbeddedSoloModify {
 
         protected AccountOverviewCardPayloadImplSoloModifyImpl(Object parent) {
@@ -72,6 +74,7 @@ public class AccountOverviewCardPayloadImpl implements AccountOverviewCardPayloa
         }
     }
 
+    @SuppressWarnings("unchecked")
     protected class AccountOverviewCardPayloadModifyImpl extends AccountOverviewCardPayloadImplEmbeddedModifyImpl<AccountOverviewCardPayload.Modify, AccountOverviewCardPayload> implements AccountOverviewCardPayload.Modify {
 
         protected AccountOverviewCardPayloadModifyImpl(AccountOverviewCardPayload parent) {

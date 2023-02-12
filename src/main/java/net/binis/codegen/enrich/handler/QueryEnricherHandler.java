@@ -51,6 +51,8 @@ import java.util.Set;
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.EnrichHelpers.block;
+import static net.binis.codegen.generation.core.EnrichHelpers.expression;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Tools.notNull;
 import static net.binis.codegen.tools.Tools.with;
@@ -261,7 +263,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         description.registerClass(Constants.QUERY_FUNCTIONS_INTF_KEY, qFuncs);
 
         if (Helpers.hasAnnotation(description, Joinable.class)) {
-            Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) description.getParser().parseExpression("() -> " + description.getInterface().getNameAsString() + ".find().aggregate()").getResult().get(), false);
+            Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) expression("() -> " + description.getInterface().getNameAsString() + ".find().aggregate()"), false);
         }
     }
 
@@ -386,7 +388,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
                         if (nonNull(prototype)) {
                             prototype.registerPostProcessAction(() ->
-                                    Helpers.addInitializer(prototype, prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) prototype.getParser().parseExpression("() -> " + prototype.getInterfaceName() + ".find().aggregate()").getResult().get(), false));
+                                    Helpers.addInitializer(prototype, prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) expression("() -> " + prototype.getInterfaceName() + ".find().aggregate()"), false));
                         }
                     } else {
                         var returnType = QUERY_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">>";
@@ -619,7 +621,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
             copyParameters(method, impl);
 
-            impl.setBody(description.getParser().parseBlock("{((" + description.getInterfaceName() + "." + QUERY_SELECT + "<Object>) this)." + expression + ";return this;}").getResult().get());
+            impl.setBody(block("{((" + description.getInterfaceName() + "." + QUERY_SELECT + "<Object>) this)." + expression + ";return this;}"));
         } else {
             log.error("Expression '{}' is not valid Preset expression! Preset expressions must directly return string! Example 'return \"title(title)\"'", body);
         }
@@ -642,7 +644,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
             expression = handlePresetParameters(description, expression);
 
-            impl.setBody(description.getParser().parseBlock("{((" + description.getInterfaceName() + "." + QUERY_SELECT + "<Object>) this)" + expression + "return this;}").getResult().get());
+            impl.setBody(block("{((" + description.getInterfaceName() + "." + QUERY_SELECT + "<Object>) this)" + expression + "return this;}"));
         } else {
             log.error("Expression '{}' is not valid Preset expression! Preset expressions must start with: Preset.declare()", body);
         }
@@ -659,7 +661,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .setType(implReturnType);
 
         copyCompiledParameters(method, impl);
-        impl.setBody(description.getParser().parseBlock("{((" + description.getInterfaceName() + "." + QUERY_SELECT + "<Object>) this)." + body + ";return this;}").getResult().get());
+        impl.setBody(block("{((" + description.getInterfaceName() + "." + QUERY_SELECT + "<Object>) this)." + body + ";return this;}"));
     }
 
     private void copyParameters(MethodDeclaration method, MethodDeclaration dest) {

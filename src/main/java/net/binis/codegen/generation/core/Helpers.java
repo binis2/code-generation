@@ -37,6 +37,7 @@ import com.github.javaparser.ast.type.TypeParameter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.Default;
 import net.binis.codegen.annotation.Ignore;
+import net.binis.codegen.annotation.validation.AliasFor;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.enrich.PrototypeLookup;
@@ -49,6 +50,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.springframework.cglib.core.CodeGenerationException;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -75,14 +77,10 @@ public class Helpers {
             "jakarta.persistence.OneToMany",
             "jakarta.persistence.ManyToMany");
     public static final Map<String, String> knownTypes = Map.of(
-            "CodeList",
-            "net.binis.codegen.collection.CodeList",
-            "CodeListImpl",
-            "net.binis.codegen.collection.CodeListImpl",
-            "EmbeddedCodeListImpl",
-            "net.binis.codegen.collection.EmbeddedCodeListImpl",
-            "EmbeddedCodeSetImpl",
-            "net.binis.codegen.collection.EmbeddedCodeSetImpl");
+            "CodeList", "net.binis.codegen.collection.CodeList",
+            "CodeListImpl", "net.binis.codegen.collection.CodeListImpl",
+            "EmbeddedCodeListImpl", "net.binis.codegen.collection.EmbeddedCodeListImpl",
+            "EmbeddedCodeSetImpl", "net.binis.codegen.collection.EmbeddedCodeSetImpl");
 
     public static final Set<String> reserved = Set.of(
             "ensure",
@@ -202,7 +200,8 @@ public class Helpers {
         return result.get() + "." + type.getNameAsString();
     }
 
-    public static String getExternalClassName(CompilationUnit unit, String type) {
+    public static String getExternalClassName(Node node, String type) {
+        var unit = node.findCompilationUnit().orElseThrow(() -> new GenericCodeGenException("Node is not part of unit!"));
         if (nonNull(lookup.findParsed(type))) {
             return type;
         }
@@ -223,7 +222,8 @@ public class Helpers {
         return result;
     }
 
-    public static String getExternalClassNameIfExists(CompilationUnit unit, String t) {
+    public static String getExternalClassNameIfExists(Node node, String t) {
+        var unit = node.findCompilationUnit().orElseThrow(() -> new GenericCodeGenException("Node is not part of unit!"));
         var idx = t.indexOf('<');
         var type = idx == -1 ? t : t.substring(0, idx);
 
@@ -301,7 +301,8 @@ public class Helpers {
         return null;
     }
 
-    public static ImportDeclaration getClassImport(CompilationUnit unit, String type) {
+    public static ImportDeclaration getClassImport(Node node, String type) {
+        var unit = node.findCompilationUnit().orElseThrow(() -> new GenericCodeGenException("Node is not part of unit!"));
         var known = knownTypes.get(type);
         if (nonNull(known)) {
             return new ImportDeclaration(known, false, false);
@@ -845,6 +846,7 @@ public class Helpers {
         registerEnricher(OpenApiEnricherHandler.class);
         registerEnricher(JacksonEnricherHandler.class);
         registerEnricher(HibernateEnricherHandler.class);
+        registerEnricher(RedisEnricherHandler.class);
     }
 
 
@@ -1038,7 +1040,7 @@ public class Helpers {
     }
 
     private static void addInitializerInternal(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, Node node, boolean embedded) {
-        description.getImplementation().findCompilationUnit().get().addImport("net.binis.codegen.factory.CodeFactory");
+        description.getImplementation().findCompilationUnit().get().addImport(CodeFactory.class);
 
         var list = description.getInitializers();
         for (var i = 0; i < list.size(); i++) {
@@ -1182,9 +1184,49 @@ public class Helpers {
 
     @SuppressWarnings("unchecked")
     public static void addSuppressWarningsUnchecked(NodeWithAnnotations node) {
-        if (!node.isAnnotationPresent(SuppressWarnings.class)) {
-            node.addAndGetAnnotation(SuppressWarnings.class).addPair("value", "\"unchecked\"");
+        if (!(node instanceof ClassOrInterfaceDeclaration) && node instanceof Node n) {
+            while (n.getParentNode().isPresent()) {
+                n = n.getParentNode().get();
+                if (n instanceof ClassOrInterfaceDeclaration) {
+                    node = (NodeWithAnnotations) n;
+                    break;
+                }
+            }
         }
+
+        if (!node.isAnnotationPresent(SuppressWarnings.class)) {
+            node.addSingleMemberAnnotation(SuppressWarnings.class, "\"unchecked\"");
+        }
+    }
+
+    public static Object getExpressionValue(Node exp) {
+        if (exp instanceof StringLiteralExpr s) {
+            return s.getValue();
+        }
+        return exp;
+    }
+
+    public static Object getCustomValue(String key, PrototypeData properties) {
+        Object value = null;
+        if (nonNull(properties.getCustom())) {
+            value = properties.getCustom().get(key);
+            if (isNull(value)) {
+                var ann = properties.getPrototypeAnnotation();
+                if (nonNull(ann)) {
+                    for (var method : ann.getMethods()) {
+                        var alias = method.getAnnotation(AliasFor.class);
+                        if (nonNull(alias) && key.equals(alias.value())) {
+                            value = properties.getCustom().get(method.getName());
+                            if (nonNull(value)) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return value;
     }
 
 }

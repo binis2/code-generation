@@ -7,9 +7,9 @@ import javax.annotation.processing.Generated;
 
 @Generated(value = "TestPrototype", comments = "TestImpl")
 @Default("net.binis.codegen.TestImpl")
+@SuppressWarnings("unchecked")
 public interface Test {
 
-    @SuppressWarnings(value = "unchecked")
     static Test create() {
         return EntityCreator.create(Test.class);
     }

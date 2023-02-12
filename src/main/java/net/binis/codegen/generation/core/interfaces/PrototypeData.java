@@ -23,11 +23,13 @@ package net.binis.codegen.generation.core.interfaces;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.options.CodeOption;
 
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public interface PrototypeData {
+    Class<? extends Annotation> getPrototypeAnnotation();
     String getPrototypeName();
     String getPrototypeFullName();
     String getName();

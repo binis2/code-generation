@@ -53,6 +53,7 @@ import static com.github.javaparser.ast.Modifier.Keyword.PUBLIC;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.*;
+import static net.binis.codegen.generation.core.EnrichHelpers.*;
 import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Tools.notNull;
@@ -128,6 +129,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                         .addTypeParameter(TYPE_PARAMETER)
                         .addTypeParameter(RETURN_PARAMETER)
                         .addImplementedType(entity + "." + EMBEDDED + properties.getModifierName() + "<" + TYPE_PARAMETER + ", " + RETURN_PARAMETER + ">");
+                addSuppressWarningsUnchecked(embeddedModifierClass);
                 addConstructor(RETURN_PARAMETER, embeddedModifierClass);
                 description.registerClass(EMBEDDED_MODIFIER_KEY, embeddedModifierClass);
                 spec.addMember(embeddedModifierClass);
@@ -135,6 +137,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     embeddedModifierSoloClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, defaultModifierClassName(properties.getClassName() + SOLO))
                             .addExtendedType(embeddedModifierClass.getNameAsString())
                             .addImplementedType(entity + "." + embeddedModifierSolo.getNameAsString());
+                    addSuppressWarningsUnchecked(embeddedModifierSoloClass);
                     addConstructor("Object", embeddedModifierSoloClass);
                     description.registerClass(EMBEDDED_SOLO_MODIFIER_KEY, embeddedModifierSoloClass);
                     spec.addMember(embeddedModifierSoloClass);
@@ -143,8 +146,9 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     embeddedModifierCollectionClass = new ClassOrInterfaceDeclaration(Modifier.createModifierList(PROTECTED), false, defaultModifierClassName(properties.getClassName() + COLLECTION))
                             .addExtendedType(embeddedModifierClass.getNameAsString())
                             .addImplementedType(entity + "." + embeddedModifierCollection.getNameAsString());
+                    addSuppressWarningsUnchecked(embeddedModifierCollectionClass);
                     addConstructor("Object", embeddedModifierCollectionClass);
-                    embeddedModifierCollectionClass.addMethod("_and", PUBLIC).setType("EmbeddedCodeCollection").setBody(description.getParser().parseBlock("{return (EmbeddedCodeCollection) parent;}").getResult().get());
+                    embeddedModifierCollectionClass.addMethod("_and", PUBLIC).setType("EmbeddedCodeCollection").setBody(returnBlock("(EmbeddedCodeCollection) parent"));
                     spec.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.collection.EmbeddedCodeCollection"));
                     description.registerClass(EMBEDDED_COLLECTION_MODIFIER_KEY, embeddedModifierCollectionClass);
                     spec.addMember(embeddedModifierCollectionClass);
@@ -161,7 +165,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
     }
 
     private void addConstructor(String entity, ClassOrInterfaceDeclaration cls) {
-        cls.addConstructor(PROTECTED).addParameter(entity, "parent").getBody().addStatement(lookup.getParser().parseStatement("super(parent);").getResult().get());
+        cls.addConstructor(PROTECTED).addParameter(entity, "parent").getBody().addStatement(statement("super(parent);"));
     }
 
     @Override
@@ -244,10 +248,11 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
             description.getRegisteredClass(EMBEDDED_MODIFIER_KEY).addExtendedType(baseModifier + "<" + TYPE_PARAMETER + ", " + RETURN_PARAMETER + ">");
             modifier.addExtendedType(EMBEDDED + properties.getModifierName() + "<" + description.getInterfaceName() + "." + properties.getModifierName() + ", " + description.getInterfaceName() + ">");
             modifierClass.addExtendedType(description.getRegisteredClass(EMBEDDED_MODIFIER_KEY).getNameAsString() + "<" + description.getInterfaceName() + "." + properties.getModifierName() + ", " + description.getInterfaceName() + ">");
+            addSuppressWarningsUnchecked(modifierClass);
         } else {
             if (nonNull(modifierClass)) {
                 modifierClass.addExtendedType(baseModifier + "<" + description.getInterfaceName() + "." + properties.getModifierName() + ", " + description.getInterfaceName() + ">");
-                modifierClass.addMethod("done", PUBLIC).setType(description.getInterfaceName()).setBody(description.getParser().parseBlock("{return " + (isNull(description.getMixIn()) ? description.getProperties().getClassName() : description.getMixIn().getProperties().getClassName()) + ".this;}").getResult().get());
+                modifierClass.addMethod("done", PUBLIC).setType(description.getInterfaceName()).setBody(returnBlock((isNull(description.getMixIn()) ? description.getProperties().getClassName() : description.getMixIn().getProperties().getClassName()) + ".this"));
             }
         }
         baseModifier = handleBaseModifier(description);
@@ -375,10 +380,10 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     returnType = Helpers.calcType(modifier);
                     modifier.addMethod(field.getName()).setType(proto.getInterfaceName() + ".EmbeddedSoloModify<" + returnType + ">").setBody(null);
                     var className = isNull(description.getMixIn()) ? description.getProperties().getClassName() : description.getMixIn().getProperties().getClassName();
-                    modifierClass.addMethod(field.getName(), PUBLIC).setType(proto.getInterfaceName() + ".EmbeddedSoloModify<" + ((ClassOrInterfaceDeclaration) modifier.getParentNode().get()).getNameAsString() + "." + returnType + ">").setBody(description.getParser().parseBlock(
+                    modifierClass.addMethod(field.getName(), PUBLIC).setType(proto.getInterfaceName() + ".EmbeddedSoloModify<" + ((ClassOrInterfaceDeclaration) modifier.getParentNode().get()).getNameAsString() + "." + returnType + ">").setBody(block(
                             "{ if (" + className + ".this." + field.getName() + " == null) {" +
                                     className + ".this." + field.getName() + " = CodeFactory.create(" + proto.getInterfaceName() + ".class);}" +
-                                    "return CodeFactory.modify(this, " + className + ".this." + field.getName() + ", " + proto.getInterfaceName() + ".class); }").getResult().get());
+                                    "return CodeFactory.modify(this, " + className + ".this." + field.getName() + ", " + proto.getInterfaceName() + ".class); }"));
                     modifierClass.findCompilationUnit().ifPresent(u -> {
                         u.addImport("net.binis.codegen.factory.CodeFactory");
                         u.addImport(proto.getInterfaceFullName());
@@ -393,12 +398,12 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
 
                     with(description.getRegisteredClass(MODIFIER_KEY), cls -> {
                         var methodName = isNull(proto.getMixIn()) ? Constants.MODIFIER_METHOD_NAME : Constants.MIXIN_MODIFYING_METHOD_PREFIX + proto.getInterfaceName();
-                        cls.addMethod(field.getName() + "$", PUBLIC).setType(properties.getInterfaceName() + "." + properties.getModifierName()).addParameter("Consumer<" + proto.getInterfaceName() + ".Modify>", "init").setBody(description.getParser().parseBlock(
+                        cls.addMethod(field.getName() + "$", PUBLIC).setType(properties.getInterfaceName() + "." + properties.getModifierName()).addParameter("Consumer<" + proto.getInterfaceName() + ".Modify>", "init").setBody(block(
                                 "{ if (" + className + ".this." + field.getName() + " == null) {" +
                                         className + ".this." + field.getName() + " = CodeFactory.create(" + proto.getInterfaceName() + ".class);}" +
                                         "init.accept(" + className + ".this." + field.getName() + "." + methodName + "());" +
                                         "return this;}"
-                        ).getResult().get());
+                        ));
                         cls.findCompilationUnit().ifPresent(u -> u.addImport(Consumer.class));
                     });
                 }

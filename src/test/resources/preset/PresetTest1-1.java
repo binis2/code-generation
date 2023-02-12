@@ -10,10 +10,10 @@ import java.util.List;
 
 @Generated(value = "PresetTestPrototype", comments = "PresetTestImpl")
 @Default("net.binis.codegen.PresetTestImpl")
+@SuppressWarnings("unchecked")
 public interface PresetTest {
 
     // region starters
-    @SuppressWarnings(value = "unchecked")
     static QueryStarter<PresetTest, PresetTest.QuerySelect<PresetTest>, QueryAggregateOperation<QueryOperationFields<PresetTest.QueryAggregate<Number, PresetTest.QuerySelect<Number>>>>, QueryFieldsStart<PresetTest, PresetTest.QuerySelect<PresetTest>>, QueryUpdate<PresetTest, PresetTest.QuerySelect<PresetTest>>> find() {
         return (QueryStarter) EntityCreator.create(PresetTest.QuerySelect.class);
     }

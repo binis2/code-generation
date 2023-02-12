@@ -116,6 +116,7 @@ public class PrototypeLookupHandler implements PrototypeLookup {
                 if (res.isPresent() && res.get().getType(0).isTypeDeclaration()) {
                     external.put(prototype, Structures.Parsed.builder()
                             .declaration(res.get().getType(0).asTypeDeclaration())
+                            .declarationUnit(res.get())
                             .spec(res.get().getType(0).isClassOrInterfaceDeclaration() ? res.get().getType(0).asClassOrInterfaceDeclaration() : null)
                             .build());
                 }

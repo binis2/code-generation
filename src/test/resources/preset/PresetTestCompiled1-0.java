@@ -14,7 +14,7 @@ import java.util.List;
 import jakarta.persistence.OneToOne;
 
 @Generated(value = "PresetTestPrototype", comments = "PresetTest")
-@SuppressWarnings(value = "unchecked")
+@SuppressWarnings("unchecked")
 public class PresetTestImpl implements PresetTest {
 
     protected int data;

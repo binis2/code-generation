@@ -8,10 +8,10 @@ import javax.annotation.processing.Generated;
 
 @Generated(value = "TestAnnotationPrototype", comments = "TestAnnotationImpl")
 @Default("net.binis.codegen.test.TestAnnotationImpl")
+@SuppressWarnings("unchecked")
 public interface TestAnnotation {
 
     // region starters
-    @SuppressWarnings(value = "unchecked")
     static TestAnnotation.Modify create() {
         return (TestAnnotation.Modify) EntityCreatorModifier.create(TestAnnotation.class).with();
     }

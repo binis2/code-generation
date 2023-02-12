@@ -117,6 +117,7 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
         // endregion
 
         // region inner classes
+        @SuppressWarnings("unchecked")
         protected class AccountOverviewCardPayloadImplEmbeddedModifyImpl<T, R> extends BaseModifierImpl<T, R> implements AccountOverviewCardPayload.EmbeddedModify<T, R> {
 
             protected AccountOverviewCardPayloadImplEmbeddedModifyImpl(R parent) {
@@ -139,6 +140,7 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
             }
         }
 
+        @SuppressWarnings("unchecked")
         protected class AccountOverviewCardPayloadImplSoloModifyImpl extends AccountOverviewCardPayloadImplEmbeddedModifyImpl implements AccountOverviewCardPayload.EmbeddedSoloModify {
 
             protected AccountOverviewCardPayloadImplSoloModifyImpl(Object parent) {
@@ -146,6 +148,7 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
             }
         }
 
+        @SuppressWarnings("unchecked")
         protected class AccountOverviewCardPayloadModifyImpl extends AccountOverviewCardPayloadImplEmbeddedModifyImpl<AccountOverviewCard.AccountOverviewCardPayload.Modify, AccountOverviewCard.AccountOverviewCardPayload> implements AccountOverviewCardPayload.Modify {
 
             protected AccountOverviewCardPayloadModifyImpl(AccountOverviewCardPayload parent) {

@@ -59,6 +59,8 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     String getImplementorFullName();
 
     TypeDeclaration<T> getDeclaration();
+    CompilationUnit getDeclarationUnit();
+
     List<CompilationUnit> getFiles();
 
     PrototypeDescription<T> getBase();
@@ -67,7 +69,9 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     List<PrototypeField> getFields();
 
     ClassOrInterfaceDeclaration getImplementation();
+    CompilationUnit getImplementationUnit();
     ClassOrInterfaceDeclaration getInterface();
+    CompilationUnit getInterfaceUnit();
 
     List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> getInitializers();
     List<Consumer<BlockStmt>> getCustomInitializers();

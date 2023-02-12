@@ -35,6 +35,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import static com.github.javaparser.ast.Modifier.Keyword.PUBLIC;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.CLONE_METHOD;
+import static net.binis.codegen.generation.core.EnrichHelpers.statement;
 
 public class CloneEnricherHandler extends BaseEnricher implements CloneEnricher {
 
@@ -92,7 +93,7 @@ public class CloneEnricherHandler extends BaseEnricher implements CloneEnricher 
             }
 
             body.addStatement(new IfStmt().setCondition(new BinaryExpr().setLeft(new NameExpr().setName(field.getName())).setRight(new NullLiteralExpr()).setOperator(BinaryExpr.Operator.NOT_EQUALS)).setThenStmt(
-                    new BlockStmt().addStatement(description.getParser().parseStatement(initExpr).getResult().get())));
+                    new BlockStmt().addStatement(statement(initExpr))));
         } else {
             body.addStatement(new AssignExpr().setTarget(new NameExpr().setName("result." + field.getName())).setValue(new NameExpr().setName(field.getName())));
         }

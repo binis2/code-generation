@@ -9,10 +9,10 @@ import javax.annotation.processing.Generated;
 
 @Generated(value = "AccountOverviewCardPayloadPrototype", comments = "AccountOverviewCardPayloadImpl")
 @Default("net.binis.test.cards.payload.AccountOverviewCardPayloadImpl")
+@SuppressWarnings("unchecked")
 public interface AccountOverviewCardPayload extends Payload {
 
     // region starters
-    @SuppressWarnings(value = "unchecked")
     static AccountOverviewCardPayload.Modify create() {
         return (AccountOverviewCardPayload.Modify) EntityCreatorModifier.create(AccountOverviewCardPayload.class).with();
     }

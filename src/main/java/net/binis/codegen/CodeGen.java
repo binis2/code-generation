@@ -181,12 +181,24 @@ public class CodeGen {
         var className = pack.getNameAsString() + '.' + t.getNameAsString();
         if (t.getAnnotationByName("ConstantPrototype").isPresent()) {
             constantParsed.put(getClassName(t.asClassOrInterfaceDeclaration()),
-                    Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).build());
+                    Parsed.builder()
+                            .declaration(t.asTypeDeclaration())
+                            .declarationUnit(t.findCompilationUnit().orElse(null))
+                            .prototypeFileName(fileName)
+                            .prototypeClassName(className)
+                            .parser(parser)
+                            .build());
         } else {
             var name = getClassName(t);
             checkForNestedClasses(t.asTypeDeclaration(), fileName, parser);
             lookup.registerParsed(name,
-                    Parsed.builder().declaration(t.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(className).parser(parser).build());
+                    Parsed.builder()
+                            .declaration(t.asTypeDeclaration())
+                            .declarationUnit(t.findCompilationUnit().orElse(null))
+                            .prototypeFileName(fileName)
+                            .prototypeClassName(className)
+                            .parser(parser)
+                            .build());
         }
     }
 
@@ -203,7 +215,14 @@ public class CodeGen {
                     var cName = getClassName(nestedType);
 
                     lookup.registerParsed(cName,
-                            Structures.Parsed.builder().declaration(nestedType.asTypeDeclaration()).prototypeFileName(fileName).prototypeClassName(cName).parser(parser).nested(true).build());
+                            Structures.Parsed.builder()
+                                    .declaration(nestedType.asTypeDeclaration())
+                                    .declarationUnit(unit)
+                                    .prototypeFileName(fileName)
+                                    .prototypeClassName(cName)
+                                    .parser(parser)
+                                    .nested(true)
+                                    .build());
                 }
             });
         }

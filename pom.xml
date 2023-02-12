@@ -136,6 +136,7 @@
                     <configuration>
                         <compilerArgs>
                             <arg>-parameters</arg>
+                            <arg>-Xlint:unchecked</arg>
                         </compilerArgs>
                     </configuration>
                 </plugin>

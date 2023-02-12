@@ -22,10 +22,14 @@ package net.binis.codegen.enrich.handler.base;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.enrich.PrototypeLookup;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
+
+import java.util.Collections;
+import java.util.List;
 
 public abstract class BaseEnricher implements PrototypeEnricher {
 
@@ -53,5 +57,9 @@ public abstract class BaseEnricher implements PrototypeEnricher {
         //Do nothing
     }
 
+    @Override
+    public List<Class<? extends Enricher>> dependencies() {
+        return Collections.emptyList();
+    }
 
 }
