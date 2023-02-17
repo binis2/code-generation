@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.CodeGen;
 import net.binis.codegen.discoverer.AnnotationDiscoverer;
 import net.binis.codegen.discovery.Discoverer;
+import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.Structures;
@@ -36,6 +37,8 @@ import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
 import net.binis.codegen.objects.Pair;
 import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.tuple.Triple;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import javax.tools.*;
 import java.io.BufferedWriter;
@@ -67,6 +70,17 @@ public abstract class BaseCodeGenTest {
     static {
         AnnotationDiscoverer.findAnnotations().stream().filter(Discoverer.DiscoveredService::isTemplate).forEach(a ->
                 Structures.registerTemplate(a.getCls()));
+    }
+
+    @BeforeEach
+    public void beforeEach() {
+        Helpers.cleanUp();
+        CodeFactory.registerType(BaseCodeGenTest.class, () -> this);
+    }
+
+    @AfterEach
+    public void afterEach() {
+        CodeFactory.unregisterType(BaseCodeGenTest.class);
     }
 
     protected String getAsString(CompilationUnit file) {
