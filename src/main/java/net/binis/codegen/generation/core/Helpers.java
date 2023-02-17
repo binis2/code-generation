@@ -1229,4 +1229,13 @@ public class Helpers {
         return value;
     }
 
+    public static String typeToString(Type type) {
+        if (type.isClassOrInterfaceType()) {
+            return type.asClassOrInterfaceType().getNameAsString();
+        } else {
+            return type.asString();
+        }
+    }
+
+
 }

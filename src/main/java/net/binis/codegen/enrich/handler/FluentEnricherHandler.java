@@ -32,6 +32,7 @@ import net.binis.codegen.enrich.FluentEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.generation.core.types.ModifierType;
 
 import static com.github.javaparser.ast.Modifier.Keyword.PUBLIC;
 import static java.util.Objects.nonNull;
@@ -84,7 +85,7 @@ public class FluentEnricherHandler extends BaseEnricher implements FluentEnriche
                         .addModifier(PUBLIC)
                         .setBody(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName("this." + name)).setValue(new NameExpr().setName(name)))
                                 .addStatement(new ReturnStmt().setExpression( new ThisExpr())));
-                field.addModifier(method);
+                field.addModifier(ModifierType.MODIFIER, method);
             } else {
                 method.setBody(null);
             }

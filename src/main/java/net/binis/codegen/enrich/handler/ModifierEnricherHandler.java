@@ -42,6 +42,7 @@ import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.generation.core.types.ModifierType;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
@@ -367,7 +368,8 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                 addModifier(modifier, field, null, returnType, false, type, cast);
                 var proto = nonNull(pair.getValue()) ? pair.getValue() : field.getPrototype();
                 if (isNull(proto) || (proto.getEmbeddedModifierType().isCollection())) {
-                    CollectionsHandler.addModifier(description, modifierClass, field, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true);
+                    with(CollectionsHandler.addModifier(description, modifierClass, field, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true), m ->
+                        field.addModifier(ModifierType.COLLECTION, m));
                     CollectionsHandler.addModifier(description, modifier, field, description.getInterfaceName(), null, false);
                 }
             } else {
@@ -472,7 +474,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     .setBody(new BlockStmt()
                             .addStatement(new AssignExpr().setTarget(new NameExpr().setName(modifierClassName + ".this." + declaration.getName())).setValue(new NameExpr().setName(declaration.getName())))
                             .addStatement(new ReturnStmt().setExpression(new NameExpr().setName((nonNull(cast) ? "(" + cast + ") " : "") + "this"))));
-            declaration.addModifier(method);
+            declaration.addModifier(ModifierType.MODIFIER, method);
         } else {
             method.setBody(null);
         }

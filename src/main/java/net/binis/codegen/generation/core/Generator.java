@@ -56,7 +56,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.function.*;
-import java.util.stream.Collectors;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
@@ -823,13 +822,13 @@ public class Generator {
                         }
                         break;
                     case "enrichers":
-                        checkEnrichers(builder::enrichers, handleEnricherInitializerAnnotation(pair));
+                        checkEnrichers(builder::enrichers, handleInitializerAnnotation(pair));
                         break;
                     case "inheritedEnrichers":
-                        checkEnrichers(builder::inheritedEnrichers, handleEnricherInitializerAnnotation(pair));
+                        checkEnrichers(builder::inheritedEnrichers, handleInitializerAnnotation(pair));
                         break;
                     case "options":
-                        checkOptions(builder::options, pair.getValue().asArrayInitializerExpr());
+                        checkOptions(builder::options, handleInitializerAnnotation(pair));
                         break;
                     default:
                         builder.custom(name, getExpressionValue(pair.getValue()));
@@ -874,7 +873,7 @@ public class Generator {
         return result;
     }
 
-    private static ArrayInitializerExpr handleEnricherInitializerAnnotation(MemberValuePair pair) {
+    private static ArrayInitializerExpr handleInitializerAnnotation(MemberValuePair pair) {
         var expression = pair.getValue();
         if (expression.isClassExpr()) {
             var expr = new ArrayInitializerExpr();
@@ -1200,7 +1199,7 @@ public class Generator {
         if (arguments.isEmpty() || arguments.get().isEmpty()) {
             return result;
         } else {
-            return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), true, prototypeMap)).collect(Collectors.toList());
+            return arguments.get().stream().map(n -> handleType(source, destination, typeToString(n), true, prototypeMap)).toList();
         }
     }
 
@@ -1209,7 +1208,7 @@ public class Generator {
         if (arguments.isEmpty() || arguments.get().isEmpty()) {
             return Collections.singletonList(Pair.of("Object", false));
         } else {
-            return arguments.get().stream().map(n -> handleType(source, destination, n.toString(), true)).map(t ->
+            return arguments.get().stream().map(n -> handleType(source, destination, typeToString(n), true)).map(t ->
                     Pair.of(t, lookup.parsed().stream().anyMatch(p -> getExternalClassName(destination, t).equals(p.getInterfaceFullName())))).toList();
         }
     }

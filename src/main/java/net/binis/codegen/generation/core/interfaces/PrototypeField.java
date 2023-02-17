@@ -25,6 +25,7 @@ import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.type.Type;
 import net.binis.codegen.generation.core.Structures;
+import net.binis.codegen.generation.core.types.ModifierType;
 
 import java.util.List;
 import java.util.Map;
@@ -49,14 +50,19 @@ public interface PrototypeField {
     MethodDeclaration getImplementationGetter();
     MethodDeclaration getImplementationSetter();
 
-    List<MethodDeclaration> getModifiers();
+    List<ModifierDescription> getModifiers();
 
     PrototypeField getParent();
 
-    void addModifier(MethodDeclaration modifier);
+    void addModifier(ModifierType type, MethodDeclaration modifier);
     MethodDeclaration generateGetter();
     MethodDeclaration generateSetter();
     MethodDeclaration generateInterfaceGetter();
     MethodDeclaration generateInterfaceSetter();
+
+    interface ModifierDescription {
+        ModifierType getType();
+        MethodDeclaration getModifier();
+    }
 
 }

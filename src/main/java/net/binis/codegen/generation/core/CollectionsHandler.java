@@ -22,6 +22,7 @@ package net.binis.codegen.generation.core;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
@@ -46,6 +47,7 @@ import static net.binis.codegen.generation.core.Constants.EMBEDDED_COLLECTION_MO
 import static net.binis.codegen.generation.core.Constants.EMBEDDED_MODIFIER_INTF_KEY;
 import static net.binis.codegen.generation.core.Generator.getGenericsList;
 import static net.binis.codegen.generation.core.Helpers.methodExists;
+import static net.binis.codegen.generation.core.Helpers.typeToString;
 
 @Slf4j
 public class CollectionsHandler {
@@ -70,7 +72,7 @@ public class CollectionsHandler {
         return isListOrSet(type) || "Map".equals(type) || "CodeMap".equals(type);
     }
 
-    public static void addModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierName, String className, boolean isClass) {
+    public static MethodDeclaration addModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierName, String className, boolean isClass) {
         if (!methodExists(spec, declaration, isClass)) {
             var type = declaration.getDeclaration().getVariables().get(0).getType().asClassOrInterfaceType();
             var collection = isNull(declaration.getDescription()) ?
@@ -110,7 +112,9 @@ public class CollectionsHandler {
             } else {
                 method.setBody(null);
             }
+            return method;
         }
+        return null;
     }
 
     public static CollectionType getCollectionType(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type) {
@@ -166,7 +170,7 @@ public class CollectionsHandler {
     private static boolean isPrototypeParam(ClassOrInterfaceType type, List<Pair<String, Boolean>> generic) {
         var arguments = type.getTypeArguments();
         if (arguments.isPresent() && arguments.get().isNonEmpty()) {
-            return !arguments.get().get(0).toString().equals(generic.get(0).getKey());
+            return !typeToString(arguments.get().get(0)).equals(generic.get(0).getKey());
         }
         return false;
     }

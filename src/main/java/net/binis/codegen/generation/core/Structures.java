@@ -42,7 +42,9 @@ import net.binis.codegen.generation.core.interfaces.PrototypeConstant;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.generation.core.types.ModifierType;
 import net.binis.codegen.options.CodeOption;
+import net.bytebuddy.description.method.MethodDescription;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -149,7 +151,7 @@ public class Structures {
         @ToString.Exclude
         private Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> typePrototypes;
         @ToString.Exclude
-        private List<MethodDeclaration> modifiers;
+        private List<ModifierDescription> modifiers;
 
         @ToString.Exclude
         private PrototypeField parent;
@@ -159,7 +161,7 @@ public class Structures {
         MethodDeclaration implementationGetter;
         MethodDeclaration implementationSetter;
 
-        public List<MethodDeclaration> getModifiers() {
+        public List<ModifierDescription> getModifiers() {
             if (isNull(modifiers)) {
                 modifiers = new ArrayList<>();
             }
@@ -167,8 +169,11 @@ public class Structures {
         }
 
         @Override
-        public void addModifier(MethodDeclaration modifier) {
-            getModifiers().add(modifier);
+        public void addModifier(ModifierType type, MethodDeclaration modifier) {
+            getModifiers().add(ModifierDescriptionData.builder()
+                    .type(type)
+                    .modifier(modifier)
+                    .build());
         }
 
         @Override
@@ -197,6 +202,13 @@ public class Structures {
             return interfaceSetter;
         }
 
+    }
+
+    @Data
+    @Builder
+    protected static class ModifierDescriptionData implements PrototypeField.ModifierDescription {
+        protected ModifierType type;
+        protected MethodDeclaration modifier;
     }
 
     @Data
@@ -760,8 +772,7 @@ public class Structures {
         var value = method.getDefaultValue();
         if (value instanceof String s && StringUtils.isEmpty(s)) {
             value = null;
-        } else
-        if (value instanceof Class c && void.class.equals(c)) {
+        } else if (value instanceof Class c && void.class.equals(c)) {
             value = null;
         }
         return value;
