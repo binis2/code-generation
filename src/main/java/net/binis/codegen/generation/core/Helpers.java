@@ -314,6 +314,11 @@ public class Helpers {
             rType.set(type.substring(0, idx));
         }
 
+        var discovered = unit.getTypes().stream().filter(t -> t.getNameAsString().equals(type)).findFirst();
+        if (discovered.isPresent()) {
+            return new ImportDeclaration(discovered.get().getFullyQualifiedName().get(), false, false);
+        }
+
         var result = unit.getImports()
                 .stream()
                 .filter(i -> i.getNameAsString().endsWith("." + rType.get()))
@@ -674,26 +679,22 @@ public class Helpers {
                 notNull(loadClass(className), cls -> {
                     if (Ignore.class.equals(cls)) {
                         annotation.getChildNodes().forEach(node -> {
-                            if (node instanceof MemberValuePair) {
-                                var pair = (MemberValuePair) node;
+                            if (node instanceof MemberValuePair pair) {
                                 var name = pair.getNameAsString();
                                 switch (name) {
-                                    case "forField":
-                                        result.forField(pair.getValue().asBooleanLiteralExpr().getValue());
-                                        break;
-                                    case "forClass":
-                                        result.forClass(pair.getValue().asBooleanLiteralExpr().getValue());
-                                        break;
-                                    case "forInterface":
-                                        result.forInterface(pair.getValue().asBooleanLiteralExpr().getValue());
-                                        break;
-                                    case "forModifier":
-                                        result.forModifier(pair.getValue().asBooleanLiteralExpr().getValue());
-                                        break;
-                                    case "forQuery":
-                                        result.forQuery(pair.getValue().asBooleanLiteralExpr().getValue());
-                                        break;
-                                    default:
+                                    case "forField" ->
+                                            result.forField(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forClass" ->
+                                            result.forClass(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forInterface" ->
+                                            result.forInterface(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forModifier" ->
+                                            result.forModifier(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forQuery" ->
+                                            result.forQuery(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    default -> {
+                                        //Do nothing
+                                    }
                                 }
                             }
                         });
@@ -971,7 +972,7 @@ public class Helpers {
     }
 
 
-    public static void handleImports(TypeDeclaration<?> declaration, ClassOrInterfaceDeclaration type) {
+    public static void handleImports(Node declaration, ClassOrInterfaceDeclaration type) {
         declaration.findCompilationUnit().ifPresent(decl ->
                 notNull(type, tt -> type.findCompilationUnit().ifPresent(unit ->
                         findUsedTypes(type).stream().map(t -> getClassImport(decl, t)).filter(Objects::nonNull).forEach(unit::addImport))));

@@ -20,6 +20,8 @@ package net.binis.codegen.generation.core;
  * #L%
  */
 
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.Statement;
@@ -27,6 +29,10 @@ import com.github.javaparser.ast.stmt.Statement;
 import static net.binis.codegen.generation.core.Helpers.lookup;
 
 public class EnrichHelpers {
+
+    public static CompilationUnit unit(Node node) {
+        return node.findCompilationUnit().get();
+    }
 
     public static BlockStmt block(String code) {
         return lookup.getParser().parseBlock(code).getResult().get();

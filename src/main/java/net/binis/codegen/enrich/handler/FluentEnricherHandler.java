@@ -85,7 +85,7 @@ public class FluentEnricherHandler extends BaseEnricher implements FluentEnriche
                         .addModifier(PUBLIC)
                         .setBody(new BlockStmt().addStatement(new AssignExpr().setTarget(new NameExpr().setName("this." + name)).setValue(new NameExpr().setName(name)))
                                 .addStatement(new ReturnStmt().setExpression( new ThisExpr())));
-                field.addModifier(ModifierType.MODIFIER, method);
+                field.addModifier(ModifierType.MODIFIER, method, field.getParsed());
             } else {
                 method.setBody(null);
             }

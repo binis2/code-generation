@@ -45,6 +45,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.EMBEDDED_COLLECTION_MODIFIER_INTF_KEY;
 import static net.binis.codegen.generation.core.Constants.EMBEDDED_MODIFIER_INTF_KEY;
+import static net.binis.codegen.generation.core.EnrichHelpers.unit;
 import static net.binis.codegen.generation.core.Generator.getGenericsList;
 import static net.binis.codegen.generation.core.Helpers.methodExists;
 import static net.binis.codegen.generation.core.Helpers.typeToString;
@@ -76,8 +77,8 @@ public class CollectionsHandler {
         if (!methodExists(spec, declaration, isClass)) {
             var type = declaration.getDeclaration().getVariables().get(0).getType().asClassOrInterfaceType();
             var collection = isNull(declaration.getDescription()) ?
-                    getCollectionType(declaration.getDeclaration().findCompilationUnit().get(), spec.findCompilationUnit().get(), type) :
-                    getCollectionType(declaration.getDescription().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDescription().getType().asClassOrInterfaceType());
+                    getCollectionType(unit(declaration.getDeclaration()), unit(spec), type) :
+                    getCollectionType(unit(declaration.getDescription()), unit(spec), declaration.getDescription().getType().asClassOrInterfaceType());
             var generic = collection.getGeneric().stream().map(Pair::getLeft).collect(Collectors.joining(", "));
             spec.findCompilationUnit().ifPresent(u -> {
                 u.addImport(collection.getInterfaceImport());
@@ -122,36 +123,26 @@ public class CollectionsHandler {
 
         var builder = CollectionType.builder().generic(generic);
         switch (type.getNameAsString()) {
-            case "List":
-            case "CodeList":
-                builder
-                        .type("CodeList")
-                        .classType("CodeListImpl")
-                        .implementor("java.util.ArrayList")
-                        .implementorInterface("java.util.List")
-                        .prototypeParam(isPrototypeParam(type, generic));
-                break;
-            case "Set":
-            case "CodeSet":
-                builder
-                        .type("CodeSet")
-                        .classType("CodeSetImpl")
-                        .implementor("java.util.HashSet")
-                        .implementorInterface("java.util.Set")
-                        .prototypeParam(isPrototypeParam(type, generic));
-                break;
-            case "Map":
-            case "CodeMap":
-                builder
-                        .type("CodeMap")
-                        .classType("CodeMapImpl")
-                        .implementor("java.util.HashMap")
-                        .implementorInterface("java.util.Map");
-                break;
-            default:
-                builder
-                        .type("Unknown")
-                        .classType("UnknownImpl");
+            case "List", "CodeList" -> builder
+                    .type("CodeList")
+                    .classType("CodeListImpl")
+                    .implementor("java.util.ArrayList")
+                    .implementorInterface("java.util.List")
+                    .prototypeParam(isPrototypeParam(type, generic));
+            case "Set", "CodeSet" -> builder
+                    .type("CodeSet")
+                    .classType("CodeSetImpl")
+                    .implementor("java.util.HashSet")
+                    .implementorInterface("java.util.Set")
+                    .prototypeParam(isPrototypeParam(type, generic));
+            case "Map", "CodeMap" -> builder
+                    .type("CodeMap")
+                    .classType("CodeMapImpl")
+                    .implementor("java.util.HashMap")
+                    .implementorInterface("java.util.Map");
+            default -> builder
+                    .type("Unknown")
+                    .classType("UnknownImpl");
         }
 
         var result = builder.build();

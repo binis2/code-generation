@@ -156,15 +156,15 @@ public abstract class BaseCodeGenTest {
     }
 
     protected void testSingleExecute(String prototype, String resClass, String resInterface, String resExecute) {
-        testSingleExecute(prototype, resClass, resInterface, null, 1, resExecute, false, false);
+        testSingleExecute(prototype, resClass, resInterface, null, 1, resExecute, false, false, false);
     }
 
     protected void testSingleExecute(String prototype, String resClass, String resInterface, int expected, String resExecute) {
-        testSingleExecute(prototype, resClass, resInterface, null, expected, resExecute, false, false);
+        testSingleExecute(prototype, resClass, resInterface, null, expected, resExecute, false, false, false);
     }
 
     protected void testSingleImplementation(String prototype, String resClass) {
-        testSingleExecute(prototype, resClass, null, null, 1, null, false, true);
+        testSingleExecute(prototype, resClass, null, null, 1, null, false, true, false);
     }
 
     protected void testSingle(String prototype, String resClass, String resInterface) {
@@ -179,20 +179,26 @@ public abstract class BaseCodeGenTest {
         testSingle(prototype, resClass, resInterface, null, expected);
     }
 
-    protected void testSingle(String prototype, String resClass, String resInterface, int expected, boolean skipCompilation) {
-        testSingleExecute(prototype, resClass, resInterface, null, expected, null, skipCompilation, false);
+    protected void testSingleSkip(String prototype, String resClass, String resInterface, boolean skipPrototype, boolean skipCompilation) {
+        testSingleExecute(prototype, resClass, resInterface, null, 1, null, skipCompilation, false, skipPrototype);
     }
 
 
+    protected void testSingle(String prototype, String resClass, String resInterface, int expected, boolean skipCompilation) {
+        testSingleExecute(prototype, resClass, resInterface, null, expected, null, skipCompilation, false, false);
+    }
+
     protected void testSingle(String prototype, String resClass, String resInterface, String pathToSave, int expected) {
-        testSingleExecute(prototype, resClass, resInterface, pathToSave, expected, null, false, false);
+        testSingleExecute(prototype, resClass, resInterface, pathToSave, expected, null, false, false, false);
     }
 
     @SuppressWarnings("unchecked")
-    protected void testSingleExecute(String prototype, String resClass, String resInterface, String pathToSave, int expected, String resExecute, boolean skipCompilation, boolean includePrototype) {
+    protected void testSingleExecute(String prototype, String resClass, String resInterface, String pathToSave, int expected, String resExecute, boolean skipCompilation, boolean includePrototype, boolean skipPrototypeCompilation) {
         var list = newList();
         load(list, prototype);
-        assertTrue(compile(new TestClassLoader(), list, null));
+        if (!skipPrototypeCompilation) {
+            assertTrue(compile(new TestClassLoader(), list, null));
+        }
         generate();
 
         assertEquals(expected, lookup.parsed().size());

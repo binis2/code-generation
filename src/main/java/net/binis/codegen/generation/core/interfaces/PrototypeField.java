@@ -54,7 +54,7 @@ public interface PrototypeField {
 
     PrototypeField getParent();
 
-    void addModifier(ModifierType type, MethodDeclaration modifier);
+    void addModifier(ModifierType type, MethodDeclaration modifier, PrototypeDescription<ClassOrInterfaceDeclaration> origin);
     MethodDeclaration generateGetter();
     MethodDeclaration generateSetter();
     MethodDeclaration generateInterfaceGetter();
@@ -63,6 +63,7 @@ public interface PrototypeField {
     interface ModifierDescription {
         ModifierType getType();
         MethodDeclaration getModifier();
+        PrototypeDescription<ClassOrInterfaceDeclaration> getOrigin();
     }
 
 }

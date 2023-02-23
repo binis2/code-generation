@@ -268,7 +268,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
             if (!description.getProperties().isBase()) {
                 var spec = description.getImplementation();
                 if (nonNull(description.getMixIn())) {
-                        spec = description.getMixIn().getImplementation();
+                    spec = description.getMixIn().getImplementation();
                 }
                 spec.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.modifier.impl.BaseModifierImpl"));
             }
@@ -342,7 +342,8 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         }
     }
 
-    private void declare(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeData properties, ClassOrInterfaceDeclaration modifierFields, PrototypeField field, TypeDeclaration<ClassOrInterfaceDeclaration> classDeclaration, List<Pair<CompilationUnit, String>> imports) {
+    private MethodDeclaration declare(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeData properties, ClassOrInterfaceDeclaration modifierFields, PrototypeField field, TypeDeclaration<ClassOrInterfaceDeclaration> classDeclaration, List<Pair<CompilationUnit, String>> imports) {
+        MethodDeclaration result = null;
         if (!field.getIgnores().isForModifier()) {
             var pair = getFieldType(description, field);
             var type = pair.getKey();
@@ -357,7 +358,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
             }
 
             if (nonNull(modifierClass)) {
-                addModifier(modifierClass, field, isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), returnType, true, type, cast);
+                result = addModifier(modifierClass, field, isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), returnType, true, type, cast, description);
             }
 
             if (CollectionsHandler.isCollection(type)) {
@@ -365,11 +366,11 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     modifier = description.getRegisteredClass(MODIFIER_INTF_KEY);
                     returnType = properties.getModifierName();
                 }
-                addModifier(modifier, field, null, returnType, false, type, cast);
+                addModifier(modifier, field, null, returnType, false, type, cast, description);
                 var proto = nonNull(pair.getValue()) ? pair.getValue() : field.getPrototype();
                 if (isNull(proto) || (proto.getEmbeddedModifierType().isCollection())) {
                     with(CollectionsHandler.addModifier(description, modifierClass, field, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true), m ->
-                        field.addModifier(ModifierType.COLLECTION, m));
+                            field.addModifier(ModifierType.COLLECTION, m, field.getParsed()));
                     CollectionsHandler.addModifier(description, modifier, field, description.getInterfaceName(), null, false);
                 }
             } else {
@@ -411,6 +412,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                 }
             }
         }
+        return result;
     }
 
     private void addField(PrototypeField field, ClassOrInterfaceDeclaration modifierFields, List<Pair<CompilationUnit, String>> imports, Type generic) {
@@ -456,16 +458,17 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         return 10000;
     }
 
-    private void addModifier(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierClassName, String modifierName, boolean isClass, Type generic, String cast) {
+    private MethodDeclaration addModifier(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierClassName, String modifierName, boolean isClass, Type generic, String cast, PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+        MethodDeclaration method = null;
         var type = declaration.isGenericField() ? generic.asString() : declaration.isGenericMethod() ? "Object" : declaration.getType();
         if (isNull(type)) {
-            type = isNull(declaration.getDescription()) || "dummy".equals(declaration.getDescription().findCompilationUnit().get().getPackageDeclaration().get().getNameAsString()) ?
-                    handleType(declaration.getDeclaration().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDeclaration().getVariables().get(0).getType()) :
-                    (declaration.getDescription().getTypeParameters().isEmpty() ? handleType(declaration.getDescription().findCompilationUnit().get(), spec.findCompilationUnit().get(), declaration.getDeclaration().getVariable(0).getType()) : "Object");
+            type = isNull(declaration.getDescription()) || "dummy".equals(unit(declaration.getDescription()).getPackageDeclaration().get().getNameAsString()) ?
+                    handleType(unit(declaration.getDeclaration()), unit(spec), declaration.getDeclaration().getVariables().get(0).getType()) :
+                    (declaration.getDescription().getTypeParameters().isEmpty() ? handleType(unit(declaration.getDescription()), unit(spec), declaration.getDeclaration().getVariable(0).getType()) : "Object");
         } else {
-            spec.findCompilationUnit().get().addImport(declaration.getFullType());
+            unit(spec).addImport(declaration.getFullType());
         }
-        var method = new MethodDeclaration().setName(declaration.getName())
+        method = new MethodDeclaration().setName(declaration.getName())
                 .setType(modifierName)
                 .addParameter(new Parameter().setName(declaration.getName()).setType(type));
         if (isClass) {
@@ -474,13 +477,14 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     .setBody(new BlockStmt()
                             .addStatement(new AssignExpr().setTarget(new NameExpr().setName(modifierClassName + ".this." + declaration.getName())).setValue(new NameExpr().setName(declaration.getName())))
                             .addStatement(new ReturnStmt().setExpression(new NameExpr().setName((nonNull(cast) ? "(" + cast + ") " : "") + "this"))));
-            declaration.addModifier(ModifierType.MODIFIER, method);
+            declaration.addModifier(ModifierType.MODIFIER, method, description);
         } else {
             method.setBody(null);
         }
         if (!methodExists(spec, method, isClass)) {
             spec.addMember(method);
         }
+        return method;
     }
 
 }

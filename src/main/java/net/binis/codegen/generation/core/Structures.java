@@ -44,7 +44,6 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.generation.core.types.ModifierType;
 import net.binis.codegen.options.CodeOption;
-import net.bytebuddy.description.method.MethodDescription;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -169,10 +168,11 @@ public class Structures {
         }
 
         @Override
-        public void addModifier(ModifierType type, MethodDeclaration modifier) {
+        public void addModifier(ModifierType type, MethodDeclaration modifier, PrototypeDescription<ClassOrInterfaceDeclaration> origin) {
             getModifiers().add(ModifierDescriptionData.builder()
                     .type(type)
                     .modifier(modifier)
+                    .origin(origin)
                     .build());
         }
 
@@ -209,6 +209,7 @@ public class Structures {
     protected static class ModifierDescriptionData implements PrototypeField.ModifierDescription {
         protected ModifierType type;
         protected MethodDeclaration modifier;
+        protected PrototypeDescription<ClassOrInterfaceDeclaration> origin;
     }
 
     @Data
@@ -275,6 +276,8 @@ public class Structures {
         protected boolean codeEnum;
 
         protected String parentClassName;
+
+        protected ClassOrInterfaceDeclaration parent;
 
         @Builder.Default
         protected EmbeddedModifierType embeddedModifierType = EmbeddedModifierType.NONE;
@@ -410,8 +413,8 @@ public class Structures {
         protected String id;
 
         @Builder(builderMethodName = "bldr")
-        public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, CompilationUnit declarationUnit, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean codeEnum, String parentClassName, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, CompilationUnit interfaceUnit, CompilationUnit implementationUnit, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
-            super(processed, invalid, parser, compiled, prototypeFileName, prototypeClassName, properties, parsedName, parsedFullName, interfaceName, interfaceFullName, constants, declaration, declarationUnit, files, custom, base, mixIn, nested, codeEnum, parentClassName, embeddedModifierType, classes, fields, spec, intf, interfaceUnit, implementationUnit, initializers, customInitializers, postProcessActions);
+        public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, CompilationUnit declarationUnit, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean codeEnum, String parentClassName, ClassOrInterfaceDeclaration parent, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, CompilationUnit interfaceUnit, CompilationUnit implementationUnit, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
+            super(processed, invalid, parser, compiled, prototypeFileName, prototypeClassName, properties, parsedName, parsedFullName, interfaceName, interfaceFullName, constants, declaration, declarationUnit, files, custom, base, mixIn, nested, codeEnum, parentClassName, parent, embeddedModifierType, classes, fields, spec, intf, interfaceUnit, implementationUnit, initializers, customInitializers, postProcessActions);
             this.id = id;
             this.files = initFiles();
         }

@@ -968,6 +968,7 @@ public class Generator {
                                     .parser(lookup.getParser())
                                     .nested(true)
                                     .parentClassName(getClassName(declaration))
+                                    .parent(declaration)
                                     .build());
 
                     notNull(lookup.findParsed(clsName), parse ->

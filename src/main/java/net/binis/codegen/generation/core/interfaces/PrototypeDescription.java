@@ -90,6 +90,8 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     String getParentClassName();
 
+    ClassOrInterfaceDeclaration getParent();
+
     EmbeddedModifierType getEmbeddedModifierType();
 
     Optional<PrototypeField> findField(String name);

@@ -20,6 +20,7 @@ package net.binis.codegen.generation.core.interfaces;
  * #L%
  */
 
+import net.binis.codegen.annotation.type.GenerationStrategy;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.options.CodeOption;
 
@@ -58,6 +59,8 @@ public interface PrototypeData {
     String getImplementationPath();
 
     int getOrdinalOffset();
+
+    GenerationStrategy getStrategy();
 
     Map<String, Object> getCustom();
 
