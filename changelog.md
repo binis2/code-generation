@@ -1,4 +1,23 @@
 # Change Log
+**26-02-2023** ver. 1.0.2
+* Core: Added generic mapping handling for interfaces.
+* Code: Added Serializable handling via Mapper.
+* Core: Added lazy initialization for CodeFactory objects.
+* Core: Added mapping with parameters
+* Annotation Processor: Annotation Processor behaves correctly when invoked inside tests. 
+* Validation: Added support for typed collection validations.
+* Validation: Added nicer way to describe validation messages.
+* Validation: Added @ValidateNotEmpty validator.
+* Validation: Added @Valid validator.
+* Generation: Fixed imports for mixed in and nested objects.
+* Generation: Added enricher dependencies.
+* Generation: Renamed some PrototypeDescription's methods to more convenient names.
+* Generation: More reliable type discovery. 
+* Generation: Added discovery for generated interfaces.
+* Jackson: Added String to Object mapping.
+* Jackson: Better mapping for ValidationFormException.
+* Redis: New experimental Redis module.
+
 **28-01-2023** ver. 1.0.1
 * Core: Added inheritance of custom prototypes.
 * Core: Added class based mappings.
