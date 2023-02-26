@@ -530,7 +530,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
     private Object convert(Object message, List<ParamHolder> params) {
         if (message instanceof String s) {
             return ContextInterpolator.of(param -> params.stream()
-                            .filter(p -> !"value".equals(p.getName()))
+                            .filter(p -> !VALUE.equals(p.getName()))
                             .filter(p -> p.getName().equals(param))
                             .findFirst()
                             .map(paramHolder -> "param[" + paramHolder.getOrder() + "]")
@@ -652,7 +652,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             var exp = new StringBuilder("Validation.start(this.getClass(), \"")
                     .append(field.getName())
                     .append("\", ")
-                    .append(ModifierType.COLLECTION.equals(modifier) ? "value" : field.getName())
+                    .append(ModifierType.COLLECTION.equals(modifier) ? VALUE : field.getName())
                     .append(").validate")
                     .append(nonNull(params.getMessages()) ? "WithMessages" : "")
                     .append(collection ? "Collection(" : "(")
@@ -699,7 +699,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             var exp = new StringBuilder("Validation.start(this.getClass(), \"")
                     .append(field.getName())
                     .append("\", ")
-                    .append(ModifierType.COLLECTION.equals(modifier) ? "value" : field.getName())
+                    .append(ModifierType.COLLECTION.equals(modifier) ? VALUE : field.getName())
                     .append(").sanitize")
                     .append(collection ? "Collection(" : "(")
                     .append(params.getCls())
