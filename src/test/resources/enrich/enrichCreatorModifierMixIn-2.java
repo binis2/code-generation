@@ -6,7 +6,7 @@ import net.binis.codegen.creator.EntityCreatorModifier;
 import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "MixInPrototype", comments = "MixInImpl")
+@Generated(value = "net.binis.codegen.MixInPrototype", comments = "MixInImpl")
 @Default("net.binis.codegen.TestImpl")
 @SuppressWarnings("unchecked")
 public interface MixIn extends Test {

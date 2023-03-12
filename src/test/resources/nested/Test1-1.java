@@ -6,7 +6,7 @@ import net.binis.codegen.creator.EntityCreatorModifier;
 import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "TestAnnotationPrototype", comments = "TestAnnotationImpl")
+@Generated(value = "net.binis.codegen.test.TestAnnotationPrototype", comments = "TestAnnotationImpl")
 @Default("net.binis.codegen.test.TestAnnotationImpl")
 @SuppressWarnings("unchecked")
 public interface TestAnnotation {

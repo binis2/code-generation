@@ -12,7 +12,7 @@ import java.util.function.Function;
 import java.util.Optional;
 import java.util.List;
 
-@Generated(value = "PresetTestPrototype", comments = "PresetTest")
+@Generated(value = "net.binis.codegen.PresetTestPrototype", comments = "PresetTest")
 @SuppressWarnings("unchecked")
 public class PresetTestImpl implements PresetTest {
 

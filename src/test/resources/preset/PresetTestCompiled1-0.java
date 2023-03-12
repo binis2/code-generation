@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.List;
 import jakarta.persistence.OneToOne;
 
-@Generated(value = "PresetTestPrototype", comments = "PresetTest")
+@Generated(value = "net.binis.codegen.PresetTestPrototype", comments = "PresetTest")
 @SuppressWarnings("unchecked")
 public class PresetTestImpl implements PresetTest {
 

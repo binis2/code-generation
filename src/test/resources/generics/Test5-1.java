@@ -10,7 +10,7 @@ import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 import java.util.function.Consumer;
 
-@Generated(value = "AccountOverviewCardPrototype", comments = "AccountOverviewCardImpl")
+@Generated(value = "net.binis.test.prototype.card.AccountOverviewCardPrototype", comments = "AccountOverviewCardImpl")
 @Default("net.binis.test.card.AccountOverviewCardImpl")
 @SuppressWarnings("unchecked")
 public interface AccountOverviewCard extends CompiledGeneric<AccountOverviewCard.AccountOverviewCardPayload> {

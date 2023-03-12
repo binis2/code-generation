@@ -3,7 +3,7 @@ package net.binis.codegen;
 
 import javax.annotation.processing.Generated;
 
-@Generated(value = "TestStrategy", comments = "TestStrategy")
+@Generated(value = "net.binis.codegen.TestStrategy", comments = "TestStrategy")
 public class TestStrategyImpl implements TestStrategy {
 
     public TestStrategyImpl() {

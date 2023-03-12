@@ -6,7 +6,7 @@ import net.binis.codegen.modifier.Modifiable;
 import net.binis.codegen.factory.CodeFactory;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "AccountOverviewCardPayloadPrototype", comments = "AccountOverviewCardPayload")
+@Generated(value = "net.binis.test.cards.prototype.payload.AccountOverviewCardPayloadPrototype", comments = "AccountOverviewCardPayload")
 public class AccountOverviewCardPayloadImpl implements AccountOverviewCardPayload, Modifiable<AccountOverviewCardPayload.Modify> {
 
     protected int donated;

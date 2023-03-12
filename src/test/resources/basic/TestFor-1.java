@@ -5,7 +5,7 @@ import jdk.jfr.Label;
 import jdk.jfr.Description;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "TestPrototype", comments = "TestImpl")
+@Generated(value = "net.binis.codegen.TestPrototype", comments = "TestImpl")
 @SuppressWarnings("test")
 @Label("test")
 public interface Test {

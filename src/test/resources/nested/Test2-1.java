@@ -4,7 +4,7 @@ package net.binis.codegen.test.objects;
 import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "TestRequestPrototype", comments = "TestRequestImpl")
+@Generated(value = "net.binis.codegen.test.objects.TestRequestPrototype", comments = "TestRequestImpl")
 @Default("net.binis.codegen.test.objects.TestRequestImpl")
 public interface TestRequest {
     String getName();

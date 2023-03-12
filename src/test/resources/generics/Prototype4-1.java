@@ -7,7 +7,7 @@ import net.binis.codegen.creator.EntityCreatorModifier;
 import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "AccountOverviewCardPayloadPrototype", comments = "AccountOverviewCardPayloadImpl")
+@Generated(value = "net.binis.test.cards.prototype.payload.AccountOverviewCardPayloadPrototype", comments = "AccountOverviewCardPayloadImpl")
 @Default("net.binis.test.cards.payload.AccountOverviewCardPayloadImpl")
 @SuppressWarnings("unchecked")
 public interface AccountOverviewCardPayload extends Payload {

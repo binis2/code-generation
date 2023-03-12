@@ -7,7 +7,7 @@ import net.binis.codegen.creator.EntityCreatorModifier;
 import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "TestPrototype", comments = "TestImpl")
+@Generated(value = "net.binis.codegen.test.TestPrototype", comments = "TestImpl")
 @Default("net.binis.codegen.test.TestImpl")
 @SuppressWarnings("unchecked")
 public interface Test extends Generic<DefaultPayload> {

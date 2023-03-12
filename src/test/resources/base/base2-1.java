@@ -3,7 +3,7 @@ package net.binis.codegen;
 
 import javax.annotation.processing.Generated;
 
-@Generated(value = "BasePrototype", comments = "BaseImpl")
+@Generated(value = "net.binis.codegen.BasePrototype", comments = "BaseImpl")
 public interface Base {
     Long getId();
 

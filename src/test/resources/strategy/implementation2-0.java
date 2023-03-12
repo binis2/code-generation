@@ -4,7 +4,7 @@ package net.binis.codegen;
 import net.binis.codegen.objects.CompiledGeneric;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "TestStrategy", comments = "TestStrategy")
+@Generated(value = "net.binis.codegen.TestStrategy", comments = "TestStrategy")
 public class TestStrategyImpl implements TestStrategy, CompiledGeneric<String> {
 
     public TestStrategyImpl() {

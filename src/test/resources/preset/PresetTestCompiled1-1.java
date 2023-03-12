@@ -8,7 +8,7 @@ import javax.annotation.processing.Generated;
 import java.util.Optional;
 import java.util.List;
 
-@Generated(value = "PresetTestPrototype", comments = "PresetTestImpl")
+@Generated(value = "net.binis.codegen.PresetTestPrototype", comments = "PresetTestImpl")
 @Default("net.binis.codegen.PresetTestImpl")
 @SuppressWarnings("unchecked")
 public interface PresetTest extends Compiled {

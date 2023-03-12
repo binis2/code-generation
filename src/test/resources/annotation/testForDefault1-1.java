@@ -3,7 +3,7 @@ package net.binis.codegen;
 
 import javax.annotation.processing.Generated;
 
-@Generated(value = "TestPrototype", comments = "TestImpl")
+@Generated(value = "net.binis.codegen.prototype.TestPrototype", comments = "TestImpl")
 public interface Test {
     boolean isTest();
 

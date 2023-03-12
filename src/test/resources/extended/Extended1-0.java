@@ -3,7 +3,7 @@ package net.binis.codegen.test;
 
 import javax.annotation.processing.Generated;
 
-@Generated(value = "ExtendedPrototype", comments = "Extended")
+@Generated(value = "net.binis.codegen.test.ExtendedPrototype", comments = "Extended")
 public class ExtendedImpl implements Extended {
 
     protected String extended = "asd";

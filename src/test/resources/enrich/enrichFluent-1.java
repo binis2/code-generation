@@ -6,7 +6,7 @@ import java.util.Set;
 import java.util.Map;
 import java.util.List;
 
-@Generated(value = "TestPrototype", comments = "TestImpl")
+@Generated(value = "net.binis.codegen.TestPrototype", comments = "TestImpl")
 public interface Test {
     List<Long> getList();
     Map<Long, String> getMap();

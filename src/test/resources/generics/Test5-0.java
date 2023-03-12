@@ -9,7 +9,7 @@ import net.binis.codegen.factory.CodeFactory;
 import javax.annotation.processing.Generated;
 import java.util.function.Consumer;
 
-@Generated(value = "AccountOverviewCardPrototype", comments = "AccountOverviewCard")
+@Generated(value = "net.binis.test.prototype.card.AccountOverviewCardPrototype", comments = "AccountOverviewCard")
 public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverviewCard.AccountOverviewCardPayload> implements AccountOverviewCard, Modifiable<AccountOverviewCard.Modify> {
 
     // region constructor & initializer

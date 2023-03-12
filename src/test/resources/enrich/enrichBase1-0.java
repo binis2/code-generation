@@ -4,7 +4,7 @@ package net.binis.codegen;
 import net.binis.codegen.factory.CodeFactory;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "BasePrototype", comments = "Base")
+@Generated(value = "net.binis.codegen.BasePrototype", comments = "Base")
 public class BaseImpl implements Base {
 
     protected Long id;

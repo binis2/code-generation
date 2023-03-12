@@ -4,7 +4,7 @@ package net.binis.codegen;
 import net.binis.codegen.objects.Projectable;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "BasePrototype", comments = "BaseImpl")
+@Generated(value = "net.binis.codegen.BasePrototype", comments = "BaseImpl")
 public interface Base extends Projectable {
     Long getId();
 

@@ -4,7 +4,7 @@ package net.binis.codegen;
 import jdk.jfr.Description;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "TestPrototype", comments = "Test")
+@Generated(value = "net.binis.codegen.TestPrototype", comments = "Test")
 public class TestImpl implements Test {
 
     protected String subtitle;

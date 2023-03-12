@@ -5,7 +5,7 @@ import net.binis.codegen.objects.base.enumeration.CodeEnumImpl;
 import lombok.Getter;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "TestPrototype", comments = "Test")
+@Generated(value = "net.binis.codegen.TestPrototype", comments = "Test")
 public class TestImpl extends CodeEnumImpl implements Test {
 
     public static final String CONSTANT = "const";

@@ -6,7 +6,7 @@ import net.binis.codegen.modifier.Modifiable;
 import net.binis.codegen.factory.CodeFactory;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "TestAnnotationPrototype", comments = "TestAnnotation")
+@Generated(value = "net.binis.codegen.test.TestAnnotationPrototype", comments = "TestAnnotation")
 public class TestAnnotationImpl implements TestAnnotation, Modifiable<TestAnnotation.Modify> {
 
     protected String value;

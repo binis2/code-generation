@@ -10,7 +10,7 @@ import javax.annotation.processing.Generated;
 import java.util.List;
 import java.io.Serializable;
 
-@Generated(value = "RedisTestPrototype", comments = "RedisTest")
+@Generated(value = "net.binis.codegen.redis.RedisTestPrototype", comments = "RedisTest")
 public class RedisTestImpl implements RedisTest, Modifiable<RedisTest.Modify>, Serializable {
 
     public static final String PREFIX = "";

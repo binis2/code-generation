@@ -8,7 +8,7 @@ import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 import java.util.List;
 
-@Generated(value = "RedisTestPrototype", comments = "RedisTestImpl")
+@Generated(value = "net.binis.codegen.redis.RedisTestPrototype", comments = "RedisTestImpl")
 @Default("net.binis.codegen.redis.RedisTestImpl")
 public interface RedisTest {
 

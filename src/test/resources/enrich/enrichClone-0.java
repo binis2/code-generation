@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.Map;
 import java.util.List;
 
-@Generated(value = "TestPrototype", comments = "Test")
+@Generated(value = "net.binis.codegen.TestPrototype", comments = "Test")
 public class TestImpl implements Test {
 
     protected List<Long> list;

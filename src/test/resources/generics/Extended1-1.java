@@ -4,7 +4,7 @@ package net.binis.codegen.test;
 import net.binis.codegen.objects.Payload;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "GenericPrototype", comments = "GenericImpl")
+@Generated(value = "net.binis.codegen.test.GenericPrototype", comments = "GenericImpl")
 public interface Generic<T extends Payload> {
     T getPayload();
 
