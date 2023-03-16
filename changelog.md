@@ -1,4 +1,9 @@
 # Change Log
+**12-03-2023** ver. 1.0.3
+* IDEA Plugin: Initial version.
+* Generation: Changed generation information to contain full class name of the prototype.
+* Projections: Engine now respects projection's annotations. 
+
 **26-02-2023** ver. 1.0.2
 * Core: Added generic mapping handling for interfaces.
 * Code: Added Serializable handling via Mapper.
