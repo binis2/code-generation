@@ -1,4 +1,9 @@
 # Change Log
+**18-03-2023** ver. 1.0.4
+* Core: Extended tools section.
+* Generator: Removed dependencies to Spring packages.
+* IDEA Plugin: Added find usages functionality.
+
 **12-03-2023** ver. 1.0.3
 * IDEA Plugin: Initial version.
 * Generation: Changed generation information to contain full class name of the prototype.
