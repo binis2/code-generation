@@ -34,9 +34,11 @@ import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
+import net.binis.codegen.objects.Pair;
 import net.binis.codegen.tools.CollectionUtils;
 import org.apache.commons.cli.*;
 
+import javax.lang.model.element.Element;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -47,13 +49,13 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.generation.core.Structures.Parsed;
-import static net.binis.codegen.tools.Tools.*;
+import static net.binis.codegen.tools.Tools.nullCheck;
+import static net.binis.codegen.tools.Tools.with;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Slf4j
@@ -92,9 +94,8 @@ public class CodeGen {
         lookup.parsed().stream().filter(PrototypeDescription::isProcessed).filter(p -> !p.isNested() || isNull(p.getParentClassName())).forEach(p -> {
             saveParsed(destination, impl_destination, p);
         });
-        lookup.custom().forEach(p -> {
-            saveParsed(destination, impl_destination, p);
-        });
+        lookup.custom().forEach(p ->
+            saveParsed(destination, impl_destination, p));
     }
 
     private static void saveParsed(String destination, String impl_destination, PrototypeDescription<ClassOrInterfaceDeclaration> p) {
@@ -115,7 +116,7 @@ public class CodeGen {
                 log.info("Parsed {} - {}", fileName, parse.toString());
                 parse.getResult().ifPresent(u ->
                         u.getTypes().forEach(t ->
-                                handleType(parser, t, fileName)));
+                                handleType(parser, t, fileName, null)));
             } catch (IOException e) {
                 log.error("Unable to parse {}", file.getFileName(), e);
             }
@@ -139,18 +140,18 @@ public class CodeGen {
         });
     }
 
-    public static void processSources(List<String> files) {
+    public static void processSources(List<Pair<String, Element>> files) {
         var parser = new JavaParser();
         for (var file : files) {
             try {
-                var parse = parser.parse(file);
+                var parse = parser.parse(file.getKey());
                 var unit = parse.getResult().orElseThrow(() -> new GenericCodeGenException("Can't parse file '" + file + "'!"));
                 var pack = unit.getPackageDeclaration().orElseThrow(() -> new GenericCodeGenException("'" + file + "' have no package declaration!"));
                 var fileName = pack.getNameAsString().replace('.', '/') + '/' + unit.getType(0).getNameAsString();
                 log.info("Parsed {} - {}", fileName, parse);
                 parse.getResult().ifPresent(u ->
                         u.getTypes().forEach(t ->
-                                handleType(parser, t, fileName)));
+                                handleType(parser, t, fileName, file.getValue())));
             } catch (Exception e) {
                 log.error("Unable to parse {}", file, e);
             }
@@ -176,7 +177,7 @@ public class CodeGen {
 
 
     @SuppressWarnings("unchecked")
-    public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName) {
+    public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName, Element element) {
         var pack = t.findCompilationUnit().get().getPackageDeclaration().orElseThrow(() -> new GenericCodeGenException("'" + fileName + "' have no package declaration!"));
         var className = pack.getNameAsString() + '.' + t.getNameAsString();
         if (t.getAnnotationByName("ConstantPrototype").isPresent()) {
@@ -187,6 +188,7 @@ public class CodeGen {
                             .prototypeFileName(fileName)
                             .prototypeClassName(className)
                             .parser(parser)
+                            .element(element)
                             .build());
         } else {
             var name = getClassName(t);
@@ -198,6 +200,7 @@ public class CodeGen {
                             .prototypeFileName(fileName)
                             .prototypeClassName(className)
                             .parser(parser)
+                            .element(element)
                             .build());
         }
     }

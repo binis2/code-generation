@@ -48,12 +48,13 @@ import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Holder;
+import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
-import org.springframework.cglib.core.CodeGenerationException;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.TypeVariable;
 import java.util.*;
@@ -70,6 +71,8 @@ import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
 public class Helpers {
+
+    public static final Class<?> NAME_DISCOVERER = loadClass("org.springframework.core.StandardReflectionParameterNameDiscoverer");
 
     public static final Set<String> knownClassAnnotations = Set.of(
             "jakarta.persistence.OneToOne",
@@ -1060,6 +1063,18 @@ public class Helpers {
         return parsed.getDeclaration().getAnnotationByClass(annotation).isPresent();
     }
 
+    public static boolean hasAnnotation(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, String name) {
+        return parsed.getDeclaration().getAnnotations().stream().map(a -> getExternalClassName(parsed.getDeclarationUnit(), a.getNameAsString())).anyMatch(name::equals);
+    }
+
+    public static boolean hasAnnotation(NodeWithAnnotations<?> node, String name) {
+        if (node instanceof Node n) {
+            return node.getAnnotations().stream().map(a -> getExternalClassName(n, a.getNameAsString())).anyMatch(name::equals);
+        } else {
+            return false;
+        }
+    }
+
     public static void importClass(CompilationUnit unit, Class<?> cls) {
         if (!cls.isPrimitive() && !"java.lang".equals(cls.getPackageName())) {
             unit.addImport(cls.getCanonicalName());
@@ -1238,5 +1253,22 @@ public class Helpers {
         }
     }
 
+    public static String[] getParameterNames(Method method) {
 
+        if (nonNull(NAME_DISCOVERER)) {
+            var discoverer = CodeFactory.create(NAME_DISCOVERER);
+            if (nonNull(discoverer) && Reflection.invoke("getParameterNames", discoverer, method) instanceof String[] names) {
+                return names;
+            }
+        }
+
+        return (String[]) Arrays.stream(method.getParameters()).map(Parameter::getName).toArray();
+    }
+
+    public static Optional<AnnotationExpr> getAnnotationByFullName(TypeDeclaration<?> type, String name) {
+        return type.getAnnotations().stream()
+                .filter(exp ->
+                        name.equals(getExternalClassName(type, exp.getNameAsString())))
+                .findFirst();
+    }
 }

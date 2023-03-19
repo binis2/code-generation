@@ -49,7 +49,6 @@ import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.core.StandardReflectionParameterNameDiscoverer;
 
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
@@ -487,7 +486,7 @@ public class Generator {
 
     public static Optional<AnnotationExpr> getCodeAnnotation(TypeDeclaration<?> type) {
         for (var name : Structures.defaultProperties.keySet()) {
-            var ann = type.getAnnotationByName(name);
+            var ann = Helpers.getAnnotationByFullName(type, name);
             if (ann.isPresent()) {
                 return ann;
             }
@@ -732,7 +731,7 @@ public class Generator {
         var iName = Holder.of(defaultInterfaceName(type));
         var cName = defaultClassName(type);
 
-        var builder = Structures.builder(prototype.getNameAsString());
+        var builder = Structures.builder(getExternalClassName(prototype, prototype.getNameAsString()));
 
         nullCheck(getExternalClassNameIfExists(prototype, prototype.getNameAsString()), clsName ->
                 nullCheck(loadClass(clsName), cls -> builder.prototypeAnnotation((Class) cls)));
@@ -1915,7 +1914,7 @@ public class Generator {
             var unit = spec.findCompilationUnit().get();
             var method = spec.addMethod(declaration.getName());
             method.setType(mapGenericMethodSignature(declaration, signature));
-            var names = new StandardReflectionParameterNameDiscoverer().getParameterNames(declaration);
+            var names = getParameterNames(declaration);
             for (var i = 0; i < declaration.getParameterCount(); i++) {
                 var param = declaration.getParameters()[i];
                 if (declaration.getGenericParameterTypes()[i] instanceof ParameterizedType) {

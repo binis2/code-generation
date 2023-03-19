@@ -32,11 +32,6 @@ import java.util.List;
 @Slf4j
 class BasicsTest extends BaseCodeGenTest {
 
-    @BeforeEach
-    public void cleanUp() {
-        Helpers.cleanUp();
-    }
-
     @Test
     void test() {
         testSingle("basic/Test1.java", "basic/Test1-0.java", "basic/Test1-1.java");

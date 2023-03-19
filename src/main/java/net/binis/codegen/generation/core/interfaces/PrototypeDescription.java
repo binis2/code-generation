@@ -31,6 +31,7 @@ import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.options.CodeOption;
 import org.apache.commons.lang3.tuple.Triple;
 
+import javax.lang.model.element.Element;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -89,6 +90,8 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     boolean isCodeEnum();
 
     String getParentClassName();
+
+    Element getElement();
 
     ClassOrInterfaceDeclaration getParent();
 

@@ -44,10 +44,10 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.generation.core.types.ModifierType;
 import net.binis.codegen.options.Options;
+import net.binis.codegen.tools.CollectionUtils;
 import net.binis.codegen.tools.ContextInterpolator;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -120,7 +120,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
 
     protected boolean hasChildren(PrototypeField field) {
         var result = hasForm(field.getPrototype());
-        if (!result && !CollectionUtils.isEmpty(field.getTypePrototypes())) {
+        if (!result && CollectionUtils.isNotEmpty(field.getTypePrototypes())) {
             result = field.getTypePrototypes().values().stream().anyMatch(this::hasForm);
         }
         return result;

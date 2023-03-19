@@ -32,11 +32,6 @@ import java.util.List;
 
 class CustomPrototypeTest extends BaseCodeGenTest {
 
-    @BeforeEach
-    public void cleanUp() {
-        Helpers.cleanUp();
-    }
-
     @Test
     void test() {
         testMulti(List.of(

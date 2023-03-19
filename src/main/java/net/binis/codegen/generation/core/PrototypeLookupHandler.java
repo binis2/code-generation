@@ -32,6 +32,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.RoundEnvironment;
 import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -58,6 +59,11 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     @Getter
     @Setter
     private ProcessingEnvironment processingEnvironment;
+
+    @Getter
+    @Setter
+    private RoundEnvironment roundEnvironment;
+
 
     @SuppressWarnings("unchecked")
     @Override

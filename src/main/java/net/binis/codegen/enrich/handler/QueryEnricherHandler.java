@@ -32,14 +32,13 @@ import com.github.javaparser.ast.stmt.ReturnStmt;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.enrich.QueryEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
+import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.Constants;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
-import net.binis.codegen.spring.annotation.Joinable;
-import net.binis.codegen.spring.annotation.QueryFragment;
-import org.springframework.core.StandardReflectionParameterNameDiscoverer;
+import net.binis.codegen.tools.Reflection;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -94,6 +93,9 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     private static final String QUERY_BRACKET = "QueryBracket";
     private static final String QUERY_IMPL = "Impl";
     private static final String PRESET_PREFIX = "__";
+
+    protected static final String JOINABLE = "net.binis.codegen.spring.annotation.Joinable";
+    protected static final String QUERY_FRAGMENT = "net.binis.codegen.spring.annotation.QueryFragment";
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
@@ -262,7 +264,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         description.registerClass(Constants.QUERY_OPERATION_FIELDS_INTF_KEY, qOpFields);
         description.registerClass(Constants.QUERY_FUNCTIONS_INTF_KEY, qFuncs);
 
-        if (Helpers.hasAnnotation(description, Joinable.class)) {
+        if (Helpers.hasAnnotation(description, JOINABLE)) {
             Helpers.addInitializer(description, description.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) expression("() -> " + description.getInterface().getNameAsString() + ".find().aggregate()"), false);
         }
     }
@@ -528,7 +530,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .filter(BodyDeclaration::isMethodDeclaration)
                 .map(BodyDeclaration::asMethodDeclaration)
                 .filter(MethodDeclaration::isDefault)
-                .filter(m -> m.isAnnotationPresent(QueryFragment.class)).forEach(method ->
+                .filter(m -> Helpers.hasAnnotation(m, QUERY_FRAGMENT)).forEach(method ->
                         method.getBody().ifPresent(body -> {
                             if (body.getStatements().size() == 1) {
                                 if (!methodExists(select, method, calcPresetName(method.getNameAsString()), false)) {
@@ -550,7 +552,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                     } else {
                         Arrays.stream(parsed.getCompiled().getDeclaredMethods())
                                 .filter(Method::isDefault)
-                                .filter(m -> nonNull(m.getAnnotation(QueryFragment.class)))
+                                .filter(m -> Arrays.stream(m.getAnnotations()).anyMatch(a -> a.annotationType().getCanonicalName().equals(QUERY_FRAGMENT)))
                                 .forEach(method -> {
                                     if (!methodExists(select, calcPresetName(method.getName()), method, false)) {
                                         if (String.class.equals(method.getReturnType())) {
@@ -574,7 +576,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         };
         try {
             var proxy = cls.cast(Proxy.newProxyInstance(
-                    cls.getClassLoader(), new Class<?>[] {cls}, handler));
+                    cls.getClassLoader(), new Class<?>[]{cls}, handler));
 
             var mtd = Arrays.stream(proxy.getClass().getDeclaredMethods())
                     .filter(m -> m.getName().equals(method.getName()))
@@ -682,9 +684,9 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
     }
 
     private void copyCompiledParameters(Method method, MethodDeclaration dest) {
-        var names = new StandardReflectionParameterNameDiscoverer().getParameterNames(method);
+        var names = getParameterNames(method);
         if (isNull(names)) {
-            log.info("Project is compiled without '-parameters' argument. Thus why the actual parameter names can't be extracted!");
+            log.info("Project is compiled without '-parameters' argument or code-generation-spring module is not in the class path. Thus why the actual parameter names can't be extracted!");
         }
         var params = method.getParameters();
         var unit = dest.findCompilationUnit().get();
@@ -701,6 +703,18 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 //                }
             }
         }
+    }
+
+    private String[] getParameterNames(Method method) {
+
+        if (nonNull(NAME_DISCOVERER)) {
+            var discoverer = CodeFactory.create(NAME_DISCOVERER);
+            if (nonNull(discoverer) && Reflection.invoke("getParameterNames", discoverer, method) instanceof String[] names) {
+                return names;
+            }
+        }
+
+        return null;
     }
 
     private String handlePresetParameters(PrototypeDescription<ClassOrInterfaceDeclaration> description, String expression) {

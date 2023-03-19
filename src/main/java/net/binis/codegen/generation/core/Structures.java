@@ -47,6 +47,7 @@ import net.binis.codegen.options.CodeOption;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 
+import javax.lang.model.element.Element;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -57,6 +58,8 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.Helpers.getExternalClassName;
+import static net.binis.codegen.tools.Reflection.getFieldValue;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.with;
 
@@ -297,6 +300,8 @@ public class Structures {
         protected CompilationUnit interfaceUnit;
         protected CompilationUnit implementationUnit;
 
+        protected Element element;
+
         @Builder.Default
         @EqualsAndHashCode.Exclude
         @ToString.Exclude
@@ -413,8 +418,8 @@ public class Structures {
         protected String id;
 
         @Builder(builderMethodName = "bldr")
-        public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, CompilationUnit declarationUnit, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean codeEnum, String parentClassName, ClassOrInterfaceDeclaration parent, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, CompilationUnit interfaceUnit, CompilationUnit implementationUnit, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
-            super(processed, invalid, parser, compiled, prototypeFileName, prototypeClassName, properties, parsedName, parsedFullName, interfaceName, interfaceFullName, constants, declaration, declarationUnit, files, custom, base, mixIn, nested, codeEnum, parentClassName, parent, embeddedModifierType, classes, fields, spec, intf, interfaceUnit, implementationUnit, initializers, customInitializers, postProcessActions);
+        public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, CompilationUnit declarationUnit, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean codeEnum, String parentClassName, ClassOrInterfaceDeclaration parent, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, CompilationUnit interfaceUnit, CompilationUnit implementationUnit, Element element, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
+            super(processed, invalid, parser, compiled, prototypeFileName, prototypeClassName, properties, parsedName, parsedFullName, interfaceName, interfaceFullName, constants, declaration, declarationUnit, files, custom, base, mixIn, nested, codeEnum, parentClassName, parent, embeddedModifierType, classes, fields, spec, intf, interfaceUnit, implementationUnit, element, initializers, customInitializers, postProcessActions);
             this.id = id;
             this.files = initFiles();
         }
@@ -493,11 +498,11 @@ public class Structures {
     @SuppressWarnings("unchecked")
     public static void registerTemplate(Class<?> ann) {
         if (Annotation.class.isAssignableFrom(ann)) {
-            defaultProperties.put(ann.getSimpleName(), () -> {
+            defaultProperties.put(ann.getCanonicalName(), () -> {
                 var builder = defaultBuilder();
 
                 for (var a : ann.getAnnotations()) {
-                    if (defaultProperties.containsKey(a.annotationType().getSimpleName())) {
+                    if (defaultProperties.containsKey(a.annotationType().getCanonicalName())) {
                         readAnnotation(a, a.annotationType(), builder, Structures::readAnnotationValue);
                     }
                 }
@@ -513,11 +518,11 @@ public class Structures {
 
     @SuppressWarnings("unchecked")
     public static void registerTemplate(AnnotationDeclaration template) {
-        defaultProperties.put(template.getNameAsString(), () -> {
+        defaultProperties.put(template.getFullyQualifiedName().get(), () -> {
             var builder = defaultBuilder();
 
             template.getAnnotations().stream()
-                    .filter(a -> defaultProperties.containsKey(a.getNameAsString()))
+                    .filter(a -> defaultProperties.containsKey(getExternalClassName(template, a.getNameAsString())))
                     .forEach(a -> readAnnotation(a, builder));
 
             template.getMembers().stream()
@@ -560,7 +565,7 @@ public class Structures {
                             case "implementationPackage" ->
                                     builder.classPackage(handleStringExpression(member.getDefaultValue().get()));
                             case "strategy" ->
-                                    builder.strategy((GenerationStrategy) handleEnumExpression(member.getDefaultValue().get()));
+                                    builder.strategy(handleEnumExpression(member.getDefaultValue().get(), GenerationStrategy.class));
                             default -> builder.custom(member.getNameAsString(), member.getDefaultValue().get());
                         }
                     });
@@ -745,8 +750,17 @@ public class Structures {
         return null;
     }
 
-    private static Enum handleEnumExpression(Expression expression) {
+    private static <T extends Enum> T handleEnumExpression(Expression expression, Class<T> cls) {
+        if (expression.isFieldAccessExpr()) {
+            var result = Arrays.stream(cls.getEnumConstants()).filter(c -> c.name().equals(expression.asFieldAccessExpr().getNameAsString())).findFirst();
+            if (result.isPresent()) {
+                return result.get();
+            } else {
+                log.error("Unknown enum constant - {}", expression);
+            }
+        }
         throw new UnsupportedOperationException("Not implemented");
+
     }
 
     private static boolean handleBooleanExpression(Expression expression) {

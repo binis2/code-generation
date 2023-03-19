@@ -26,6 +26,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.RoundEnvironment;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,9 @@ public interface PrototypeLookup {
 
     ProcessingEnvironment getProcessingEnvironment();
     void setProcessingEnvironment(ProcessingEnvironment processingEnv);
+
+    RoundEnvironment getRoundEnvironment();
+    void setRoundEnvironment(RoundEnvironment roundEnv);
 
     CustomDescription createCustomDescription(String id);
     CustomDescription getCustomDescription(String id);

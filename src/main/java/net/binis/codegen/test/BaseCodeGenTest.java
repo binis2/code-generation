@@ -134,7 +134,7 @@ public abstract class BaseCodeGenTest {
 
             parse.getResult().ifPresent(u ->
                     u.getTypes().forEach(t ->
-                            CodeGen.handleType(parser, t, resource)));
+                            CodeGen.handleType(parser, t, resource, null)));
         });
     }
 
