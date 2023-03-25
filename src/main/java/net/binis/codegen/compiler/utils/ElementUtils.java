@@ -50,12 +50,12 @@ public class ElementUtils {
             return maker.Literal(CGTypeTag.DOUBLE, value);
         } else if (value instanceof Float) {
             return maker.Literal(CGTypeTag.FLOAT, value);
-        } else if (value instanceof Character) {
-            return maker.Literal(CGTypeTag.CHAR, value);
+        } else if (value instanceof Character c) {
+            return maker.Literal(CGTypeTag.CHAR, (int) c);
         } else if (value instanceof Short) {
-            return maker.Literal(CGTypeTag.SHORT, value);
+            return maker.TypeCast(maker.TypeIdent(CGTypeTag.SHORT), maker.Literal(CGTypeTag.INT, value));
         } else if (value instanceof Byte) {
-            return maker.Literal(CGTypeTag.BYTE, value);
+            return maker.TypeCast(maker.TypeIdent(CGTypeTag.BYTE), maker.Literal(CGTypeTag.INT, value));
         } else if (value instanceof Enum) {
             var symbol = maker.getSymbol(value.getClass().getCanonicalName());
             return maker.Select(maker.QualIdent(symbol), Name.create(value.toString()));

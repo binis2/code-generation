@@ -30,43 +30,36 @@ public class TreeMaker extends BaseJavaCompilerObject {
     }
 
     public CGExpression QualIdent(CGSymbol sym) {
-        //TODO: Optimize it!
         var method = findMethod("QualIdent", instance.getClass(), CGSymbol.theClass());
         return new CGExpression(invoke(method, instance, sym.getInstance()));
     }
 
     public CGAnnotation Annotation(CGExpression annotationType, CGList<CGExpression> args) {
-        //TODO: Optimize it!
-        var method = findMethod("Annotation", instance.getClass(), loadClass("com.sun.tools.javac.tree.JCTree"), CGList.theClass());
+        var method = findMethod("Annotation", instance.getClass(), CGTree.theClass(), CGList.theClass());
         return new CGAnnotation(invoke(method, instance, annotationType.getInstance(), args.getInstance()));
     }
 
     public CGAssign Assign(CGExpression lhs, CGExpression rhs) {
-        //TODO: Optimize it!
         var method = findMethod("Assign", instance.getClass(), CGExpression.theClass(), CGExpression.theClass());
         return new CGAssign(invoke(method, instance, lhs.getInstance(), rhs.getInstance()));
     }
 
     public CGIdent Ident(Name name) {
-        //TODO: Optimize it!
         var method = findMethod("Ident", instance.getClass(), Name.theClass());
         return new CGIdent(invoke(method, instance, name.getInstance()));
     }
 
     public CGLiteral Literal(CGTypeTag tag, Object value) {
-        //TODO: Optimize it!
         var method = findMethod("Literal", instance.getClass(), CGTypeTag.theClass(), Object.class);
         return new CGLiteral(invoke(method, instance, tag.getInstance(), value));
     }
 
     public CGFieldAccess Select(CGExpression selected, Name selector) {
-        //TODO: Optimize it!
         var method = findMethod("Select", instance.getClass(), CGExpression.theClass(), Name.theClass());
         return new CGFieldAccess(invoke(method, instance, selected.getInstance(), selector.getInstance()));
     }
 
     public CGExpression Select(CGExpression base, CGSymbol sym) {
-        //TODO: Optimize it!
         var method = findMethod("Select", instance.getClass(), CGExpression.theClass(), CGSymbol.theClass());
         return new CGFieldAccess(invoke(method, instance, base.getInstance(), sym.getInstance()));
     }
@@ -74,14 +67,21 @@ public class TreeMaker extends BaseJavaCompilerObject {
     public CGNewArray NewArray(CGExpression elemtype,
                                CGList<CGExpression> dims,
                                CGList<CGExpression> elems) {
-        //TODO: Optimize it!
         var method = findMethod("NewArray", instance.getClass(), CGExpression.theClass(), CGList.theClass(), CGList.theClass());
         return new CGNewArray(invoke(method, instance, nonNull(elemtype) ? elemtype.getInstance() : null, dims.getInstance(), elems.getInstance()));
     }
 
+    public CGPrimitiveTypeTree TypeIdent(CGTypeTag typetag) {
+        var method = findMethod("TypeIdent", instance.getClass(), CGTypeTag.theClass());
+        return new CGPrimitiveTypeTree(invoke(method, instance, typetag.getInstance()));
+    }
+
+    public CGTypeCast TypeCast(CGTree clazz, CGExpression expr) {
+        var method = findMethod("TypeCast", instance.getClass(), CGTree.theClass(), CGExpression.theClass());
+        return new CGTypeCast(invoke(method, instance, clazz.getInstance(), expr.getInstance()));
+    }
 
     public CGSymbol getSymbol(String className) {
-        //TODO: Optimize it!
         var compilerClass = loadClass("com.sun.tools.javac.main.JavaCompiler");
         var compiler = invokeStatic("instance", compilerClass, context);
         return new CGSymbol(invoke("resolveBinaryNameOrIdent", compiler, className));
