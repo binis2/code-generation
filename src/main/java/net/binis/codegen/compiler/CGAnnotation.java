@@ -34,8 +34,14 @@ public class CGAnnotation extends CGExpression {
         return annotationType;
     }
 
-    private void onModify(CGList<CGExpression> list) {
+    public void setArguments(CGList<CGExpression> list) {
+        onModify(list);
+    }
+
+    protected void onModify(CGList<CGExpression> list) {
         setFieldValue(instance, "args", list.getInstance());
         arguments = list;
     }
+
+
 }
