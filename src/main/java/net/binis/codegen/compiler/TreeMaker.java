@@ -3,6 +3,7 @@ package net.binis.codegen.compiler;
 import com.sun.source.util.Trees;
 import net.binis.codegen.compiler.base.BaseJavaCompilerObject;
 
+import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.*;
 
 public class TreeMaker extends BaseJavaCompilerObject {
@@ -62,6 +63,20 @@ public class TreeMaker extends BaseJavaCompilerObject {
         //TODO: Optimize it!
         var method = findMethod("Select", instance.getClass(), CGExpression.theClass(), Name.theClass());
         return new CGFieldAccess(invoke(method, instance, selected.getInstance(), selector.getInstance()));
+    }
+
+    public CGExpression Select(CGExpression base, CGSymbol sym) {
+        //TODO: Optimize it!
+        var method = findMethod("Select", instance.getClass(), CGExpression.theClass(), CGSymbol.theClass());
+        return new CGFieldAccess(invoke(method, instance, base.getInstance(), sym.getInstance()));
+    }
+
+    public CGNewArray NewArray(CGExpression elemtype,
+                               CGList<CGExpression> dims,
+                               CGList<CGExpression> elems) {
+        //TODO: Optimize it!
+        var method = findMethod("NewArray", instance.getClass(), CGExpression.theClass(), CGList.theClass(), CGList.theClass());
+        return new CGNewArray(invoke(method, instance, nonNull(elemtype) ? elemtype.getInstance() : null, dims.getInstance(), elems.getInstance()));
     }
 
 
