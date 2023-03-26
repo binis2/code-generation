@@ -1,4 +1,10 @@
 # Change Log
+**26-03-2023** ver. 1.0.5
+* Generation: Added experimental class annotations' manipulation.
+* Generation: Added option for expression prefix with string interpolation.
+* Validation: Added method based validation/sanitization annotations generation.
+* Annotation Processor: Added support for custom generated classes.
+
 **18-03-2023** ver. 1.0.4
 * Core: Extended tools section.
 * Generator: Removed dependencies to Spring packages.
