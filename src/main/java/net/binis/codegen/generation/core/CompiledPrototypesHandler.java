@@ -48,7 +48,6 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.EnrichHelpers.block;
 import static net.binis.codegen.generation.core.Generator.generateCodeForClass;
-import static net.binis.codegen.generation.core.Generator.generateCodeForEnum;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.notNull;

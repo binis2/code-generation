@@ -1,0 +1,2 @@
+template:net.binis.codegen.enrich.annotation.Validator
+template:net.binis.codegen.enrich.annotation.Sanitizer

@@ -27,6 +27,7 @@ import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.BlockComment;
 import com.github.javaparser.ast.expr.*;
+import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -50,11 +51,15 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.lang.model.element.Element;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
-import java.util.function.*;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
@@ -64,7 +69,6 @@ import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handle
 import static net.binis.codegen.generation.core.EnrichHelpers.expression;
 import static net.binis.codegen.generation.core.EnrichHelpers.returnBlock;
 import static net.binis.codegen.generation.core.Helpers.*;
-import static net.binis.codegen.generation.core.Helpers.getParsed;
 import static net.binis.codegen.generation.core.Structures.VALUE;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
@@ -91,20 +95,27 @@ public class Generator {
 
         for (var type : parser.getTypes()) {
             if (type.isClassOrInterfaceDeclaration()) {
-                getCodeAnnotation(type).ifPresent(prototype -> {
+                getCodeAnnotation(type).ifPresentOrElse(prototype -> {
+                    type.asClassOrInterfaceDeclaration().getMethods().forEach(method ->
+                            getCodeAnnotation(method).ifPresent(proto ->
+                                    generateCodeForMethod(parser, prsd, method, proto, null)));
                     if (type.asClassOrInterfaceDeclaration().isInterface()) {
                         generateCodeForPrototype(parser, prsd, type, prototype);
                         processed.set(processed.get() + 1);
                     } else if (processForClass(parser, prsd, type, prototype)) {
                         processed.set(processed.get() + 1);
                     }
-                });
+                }, () ->
+                        type.asClassOrInterfaceDeclaration().getMethods().forEach(method ->
+                                getCodeAnnotation(method).ifPresent(prototype ->
+                                        generateCodeForMethod(parser, prsd, method, prototype, null))));
             } else if (type.isEnumDeclaration()) {
                 getCodeAnnotation(type).ifPresent(prototype -> {
                     generateCodeForEnum(parser, prsd, type, prototype);
                     processed.set(processed.get() + 1);
                 });
             }
+            Generator.generateCodeForMethods(prsd);
         }
 
         if (!notProcessed.isEmpty()) {
@@ -122,6 +133,18 @@ public class Generator {
 
         if (prsd != null && processed.get() == 0) {
             ((Structures.Parsed) prsd).setInvalid(true);
+        }
+    }
+
+    private static void generateCodeForMethod(CompilationUnit unit, PrototypeDescription<ClassOrInterfaceDeclaration> prsd, MethodDeclaration method, AnnotationExpr prototype, Element element) {
+        if (!prsd.getMethods().containsKey(method.getNameAsString())) {
+            prsd.getMethods().put(method.getNameAsString(), Structures.ParsedMethodDescription.builder()
+                    .method(method)
+                    .element(element)
+                    .prototype(prototype)
+                    .properties(getProperties(prototype))
+                    .description(prsd)
+                    .build());
         }
     }
 
@@ -156,7 +179,7 @@ public class Generator {
             case CLASSIC -> handleClassicStrategy(prsd, type, typeDeclaration, properties);
             case IMPLEMENTATION -> handleImplementationStrategy(prsd, type, typeDeclaration, properties);
             case PLAIN -> handlePlainStrategy(prsd, type, typeDeclaration, properties);
-            case NONE -> handleNoneStrategy(prsd, type, typeDeclaration, properties);
+            case METHOD, NONE -> handleNoneStrategy(prsd, type, typeDeclaration, properties);
         };
 
         processingTypes.remove(typeDeclaration.getNameAsString());
@@ -366,11 +389,12 @@ public class Generator {
     }
 
     private static Structures.Parsed handlePlainStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
+        //TODO: Generate empty interface and implementation
         throw new NotImplementedException();
     }
 
     private static Structures.Parsed handleNoneStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
-        var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
+        var parse = (Structures.Parsed) prsd;
 
         parse.setProperties(properties);
         return parse;
@@ -471,12 +495,9 @@ public class Generator {
             var statement = Holder.of("");
             ann.getChildNodes().stream().filter(MemberValuePair.class::isInstance).map(MemberValuePair.class::cast).forEach(pair -> {
                 switch (pair.getNameAsString()) {
-                    case "field" ->
-                            statement.set("this." + pair.getValue().asStringLiteralExpr().asString() + " = " + statement.get());
-                    case "expression" ->
-                            statement.set(statement.get() + pair.getValue().asStringLiteralExpr().asString() + ";");
-                    case "imports" ->
-                            pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
+                    case "field" -> statement.set("this." + pair.getValue().asStringLiteralExpr().asString() + " = " + statement.get());
+                    case "expression" -> statement.set(statement.get() + pair.getValue().asStringLiteralExpr().asString() + ";");
+                    case "imports" -> pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
                     default -> log.warn("Invalid @Initialize member {}", pair.getNameAsString());
                 }
             });
@@ -484,15 +505,12 @@ public class Generator {
         });
     }
 
-    public static Optional<AnnotationExpr> getCodeAnnotation(TypeDeclaration<?> type) {
+    public static Optional<AnnotationExpr> getCodeAnnotation(BodyDeclaration<?> type) {
         for (var name : Structures.defaultProperties.keySet()) {
             var ann = Helpers.getAnnotationByFullName(type, name);
             if (ann.isPresent()) {
                 return ann;
             }
-        }
-        if (type.isClassOrInterfaceDeclaration() && type.asClassOrInterfaceDeclaration().getAnnotationByClass(CodeClassAnnotations.class).isEmpty()) {
-            log.warn("Type {} is not annotated with Code annotation!", type.getName());
         }
         return Optional.empty();
     }
@@ -727,9 +745,13 @@ public class Generator {
 
     @SuppressWarnings("unchecked")
     private static Structures.PrototypeDataHandler getProperties(AnnotationExpr prototype) {
-        var type = (ClassOrInterfaceDeclaration) prototype.getParentNode().get();
-        var iName = Holder.of(defaultInterfaceName(type));
-        var cName = defaultClassName(type);
+        var type = (BodyDeclaration) prototype.getParentNode().get();
+        var iName = Holder.of("");
+        var cName = "";
+        if (type.isClassOrInterfaceDeclaration()) {
+            iName.set(defaultInterfaceName((ClassOrInterfaceDeclaration) type));
+            cName = defaultClassName((ClassOrInterfaceDeclaration) type);
+        }
 
         var builder = Structures.builder(getExternalClassName(prototype, prototype.getNameAsString()));
 
@@ -847,12 +869,12 @@ public class Generator {
 
         var result = builder.build();
 
-        if (isNull(result.getClassPackage())) {
-            result.setClassPackage(defaultClassPackage(type));
+        if (isNull(result.getClassPackage()) && type.isClassOrInterfaceDeclaration()) {
+            result.setClassPackage(defaultClassPackage((ClassOrInterfaceDeclaration) type));
         }
 
-        if (isNull(result.getInterfacePackage())) {
-            result.setInterfacePackage(defaultInterfacePackage(type));
+        if (isNull(result.getInterfacePackage()) && type.isClassOrInterfaceDeclaration()) {
+            result.setInterfacePackage(defaultInterfacePackage((ClassOrInterfaceDeclaration) type));
         }
 
         if (isNull(result.getEnrichers())) {
@@ -2226,6 +2248,14 @@ public class Generator {
         return null;
     }
 
+    public static void generateCodeForMethods(PrototypeDescription<ClassOrInterfaceDeclaration> prsd) {
+        for (var method : prsd.getMethods().values()) {
+            handleEnrichersSetup(method.getProperties());
+
+            Helpers.handleEnrichers(method);
+        }
+    }
+
     private static void mergeConstants(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination) {
 //        mergeImports(source.findCompilationUnit().get(), destination.findCompilationUnit().get());
 //
@@ -2271,5 +2301,4 @@ public class Generator {
 //            }
 //        }
     }
-
 }

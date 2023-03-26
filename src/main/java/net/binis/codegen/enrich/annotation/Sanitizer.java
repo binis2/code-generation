@@ -1,10 +1,10 @@
-package net.binis.codegen.prototype;
+package net.binis.codegen.enrich.annotation;
 
 /*-
  * #%L
- * code-generation-test
+ * code-generator
  * %%
- * Copyright (C) 2021 - 2022 Binis Belev
+ * Copyright (C) 2021 - 2023 Binis Belev
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,16 @@ package net.binis.codegen.prototype;
  */
 
 import net.binis.codegen.annotation.CodePrototype;
-import net.binis.codegen.enrich.ElementInsertionTestEnricher;
+import net.binis.codegen.annotation.CodePrototypeTemplate;
+import net.binis.codegen.annotation.type.GenerationStrategy;
+import net.binis.codegen.enrich.handler.SanitizerEnricher;
 
-@CodePrototype(enrichers = ElementInsertionTestEnricher.class)
-public interface ElementTestPrototype {
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 
-    long id();
-
+@CodePrototypeTemplate
+@CodePrototype(strategy = GenerationStrategy.METHOD, enrichers = SanitizerEnricher.class)
+@Target({ElementType.METHOD})
+public @interface Sanitizer {
+    String message() default "";
 }

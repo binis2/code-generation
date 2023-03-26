@@ -20,12 +20,16 @@ package net.binis.codegen.enrich;
  * #L%
  */
 
+import com.github.javaparser.ast.body.TypeDeclaration;
+
 public interface GeneratedFile {
 
     String getId();
     String getPath();
     String getContent();
+    TypeDeclaration getJavaClass();
     void setPath(String path);
     void setContent(String content);
+    void setJavaClass(TypeDeclaration cls);
 
 }

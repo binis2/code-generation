@@ -47,6 +47,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
@@ -155,6 +156,13 @@ public abstract class BaseCodeGenTest {
         }
     }
 
+    protected void compare(CompilationUnit unit, TypeDeclaration type) {
+        if (nonNull(type)) {
+            assertEquals(getAsString(type.findCompilationUnit().get()), getAsString(unit), type.getFullyQualifiedName().get().toString());
+        }
+    }
+
+
     protected void testSingleExecute(String prototype, String resClass, String resInterface, String resExecute) {
         testSingleExecute(prototype, resClass, resInterface, null, 1, resExecute, false, false, false);
     }
@@ -169,6 +177,10 @@ public abstract class BaseCodeGenTest {
 
     protected void testSingle(String prototype, String resClass, String resInterface) {
         testSingle(prototype, resClass, resInterface, null, 1);
+    }
+
+    protected void testSingleWithCustom(String prototype, String resClass, String resInterface, String... custom) {
+        testSingleExecute(prototype, resClass, resInterface, null, 1, null, false, false, false, custom);
     }
 
     protected void testSingle(String prototype, String resClass, String resInterface, String pathToSave) {
@@ -193,7 +205,7 @@ public abstract class BaseCodeGenTest {
     }
 
     @SuppressWarnings("unchecked")
-    protected void testSingleExecute(String prototype, String resClass, String resInterface, String pathToSave, int expected, String resExecute, boolean skipCompilation, boolean includePrototype, boolean skipPrototypeCompilation) {
+    protected void testSingleExecute(String prototype, String resClass, String resInterface, String pathToSave, int expected, String resExecute, boolean skipCompilation, boolean includePrototype, boolean skipPrototypeCompilation, String... custom) {
         var list = newList();
         load(list, prototype);
         if (!skipPrototypeCompilation) {
@@ -208,11 +220,25 @@ public abstract class BaseCodeGenTest {
             list2.add(list.get(0));
         }
 
+        var customTypes = loadCustom(custom);
+
+        lookup.parsed().forEach(p -> p.getCustomFiles().forEach((name, file) -> {
+            if (nonNull(file.getJavaClass())) {
+                var className = file.getJavaClass().getFullyQualifiedName().get().toString();
+                var type = customTypes.get(className);
+                if (nonNull(type)) {
+                    compare(file.getJavaClass().findCompilationUnit().get(), type);
+                    list2.add(Pair.of(className, getAsString(file.getJavaClass().findCompilationUnit().get())));
+                } else {
+                    fail("Can't find generated class: \n" + getAsString(file.getJavaClass().findCompilationUnit().get()));
+                }
+            }
+        }));
+
         var stream = lookup.generated().stream();
         if (lookup.generated().isEmpty()) {
             stream = (Stream) lookup.custom().stream();
         }
-
         stream.sorted((o1, o2) -> Boolean.compare(isNull(o1.getCompiled()), isNull(o2.getCompiled()))).forEach(parsed -> {
             if (isNull(parsed.getCompiled()) && (!parsed.isNested() || isNull(parsed.getParentClassName()))) {
                 if (nonNull(pathToSave)) {
@@ -234,14 +260,22 @@ public abstract class BaseCodeGenTest {
                             list2.add(Pair.of(parsed.getParsedFullName(), getAsString(file))));
                 }
             }
-
         });
 
         if (!skipCompilation) {
             var loader = new TestClassLoader();
             assertTrue(compile(loader, list2, resExecute));
         }
+    }
 
+    protected Map<String, TypeDeclaration> loadCustom(String... custom) {
+        var result = new HashMap<String, TypeDeclaration>();
+        for (var file : custom) {
+            var source = resourceAsString(file);
+            lookup.getParser().parse(source).ifSuccessful(unit ->
+                    result.put(unit.getType(0).getFullyQualifiedName().get(), unit.getType(0)));
+        }
+        return result;
     }
 
     protected void testMultiPass(List<Pair<List<Triple<String, String, String>>, Integer>> passes) {

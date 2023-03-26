@@ -21,36 +21,37 @@ package net.binis.codegen.tools;
  */
 
 import java.util.List;
+import java.util.Map;
 
-import static java.util.Objects.isNull;
-
-public class ContextInterpolator extends BaseStringInterpolator<ContextInterpolator.Context> {
+public class Interpolator extends BaseStringInterpolator<Interpolator.Context> {
 
     protected Context context;
-    protected ContextInterpolator.Context expression;
+    protected Interpolator.Context expression;
 
-    public static ContextInterpolator build(String string) {
-        var result = new ContextInterpolator(null);
+    public static Interpolator build(String string) {
+        var result = new Interpolator();
         result.expression = result.buildExpression(string);
         return result;
     }
 
-    public ContextInterpolator(Context context) {
+    public static Interpolator build(char identifier, String string) {
+        var result = new Interpolator();
+        result.identifier = identifier;
+        result.expression = result.buildExpression(string);
+        return result;
+    }
+
+
+    public Built with(Context context) {
         this.context = context;
+        return () -> expression.interpolate("");
     }
 
-    public static ContextInterpolator of(Context context) {
-        return new ContextInterpolator(context);
+    public Built params(Map<String, Object> map) {
+        this.context = param -> map.getOrDefault(param, param).toString();
+        return () -> expression.interpolate("");
     }
 
-    public Context with(Context context) {
-        this.context = context;
-        return expression;
-    }
-
-    public String interpolate(String string) {
-        return buildExpression(string).interpolate(string);
-    }
 
     protected Context buildConstantExpression(String exp) {
         return message -> exp;
@@ -67,17 +68,18 @@ public class ContextInterpolator extends BaseStringInterpolator<ContextInterpola
     }
 
     protected Context buildParamExpression(String exp) {
-        var param = context.interpolate(exp);
-        if (isNull(param)) {
-            param = exp;
-        }
-
-        return buildConstantExpression("{" + param + "}");
+        return message ->
+            context.interpolate(exp);
     }
 
     @FunctionalInterface
     public interface Context {
         String interpolate(String message);
+    }
+
+    @FunctionalInterface
+    public interface Built {
+        String interpolate();
     }
 
 }

@@ -27,6 +27,7 @@ import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
+import com.github.javaparser.ast.nodeTypes.NodeWithName;
 import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.stmt.BlockStmt;
@@ -44,6 +45,7 @@ import net.binis.codegen.enrich.PrototypeLookup;
 import net.binis.codegen.enrich.handler.*;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.factory.CodeFactory;
+import net.binis.codegen.generation.core.interfaces.MethodDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
@@ -892,6 +894,17 @@ public class Helpers {
         return list;
     }
 
+    private static List<PrototypeEnricher> getEnrichersList(MethodDescription method) {
+        var map = new HashMap<Class<?>, PrototypeEnricher>();
+
+        notNull(method.getProperties().getEnrichers(), l ->
+                l.forEach(e -> map.put(e.getClass(), e)));
+
+        var list = new ArrayList<>(map.values());
+        list.sort(Comparator.comparingInt(PrototypeEnricher::order).reversed());
+        return list;
+    }
+
     public static void handleEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
         getEnrichersList(parsed).forEach(e -> safeEnrich(e, parsed));
     }
@@ -937,7 +950,17 @@ public class Helpers {
         getEnrichersList(parsed).forEach(e -> e.postProcess(parsed));
     }
 
+    public static void handleEnrichers(MethodDescription method) {
+        getEnrichersList(method).forEach(e -> safeEnrich(e, method));
+    }
 
+    private static void safeEnrich(PrototypeEnricher enricher, MethodDescription method) {
+        try {
+            enricher.enrichMethod(method);
+        } catch (Exception e) {
+            log.error("Failed to enrich {} with {}", method.getMethod().getNameAsString(), enricher.getClass(), e);
+        }
+    }
     private static String calcModifierExpression(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         if (nonNull(description)) {
             var modClass = description.getRegisteredClass(EMBEDDED_MODIFIER_KEY);
@@ -1265,10 +1288,15 @@ public class Helpers {
         return (String[]) Arrays.stream(method.getParameters()).map(Parameter::getName).toArray();
     }
 
-    public static Optional<AnnotationExpr> getAnnotationByFullName(TypeDeclaration<?> type, String name) {
-        return type.getAnnotations().stream()
-                .filter(exp ->
-                        name.equals(getExternalClassName(type, exp.getNameAsString())))
-                .findFirst();
+    @SuppressWarnings("unchecked")
+    public static Optional<AnnotationExpr> getAnnotationByFullName(Node type, String name) {
+        if (type instanceof NodeWithAnnotations annType) {
+            return annType.getAnnotations().stream()
+                    .filter(exp ->
+                            name.equals(getExternalClassName(type, exp instanceof NodeWithName n ? n.getNameAsString() : exp.toString())))
+                    .findFirst();
+        } else {
+            return Optional.empty();
+        }
     }
 }

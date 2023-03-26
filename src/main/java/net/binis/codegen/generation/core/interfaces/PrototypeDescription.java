@@ -24,14 +24,18 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import net.binis.codegen.annotation.type.EmbeddedModifierType;
 import net.binis.codegen.enrich.Enricher;
+import net.binis.codegen.enrich.GeneratedFile;
+import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.options.CodeOption;
 import org.apache.commons.lang3.tuple.Triple;
 
 import javax.lang.model.element.Element;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -107,5 +111,12 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     boolean hasEnricher(Class<? extends Enricher> enricher);
 
     Map<String, PrototypeConstant> getConstants();
+    Map<String, MethodDescription> getMethods();
+
+    GeneratedFile addCustomFile(String id);
+
+    GeneratedFile getCustomFile(String id);
+
+    Map<String, Structures.GeneratedFileHandler> getCustomFiles();
 }
 

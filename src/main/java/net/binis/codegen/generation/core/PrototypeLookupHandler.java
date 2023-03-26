@@ -22,6 +22,7 @@ package net.binis.codegen.generation.core;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +47,7 @@ public class PrototypeLookupHandler implements PrototypeLookup {
 
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> parsed = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> generated = new HashMap<>();
+    private final Map<String, TypeDeclaration> generatedClasses = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> generatedInterfaces = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> external = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> enums = new HashMap<>();
@@ -79,7 +81,14 @@ public class PrototypeLookupHandler implements PrototypeLookup {
         this.generated.put(prototype, generated);
         if (nonNull(generated.getInterface())) {
             this.generatedInterfaces.put(generated.getInterfaceFullName(), generated);
+            this.generatedClasses.put(generated.getInterfaceFullName(), generated.getInterface());
+        } else if (nonNull(generated.getImplementation())) {
+            this.generatedClasses.put(generated.getImplementorFullName(), generated.getImplementation());
         }
+    }
+
+    public void registerGeneratedClass(String prototype, TypeDeclaration generated) {
+        this.generatedClasses.put(prototype, generated);
     }
 
     @Override
@@ -137,6 +146,11 @@ public class PrototypeLookupHandler implements PrototypeLookup {
             result = generatedInterfaces.get(prototype);
         }
         return result;
+    }
+
+    @Override
+    public TypeDeclaration findGeneratedClass(String name) {
+        return generatedClasses.get(name);
     }
 
     @Override

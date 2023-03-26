@@ -1,10 +1,10 @@
-package net.binis.codegen.prototype;
+package net.binis.codegen.generation.core.interfaces;
 
 /*-
  * #%L
- * code-generation-test
+ * code-generator
  * %%
- * Copyright (C) 2021 - 2022 Binis Belev
+ * Copyright (C) 2021 Binis Belev
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,21 @@ package net.binis.codegen.prototype;
  * #L%
  */
 
-import net.binis.codegen.annotation.CodePrototype;
-import net.binis.codegen.enrich.ElementInsertionTestEnricher;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.AnnotationExpr;
 
-@CodePrototype(enrichers = ElementInsertionTestEnricher.class)
-public interface ElementTestPrototype {
+import javax.lang.model.element.Element;
 
-    long id();
+public interface MethodDescription {
+
+    boolean isProcessed();
+    Element getElement();
+    MethodDeclaration getMethod();
+    AnnotationExpr getPrototype();
+    PrototypeData getProperties();
+
+    PrototypeDescription<ClassOrInterfaceDeclaration> getDescription();
 
 }
+
