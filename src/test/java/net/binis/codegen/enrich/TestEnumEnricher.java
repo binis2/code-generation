@@ -20,16 +20,17 @@ package net.binis.codegen.enrich;
  * #L%
  */
 
+import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 
 @Slf4j
-public class ElementInsertionTestEnricher extends BaseEnricher {
+public class TestEnumEnricher extends BaseEnricher {
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        log.info("yay");
+        description.getInterface().addMethod("test", Modifier.Keyword.STATIC);
     }
 
     @Override

@@ -38,6 +38,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
 import net.binis.codegen.annotation.type.GenerationStrategy;
+import net.binis.codegen.compiler.utils.ElementUtils;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
@@ -184,6 +185,10 @@ public class Generator {
 
         processingTypes.remove(typeDeclaration.getNameAsString());
         parse.setProcessed(true);
+
+        if (nonNull(prsd.getElement())) {
+            ElementUtils.addOrReplaceClassAnnotation(prsd.getElement(), lombok.Generated.class, Map.of());
+        }
     }
 
     private static Structures.Parsed handleClassicStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
@@ -753,10 +758,10 @@ public class Generator {
             cName = defaultClassName((ClassOrInterfaceDeclaration) type);
         }
 
-        var builder = Structures.builder(getExternalClassName(prototype, prototype.getNameAsString()));
+        var prototypeClass = getExternalClassName(prototype, prototype.getNameAsString());
+        var builder = Structures.builder(prototypeClass);
 
-        nullCheck(getExternalClassNameIfExists(prototype, prototype.getNameAsString()), clsName ->
-                nullCheck(loadClass(clsName), cls -> builder.prototypeAnnotation((Class) cls)));
+        nullCheck(loadClass(prototypeClass), cls -> builder.prototypeAnnotation((Class) cls));
 
         prototype.getChildNodes().forEach(node -> {
             if (node instanceof MemberValuePair pair) {
@@ -2011,6 +2016,8 @@ public class Generator {
             properties.setPrototypeName(typeDeclaration.getNameAsString());
             properties.setPrototypeFullName(typeDeclaration.getFullyQualifiedName().orElseThrow());
 
+            handleEnrichersSetup(properties);
+
             var mixIn = withRes(properties.getMixInClass(), c ->
                     withRes(getExternalClassName(declarationUnit.findCompilationUnit().get(), c), Generator::findEnum));
 
@@ -2064,6 +2071,10 @@ public class Generator {
             handleImports(typeDeclaration, intf);
 
             processingTypes.remove(typeDeclaration.getNameAsString());
+
+            if (nonNull(prsd.getElement())) {
+                ElementUtils.addOrReplaceClassAnnotation(prsd.getElement(), lombok.Generated.class, Map.of());
+            }
 
             parse.setProcessed(true);
         }
@@ -2158,24 +2169,24 @@ public class Generator {
         var iName = Holder.of(defaultInterfaceName(type));
         var cName = defaultClassName(type);
 
-        var builder = Structures.builder(prototype.getNameAsString())
+        var prototypeClass = getExternalClassName(prototype, prototype.getNameAsString());
+        var builder = Structures.builder(prototypeClass)
                 .classPackage(defaultClassPackage(type))
                 .interfacePackage(defaultInterfacePackage(type));
+
+        nullCheck(loadClass(getExternalClassName(prototype, prototype.getNameAsString())), cls -> builder.prototypeAnnotation((Class) cls));
+
         prototype.getChildNodes().forEach(node -> {
-            if (node instanceof MemberValuePair) {
-                var pair = (MemberValuePair) node;
+            if (node instanceof MemberValuePair pair) {
                 var name = pair.getNameAsString();
                 switch (name) {
-                    case "name":
-                        builder.name(pair.getValue().asStringLiteralExpr().asString());
-                        break;
-                    case "mixIn":
-                        builder.mixInClass(pair.getValue().asClassExpr().getTypeAsString());
-                        break;
-                    case "ordinalOffset":
-                        builder.ordinalOffset(pair.getValue().asIntegerLiteralExpr().asNumber().intValue());
-                        break;
-                    default:
+                    case "name" -> builder.name(pair.getValue().asStringLiteralExpr().asString());
+                    case "mixIn" -> builder.mixInClass(pair.getValue().asClassExpr().getTypeAsString());
+                    case "ordinalOffset" -> builder.ordinalOffset(pair.getValue().asIntegerLiteralExpr().asNumber().intValue());
+                    case "enrichers" ->
+                        checkEnrichers(builder::enrichers, handleInitializerAnnotation(pair));
+                    default -> {
+                    }
                 }
             }
         });
@@ -2186,7 +2197,23 @@ public class Generator {
 
         builder.className(cName).interfaceName(iName.get());
 
-        return builder.build();
+        var result = builder.build();
+
+        if (isNull(result.getEnrichers())) {
+            result.setEnrichers(new ArrayList<>());
+        }
+
+        if (isNull(result.getInheritedEnrichers())) {
+            result.setInheritedEnrichers(new ArrayList<>());
+        }
+
+        notNull(result.getPredefinedEnrichers(), list ->
+                list.forEach(e -> checkEnrichers(result.getEnrichers(), e)));
+
+        notNull(result.getPredefinedInheritedEnrichers(), list ->
+                list.forEach(e -> checkEnrichers(result.getInheritedEnrichers(), e)));
+
+        return result;
     }
 
     private static Structures.PrototypeDataHandler getConstantProperties(AnnotationExpr prototype) {
@@ -2195,14 +2222,13 @@ public class Generator {
                 .className(defaultClassName(type))
                 .classPackage(defaultPackage(type, null));
         prototype.getChildNodes().forEach(node -> {
-            if (node instanceof MemberValuePair) {
-                var pair = (MemberValuePair) node;
+            if (node instanceof MemberValuePair pair) {
                 var name = pair.getNameAsString();
                 switch (name) {
-                    case "mixIn":
+                    case "mixIn" ->
                         builder.mixInClass(pair.getValue().asClassExpr().getTypeAsString());
-                        break;
-                    default:
+                    default -> {
+                    }
                 }
             }
         });

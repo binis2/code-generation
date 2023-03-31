@@ -25,7 +25,6 @@ import net.binis.codegen.compiler.*;
 import javax.lang.model.element.Element;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
-import java.util.Iterator;
 import java.util.Map;
 
 public class ElementUtils {
@@ -44,6 +43,12 @@ public class ElementUtils {
 
         decl.getModifiers().getAnnotations().append(ann);
     }
+
+    public static void addOrReplaceClassAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
+        removeClassAnnotation(element, annotation);
+        addClassAnnotation(element, annotation, attributes);
+    }
+
 
     public static void removeClassAnnotation(Element element, Class<? extends Annotation> annotation) {
         var maker = TreeMaker.create();
