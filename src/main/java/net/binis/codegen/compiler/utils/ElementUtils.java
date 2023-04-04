@@ -29,6 +29,19 @@ import java.util.Map;
 
 public class ElementUtils {
 
+    public static CGAnnotation findClassAnnotation(Element element, Class<? extends Annotation> annotation) {
+        CGAnnotation result = null;
+        var maker = TreeMaker.create();
+        var decl = CGClassDeclaration.create(maker.getTrees(), element);
+        for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
+            var ann = it.next();
+            if (ann.getAnnotationType().getType().toString().equals(annotation.getCanonicalName())) {
+                return ann;
+            }
+        }
+        return result;
+    }
+
     public static CGAnnotation addClassAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
         var maker = TreeMaker.create();
 
@@ -228,6 +241,19 @@ public class ElementUtils {
                 break;
             }
         }
+    }
+
+    public static CGAnnotation findMethodAnnotation(Element element, Class<? extends Annotation> annotation) {
+        CGAnnotation result = null;
+        var maker = TreeMaker.create();
+        var decl = CGMethodDeclaration.create(maker.getTrees(), element);
+        for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
+            var ann = it.next();
+            if (ann.getAnnotationType().getType().toString().equals(annotation.getCanonicalName())) {
+                return ann;
+            }
+        }
+        return result;
     }
 
     protected static CGExpression calcExpression(TreeMaker maker, Object value) {
