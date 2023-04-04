@@ -1,4 +1,8 @@
 # Change Log
+**04-04-2023** ver. 1.0.6
+* Generation: Added experimental method annotations' manipulation.
+* Generation: Added enrichers for enums.
+
 **26-03-2023** ver. 1.0.5
 * Generation: Added experimental class annotations' manipulation.
 * Generation: Added option for expression prefix with string interpolation.
