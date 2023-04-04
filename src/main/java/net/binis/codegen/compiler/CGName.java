@@ -24,19 +24,24 @@ import net.binis.codegen.compiler.base.BaseJavaCompilerObject;
 
 import static net.binis.codegen.tools.Reflection.*;
 
-public class Name extends BaseJavaCompilerObject {
+public class CGName extends BaseJavaCompilerObject {
 
-    public static Name create(String name) {
-        return new Name(name);
+    public static CGName create(String name) {
+        return new CGName(name);
     }
 
     public static Class theClass() {
         return loadClass("com.sun.tools.javac.util.Name");
     }
 
-    public Name(String name) {
+    public CGName(String name) {
         super();
         instance = invoke("fromString", instance, name);
+    }
+
+    public CGName(Object instance) {
+        super();
+        this.instance = instance;
     }
 
     @Override

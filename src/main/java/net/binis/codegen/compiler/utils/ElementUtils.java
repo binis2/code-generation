@@ -29,28 +29,29 @@ import java.util.Map;
 
 public class ElementUtils {
 
-    public static void addClassAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
+    public static CGAnnotation addClassAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
         var maker = TreeMaker.create();
 
         var decl = CGClassDeclaration.create(maker.getTrees(), element);
 
         var list = CGList.<CGExpression>nil();
         for (var attr : attributes.entrySet()) {
-            list = list.append(maker.Assign(maker.Ident(Name.create(attr.getKey())), calcExpression(maker, attr.getValue())));
+            list = list.append(maker.Assign(maker.Ident(CGName.create(attr.getKey())), calcExpression(maker, attr.getValue())));
         }
 
         var ann = maker.Annotation(maker.QualIdent(maker.getSymbol(annotation.getCanonicalName())), list);
 
         decl.getModifiers().getAnnotations().append(ann);
+        return ann;
     }
 
-    public static void addOrReplaceClassAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
+    public static CGAnnotation addOrReplaceClassAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
         removeClassAnnotation(element, annotation);
-        addClassAnnotation(element, annotation, attributes);
+        return addClassAnnotation(element, annotation, attributes);
     }
 
-
-    public static void removeClassAnnotation(Element element, Class<? extends Annotation> annotation) {
+    public static CGAnnotation removeClassAnnotation(Element element, Class<? extends Annotation> annotation) {
+        CGAnnotation result = null;
         var maker = TreeMaker.create();
         var decl = CGClassDeclaration.create(maker.getTrees(), element);
         var list = CGList.<CGAnnotation>nil();
@@ -58,9 +59,12 @@ public class ElementUtils {
             var ann = it.next();
             if (!ann.getAnnotationType().getType().toString().equals(annotation.getCanonicalName())) {
                 list = list.append(ann);
+            } else {
+                result = ann;
             }
         }
         decl.getModifiers().setAnnotations(list);
+        return result;
     }
 
     public static void addClassAnnotationAttribute(Element element, Class<? extends Annotation> annotation, String name, Object value) {
@@ -70,7 +74,7 @@ public class ElementUtils {
         for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
             var ann = it.next();
             if (ann.getAnnotationType().getType().toString().equals(annotation.getCanonicalName())) {
-                ann.getArguments().append(maker.Assign(maker.Ident(Name.create(name)), calcExpression(maker, value)));
+                ann.getArguments().append(maker.Assign(maker.Ident(CGName.create(name)), calcExpression(maker, value)));
                 break;
             }
         }
@@ -116,7 +120,105 @@ public class ElementUtils {
                         if (!assign.getVariable().getInstance().toString().equals(name)) {
                             list.append(attr);
                         } else {
-                            list.append(maker.Assign(maker.Ident(Name.create(name)), calcExpression(maker, value)));
+                            list.append(maker.Assign(maker.Ident(CGName.create(name)), calcExpression(maker, value)));
+                        }
+                    } else {
+                        list.append(attr);
+                    }
+                }
+                ann.setArguments(list);
+                break;
+            }
+        }
+    }
+
+    public static CGAnnotation addMethodAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
+        var maker = TreeMaker.create();
+
+        var decl = CGMethodDeclaration.create(maker.getTrees(), element);
+
+        var list = CGList.<CGExpression>nil();
+        for (var attr : attributes.entrySet()) {
+            list = list.append(maker.Assign(maker.Ident(CGName.create(attr.getKey())), calcExpression(maker, attr.getValue())));
+        }
+
+        var ann = maker.Annotation(maker.QualIdent(maker.getSymbol(annotation.getCanonicalName())), list);
+
+        decl.getModifiers().getAnnotations().append(ann);
+        return ann;
+    }
+
+    public static CGAnnotation removeMethodAnnotation(Element element, Class<? extends Annotation> annotation) {
+        CGAnnotation result = null;
+        var maker = TreeMaker.create();
+        var decl = CGMethodDeclaration.create(maker.getTrees(), element);
+        var list = CGList.<CGAnnotation>nil();
+        for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
+            var ann = it.next();
+            if (!ann.getAnnotationType().getType().toString().equals(annotation.getCanonicalName())) {
+                list = list.append(ann);
+            } else {
+                result = ann;
+            }
+        }
+        decl.getModifiers().setAnnotations(list);
+        return result;
+    }
+
+    public static void addMethodAnnotationAttribute(Element element, Class<? extends Annotation> annotation, String name, Object value) {
+        var maker = TreeMaker.create();
+
+        var decl = CGMethodDeclaration.create(maker.getTrees(), element);
+        for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
+            var ann = it.next();
+            if (ann.getAnnotationType().getType().toString().equals(annotation.getCanonicalName())) {
+                ann.getArguments().append(maker.Assign(maker.Ident(CGName.create(name)), calcExpression(maker, value)));
+                break;
+            }
+        }
+    }
+
+    public static void removeMethodAnnotationAttribute(Element element, Class<? extends Annotation> annotation, String name) {
+        var maker = TreeMaker.create();
+
+        var decl = CGMethodDeclaration.create(maker.getTrees(), element);
+        for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
+            var ann = it.next();
+            if (ann.getAnnotationType().getType().toString().equals(annotation.getCanonicalName())) {
+                var list = CGList.<CGExpression>nil();
+                for (var iter = ann.getArguments().iterator(CGExpression.class); iter.hasNext(); ) {
+                    var attr = iter.next();
+                    if (attr.getInstance().getClass().equals(CGAssign.theClass())) {
+                        var assign = new CGAssign(attr.getInstance());
+                        if (!assign.getVariable().getInstance().toString().equals(name)) {
+                            list.append(attr);
+                        }
+                    } else {
+                        list.append(attr);
+                    }
+                }
+                ann.setArguments(list);
+                break;
+            }
+        }
+    }
+
+    public static void replaceMethodAnnotationAttribute(Element element, Class<? extends Annotation> annotation, String name, Object value) {
+        var maker = TreeMaker.create();
+
+        var decl = CGMethodDeclaration.create(maker.getTrees(), element);
+        for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
+            var ann = it.next();
+            if (ann.getAnnotationType().getType().toString().equals(annotation.getCanonicalName())) {
+                var list = CGList.<CGExpression>nil();
+                for (var iter = ann.getArguments().iterator(CGExpression.class); iter.hasNext(); ) {
+                    var attr = iter.next();
+                    if (attr.getInstance().getClass().equals(CGAssign.theClass())) {
+                        var assign = new CGAssign(attr.getInstance());
+                        if (!assign.getVariable().getInstance().toString().equals(name)) {
+                            list.append(attr);
+                        } else {
+                            list.append(maker.Assign(maker.Ident(CGName.create(name)), calcExpression(maker, value)));
                         }
                     } else {
                         list.append(attr);
@@ -149,10 +251,10 @@ public class ElementUtils {
             return maker.TypeCast(maker.TypeIdent(CGTypeTag.BYTE), maker.Literal(CGTypeTag.INT, value));
         } else if (value instanceof Enum) {
             var symbol = maker.getSymbol(value.getClass().getCanonicalName());
-            return maker.Select(maker.QualIdent(symbol), Name.create(value.toString()));
+            return maker.Select(maker.QualIdent(symbol), CGName.create(value.toString()));
         } else if (value instanceof Class c) {
             var symbol = maker.getSymbol(c.getCanonicalName());
-            return maker.Select(maker.QualIdent(symbol), Name.create("class"));
+            return maker.Select(maker.QualIdent(symbol), CGName.create("class"));
         } else if (value.getClass().isArray()) {
             var length = Array.getLength(value);
             var list = CGList.<CGExpression>nil();
@@ -169,10 +271,10 @@ public class ElementUtils {
     protected static CGExpression classIdent(TreeMaker maker, String className) {
         String[] strings = className.split("\\.");
 
-        CGExpression classNameIdent = maker.Ident(Name.create(strings[0]));
+        CGExpression classNameIdent = maker.Ident(CGName.create(strings[0]));
 
         for (int i = 1; i < strings.length; i++) {
-            classNameIdent = maker.Select(classNameIdent, Name.create(strings[i]));
+            classNameIdent = maker.Select(classNameIdent, CGName.create(strings[i]));
         }
 
         return classNameIdent;

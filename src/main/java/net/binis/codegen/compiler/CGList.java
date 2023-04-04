@@ -69,6 +69,10 @@ public class CGList<T extends BaseJavaCompilerObject> extends BaseJavaCompilerOb
         return this;
     }
 
+    public int size() {
+        return (int) invoke("size", instance);
+    }
+
     @SuppressWarnings("unchecked")
     public Iterator<T> iterator(Class<T> cls) {
         return new ProxyIterator((Iterator) invoke("iterator", instance), cls);

@@ -27,7 +27,6 @@ import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.BlockComment;
 import com.github.javaparser.ast.expr.*;
-import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -38,6 +37,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
 import net.binis.codegen.annotation.type.GenerationStrategy;
+import net.binis.codegen.compiler.CGMethodSymbol;
+import net.binis.codegen.compiler.CGName;
 import net.binis.codegen.compiler.utils.ElementUtils;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
@@ -53,6 +54,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -99,7 +101,7 @@ public class Generator {
                 getCodeAnnotation(type).ifPresentOrElse(prototype -> {
                     type.asClassOrInterfaceDeclaration().getMethods().forEach(method ->
                             getCodeAnnotation(method).ifPresent(proto ->
-                                    generateCodeForMethod(parser, prsd, method, proto, null)));
+                                    generateCodeForMethod(parser, prsd, method, proto)));
                     if (type.asClassOrInterfaceDeclaration().isInterface()) {
                         generateCodeForPrototype(parser, prsd, type, prototype);
                         processed.set(processed.get() + 1);
@@ -109,7 +111,7 @@ public class Generator {
                 }, () ->
                         type.asClassOrInterfaceDeclaration().getMethods().forEach(method ->
                                 getCodeAnnotation(method).ifPresent(prototype ->
-                                        generateCodeForMethod(parser, prsd, method, prototype, null))));
+                                        generateCodeForMethod(parser, prsd, method, prototype))));
             } else if (type.isEnumDeclaration()) {
                 getCodeAnnotation(type).ifPresent(prototype -> {
                     generateCodeForEnum(parser, prsd, type, prototype);
@@ -137,16 +139,30 @@ public class Generator {
         }
     }
 
-    private static void generateCodeForMethod(CompilationUnit unit, PrototypeDescription<ClassOrInterfaceDeclaration> prsd, MethodDeclaration method, AnnotationExpr prototype, Element element) {
+    private static void generateCodeForMethod(CompilationUnit unit, PrototypeDescription<ClassOrInterfaceDeclaration> prsd, MethodDeclaration method, AnnotationExpr prototype) {
         if (!prsd.getMethods().containsKey(method.getNameAsString())) {
             prsd.getMethods().put(method.getNameAsString(), Structures.ParsedMethodDescription.builder()
                     .method(method)
-                    .element(element)
+                    .element(findElement(method, prsd.getElement()))
                     .prototype(prototype)
                     .properties(getProperties(prototype))
                     .description(prsd)
                     .build());
         }
+    }
+
+    private static Element findElement(MethodDeclaration method, Element element) {
+        if (nonNull(element) && ElementKind.CLASS.equals(element.getKind())) {
+            for (var e : element.getEnclosedElements()) {
+                if (ElementKind.METHOD.equals(e.getKind()) && e.getSimpleName().toString().equals(method.getNameAsString())) {
+                    var m = new CGMethodSymbol(e);
+                    if (m.params().size() == method.getParameters().size()) {
+                        return e;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private static boolean processForClass(CompilationUnit parser, PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, AnnotationExpr prototype) {

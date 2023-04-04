@@ -39,6 +39,7 @@ import net.binis.codegen.tools.CollectionUtils;
 import org.apache.commons.cli.*;
 
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -192,6 +193,9 @@ public class CodeGen {
                             .build());
         } else {
             var name = getClassName(t);
+            if (nonNull(element) && ElementKind.METHOD.equals(element.getKind())) {
+                element = element.getEnclosingElement();
+            }
             checkForNestedClasses(t.asTypeDeclaration(), fileName, parser);
             lookup.registerParsed(name,
                     Parsed.builder()

@@ -64,8 +64,8 @@ public class TreeMaker extends BaseJavaCompilerObject {
         return new CGAssign(invoke(method, instance, lhs.getInstance(), rhs.getInstance()));
     }
 
-    public CGIdent Ident(Name name) {
-        var method = findMethod("Ident", instance.getClass(), Name.theClass());
+    public CGIdent Ident(CGName name) {
+        var method = findMethod("Ident", instance.getClass(), CGName.theClass());
         return new CGIdent(invoke(method, instance, name.getInstance()));
     }
 
@@ -74,8 +74,8 @@ public class TreeMaker extends BaseJavaCompilerObject {
         return new CGLiteral(invoke(method, instance, tag.getInstance(), value));
     }
 
-    public CGFieldAccess Select(CGExpression selected, Name selector) {
-        var method = findMethod("Select", instance.getClass(), CGExpression.theClass(), Name.theClass());
+    public CGFieldAccess Select(CGExpression selected, CGName selector) {
+        var method = findMethod("Select", instance.getClass(), CGExpression.theClass(), CGName.theClass());
         return new CGFieldAccess(invoke(method, instance, selected.getInstance(), selector.getInstance()));
     }
 
