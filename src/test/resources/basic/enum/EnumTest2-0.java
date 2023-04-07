@@ -25,7 +25,15 @@ public class TestImpl extends CodeEnumImpl implements Test {
         this.value = value;
     }
 
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+
     public String getLabel() {
         return label;
+    }
+
+    public int hashCode() {
+        return super.hashCode();
     }
 }

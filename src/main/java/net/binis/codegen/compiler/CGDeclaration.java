@@ -20,45 +20,33 @@ package net.binis.codegen.compiler;
  * #L%
  */
 
+import com.sun.source.util.Trees;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.base.BaseJavaCompilerObject;
 
 import javax.lang.model.element.Element;
 
-import static net.binis.codegen.tools.Reflection.getFieldValue;
+import static java.util.Objects.isNull;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
-public class CGSymbol extends BaseJavaCompilerObject {
+public abstract class CGDeclaration extends BaseJavaCompilerObject {
 
-    public static Class theClass() {
-        return loadClass("com.sun.tools.javac.code.Symbol");
-    }
+    protected CGModifiers modifiers;
 
-    public CGSymbol(Object instance) {
+    @SuppressWarnings("unchecked")
+    public CGDeclaration(Trees trees, Element element) {
         super();
-        this.instance = instance;
-    }
-
-    public Element getElement() {
-        return (Element) instance;
-    }
-
-    public String getName() {
-        return getFieldValue(instance, "name").toString();
-    }
-
-    @Override
-    protected void init() {
-        cls = theClass();
-    }
-
-    public CGClassSymbol asClassSymbol() {
-        if (is(CGClassSymbol.theClass())) {
-            return new CGClassSymbol(instance);
-        } else {
-            throw new ClassCastException("unable to cast to CGClassSymbol");
+        instance = trees.getTree(element);
+        if (!cls.isAssignableFrom(instance.getClass())) {
+            log.error("Unable to get class declaration!");
         }
     }
 
+    public CGModifiers getModifiers() {
+        if (isNull(modifiers)) {
+            modifiers = new CGModifiers(this);
+        }
+        return modifiers;
+    }
 }

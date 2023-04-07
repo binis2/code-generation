@@ -21,6 +21,9 @@ package net.binis.codegen.compiler;
  */
 
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.compiler.utils.ElementUtils;
+
+import java.lang.annotation.Annotation;
 
 import static java.util.Objects.isNull;
 import static net.binis.codegen.tools.Reflection.*;
@@ -29,7 +32,7 @@ import static net.binis.codegen.tools.Reflection.*;
 public class CGAnnotation extends CGExpression {
 
     protected CGList<CGExpression> arguments;
-    protected CGTree annotationType;
+    protected CGIdent annotationType;
 
     public CGAnnotation(Object instance) {
         super(instance);
@@ -47,15 +50,46 @@ public class CGAnnotation extends CGExpression {
         return arguments;
     }
 
-    public CGTree getAnnotationType() {
+    public boolean hasArgument(String argument) {
+        for (var iter = getArguments().iterator(CGExpression.class); iter.hasNext(); ) {
+            var attr = iter.next();
+            if (attr.getInstance().getClass().equals(CGAssign.theClass())) {
+                var assign = new CGAssign(attr.getInstance());
+                if (assign.getVariable().getInstance().toString().equals(argument)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public CGValueExpression getArgument(String argument) {
+        for (var iter = getArguments().iterator(CGExpression.class); iter.hasNext(); ) {
+            var attr = iter.next();
+            if (attr.getInstance().getClass().equals(CGAssign.theClass())) {
+                var assign = new CGAssign(attr.getInstance());
+                if (assign.getVariable().getInstance().toString().equals(argument)) {
+                    return new CGValueExpression(attr.getInstance());
+                }
+            }
+        }
+        return null;
+    }
+
+
+    public CGIdent getAnnotationType() {
         if (isNull(annotationType)) {
-            annotationType = new CGTree(invoke("getAnnotationType", instance));
+            annotationType = new CGIdent(invoke("getAnnotationType", instance));
         }
         return annotationType;
     }
 
     public void setArguments(CGList<CGExpression> list) {
         onModify(list);
+    }
+
+    public boolean isAnnotation(Class<? extends Annotation> cls) {
+        return getAnnotationType().getType().toString().equals(cls.getCanonicalName());
     }
 
     protected void onModify(CGList<CGExpression> list) {

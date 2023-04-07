@@ -21,44 +21,35 @@ package net.binis.codegen.compiler;
  */
 
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.compiler.base.BaseJavaCompilerObject;
 
 import javax.lang.model.element.Element;
+import javax.lang.model.element.Modifier;
+import java.util.Set;
 
-import static net.binis.codegen.tools.Reflection.getFieldValue;
+import static java.util.Objects.isNull;
+import static net.binis.codegen.tools.Reflection.invoke;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
-public class CGSymbol extends BaseJavaCompilerObject {
+public class CGClassSymbol extends CGSymbol {
+
+    protected Set<Modifier> modifiers;
 
     public static Class theClass() {
-        return loadClass("com.sun.tools.javac.code.Symbol");
+        return loadClass("com.sun.tools.javac.code.Symbol$ClassSymbol");
     }
 
-    public CGSymbol(Object instance) {
-        super();
-        this.instance = instance;
+    public static CGClassSymbol create(Element element) {
+        return new CGClassSymbol(element);
     }
 
-    public Element getElement() {
-        return (Element) instance;
-    }
-
-    public String getName() {
-        return getFieldValue(instance, "name").toString();
+    public CGClassSymbol(Object instance) {
+        super(instance);
     }
 
     @Override
     protected void init() {
         cls = theClass();
-    }
-
-    public CGClassSymbol asClassSymbol() {
-        if (is(CGClassSymbol.theClass())) {
-            return new CGClassSymbol(instance);
-        } else {
-            throw new ClassCastException("unable to cast to CGClassSymbol");
-        }
     }
 
 }

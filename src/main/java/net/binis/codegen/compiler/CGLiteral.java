@@ -22,6 +22,7 @@ package net.binis.codegen.compiler;
 
 import lombok.extern.slf4j.Slf4j;
 
+import static net.binis.codegen.tools.Reflection.invoke;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
@@ -29,6 +30,10 @@ public class CGLiteral extends CGExpression {
 
     public CGLiteral(Object instance) {
         super(instance);
+    }
+
+    public Object getValue() {
+        return invoke("getValue", instance);
     }
 
     @Override

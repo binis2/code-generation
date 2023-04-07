@@ -47,4 +47,8 @@ public class CGType extends BaseJavaCompilerObject {
         return instance.toString();
     }
 
+    public Class toClass() {
+        return loadClass(toString());
+    }
+
 }

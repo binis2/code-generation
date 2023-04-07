@@ -22,29 +22,20 @@ package net.binis.codegen.compiler;
 
 import com.sun.source.util.Trees;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.compiler.base.BaseJavaCompilerObject;
 
 import javax.lang.model.element.Element;
 
-import static java.util.Objects.isNull;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
-public class CGMethodDeclaration extends BaseJavaCompilerObject {
-
-    private CGModifiers modifiers;
+public class CGMethodDeclaration extends CGDeclaration {
 
     public static CGMethodDeclaration create(Trees trees, Element element) {
         return new CGMethodDeclaration(trees, element);
     }
 
-    @SuppressWarnings("unchecked")
     public CGMethodDeclaration(Trees trees, Element element) {
-        super();
-        instance = trees.getTree(element);
-        if (!cls.isAssignableFrom(instance.getClass())) {
-            log.error("Unable to get class declaration!");
-        }
+        super(trees, element);
     }
 
     @Override
@@ -52,10 +43,4 @@ public class CGMethodDeclaration extends BaseJavaCompilerObject {
         cls = loadClass("com.sun.tools.javac.tree.JCTree$JCMethodDecl");
     }
 
-    public CGModifiers getModifiers() {
-        if (isNull(modifiers)) {
-            modifiers = new CGModifiers(this);
-        }
-        return modifiers;
-    }
 }

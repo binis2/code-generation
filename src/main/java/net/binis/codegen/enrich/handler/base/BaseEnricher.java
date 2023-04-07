@@ -29,8 +29,9 @@ import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.generation.core.interfaces.MethodDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
-
+import javax.lang.model.element.Element;
 import javax.tools.Diagnostic;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -80,6 +81,14 @@ public abstract class BaseEnricher implements PrototypeEnricher {
     protected void error(String message) {
         if (nonNull(lookup.getProcessingEnvironment())) {
             lookup.getProcessingEnvironment().getMessager().printMessage(Diagnostic.Kind.ERROR, message);
+        } else {
+            throw new GenericCodeGenException(message);
+        }
+    }
+
+    protected void error(String message, Element element) {
+        if (nonNull(lookup.getProcessingEnvironment())) {
+            lookup.getProcessingEnvironment().getMessager().printMessage(Diagnostic.Kind.ERROR, message, element);
         } else {
             throw new GenericCodeGenException(message);
         }

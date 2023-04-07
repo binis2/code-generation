@@ -10,4 +10,12 @@ public class TestImpl extends CodeEnumImpl implements Test {
     public TestImpl(int $ordinal, String $name) {
         super($ordinal, $name);
     }
+
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+
+    public int hashCode() {
+        return super.hashCode();
+    }
 }

@@ -21,7 +21,10 @@ package net.binis.codegen.compiler;
  */
 
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.compiler.base.BaseJavaCompilerObject;
+
+import javax.lang.model.element.Element;
+import javax.lang.model.element.Modifier;
+import java.util.Set;
 
 import static java.util.Objects.isNull;
 import static net.binis.codegen.tools.Reflection.invoke;
@@ -30,10 +33,14 @@ import static net.binis.codegen.tools.Reflection.loadClass;
 @Slf4j
 public class CGMethodSymbol extends CGSymbol {
 
-    private CGModifiers modifiers;
+    protected Set<Modifier> modifiers;
 
     public static Class theClass() {
         return loadClass("com.sun.tools.javac.code.Symbol$MethodSymbol");
+    }
+
+    public static CGMethodSymbol create(Element element) {
+        return new CGMethodSymbol(element);
     }
 
     public CGMethodSymbol(Object instance) {
@@ -44,11 +51,48 @@ public class CGMethodSymbol extends CGSymbol {
         return new CGList<>(invoke("params", instance), null);
     }
 
-    public CGModifiers getModifiers() {
+    @SuppressWarnings("unchecked")
+    public Set<Modifier> getModifiers() {
         if (isNull(modifiers)) {
-            modifiers = new CGModifiers(this);
+            modifiers = (Set) invoke("getModifiers", instance);
         }
         return modifiers;
+    }
+
+    public boolean isPublic() {
+        return getModifiers().contains(Modifier.PUBLIC);
+    }
+
+    public boolean isStatic() {
+        return getModifiers().contains(Modifier.STATIC);
+    }
+
+    public boolean isPrivate() {
+        return getModifiers().contains(Modifier.PRIVATE);
+    }
+
+    public boolean isProtected() {
+        return getModifiers().contains(Modifier.PROTECTED);
+    }
+
+    public boolean isAbstract() {
+        return getModifiers().contains(Modifier.ABSTRACT);
+    }
+
+    public boolean isFinal() {
+        return getModifiers().contains(Modifier.FINAL);
+    }
+
+    public boolean isSynchronized() {
+        return getModifiers().contains(Modifier.SYNCHRONIZED);
+    }
+
+    public boolean isNative() {
+        return getModifiers().contains(Modifier.NATIVE);
+    }
+
+    public boolean isStrict() {
+        return getModifiers().contains(Modifier.STRICTFP);
     }
 
     @Override

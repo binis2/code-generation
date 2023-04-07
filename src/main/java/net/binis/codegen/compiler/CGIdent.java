@@ -22,7 +22,7 @@ package net.binis.codegen.compiler;
 
 import lombok.extern.slf4j.Slf4j;
 
-import static net.binis.codegen.tools.Reflection.loadClass;
+import static net.binis.codegen.tools.Reflection.*;
 
 @Slf4j
 public class CGIdent extends CGExpression {
@@ -30,6 +30,15 @@ public class CGIdent extends CGExpression {
     public CGIdent(Object instance) {
         super(instance);
     }
+
+    public String getName() {
+        return invoke("getName", instance).toString();
+    }
+
+    public CGSymbol getSymbol() {
+        return new CGSymbol(getFieldValue(instance, "sym"));
+    }
+
 
     @Override
     protected void init() {

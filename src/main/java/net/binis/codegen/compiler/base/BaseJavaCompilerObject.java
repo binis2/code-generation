@@ -56,5 +56,14 @@ public abstract class BaseJavaCompilerObject {
         return instance;
     }
 
+    public boolean is(Class cls) {
+        if (BaseJavaCompilerObject.class.isAssignableFrom(cls)) {
+            return this.getClass().equals(cls);
+        } else {
+            return getCls().equals(cls);
+        }
+    }
+
+
 
 }
