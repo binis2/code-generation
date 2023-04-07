@@ -265,7 +265,7 @@ public class ElementUtils {
 
     protected static CGDeclaration getDeclaration(Element element, TreeMaker maker) {
         return switch (element.getKind()) {
-            case CLASS, ENUM -> CGClassDeclaration.create(maker.getTrees(), element);
+            case CLASS, ENUM, INTERFACE -> CGClassDeclaration.create(maker.getTrees(), element);
             case METHOD -> CGMethodDeclaration.create(maker.getTrees(), element);
             default -> throw new GenericCodeGenException("Invalid element kind: " + element.getKind().toString());
         };
