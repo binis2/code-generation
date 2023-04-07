@@ -38,7 +38,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
 import net.binis.codegen.annotation.type.GenerationStrategy;
 import net.binis.codegen.compiler.CGMethodSymbol;
-import net.binis.codegen.compiler.CGName;
 import net.binis.codegen.compiler.utils.ElementUtils;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
@@ -69,8 +68,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledEnumPrototype;
 import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledPrototype;
-import static net.binis.codegen.generation.core.EnrichHelpers.expression;
-import static net.binis.codegen.generation.core.EnrichHelpers.returnBlock;
+import static net.binis.codegen.generation.core.EnrichHelpers.*;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.generation.core.Structures.VALUE;
 import static net.binis.codegen.tools.Reflection.loadClass;
@@ -203,7 +201,7 @@ public class Generator {
         parse.setProcessed(true);
 
         if (nonNull(prsd.getElement())) {
-            ElementUtils.addOrReplaceClassAnnotation(prsd.getElement(), lombok.Generated.class, Map.of());
+            ElementUtils.addOrReplaceAnnotation(prsd.getElement(), lombok.Generated.class, Map.of());
         }
     }
 
@@ -2089,7 +2087,7 @@ public class Generator {
             processingTypes.remove(typeDeclaration.getNameAsString());
 
             if (nonNull(prsd.getElement())) {
-                ElementUtils.addOrReplaceClassAnnotation(prsd.getElement(), lombok.Generated.class, Map.of());
+                ElementUtils.addOrReplaceAnnotation(prsd.getElement(), lombok.Generated.class, Map.of());
             }
 
             parse.setProcessed(true);
@@ -2126,6 +2124,15 @@ public class Generator {
 
         declaration.getMethods().forEach(spec::addMember);
         declaration.getFields().forEach(spec::addMember);
+
+        spec.addMethod("equals", PUBLIC)
+                .addParameter(Object.class, "o")
+                .setType(boolean.class)
+                .setBody(block("{ return super.equals(o); }"));
+
+        spec.addMethod("hashCode", PUBLIC)
+                .setType(int.class)
+                .setBody(block("{ return super.hashCode(); }"));
     }
 
     private static void processEntries(EnumDeclaration declaration, ClassOrInterfaceDeclaration intf, PrototypeDescription<?> mixIn, long offset) {
