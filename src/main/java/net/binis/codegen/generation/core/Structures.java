@@ -32,24 +32,21 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.Type;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.annotation.CodePrototypeTemplate;
 import net.binis.codegen.annotation.type.EmbeddedModifierType;
 import net.binis.codegen.annotation.type.GenerationStrategy;
 import net.binis.codegen.enrich.CustomDescription;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.GeneratedFile;
 import net.binis.codegen.enrich.PrototypeEnricher;
-import net.binis.codegen.generation.core.interfaces.PrototypeConstant;
-import net.binis.codegen.generation.core.interfaces.PrototypeData;
-import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
-import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.generation.core.interfaces.*;
 import net.binis.codegen.generation.core.types.ModifierType;
 import net.binis.codegen.options.CodeOption;
-import net.binis.codegen.generation.core.interfaces.MethodDescription;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 
 import javax.lang.model.element.Element;
-import java.lang.annotation.Annotation;
+import java.lang.annotation.*;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.BiFunction;
@@ -69,6 +66,19 @@ public class Structures {
     public static final String VALUE = "value";
 
     public static final Map<String, Supplier<PrototypeDataHandler.PrototypeDataHandlerBuilder>> defaultProperties = new HashMap<>();
+
+    private static final Set<Class<?>> checkedAnnotations = initCheckedAnnotations();
+
+    private static Set<Class<?>> initCheckedAnnotations() {
+        var result = new HashSet<Class<?>>();
+        result.add(Documented.class);
+        result.add(Target.class);
+        result.add(Retention.class);
+        result.add(Repeatable.class);
+        result.add(Inherited.class);
+        result.add(CodePrototypeTemplate.class);
+        return result;
+    }
 
     private Structures() {
         //Do nothing
@@ -530,9 +540,7 @@ public class Structures {
                 var builder = defaultBuilder();
 
                 for (var a : ann.getAnnotations()) {
-                    if (defaultProperties.containsKey(a.annotationType().getCanonicalName())) {
-                        readAnnotation(a, a.annotationType(), builder, Structures::readAnnotationValue);
-                    }
+                    checkAnnotation(a, a.annotationType(), builder, Structures::readAnnotationValue);
                 }
 
                 readAnnotation(null, ann, builder, Structures::annotationDefaultValue);
@@ -608,7 +616,7 @@ public class Structures {
             if (node instanceof MemberValuePair pair) {
                 var name = pair.getNameAsString();
                 switch (name) {
-                    case "name":
+                    case "name" -> {
                         var value = pair.getValue().asStringLiteralExpr().asString();
                         if (StringUtils.isNotBlank(value)) {
                             var intf = value.replace("Entity", "");
@@ -617,84 +625,76 @@ public class Structures {
                                     .interfaceName(intf)
                                     .longModifierName(intf + "." + net.binis.codegen.generation.core.Constants.MODIFIER_INTERFACE_NAME);
                         }
-                        break;
-                    case "generateConstructor":
+                    }
+                    case "generateConstructor" ->
                         builder.generateConstructor(pair.getValue().asBooleanLiteralExpr().getValue());
-                        break;
-                    case "generateImplementation":
+                    case "generateImplementation" ->
                         builder.generateImplementation(pair.getValue().asBooleanLiteralExpr().getValue());
-                        break;
-                    case "generateInterface":
+                    case "generateInterface" ->
                         builder.generateInterface(pair.getValue().asBooleanLiteralExpr().getValue());
-                        break;
-                    case "interfaceName":
-                        value = pair.getValue().asStringLiteralExpr().asString();
-                        break;
-                    case "classGetters":
+                    case "interfaceName" -> {
+                        var value = pair.getValue().asStringLiteralExpr().asString();
+                        if (StringUtils.isNotBlank(value)) {
+                            builder.interfaceName(value);
+                        }
+                    }
+                    case "classGetters" ->
                         builder.classGetters(pair.getValue().asBooleanLiteralExpr().getValue());
-                        break;
-                    case "classSetters":
+                    case "classSetters" ->
                         builder.classSetters(pair.getValue().asBooleanLiteralExpr().getValue());
-                        break;
-                    case "interfaceSetters":
+                    case "interfaceSetters" ->
                         builder.interfaceSetters(pair.getValue().asBooleanLiteralExpr().getValue());
-                        break;
-                    case "base":
+                    case "base" ->
                         builder.base(pair.getValue().asBooleanLiteralExpr().getValue());
-                        break;
-                    case "baseModifierClass":
-                        value = pair.getValue().asClassExpr().getTypeAsString();
+                    case "baseModifierClass" -> {
+                        var value = pair.getValue().asClassExpr().getTypeAsString();
                         if (StringUtils.isNotBlank(value)) {
                             builder.baseModifierClass(value);
                         }
-                        break;
-                    case "mixInClass":
-                        value = pair.getValue().asClassExpr().getTypeAsString();
+                    }
+                    case "mixInClass" -> {
+                        var value = pair.getValue().asClassExpr().getTypeAsString();
                         if (StringUtils.isNotBlank(value) && !"void".equals(value)) {
                             builder.mixInClass(value);
                         }
-                        break;
-                    case "implementationPackage":
-                        value = pair.getValue().asStringLiteralExpr().asString();
+                    }
+                    case "implementationPackage" -> {
+                        var value = pair.getValue().asStringLiteralExpr().asString();
                         if (StringUtils.isNotBlank(value)) {
                             builder.classPackage(value);
                         }
-                        break;
-                    case "strategy": {
-                        value = pair.getValue().asFieldAccessExpr().getNameAsString();
+                    }
+                    case "strategy" -> {
+                        var value = pair.getValue().asFieldAccessExpr().getNameAsString();
                         if (StringUtils.isNotBlank(value)) {
                             builder.strategy(GenerationStrategy.valueOf(value));
                         }
-                        break;
                     }
-                    case "basePath":
-                        value = pair.getValue().asStringLiteralExpr().asString();
+                    case "basePath" -> {
+                        var value = pair.getValue().asStringLiteralExpr().asString();
                         if (StringUtils.isNotBlank(value)) {
                             builder.basePath(value);
                         }
-                        break;
-                    case "interfacePath":
-                        value = pair.getValue().asStringLiteralExpr().asString();
+                    }
+                    case "interfacePath" -> {
+                        var value = pair.getValue().asStringLiteralExpr().asString();
                         if (StringUtils.isNotBlank(value)) {
                             builder.interfacePath(value);
                         }
-                        break;
-                    case "implementationPath":
-                        value = pair.getValue().asStringLiteralExpr().asString();
+                    }
+                    case "implementationPath" -> {
+                        var value = pair.getValue().asStringLiteralExpr().asString();
                         if (StringUtils.isNotBlank(value)) {
                             builder.implementationPath(value);
                         }
-                        break;
-                    case "enrichers":
+                    }
+                    case "enrichers" ->
                         builder.predefinedEnrichers(handleClassExpression(pair.getValue(), List.class));
-                        break;
-                    case "inheritedEnrichers":
+                    case "inheritedEnrichers" ->
                         builder.predefinedInheritedEnrichers(handleClassExpression(pair.getValue(), List.class));
-                        break;
-                    case "options":
+                    case "options" ->
                         builder.options(handleClassExpression(pair.getValue(), Set.class));
-                        break;
-                    default:
+                    default -> {}
                 }
             } else if (node instanceof Name) {
                 //Continue
@@ -702,6 +702,24 @@ public class Structures {
                 builder.custom(VALUE, node);
             }
         });
+    }
+
+    private static boolean checkAnnotation(Annotation ann, Class<?> cls, PrototypeDataHandler.PrototypeDataHandlerBuilder builder, BiFunction<Method, Annotation, Object> func) {
+        var result = false;
+        if (defaultProperties.containsKey(cls.getCanonicalName())) {
+            readAnnotation(ann, cls, builder, Structures::readAnnotationValue);
+            return true;
+        } else {
+            if (!checkedAnnotations.contains(cls)) {
+                for (var a : cls.getAnnotations()) {
+                    result |= checkAnnotation(a, a.annotationType(), builder, func);
+                }
+                if (!result) {
+                    checkedAnnotations.add(cls);
+                }
+            }
+        }
+        return result;
     }
 
     @SuppressWarnings("unchecked")
@@ -815,9 +833,7 @@ public class Structures {
 
     private static Object annotationDefaultValue(Method method, Annotation annotation) {
         var value = method.getDefaultValue();
-        if (value instanceof String s && StringUtils.isEmpty(s)) {
-            value = null;
-        } else if (value instanceof Class c && void.class.equals(c)) {
+        if ((value instanceof String s && StringUtils.isEmpty(s)) || void.class.equals(value)) {
             value = null;
         }
         return value;
