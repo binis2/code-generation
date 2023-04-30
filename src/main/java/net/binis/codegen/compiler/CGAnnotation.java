@@ -45,14 +45,13 @@ public class CGAnnotation extends CGExpression {
 
     public CGList<CGExpression> getArguments() {
         if (isNull(arguments)) {
-            arguments = new CGList<>(invoke("getArguments", instance), this::onModify);
+            arguments = new CGList<>(invoke("getArguments", instance), this::onModify, CGExpression.class);
         }
         return arguments;
     }
 
     public boolean hasArgument(String argument) {
-        for (var iter = getArguments().iterator(CGExpression.class); iter.hasNext(); ) {
-            var attr = iter.next();
+        for (var attr : getArguments()) {
             if (attr.getInstance().getClass().equals(CGAssign.theClass())) {
                 var assign = new CGAssign(attr.getInstance());
                 if (assign.getVariable().getInstance().toString().equals(argument)) {
@@ -64,8 +63,7 @@ public class CGAnnotation extends CGExpression {
     }
 
     public CGValueExpression getArgument(String argument) {
-        for (var iter = getArguments().iterator(CGExpression.class); iter.hasNext(); ) {
-            var attr = iter.next();
+        for (var attr : getArguments()) {
             if (attr.getInstance().getClass().equals(CGAssign.theClass())) {
                 var assign = new CGAssign(attr.getInstance());
                 if (assign.getVariable().getInstance().toString().equals(argument)) {

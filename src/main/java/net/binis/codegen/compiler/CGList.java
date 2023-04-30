@@ -34,23 +34,26 @@ import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.*;
 
 @Slf4j
-public class CGList<T extends BaseJavaCompilerObject> extends BaseJavaCompilerObject {
+public class CGList<T extends BaseJavaCompilerObject> extends BaseJavaCompilerObject implements Iterable<T> {
 
     public static Class theClass() {
         return loadClass("com.sun.tools.javac.util.List");
     }
 
     protected final Consumer<CGList<T>> onModify;
+
+    protected Class<T> containedClass;
     protected Method mAppend;
 
-    public CGList(Object instance, Consumer<CGList<T>> onModify) {
+    public CGList(Object instance, Consumer<CGList<T>> onModify, Class<T> containedClass) {
         super();
         this.instance = instance;
         this.onModify = onModify;
+        this.containedClass = containedClass;
     }
 
-    public static <T extends BaseJavaCompilerObject> CGList<T> nil() {
-        return new CGList<>(invokeStatic("nil", theClass()), null);
+    public static <T extends BaseJavaCompilerObject> CGList<T> nil(Class<T> cls) {
+        return new CGList<T>(invokeStatic("nil", theClass()), null, cls);
     }
 
     @Override
@@ -74,8 +77,8 @@ public class CGList<T extends BaseJavaCompilerObject> extends BaseJavaCompilerOb
     }
 
     @SuppressWarnings("unchecked")
-    public Iterator<T> iterator(Class<T> cls) {
-        return new ProxyIterator((Iterator) invoke("iterator", instance), cls);
+    public Iterator<T> iterator() {
+        return new ProxyIterator((Iterator) invoke("iterator", instance), containedClass);
     }
 
     protected static class ProxyIterator implements Iterator {

@@ -48,7 +48,7 @@ public class CGMethodSymbol extends CGSymbol {
     }
 
     public CGList<CGVarSymbol> params() {
-        return new CGList<>(invoke("params", instance), null);
+        return new CGList<>(invoke("params", instance), null, CGVarSymbol.class);
     }
 
     @SuppressWarnings("unchecked")

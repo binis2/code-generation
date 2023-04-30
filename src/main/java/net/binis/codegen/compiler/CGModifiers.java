@@ -45,7 +45,7 @@ public class CGModifiers extends BaseJavaCompilerObject {
 
     public CGList<CGAnnotation> getAnnotations() {
         if (isNull(annotations)) {
-            annotations = new CGList<>(invoke("getAnnotations", instance), this::onModify);
+            annotations = new CGList<>(invoke("getAnnotations", instance), this::onModify, CGAnnotation.class);
         }
         return annotations;
     }

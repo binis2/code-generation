@@ -40,8 +40,7 @@ public class ElementUtils {
 
     public static CGAnnotation findAnnotation(Element element, Predicate<CGAnnotation> filter) {
         var decl = getDeclaration(element);
-        for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
-            var ann = it.next();
+        for (var ann : decl.getModifiers().getAnnotations()) {
             if (filter.test(ann)) {
                 return ann;
             }
@@ -52,8 +51,7 @@ public class ElementUtils {
     public static List<CGAnnotation> findAnnotations(Element element, Predicate<CGAnnotation> filter) {
         var result = new ArrayList<CGAnnotation>();
         var decl = getDeclaration(element);
-        for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
-            var ann = it.next();
+        for (var ann : decl.getModifiers().getAnnotations()) {
             if (filter.test(ann)) {
                 result.add(ann);
             }
@@ -65,7 +63,7 @@ public class ElementUtils {
         var maker = TreeMaker.create();
         var decl = getDeclaration(element, maker);
 
-        var list = CGList.<CGExpression>nil();
+        var list = CGList.nil(CGExpression.class);
         for (var attr : attributes.entrySet()) {
             list = list.append(maker.Assign(maker.Ident(CGName.create(attr.getKey())), calcExpression(maker, attr.getValue())));
         }
@@ -104,9 +102,8 @@ public class ElementUtils {
     public static CGAnnotation removeAnnotation(Element element, Class<? extends Annotation> annotation) {
         CGAnnotation result = null;
         var decl = getDeclaration(element);
-        var list = CGList.<CGAnnotation>nil();
-        for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
-            var ann = it.next();
+        var list = CGList.nil(CGAnnotation.class);
+        for (var ann : decl.getModifiers().getAnnotations()) {
             if (!ann.isAnnotation(annotation)) {
                 list = list.append(ann);
             } else {
@@ -120,9 +117,8 @@ public class ElementUtils {
     public static CGAnnotation removeAnnotation(Element element, CGAnnotation annotation) {
         CGAnnotation result = null;
         var decl = getDeclaration(element);
-        var list = CGList.<CGAnnotation>nil();
-        for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
-            var ann = it.next();
+        var list = CGList.nil(CGAnnotation.class);
+        for (var ann : decl.getModifiers().getAnnotations()) {
             if (!ann.getInstance().equals(annotation.getInstance())) {
                 list = list.append(ann);
             } else {
@@ -135,8 +131,7 @@ public class ElementUtils {
 
     public static void addAnnotationAttribute(Element element, Class<? extends Annotation> annotation, String name, Object value) {
         var decl = getDeclaration(element);
-        for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
-            var ann = it.next();
+        for (var ann : decl.getModifiers().getAnnotations()) {
             if (ann.isAnnotation(annotation)) {
                 addAnnotationAttribute(element, ann, name, value);
                 break;
@@ -151,8 +146,7 @@ public class ElementUtils {
 
     public static void removeAnnotationAttribute(Element element, Class<? extends Annotation> annotation, String name) {
         var decl = getDeclaration(element);
-        for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
-            var ann = it.next();
+        for (var ann : decl.getModifiers().getAnnotations()) {
             if (ann.isAnnotation(annotation)) {
                 removeAnnotationAttribute(element, ann, name);
                 break;
@@ -161,9 +155,8 @@ public class ElementUtils {
     }
 
     public static void removeAnnotationAttribute(Element element, CGAnnotation annotation, String name) {
-        var list = CGList.<CGExpression>nil();
-        for (var iter = annotation.getArguments().iterator(CGExpression.class); iter.hasNext(); ) {
-            var attr = iter.next();
+        var list = CGList.nil(CGExpression.class);
+        for (var attr : annotation.getArguments()) {
             if (attr.getInstance().getClass().equals(CGAssign.theClass())) {
                 var assign = new CGAssign(attr.getInstance());
                 if (!assign.getVariable().getInstance().toString().equals(name)) {
@@ -178,8 +171,7 @@ public class ElementUtils {
 
     public static void replaceAnnotationAttribute(Element element, Class<? extends Annotation> annotation, String name, Object value) {
         var decl = getDeclaration(element);
-        for (var it = decl.getModifiers().getAnnotations().iterator(CGAnnotation.class); it.hasNext(); ) {
-            var ann = it.next();
+        for (var ann : decl.getModifiers().getAnnotations()) {
             if (ann.isAnnotation(annotation)) {
                 replaceAnnotationAttribute(element, ann, name, value);
                 break;
@@ -190,9 +182,8 @@ public class ElementUtils {
     public static void replaceAnnotationAttribute(Element element, CGAnnotation annotation, String name, Object value) {
         var maker = TreeMaker.create();
 
-        var list = CGList.<CGExpression>nil();
-        for (var iter = annotation.getArguments().iterator(CGExpression.class); iter.hasNext(); ) {
-            var attr = iter.next();
+        var list = CGList.nil(CGExpression.class);
+        for (var attr : annotation.getArguments()) {
             if (attr.getInstance().getClass().equals(CGAssign.theClass())) {
                 var assign = new CGAssign(attr.getInstance());
                 if (!assign.getVariable().getInstance().toString().equals(name)) {
@@ -235,11 +226,11 @@ public class ElementUtils {
             return maker.Select(maker.QualIdent(symbol), CGName.create("class"));
         } else if (value.getClass().isArray()) {
             var length = Array.getLength(value);
-            var list = CGList.<CGExpression>nil();
+            var list = CGList.nil(CGExpression.class);
             for (var i = 0; i < length; i++) {
                 list.append(calcExpression(maker, Array.get(value, i)));
             }
-            return maker.NewArray(null, CGList.nil(), list);
+            return maker.NewArray(null, CGList.nil(CGExpression.class), list);
         }
 
         //TODO: Handle all possible cases.
