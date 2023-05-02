@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>dev.binis</groupId>
     <artifactId>code-generator</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
     <name>code-generator</name>
     <description>Binis Code Generation</description>
     <url>https://github.com/binis2/code-generation</url>
@@ -58,19 +58,19 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.target>${java.version}</maven.compiler.target>
-        <junit.jupiter.version>5.9.2</junit.jupiter.version>
+        <junit.jupiter.version>5.9.3</junit.jupiter.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>dev.binis</groupId>
             <artifactId>code-generator-core</artifactId>
-            <version>1.0.7</version>
+            <version>1.0.8</version>
         </dependency>
         <dependency>
             <groupId>dev.binis</groupId>
             <artifactId>code-generator-spring</artifactId>
-            <version>1.0.7</version>
+            <version>1.0.8</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -118,7 +118,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>5.2.0</version>
+            <version>5.3.1</version>
         </dependency>
     </dependencies>
 

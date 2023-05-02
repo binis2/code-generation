@@ -1,4 +1,14 @@
 # Change Log
+**01-05-2023** ver. 1.0.8
+* Generation: Added recursive check for custom prototypes.
+* Generation: Made iterating over CGList more convenient.
+* Generation: Added some utility methods to CGExpression.
+
+**07-04-2023** ver. 1.0.7
+* Annotation Processor: Fixed wrong element passed to processor.
+* Generation: Extended support for direct element manipulations.
+* Generation: equals() and hashCode() to generated enums to suppress spotBugs errors.
+
 **04-04-2023** ver. 1.0.6
 * Generation: Added experimental method annotations' manipulation.
 * Generation: Added enrichers for enums.
