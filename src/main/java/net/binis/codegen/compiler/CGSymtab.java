@@ -21,13 +21,15 @@ package net.binis.codegen.compiler;
  */
 
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.compiler.base.BaseJavaCompilerObject;
+import net.binis.codegen.compiler.base.JavaCompilerObject;
 
+import static java.util.Objects.isNull;
 import static net.binis.codegen.tools.Reflection.*;
 
 @Slf4j
-public class CGSymtab extends BaseJavaCompilerObject {
+public class CGSymtab extends JavaCompilerObject {
 
+    protected static CGSymtab inst;
     public static Class theClass() {
         return loadClass("com.sun.tools.javac.code.Symtab");
     }
@@ -42,8 +44,11 @@ public class CGSymtab extends BaseJavaCompilerObject {
         cls = theClass();
     }
 
-    public CGType enterClass(String s) {
-        return new CGType(invoke("enterClass", s));
+    public static CGType type(String s) {
+        if (isNull(inst)) {
+            inst = new CGSymtab();
+        }
+        return new CGType(invoke("enterClass", inst.instance, s));
     }
 
 }

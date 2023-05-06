@@ -38,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
 import net.binis.codegen.annotation.type.GenerationStrategy;
 import net.binis.codegen.compiler.CGMethodSymbol;
-import net.binis.codegen.compiler.utils.ElementUtils;
+import net.binis.codegen.compiler.utils.ElementAnnotationUtils;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
@@ -201,7 +201,7 @@ public class Generator {
         parse.setProcessed(true);
 
         if (nonNull(prsd.getElement())) {
-            ElementUtils.addOrReplaceAnnotation(prsd.getElement(), lombok.Generated.class, Map.of());
+            ElementAnnotationUtils.addOrReplaceAnnotation(prsd.getElement(), lombok.Generated.class, Map.of());
         }
     }
 
@@ -729,8 +729,7 @@ public class Generator {
     private static void checkForClassExpressions(Node type, ClassOrInterfaceDeclaration declaration) {
         declaration.findCompilationUnit().ifPresent(unit -> {
             for (var node : type.getChildNodes()) {
-                if (node instanceof ClassExpr) {
-                    var expr = (ClassExpr) node;
+                if (node instanceof ClassExpr expr) {
                     notNull(lookup.findParsed(getExternalClassName(unit, expr.getTypeAsString())), p -> {
                         if (isNull(p.getMixIn())) {
                             expr.setType(findProperType(p, unit, expr));
@@ -2087,7 +2086,7 @@ public class Generator {
             processingTypes.remove(typeDeclaration.getNameAsString());
 
             if (nonNull(prsd.getElement())) {
-                ElementUtils.addOrReplaceAnnotation(prsd.getElement(), lombok.Generated.class, Map.of());
+                ElementAnnotationUtils.addOrReplaceAnnotation(prsd.getElement(), lombok.Generated.class, Map.of());
             }
 
             parse.setProcessed(true);

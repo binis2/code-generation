@@ -21,13 +21,13 @@ package net.binis.codegen.compiler;
  */
 
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.compiler.base.BaseJavaCompilerObject;
+import net.binis.codegen.compiler.base.JavaCompilerObject;
 
 import static net.binis.codegen.tools.Reflection.getFieldValue;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
-public class CGTree extends BaseJavaCompilerObject {
+public class CGTree extends JavaCompilerObject {
 
     public static Class theClass() {
         return loadClass("com.sun.tools.javac.tree.JCTree");

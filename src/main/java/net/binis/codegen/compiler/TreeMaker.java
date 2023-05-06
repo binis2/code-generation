@@ -21,12 +21,12 @@ package net.binis.codegen.compiler;
  */
 
 import com.sun.source.util.Trees;
-import net.binis.codegen.compiler.base.BaseJavaCompilerObject;
+import net.binis.codegen.compiler.base.JavaCompilerObject;
 
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.*;
 
-public class TreeMaker extends BaseJavaCompilerObject {
+public class TreeMaker extends JavaCompilerObject {
 
     public static TreeMaker create() {
         return new TreeMaker();
@@ -47,6 +47,11 @@ public class TreeMaker extends BaseJavaCompilerObject {
 
     public Trees getTrees() {
         return trees;
+    }
+
+    public TreeMaker at(int pos) {
+        invoke("at", instance, pos);
+        return this;
     }
 
     public CGExpression QualIdent(CGSymbol sym) {
@@ -101,10 +106,36 @@ public class TreeMaker extends BaseJavaCompilerObject {
         return new CGTypeCast(invoke(method, instance, clazz.getInstance(), expr.getInstance()));
     }
 
+    public CGVariableDecl VarDef(CGModifiers mods, CGName name, CGExpression vartype, CGExpression init) {
+        var method = findMethod("VarDef", instance.getClass(), CGModifiers.theClass(), CGName.theClass(), CGExpression.theClass(), CGExpression.theClass());
+        return new CGVariableDecl(invoke(method, instance, mods.getInstance(), name.getInstance(), vartype.getInstance(), init.getInstance()));
+    }
+
+    public CGVariableDecl VarDef(CGModifiers mods, CGName name, CGExpression vartype, CGExpression init, boolean declaredUsingVar) {
+        var method = findMethod("VarDef", instance.getClass(), CGModifiers.theClass(), CGName.theClass(), CGExpression.theClass(), CGExpression.theClass(), boolean.class);
+        return new CGVariableDecl(invoke(method, instance, mods.getInstance(), name.getInstance(), vartype.getInstance(), init.getInstance(), declaredUsingVar));
+    }
+
+    public CGVariableDecl ReceiverVarDef(CGModifiers mods, CGName name, CGExpression vartype) {
+        var method = findMethod("ReceiverVarDef", instance.getClass(), CGModifiers.theClass(), CGName.theClass(), CGExpression.theClass());
+        return new CGVariableDecl(invoke(method, instance, mods.getInstance(), name.getInstance(), vartype.getInstance()));
+    }
+
+    public CGVariableDecl VarDef(CGVarSymbol symbol, CGExpression init) {
+        var method = findMethod("VarDef", instance.getClass(), CGVarSymbol.theClass(), CGExpression.theClass());
+        return new CGVariableDecl(invoke(method, instance, symbol.getInstance(), nonNull(init) ? init.getInstance() : null));
+    }
+
     public CGSymbol getSymbol(String className) {
         var compilerClass = loadClass("com.sun.tools.javac.main.JavaCompiler");
         var compiler = invokeStatic("instance", compilerClass, context);
         return new CGSymbol(invoke("resolveBinaryNameOrIdent", compiler, className));
+    }
+
+    public CGMethodInvocation Apply(CGList<CGExpression> typeargs, CGExpression fn, CGList<CGExpression> args)
+    {
+        var method = findMethod("Apply", instance.getClass(), CGList.theClass(), CGExpression.theClass(), CGList.theClass());
+        return new CGMethodInvocation(invoke(method, instance, typeargs.getInstance(), fn.getInstance(), args.getInstance()));
     }
 
 }

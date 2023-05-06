@@ -21,34 +21,32 @@ package net.binis.codegen.compiler;
  */
 
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.compiler.base.JavaCompilerObject;
 
+import static java.util.Objects.isNull;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
-public class CGType extends JavaCompilerObject {
+public class CGVariableDecl extends CGStatement {
 
-    public static Class theClass() {
-        return loadClass("com.sun.tools.javac.code.Type");
+    protected CGModifiers modifiers;
+
+    public CGVariableDecl(Object instance) {
+        super(instance);
     }
 
-    public CGType(Object instance) {
-        super();
-        this.instance = instance;
+    public CGModifiers getModifiers() {
+        if (isNull(modifiers)) {
+            modifiers = new CGModifiers(this);
+        }
+        return modifiers;
+    }
+
+    public static Class theClass() {
+        return loadClass("com.sun.tools.javac.tree.JCTree$JCVariableDecl");
     }
 
     @Override
     protected void init() {
-        cls = theClass();
+        cls = CGVariableDecl.theClass();
     }
-
-    @Override
-    public String toString() {
-        return instance.toString();
-    }
-
-    public Class toClass() {
-        return loadClass(toString());
-    }
-
 }

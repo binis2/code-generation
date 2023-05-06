@@ -20,35 +20,31 @@ package net.binis.codegen.compiler;
  * #L%
  */
 
-import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.base.JavaCompilerObject;
 
-import static net.binis.codegen.tools.Reflection.loadClass;
+import static net.binis.codegen.tools.Reflection.*;
 
-@Slf4j
-public class CGType extends JavaCompilerObject {
+public class JavacElements extends JavaCompilerObject {
 
-    public static Class theClass() {
-        return loadClass("com.sun.tools.javac.code.Type");
+    protected static final JavacElements theInstance = new JavacElements();
+
+    public static JavacElements create() {
+        return theInstance;
     }
 
-    public CGType(Object instance) {
+    protected JavacElements() {
         super();
-        this.instance = instance;
+    }
+
+    public CGName getName(CharSequence cs) {
+        var method = findMethod("getName", cls, CharSequence.class);
+        return new CGName(invoke(method, instance, cs));
     }
 
     @Override
     protected void init() {
-        cls = theClass();
-    }
-
-    @Override
-    public String toString() {
-        return instance.toString();
-    }
-
-    public Class toClass() {
-        return loadClass(toString());
+        cls = loadClass("com.sun.tools.javac.model.JavacElements");
+        instance = invokeStatic("instance", cls, context);
     }
 
 }

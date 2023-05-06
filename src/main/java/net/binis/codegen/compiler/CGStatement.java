@@ -21,34 +21,24 @@ package net.binis.codegen.compiler;
  */
 
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.compiler.base.JavaCompilerObject;
 
+import static java.util.Objects.nonNull;
+import static net.binis.codegen.tools.Reflection.getFieldValue;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
-public class CGType extends JavaCompilerObject {
+public class CGStatement extends CGTree {
 
-    public static Class theClass() {
-        return loadClass("com.sun.tools.javac.code.Type");
+    public CGStatement(Object instance) {
+        super(instance);
     }
 
-    public CGType(Object instance) {
-        super();
-        this.instance = instance;
+    public static Class theClass() {
+        return loadClass("com.sun.tools.javac.tree.JCTree$JCStatement");
     }
 
     @Override
     protected void init() {
-        cls = theClass();
+        cls = CGStatement.theClass();
     }
-
-    @Override
-    public String toString() {
-        return instance.toString();
-    }
-
-    public Class toClass() {
-        return loadClass(toString());
-    }
-
 }

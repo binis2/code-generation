@@ -513,7 +513,11 @@ public class Helpers {
         var parent = findParentClassOfType(expr, AnnotationExpr.class, a -> knownClassAnnotations.contains(getExternalClassName(expr.findCompilationUnit().get(), a.getNameAsString())));
 
         if (isNull(parent)) {
-            return parsed.getFiles().get(1).getType(0).getNameAsString();
+            if (nonNull(parsed.getInterfaceName())) {
+                return parsed.getInterfaceName();
+            } else {
+                return expr.getTypeAsString();
+            }
         } else {
             if (parsed.isProcessed()) {
                 var type = parsed.getFiles().get(0).getType(0);

@@ -21,7 +21,7 @@ package net.binis.codegen.compiler;
  */
 
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.compiler.base.BaseJavaCompilerObject;
+import net.binis.codegen.compiler.base.JavaCompilerObject;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +29,7 @@ import java.util.Map;
 import static net.binis.codegen.tools.Reflection.*;
 
 @Slf4j
-public class CGTypeTag extends BaseJavaCompilerObject {
+public class CGTypeTag extends JavaCompilerObject {
 
     public static Class theClass() {
         return loadClass("com.sun.tools.javac.code.TypeTag");

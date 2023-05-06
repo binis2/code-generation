@@ -21,6 +21,7 @@ package net.binis.codegen.compiler;
  */
 
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.tools.Reflection;
 
 import static net.binis.codegen.tools.Reflection.loadClass;
 
@@ -29,6 +30,11 @@ public class CGVarSymbol extends CGSymbol {
 
     public static Class theClass() {
         return loadClass("com.sun.tools.javac.code.Symbol$VarSymbol");
+    }
+
+    @SuppressWarnings("unchecked")
+    public static CGVarSymbol create(long flags, CGName name, CGType type, CGSymbol owner) {
+        return new CGVarSymbol(Reflection.instantiate(theClass(), flags, name.getInstance(), type.getInstance(), owner.getInstance()));
     }
 
     public CGVarSymbol(Object instance) {

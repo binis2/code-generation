@@ -21,7 +21,6 @@ package net.binis.codegen.compiler;
  */
 
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.compiler.utils.ElementUtils;
 
 import java.lang.annotation.Annotation;
 

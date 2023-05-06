@@ -21,6 +21,8 @@ package net.binis.codegen.compiler.base;
  */
 
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.compiler.CGName;
+import net.binis.codegen.compiler.JavacElements;
 import net.binis.codegen.factory.CodeFactory;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -30,14 +32,14 @@ import static net.binis.codegen.generation.core.Helpers.lookup;
 import static net.binis.codegen.tools.Reflection.invoke;
 
 @Slf4j
-public abstract class BaseJavaCompilerObject {
+public abstract class JavaCompilerObject {
 
     protected final ProcessingEnvironment env;
     protected Object instance;
     protected Object context;
     protected Class cls;
 
-    protected BaseJavaCompilerObject() {
+    protected JavaCompilerObject() {
         this.env = CodeFactory.create(ProcessingEnvironment.class, lookup.getProcessingEnvironment());
         context = invoke("getContext", env);
         if (isNull(context)) {
@@ -56,8 +58,12 @@ public abstract class BaseJavaCompilerObject {
         return instance;
     }
 
+    public CGName toName(String name) {
+        return JavacElements.create().getName(name);
+    }
+
     public boolean is(Class cls) {
-        if (BaseJavaCompilerObject.class.isAssignableFrom(cls)) {
+        if (JavaCompilerObject.class.isAssignableFrom(cls)) {
             return this.getClass().equals(cls);
         } else {
             return getCls().equals(cls);

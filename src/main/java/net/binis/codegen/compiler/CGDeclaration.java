@@ -22,15 +22,15 @@ package net.binis.codegen.compiler;
 
 import com.sun.source.util.Trees;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.compiler.base.BaseJavaCompilerObject;
+import net.binis.codegen.compiler.base.JavaCompilerObject;
 
 import javax.lang.model.element.Element;
 
 import static java.util.Objects.isNull;
-import static net.binis.codegen.tools.Reflection.loadClass;
+import static net.binis.codegen.tools.Reflection.*;
 
 @Slf4j
-public abstract class CGDeclaration extends BaseJavaCompilerObject {
+public abstract class CGDeclaration extends JavaCompilerObject {
 
     protected CGModifiers modifiers;
 
@@ -48,5 +48,21 @@ public abstract class CGDeclaration extends BaseJavaCompilerObject {
             modifiers = new CGModifiers(this);
         }
         return modifiers;
+    }
+
+    public CGList<JavaCompilerObject> getDefs() {
+        return new CGList<>(getFieldValue(instance, "defs"), this::onDefsModify, JavaCompilerObject.class);
+    }
+
+    public CGName getName() {
+        return new CGName(getFieldValue(instance, "name"));
+    }
+
+    private <T extends JavaCompilerObject> void onDefsModify(CGList<T> list) {
+        setFieldValue(instance, "defs", list.getInstance());
+    }
+
+    public CGSymbol getSymbol() {
+        return new CGSymbol(getFieldValue(instance, "sym"));
     }
 }

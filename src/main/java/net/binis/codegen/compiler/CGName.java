@@ -20,11 +20,11 @@ package net.binis.codegen.compiler;
  * #L%
  */
 
-import net.binis.codegen.compiler.base.BaseJavaCompilerObject;
+import net.binis.codegen.compiler.base.JavaCompilerObject;
 
 import static net.binis.codegen.tools.Reflection.*;
 
-public class CGName extends BaseJavaCompilerObject {
+public class CGName extends JavaCompilerObject {
 
     public static CGName create(String name) {
         return new CGName(name);

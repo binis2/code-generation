@@ -21,7 +21,7 @@ package net.binis.codegen.compiler;
  */
 
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.compiler.base.BaseJavaCompilerObject;
+import net.binis.codegen.compiler.base.JavaCompilerObject;
 
 import javax.lang.model.element.Element;
 
@@ -29,7 +29,7 @@ import static net.binis.codegen.tools.Reflection.getFieldValue;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
-public class CGSymbol extends BaseJavaCompilerObject {
+public class CGSymbol extends JavaCompilerObject {
 
     public static Class theClass() {
         return loadClass("com.sun.tools.javac.code.Symbol");
