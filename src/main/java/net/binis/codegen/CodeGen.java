@@ -21,6 +21,7 @@ package net.binis.codegen;
  */
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.AnnotationDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -44,6 +45,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
@@ -109,7 +111,7 @@ public class CodeGen {
     }
 
     public static void processFiles(List<Path> files) {
-        var parser = new JavaParser();
+        var parser = lookup.getParser();
         for (var file : files) {
             try {
                 var fileName = file.toAbsolutePath().toString();
@@ -142,7 +144,7 @@ public class CodeGen {
     }
 
     public static void processSources(List<Pair<String, Element>> files) {
-        var parser = new JavaParser();
+        var parser = lookup.getParser();
         for (var file : files) {
             try {
                 var parse = parser.parse(file.getKey());
@@ -353,7 +355,7 @@ public class CodeGen {
 
     public static void processTemplate(String name, String source) {
         log.info("Processing template: {}", name);
-        var parser = new JavaParser();
+        var parser = lookup.getParser();
         var parse = parser.parse(source);
         parse.getResult().ifPresentOrElse(u ->
                         u.getTypes().forEach(CodeGen::handleTemplate),

@@ -66,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 public abstract class BaseCodeGenTest {
 
-    protected JavaParser parser = new JavaParser();
+    protected JavaParser parser = lookup.getParser();
 
     static {
         AnnotationDiscoverer.findAnnotations().stream().filter(Discoverer.DiscoveredService::isTemplate).forEach(a ->

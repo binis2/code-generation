@@ -21,6 +21,7 @@ package net.binis.codegen.generation.core;
  */
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.Getter;
@@ -55,7 +56,7 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     private final List<Pair<Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>>, PrototypeDescription<ClassOrInterfaceDeclaration>>> prototypeMaps = new ArrayList<>();
 
     @Getter
-    private final JavaParser parser = new JavaParser();
+    private final JavaParser parser = new JavaParser(new ParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_17));
     private UnaryOperator<String> externalLookup;
 
     @Getter
