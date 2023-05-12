@@ -389,8 +389,13 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                                         .addStatement(new ReturnStmt("(" + QUERY_JOIN_COLLECTION_FUNCTIONS + ") joinStart(\"" + fName + "\", " + subType + "." + QUERY_ORDER + ".class)")));
 
                         if (nonNull(prototype)) {
-                            prototype.registerPostProcessAction(() ->
-                                    Helpers.addInitializer(prototype, prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY), (LambdaExpr) expression("() -> " + prototype.getInterfaceName() + ".find().aggregate()"), false));
+                            var orderIntf = prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY);
+                            if (nonNull(orderIntf)) {
+                                prototype.registerPostProcessAction(() ->
+                                        Helpers.addInitializer(prototype, orderIntf, (LambdaExpr) expression("() -> " + prototype.getInterfaceName() + ".find().aggregate()"), false));
+                            } else {
+                                error(prototype.getPrototypeClassName() + " isn't enriched with QueryEnricher. Either use QueryEnricher or use the generated interface as reference instead!", prototype.getElement());
+                            }
                         }
                     } else {
                         var returnType = QUERY_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">>";

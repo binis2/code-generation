@@ -22,6 +22,7 @@ package net.binis.codegen.enrich.handler.base;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.enrich.PrototypeLookup;
@@ -37,6 +38,7 @@ import java.util.List;
 
 import static java.util.Objects.nonNull;
 
+@Slf4j
 public abstract class BaseEnricher implements PrototypeEnricher {
 
     protected PrototypeLookup lookup;
@@ -79,15 +81,12 @@ public abstract class BaseEnricher implements PrototypeEnricher {
     }
 
     protected void error(String message) {
-        if (nonNull(lookup.getProcessingEnvironment())) {
-            lookup.getProcessingEnvironment().getMessager().printMessage(Diagnostic.Kind.ERROR, message);
-        } else {
-            throw new GenericCodeGenException(message);
-        }
+        error(message, null);
     }
 
     protected void error(String message, Element element) {
         if (nonNull(lookup.getProcessingEnvironment())) {
+            log.error(message);
             lookup.getProcessingEnvironment().getMessager().printMessage(Diagnostic.Kind.ERROR, message, element);
         } else {
             throw new GenericCodeGenException(message);
