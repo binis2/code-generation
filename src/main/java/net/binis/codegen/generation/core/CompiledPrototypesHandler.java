@@ -46,6 +46,7 @@ import java.util.Objects;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.EnrichHelpers.annotation;
 import static net.binis.codegen.generation.core.EnrichHelpers.block;
 import static net.binis.codegen.generation.core.Generator.generateCodeForClass;
 import static net.binis.codegen.generation.core.Helpers.*;
@@ -97,7 +98,7 @@ public abstract class CompiledPrototypesHandler {
                     if (c.isEnum()) {
                         var declaration = new CompilationUnit().setPackageDeclaration(c.getPackageName()).addEnum(c.getSimpleName());
 
-                    handleEntries(c, declaration);
+                        handleEntries(c, declaration);
                         var props = handleProperties(declaration, c, ann);
 
                         var parsed = Structures.Parsed.<EnumDeclaration>builder()
@@ -265,41 +266,39 @@ public abstract class CompiledPrototypesHandler {
 
                 for (var ann : method.getAnnotations()) {
                     var methods = ann.annotationType().getDeclaredMethods();
-                    lookup.getParser().parseAnnotation(ann.toString()).getResult().ifPresent(annotation -> {
-                        for (var m : methods) {
-                            if (nonNull(m.getDefaultValue())) {
-                                annotation.getChildNodes().stream().filter(MemberValuePair.class::isInstance).map(MemberValuePair.class::cast).filter(v -> v.getName().asString().equals(m.getName())).findFirst().ifPresent(pair -> {
-                                    if (m.getDefaultValue() instanceof Class && pair.getValue().toString().equals(((Class) m.getDefaultValue()).getName() + ".class")) {
-                                        annotation.remove(pair);
-                                    } else if (m.getDefaultValue().getClass().equals(String.class) && m.getDefaultValue().toString().equals(pair.getValue().asStringLiteralExpr().asString())) {
-                                        annotation.remove(pair);
-                                    } else if (m.getDefaultValue().toString().equals(pair.getValue().toString())) {
-                                        annotation.remove(pair);
-                                    }
-                                });
-                            }
+                    var annotation = annotation(ann.toString());
+                    for (var m : methods) {
+                        if (nonNull(m.getDefaultValue())) {
+                            annotation.getChildNodes().stream().filter(MemberValuePair.class::isInstance).map(MemberValuePair.class::cast).filter(v -> v.getName().asString().equals(m.getName())).findFirst().ifPresent(pair -> {
+                                if (m.getDefaultValue() instanceof Class && pair.getValue().toString().equals(((Class) m.getDefaultValue()).getName() + ".class")) {
+                                    annotation.remove(pair);
+                                } else if (m.getDefaultValue().getClass().equals(String.class) && m.getDefaultValue().toString().equals(pair.getValue().asStringLiteralExpr().asString())) {
+                                    annotation.remove(pair);
+                                } else if (m.getDefaultValue().toString().equals(pair.getValue().toString())) {
+                                    annotation.remove(pair);
+                                }
+                            });
                         }
-                        unit.addImport(ann.annotationType().getCanonicalName());
-                        annotation.setName(ann.annotationType().getSimpleName());
-                        addAnnotationTypeImports(ann, unit);
-                        mtd.addAnnotation(annotation);
-                    });
+                    }
+                    unit.addImport(ann.annotationType().getCanonicalName());
+                    annotation.setName(ann.annotationType().getSimpleName());
+                    addAnnotationTypeImports(ann, unit);
+                    mtd.addAnnotation(annotation);
                 }
             }
         }
+
     }
 
     private static String buildType(CompilationUnit unit, Type type, Class<?> returnType) {
-        if (type instanceof ParameterizedType) {
-            var t = (ParameterizedType) type;
+        if (type instanceof ParameterizedType t) {
             var result = new StringBuilder(returnType.getSimpleName());
             var generics = t.getActualTypeArguments();
 
             if (generics.length > 0) {
                 result.append('<');
                 for (var generic : generics) {
-                    if (generic instanceof Class) {
-                        var cls = (Class) generic;
+                    if (generic instanceof Class cls) {
                         result.append(cls.getSimpleName()).append(", ");
                         if (!cls.isPrimitive()) {
                             unit.addImport(cls);
@@ -313,8 +312,8 @@ public abstract class CompiledPrototypesHandler {
             }
 
             return result.toString();
-        } else if (type instanceof TypeVariable) {
-            return ((TypeVariable) type).getName();
+        } else if (type instanceof TypeVariable t) {
+            return t.getName();
         } else {
             return returnType.getSimpleName();
         }
@@ -323,12 +322,11 @@ public abstract class CompiledPrototypesHandler {
     private static void handleAnnotations(Class<?> cls, ClassOrInterfaceDeclaration declaration) {
         var unit = declaration.findCompilationUnit().get();
         for (var ann : cls.getAnnotations()) {
-            lookup.getParser().parseAnnotation(ann.toString()).getResult().ifPresent(annotation -> {
-                unit.addImport(ann.annotationType().getCanonicalName());
-                annotation.setName(ann.annotationType().getSimpleName());
-                addAnnotationTypeImports(ann, unit);
-                declaration.addAnnotation(annotation);
-            });
+            var annotation = annotation(ann.toString());
+            unit.addImport(ann.annotationType().getCanonicalName());
+            annotation.setName(ann.annotationType().getSimpleName());
+            addAnnotationTypeImports(ann, unit);
+            declaration.addAnnotation(annotation);
         }
     }
 
@@ -336,12 +334,11 @@ public abstract class CompiledPrototypesHandler {
         var unit = mtd.findCompilationUnit().get();
         for (var ann : method.getAnnotations()) {
             if (!ann.annotationType().equals(CodeAnnotation.class)) {
-                lookup.getParser().parseAnnotation(ann.toString()).getResult().ifPresent(annotation -> {
-                    unit.addImport(ann.annotationType().getCanonicalName());
-                    annotation.setName(ann.annotationType().getSimpleName());
-                    addAnnotationTypeImports(ann, unit);
-                    mtd.addAnnotation(annotation);
-                });
+                var annotation = annotation(ann.toString());
+                unit.addImport(ann.annotationType().getCanonicalName());
+                annotation.setName(ann.annotationType().getSimpleName());
+                addAnnotationTypeImports(ann, unit);
+                mtd.addAnnotation(annotation);
             }
         }
     }
@@ -363,8 +360,8 @@ public abstract class CompiledPrototypesHandler {
     private static void handleAnnotationValue(Object value, CompilationUnit unit) {
         if (nonNull(value)) {
             var name = value.getClass().getCanonicalName();
-            if (value instanceof Annotation) {
-                addAnnotationTypeImports((Annotation) value, unit);
+            if (value instanceof Annotation a) {
+                addAnnotationTypeImports(a, unit);
             } else if (value.getClass().isEnum()) {
                 unit.addImport(name + "." + ((Enum) value).name(), true, false);
             } else if (value.getClass().isArray()) {

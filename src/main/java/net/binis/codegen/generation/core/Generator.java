@@ -229,8 +229,8 @@ public class Generator {
         parse.setInterface(intf);
 
         if (isNull(prsd) || !prsd.isNested() || isNull(prsd.getParentClassName())) {
-            spec.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + properties.getInterfaceName() + "\")").getResult().get());
-            intf.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + properties.getClassName() + "\")").getResult().get());
+            spec.addAnnotation(annotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + properties.getInterfaceName() + "\")"));
+            intf.addAnnotation(annotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + properties.getClassName() + "\")"));
         }
 
         adjustNestedPrototypes(parse);
@@ -371,7 +371,7 @@ public class Generator {
         parse.setImplementation(spec);
 
         if (!prsd.isNested() || isNull(prsd.getParentClassName())) {
-            spec.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + properties.getInterfaceName() + "\")").getResult().get());
+            spec.addAnnotation(annotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + properties.getInterfaceName() + "\")"));
         }
 
         handleClassGenerics(parse);
@@ -2062,8 +2062,8 @@ public class Generator {
             parse.setCodeEnum(true);
 
             if (isNull(prsd) || !prsd.isNested() || isNull(prsd.getParentClassName())) {
-                spec.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + properties.getInterfaceName() + "\")").getResult().get());
-                intf.addAnnotation(parse.getParser().parseAnnotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + (nonNull(mixIn) ? mixIn.getProperties().getClassName() : properties.getClassName()) + "\")").getResult().get());
+                spec.addAnnotation(annotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + properties.getInterfaceName() + "\")"));
+                intf.addAnnotation(annotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + (nonNull(mixIn) ? mixIn.getProperties().getClassName() : properties.getClassName()) + "\")"));
             }
 
             unit.setComment(new BlockComment("Generated code by Binis' code generator."));

@@ -497,8 +497,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                             var c = p.getConstants().get(exp.getNameAsString());
                             if (nonNull(c)) {
                                 field.getDeclaration().findCompilationUnit().ifPresent(u -> u.addImport(c.getDestination().getFullyQualifiedName().get()));
-                                parser.parseExpression(c.getDestination().getNameAsString() + "." + c.getName()).getResult().ifPresent(e ->
-                                        handleExpression(annotation, annotationClass, params, list, parOrder, e));
+                                var e = expression(c.getDestination().getNameAsString() + "." + c.getName());
+                                handleExpression(annotation, annotationClass, params, list, parOrder, e);
                             } else {
                                 log.warn("Unknown constant {} on class {}", exp.getNameAsString(), cls);
                             }

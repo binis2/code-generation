@@ -22,6 +22,7 @@ package net.binis.codegen.generation.core;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.Statement;
@@ -48,6 +49,10 @@ public class EnrichHelpers {
 
     public static Expression expression(String code) {
         return lookup.getParser().parseExpression(code).getResult().get();
+    }
+
+    public static AnnotationExpr annotation(String code) {
+        return lookup.getParser().parseAnnotation(code).getResult().get();
     }
 
     private EnrichHelpers() {

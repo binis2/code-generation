@@ -21,7 +21,6 @@ package net.binis.codegen;
  */
 
 import com.github.javaparser.JavaParser;
-import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.AnnotationDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -45,7 +44,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
@@ -94,9 +92,8 @@ public class CodeGen {
 
         var destination = cmd.getOptionValue(DESTINATION);
         var impl_destination = cmd.getOptionValue(IMPL_DESTINATION);
-        lookup.parsed().stream().filter(PrototypeDescription::isProcessed).filter(p -> !p.isNested() || isNull(p.getParentClassName())).forEach(p -> {
-            saveParsed(destination, impl_destination, p);
-        });
+        lookup.parsed().stream().filter(PrototypeDescription::isProcessed).filter(p -> !p.isNested() || isNull(p.getParentClassName())).forEach(p ->
+                saveParsed(destination, impl_destination, p));
         lookup.custom().forEach(p ->
             saveParsed(destination, impl_destination, p));
     }
@@ -267,7 +264,7 @@ public class CodeGen {
 
     private static void addTree(Path directory, final Collection<Path> all, String filter) throws IOException {
         var pm = FileSystems.getDefault().getPathMatcher("glob:" + nullCheck(filter, "**"));
-        Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
+        Files.walkFileTree(directory, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                 if (!file.toFile().isDirectory() && pm.matches(file)) {

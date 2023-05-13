@@ -66,6 +66,7 @@ import java.util.stream.Collectors;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.*;
+import static net.binis.codegen.generation.core.EnrichHelpers.annotation;
 import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.tools.Reflection.instantiate;
 import static net.binis.codegen.tools.Reflection.loadClass;
@@ -1058,7 +1059,7 @@ public class Helpers {
             if (description.isNested() && nonNull(description.getParentClassName())) {
                 name = getBasePackage(description) + '.' + description.getParsedName().replace('.', '$');
             }
-            intf.addAnnotation(description.getParser().parseAnnotation("@Default(\"" + name + "\")").getResult().get());
+            intf.addAnnotation(annotation("@Default(\"" + name + "\")"));
             intf.findCompilationUnit().get().addImport(Default.class.getCanonicalName());
         }
     }

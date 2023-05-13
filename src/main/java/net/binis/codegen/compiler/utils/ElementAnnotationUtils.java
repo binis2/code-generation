@@ -21,7 +21,6 @@ package net.binis.codegen.compiler.utils;
  */
 
 import net.binis.codegen.compiler.*;
-import net.binis.codegen.exception.GenericCodeGenException;
 
 import javax.lang.model.element.Element;
 import java.lang.annotation.Annotation;

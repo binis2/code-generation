@@ -54,7 +54,7 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
     }
 
     public static <T extends JavaCompilerObject> CGList<T> nil(Class<T> cls) {
-        return new CGList<T>(invokeStatic("nil", theClass()), null, cls);
+        return new CGList<>(invokeStatic("nil", theClass()), null, cls);
     }
 
     @Override

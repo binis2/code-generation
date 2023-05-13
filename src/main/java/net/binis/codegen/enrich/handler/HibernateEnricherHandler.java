@@ -33,6 +33,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import java.lang.reflect.Method;
 
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.EnrichHelpers.annotation;
 import static net.binis.codegen.tools.Tools.with;
 
 public class HibernateEnricherHandler extends BaseEnricher implements HibernateEnricher {
@@ -54,7 +55,7 @@ public class HibernateEnricherHandler extends BaseEnricher implements HibernateE
         field.getDeclaration().findCompilationUnit().ifPresent(unit ->
                 unit.addImport("org.hibernate.annotations.Type"));
 
-        field.getDeclaration().addAnnotation(StaticJavaParser.parseAnnotation("@Type(net.binis.codegen.hibernate.CodeEnumType.class)"));
+        field.getDeclaration().addAnnotation(annotation("@Type(net.binis.codegen.hibernate.CodeEnumType.class)"));
 
         //Silencing missing equals and hashCode Hibernate warning.
         with(field.getPrototype(), prototype -> {

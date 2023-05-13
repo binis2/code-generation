@@ -20,10 +20,7 @@ package net.binis.codegen.compiler;
  * #L%
  */
 
-import com.sun.source.util.Trees;
 import lombok.extern.slf4j.Slf4j;
-
-import javax.lang.model.element.Element;
 
 import static net.binis.codegen.tools.Reflection.loadClass;
 

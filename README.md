@@ -101,7 +101,7 @@ enables decoupled instantiation of your objects
     Test.create().title("title").amount(10.0).done();
 ```
 
-The difference between CreatorModifierEnricher and CreatorEnricher is that CreatorEnricher give you the created object itself instead of it's modifier.
+The difference between CreatorModifierEnricher and CreatorEnricher is that CreatorEnricher give you the created object itself instead of its modifier.
 CreatorModifierEnricher is to be used with combination with ModifierEnricher. If ModifierEnricher is not added to the prototype CreatorModifierEnricher will act as CreatorEnricher.
 
 #### QueryEnricher

@@ -26,8 +26,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import java.util.Set;
 
-import static java.util.Objects.isNull;
-import static net.binis.codegen.tools.Reflection.invoke;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
