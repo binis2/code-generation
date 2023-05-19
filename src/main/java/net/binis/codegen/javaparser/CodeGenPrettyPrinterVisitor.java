@@ -1133,7 +1133,7 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
                 }
             }
         }
-        if (!n.getBody().isPresent()) {
+        if (n.getBody().isEmpty()) {
             printer.print(";");
         } else {
             printer.print(" ");
@@ -1711,7 +1711,7 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
 
     @Override
     public void visit(final LineComment n, final Void arg) {
-        if (!getOption(ConfigOption.PRINT_COMMENTS).isPresent()) {
+        if (getOption(ConfigOption.PRINT_COMMENTS).isEmpty()) {
             return;
         }
         printer
@@ -1721,7 +1721,7 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
 
     @Override
     public void visit(final BlockComment n, final Void arg) {
-        if (!getOption(ConfigOption.PRINT_COMMENTS).isPresent()) {
+        if (getOption(ConfigOption.PRINT_COMMENTS).isEmpty()) {
             return;
         }
         final String commentContent = normalizeEolInTextBlock(n.getContent(), getOption(ConfigOption.END_OF_LINE_CHARACTER).get().asString());
@@ -1891,7 +1891,7 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
     }
 
     private void printOrphanCommentsAfterThisChildNode(final Node node) {
-        if (!getOption(ConfigOption.PRINT_COMMENTS).isPresent()) return;
+        if (getOption(ConfigOption.PRINT_COMMENTS).isEmpty()) return;
         printComment(node.getOrphanComments().stream().filter(LineComment.class::isInstance).filter(c -> "endregion".equals(c.getContent())).findFirst(), null);
     }
 

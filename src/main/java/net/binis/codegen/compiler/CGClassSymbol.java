@@ -26,6 +26,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import java.util.Set;
 
+import static net.binis.codegen.tools.Reflection.invoke;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
@@ -50,4 +51,7 @@ public class CGClassSymbol extends CGSymbol {
         cls = theClass();
     }
 
+    public CGName getQualifiedName() {
+        return new CGName(invoke("getQualifiedName", instance));
+    }
 }

@@ -20,25 +20,26 @@ package net.binis.codegen.compiler;
  * #L%
  */
 
+import com.sun.source.util.Trees;
 import lombok.extern.slf4j.Slf4j;
 
-import static java.util.Objects.isNull;
+import javax.lang.model.element.Element;
+
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
-public class CGVariableDecl extends CGStatement {
+public class CGVariableDecl extends CGDeclaration {
 
-    protected CGModifiers modifiers;
+    public static CGVariableDecl create(Trees trees, Element element) {
+        return new CGVariableDecl(trees, element);
+    }
+
+    public CGVariableDecl(Trees trees, Element element) {
+        super(trees, element);
+    }
 
     public CGVariableDecl(Object instance) {
         super(instance);
-    }
-
-    public CGModifiers getModifiers() {
-        if (isNull(modifiers)) {
-            modifiers = new CGModifiers(this);
-        }
-        return modifiers;
     }
 
     public static Class theClass() {

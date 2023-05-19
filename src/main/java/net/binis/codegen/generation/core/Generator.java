@@ -27,6 +27,8 @@ import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.BlockComment;
 import com.github.javaparser.ast.expr.*;
+import com.github.javaparser.ast.nodeTypes.NodeWithName;
+import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -37,7 +39,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
 import net.binis.codegen.annotation.type.GenerationStrategy;
-import net.binis.codegen.compiler.CGMethodSymbol;
 import net.binis.codegen.compiler.utils.ElementAnnotationUtils;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
@@ -96,28 +97,23 @@ public class Generator {
 
         for (var type : parser.getTypes()) {
             if (type.isClassOrInterfaceDeclaration()) {
-                getCodeAnnotation(type).ifPresentOrElse(prototype -> {
-                    type.asClassOrInterfaceDeclaration().getMethods().forEach(method ->
-                            getCodeAnnotation(method).ifPresent(proto ->
-                                    generateCodeForMethod(parser, prsd, method, proto)));
+                getCodeAnnotation(type).ifPresent(prototype -> {
                     if (type.asClassOrInterfaceDeclaration().isInterface()) {
                         generateCodeForPrototype(parser, prsd, type, prototype);
                         processed.set(processed.get() + 1);
                     } else if (processForClass(parser, prsd, type, prototype)) {
                         processed.set(processed.get() + 1);
                     }
-                }, () ->
-                        type.asClassOrInterfaceDeclaration().getMethods().forEach(method ->
-                                getCodeAnnotation(method).ifPresent(prototype ->
-                                        generateCodeForMethod(parser, prsd, method, prototype))));
+                });
             } else if (type.isEnumDeclaration()) {
                 getCodeAnnotation(type).ifPresent(prototype -> {
                     generateCodeForEnum(parser, prsd, type, prototype);
                     processed.set(processed.get() + 1);
                 });
             }
-            Generator.generateCodeForMethods(prsd);
         }
+
+        processElementsForAnnotations(prsd);
 
         if (!notProcessed.isEmpty()) {
             var i = notProcessed.iterator();
@@ -132,35 +128,62 @@ public class Generator {
             }
         }
 
-        if (prsd != null && processed.get() == 0) {
+        if (nonNull(prsd) && processed.get() == 0) {
             ((Structures.Parsed) prsd).setInvalid(true);
         }
     }
 
-    private static void generateCodeForMethod(CompilationUnit unit, PrototypeDescription<ClassOrInterfaceDeclaration> prsd, MethodDeclaration method, AnnotationExpr prototype) {
-        if (!prsd.getMethods().containsKey(method.getNameAsString())) {
-            prsd.getMethods().put(method.getNameAsString(), Structures.ParsedMethodDescription.builder()
-                    .method(method)
-                    .element(findElement(method, prsd.getElement()))
-                    .prototype(prototype)
-                    .properties(getProperties(prototype))
-                    .description(prsd)
-                    .build());
-        }
+    private static void processElementsForAnnotations(PrototypeDescription<ClassOrInterfaceDeclaration> prsd) {
+        processNodeForAnnotations(prsd, prsd.getDeclarationUnit());
+        generateCodeForElements(prsd);
     }
 
-    private static Element findElement(MethodDeclaration method, Element element) {
-        if (nonNull(element) && ElementKind.CLASS.equals(element.getKind())) {
-            for (var e : element.getEnclosedElements()) {
-                if (ElementKind.METHOD.equals(e.getKind()) && e.getSimpleName().toString().equals(method.getNameAsString())) {
-                    var m = new CGMethodSymbol(e);
-                    if (m.params().size() == method.getParameters().size()) {
-                        return e;
-                    }
-                }
-            }
+    private static void processNodeForAnnotations(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, CompilationUnit declarationUnit) {
+        declarationUnit.findAll(AnnotationExpr.class).stream()
+                .filter(a -> Structures.defaultProperties.containsKey(getExternalClassName(declarationUnit, a.getNameAsString())))
+                .forEach(a ->
+                        a.getParentNode().ifPresent(parent ->
+                                prsd.getElements().computeIfAbsent(getElementName(a), name ->
+                                        Structures.ParsedElementDescription.builder()
+                                                .node(a.getParentNode().orElse(a))
+                                                .element(findElement(parent, prsd))
+                                                .prototype(a)
+                                                .properties(getProperties(a))
+                                                .description(prsd)
+                                                .build())));
+    }
+
+    private static String getElementName(Node node) {
+        var name = node instanceof NodeWithSimpleName<?> s ? s.getNameAsString() : node instanceof NodeWithName<?> n ? n.getNameAsString() : "";
+        if (name.isEmpty() && node instanceof FieldDeclaration field) {
+            name = "field." + field.getVariables().get(0).getNameAsString();
         }
-        return null;
+        var parent = node.getParentNode();
+        if (parent.isPresent() && !(parent.get() instanceof CompilationUnit)) {
+            return getElementName(parent.get()) + "." + name;
+        }
+        return name;
+    }
+
+    private static String getElementName(Element element) {
+        var name = element.getSimpleName().toString();
+        if (ElementKind.FIELD.equals(element.getKind())) {
+            name = "field." + name;
+        }
+        if (nonNull(element.getEnclosingElement()) && !ElementKind.PACKAGE.equals(element.getEnclosingElement().getKind())) {
+            return getElementName(element.getEnclosingElement()) + "." + name;
+        }
+        return name;
+    }
+
+
+    private static Element findElement(Node node, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        if (nonNull(parsed.getRawElements())) {
+            var name = getElementName(node);
+            return parsed.getRawElements().stream().filter(e -> name.equals(getElementName(e))).findFirst().orElse(null);
+        } else {
+            return null;
+        }
     }
 
     private static boolean processForClass(CompilationUnit parser, PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, AnnotationExpr prototype) {
@@ -200,9 +223,8 @@ public class Generator {
         processingTypes.remove(typeDeclaration.getNameAsString());
         parse.setProcessed(true);
 
-        if (nonNull(prsd.getElement())) {
-            ElementAnnotationUtils.addOrReplaceAnnotation(prsd.getElement(), lombok.Generated.class, Map.of());
-        }
+        with(prsd.getElement(), element ->
+                ElementAnnotationUtils.addOrReplaceAnnotation(element, lombok.Generated.class, Map.of()));
     }
 
     private static Structures.Parsed handleClassicStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
@@ -514,9 +536,12 @@ public class Generator {
             var statement = Holder.of("");
             ann.getChildNodes().stream().filter(MemberValuePair.class::isInstance).map(MemberValuePair.class::cast).forEach(pair -> {
                 switch (pair.getNameAsString()) {
-                    case "field" -> statement.set("this." + pair.getValue().asStringLiteralExpr().asString() + " = " + statement.get());
-                    case "expression" -> statement.set(statement.get() + pair.getValue().asStringLiteralExpr().asString() + ";");
-                    case "imports" -> pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
+                    case "field" ->
+                            statement.set("this." + pair.getValue().asStringLiteralExpr().asString() + " = " + statement.get());
+                    case "expression" ->
+                            statement.set(statement.get() + pair.getValue().asStringLiteralExpr().asString() + ";");
+                    case "imports" ->
+                            pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
                     default -> log.warn("Invalid @Initialize member {}", pair.getNameAsString());
                 }
             });
@@ -836,7 +861,11 @@ public class Generator {
                         }
                         break;
                     case "strategy": {
-                        value = pair.getValue().asFieldAccessExpr().getNameAsString();
+                        if (pair.getValue().isNameExpr()) {
+                            value = pair.getValue().asNameExpr().getNameAsString();
+                        } else {
+                            value = pair.getValue().asFieldAccessExpr().getNameAsString();
+                        }
                         if (StringUtils.isNotBlank(value)) {
                             builder.strategy(GenerationStrategy.valueOf(value));
                         }
@@ -1687,14 +1716,12 @@ public class Generator {
 
             var dummy = envelopWithDummyClass(description);
 
-            if (method.getDeclaredAnnotations().length > 0) {
-                for (var ann : method.getDeclaredAnnotations()) {
-                    description.addAnnotation(ann.annotationType());
-                    dummy.addImport(ann.annotationType().getPackageName());
-                    field.addAnnotation(ann.annotationType());
-                    //TODO: Check if the annotation can be applied to field.
-                    //TODO: Handle annotation params
-                }
+            for (var ann : method.getDeclaredAnnotations()) {
+                description.addAnnotation(ann.annotationType());
+                dummy.addImport(ann.annotationType().getPackageName());
+                field.addAnnotation(ann.annotationType());
+                //TODO: Check if the annotation can be applied to field.
+                //TODO: Handle annotation params
             }
 
             result = Structures.FieldData.builder()
@@ -2085,9 +2112,8 @@ public class Generator {
 
             processingTypes.remove(typeDeclaration.getNameAsString());
 
-            if (nonNull(prsd.getElement())) {
-                ElementAnnotationUtils.addOrReplaceAnnotation(prsd.getElement(), lombok.Generated.class, Map.of());
-            }
+            with(prsd.getElement(), element ->
+                    ElementAnnotationUtils.addOrReplaceAnnotation(element, lombok.Generated.class, Map.of()));
 
             parse.setProcessed(true);
         }
@@ -2204,9 +2230,9 @@ public class Generator {
                 switch (name) {
                     case "name" -> builder.name(pair.getValue().asStringLiteralExpr().asString());
                     case "mixIn" -> builder.mixInClass(pair.getValue().asClassExpr().getTypeAsString());
-                    case "ordinalOffset" -> builder.ordinalOffset(pair.getValue().asIntegerLiteralExpr().asNumber().intValue());
-                    case "enrichers" ->
-                        checkEnrichers(builder::enrichers, handleInitializerAnnotation(pair));
+                    case "ordinalOffset" ->
+                            builder.ordinalOffset(pair.getValue().asIntegerLiteralExpr().asNumber().intValue());
+                    case "enrichers" -> checkEnrichers(builder::enrichers, handleInitializerAnnotation(pair));
                     default -> {
                     }
                 }
@@ -2247,8 +2273,7 @@ public class Generator {
             if (node instanceof MemberValuePair pair) {
                 var name = pair.getNameAsString();
                 switch (name) {
-                    case "mixIn" ->
-                        builder.mixInClass(pair.getValue().asClassExpr().getTypeAsString());
+                    case "mixIn" -> builder.mixInClass(pair.getValue().asClassExpr().getTypeAsString());
                     default -> {
                     }
                 }
@@ -2296,11 +2321,10 @@ public class Generator {
         return null;
     }
 
-    public static void generateCodeForMethods(PrototypeDescription<ClassOrInterfaceDeclaration> prsd) {
-        for (var method : prsd.getMethods().values()) {
-            handleEnrichersSetup(method.getProperties());
-
-            Helpers.handleEnrichers(method);
+    public static void generateCodeForElements(PrototypeDescription<ClassOrInterfaceDeclaration> prsd) {
+        for (var element : prsd.getElements().values()) {
+            handleEnrichersSetup(element.getProperties());
+            Helpers.handleEnrichers(element);
         }
     }
 

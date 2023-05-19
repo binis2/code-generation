@@ -45,7 +45,7 @@ import net.binis.codegen.enrich.PrototypeLookup;
 import net.binis.codegen.enrich.handler.*;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.factory.CodeFactory;
-import net.binis.codegen.generation.core.interfaces.MethodDescription;
+import net.binis.codegen.generation.core.interfaces.ElementDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
@@ -899,7 +899,7 @@ public class Helpers {
         return list;
     }
 
-    private static List<PrototypeEnricher> getEnrichersList(MethodDescription method) {
+    private static List<PrototypeEnricher> getEnrichersList(ElementDescription method) {
         var map = new HashMap<Class<?>, PrototypeEnricher>();
 
         notNull(method.getProperties().getEnrichers(), l ->
@@ -930,15 +930,13 @@ public class Helpers {
         parsed.processActions();
 
         parsed.getInitializers().forEach(i -> {
-            if (i.getMiddle() instanceof ClassOrInterfaceDeclaration) {
-                var type = (ClassOrInterfaceDeclaration) i.getMiddle();
+            if (i.getMiddle() instanceof ClassOrInterfaceDeclaration type) {
                 getInitializer(isNull(parsed.getMixIn()) ? parsed.getImplementation() : parsed.getMixIn().getImplementation()).addStatement(new MethodCallExpr()
                         .setName("CodeFactory.registerType")
                         .addArgument((i.getLeft().getParentNode().get() instanceof ClassOrInterfaceDeclaration ? ((ClassOrInterfaceDeclaration) i.getLeft().getParentNode().get()).getNameAsString() + "." : "") + i.getLeft().getNameAsString() + ".class")
                         .addArgument(type.getNameAsString() + "::new")
                         .addArgument(calcModifierExpression(i.getRight())));
-            } else if (i.getMiddle() instanceof LambdaExpr && nonNull(i.getLeft())) {
-                var expr = (LambdaExpr) i.getMiddle();
+            } else if (i.getMiddle() instanceof LambdaExpr expr && nonNull(i.getLeft())) {
                 getInitializer(isNull(parsed.getMixIn()) ? parsed.getImplementation() : parsed.getMixIn().getImplementation()).addStatement(new MethodCallExpr()
                         .setName("CodeFactory.registerType")
                         .addArgument((i.getLeft().getParentNode().get() instanceof ClassOrInterfaceDeclaration ? ((ClassOrInterfaceDeclaration) i.getLeft().getParentNode().get()).getNameAsString() + "." : "") + i.getLeft().getNameAsString() + ".class")
@@ -955,15 +953,15 @@ public class Helpers {
         getEnrichersList(parsed).forEach(e -> e.postProcess(parsed));
     }
 
-    public static void handleEnrichers(MethodDescription method) {
+    public static void handleEnrichers(ElementDescription method) {
         getEnrichersList(method).forEach(e -> safeEnrich(e, method));
     }
 
-    private static void safeEnrich(PrototypeEnricher enricher, MethodDescription method) {
+    private static void safeEnrich(PrototypeEnricher enricher, ElementDescription element) {
         try {
-            enricher.enrichMethod(method);
+            enricher.enrichElement(element);
         } catch (Exception e) {
-            log.error("Failed to enrich {} with {}", method.getMethod().getNameAsString(), enricher.getClass(), e);
+            log.error("Failed to enrich {} with {}", element.getNode() instanceof NodeWithSimpleName s ? s.getNameAsString() : element.getNode() instanceof NodeWithName n ? n.getNameAsString() : "element", enricher.getClass(), e);
         }
     }
     private static String calcModifierExpression(PrototypeDescription<ClassOrInterfaceDeclaration> description) {

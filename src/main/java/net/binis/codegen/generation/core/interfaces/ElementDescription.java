@@ -20,17 +20,18 @@ package net.binis.codegen.generation.core.interfaces;
  * #L%
  */
 
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 
 import javax.lang.model.element.Element;
 
-public interface MethodDescription {
+public interface ElementDescription {
 
     boolean isProcessed();
     Element getElement();
-    MethodDeclaration getMethod();
+    Node getNode();
     AnnotationExpr getPrototype();
     PrototypeData getProperties();
 

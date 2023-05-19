@@ -21,10 +21,12 @@ package net.binis.codegen.enrich.handler;
  */
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
+import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
-import net.binis.codegen.generation.core.interfaces.MethodDescription;
+import net.binis.codegen.generation.core.interfaces.ElementDescription;
 import net.binis.codegen.tools.Interpolator;
 import org.apache.commons.lang3.StringUtils;
 
@@ -54,29 +56,29 @@ public class SanitizerEnricher extends BaseEnricher {
     protected static Interpolator interpolator = Interpolator.build('$', TEMPLATE);
 
     @Override
-    public void enrichMethod(MethodDescription method) {
-        if (method.getMethod().isStatic() && method.getMethod().getParameters().size() == 1 && method.getMethod().getType().asString().equals(method.getMethod().getParameter(0).getTypeAsString())) {
-            var parent = ((ClassOrInterfaceDeclaration) method.getMethod().getParentNode().get());
+    public void enrichElement(ElementDescription description) {
+        if (description.getNode() instanceof MethodDeclaration method && method.isStatic() && method.getParameters().size() == 1 && method.getType().asString().equals(method.getParameter(0).getTypeAsString())) {
+            var parent = ((ClassOrInterfaceDeclaration) method.getParentNode().get());
             var pack = parent.findCompilationUnit().get().getPackageDeclaration().get().getNameAsString() + ".annotation.validation";
-            var name = "Sanitize" + StringUtils.capitalize(method.getMethod().getNameAsString());
+            var name = "Sanitize" + StringUtils.capitalize(method.getNameAsString());
             var cls = interpolator.params(Map.of(
-                    "methodName", method.getMethod().getNameAsString(),
+                    "methodName", method.getNameAsString(),
                     "name", name,
-                    "message", method.getPrototype() instanceof NormalAnnotationExpr exp ?
+                    "message", description.getPrototype() instanceof NormalAnnotationExpr exp ?
                             exp.getPairs().stream()
                                     .filter(p -> p.getNameAsString().equals("message"))
                                     .map(p -> p.getValue().asStringLiteralExpr().asString())
                                     .findFirst()
                                     .orElse(DEFAULT_MESSAGE) :
                             DEFAULT_MESSAGE,
-                    "class", ((ClassOrInterfaceDeclaration) method.getMethod().getParentNode().get()).getFullyQualifiedName().get(),
+                    "class", ((ClassOrInterfaceDeclaration) method.getParentNode().get()).getFullyQualifiedName().get(),
                     "package", pack
             )).interpolate();
 
             var unit = lookup.getParser().parse(cls).getResult().get();
-            method.getDescription().addCustomFile(pack + '.' + name).setJavaClass(unit.getType(0));
+            description.getDescription().addCustomFile(pack + '.' + name).setJavaClass(unit.getType(0));
         } else {
-            error(method.getMethod().getNameAsString() + " is not valid @Sanitizer target! (example 'public static Type method(Type value)')");
+            error(description.getNode() instanceof NodeWithSimpleName<?> name ? name.getNameAsString() : "Element" + " is not valid @Sanitizer target! (example 'public static Type method(Type value)')", description.getElement());
         }
     }
 

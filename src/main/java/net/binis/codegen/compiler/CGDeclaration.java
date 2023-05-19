@@ -43,6 +43,15 @@ public abstract class CGDeclaration extends JavaCompilerObject {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public CGDeclaration(Object instance) {
+        super();
+        this.instance = instance;
+        if (!cls.isAssignableFrom(instance.getClass())) {
+            log.error("Unable to get class declaration!");
+        }
+    }
+
     public CGModifiers getModifiers() {
         if (isNull(modifiers)) {
             modifiers = new CGModifiers(this);

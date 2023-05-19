@@ -93,7 +93,11 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     String getParentClassName();
 
+    Map<String, ElementDescription> getElements();
+
     Element getElement();
+
+    List<Element> getRawElements();
 
     ClassOrInterfaceDeclaration getParent();
 
@@ -109,7 +113,6 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     boolean hasEnricher(Class<? extends Enricher> enricher);
 
     Map<String, PrototypeConstant> getConstants();
-    Map<String, MethodDescription> getMethods();
 
     GeneratedFile addCustomFile(String id);
 

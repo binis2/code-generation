@@ -29,11 +29,6 @@ import org.junit.jupiter.api.Test;
 @Slf4j
 class AnnotationsTest extends BaseCodeGenTest {
 
-    @BeforeEach
-    public void cleanUp() {
-        Helpers.cleanUp();
-    }
-
     @Test
     void test() {
         testSingle("annotation/default1.java", "annotation/default1-0.java", "annotation/default1-1.java");
@@ -48,7 +43,5 @@ class AnnotationsTest extends BaseCodeGenTest {
     void testForDefaultMethod() {
         testSingle("annotation/testForDefault1.java", null, "annotation/testForDefault1-1.java");
     }
-
-
 
 }

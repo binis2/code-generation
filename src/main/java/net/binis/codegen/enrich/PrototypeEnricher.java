@@ -20,11 +20,13 @@ package net.binis.codegen.enrich;
  * #L%
  */
 
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import net.binis.codegen.generation.core.interfaces.MethodDescription;
+import net.binis.codegen.generation.core.interfaces.ElementDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 
+import javax.lang.model.element.Element;
 import java.util.List;
 
 public interface PrototypeEnricher extends Enricher {
@@ -38,5 +40,5 @@ public interface PrototypeEnricher extends Enricher {
 
     List<Class<? extends Enricher>> dependencies();
 
-    void enrichMethod(MethodDescription method);
+    void enrichElement(ElementDescription description);
 }

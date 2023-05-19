@@ -37,6 +37,7 @@ public class ElementUtils {
         return switch (element.getKind()) {
             case CLASS, ENUM, INTERFACE -> CGClassDeclaration.create(maker.getTrees(), element);
             case METHOD -> CGMethodDeclaration.create(maker.getTrees(), element);
+            case FIELD -> CGVariableDecl.create(maker.getTrees(), element);
             default -> throw new GenericCodeGenException("Invalid element kind: " + element.getKind().toString());
         };
     }
@@ -84,5 +85,14 @@ public class ElementUtils {
     public static CGExpression chainDotsString(JavaCompilerObject node, String elems) {
         return chainDots(node, null, null, elems.split("\\."));
     }
+
+    public static String getSymbolFullName(Element element) {
+        var symbol = new CGSymbol(element);
+        if (symbol.is(CGClassSymbol.theClass())) {
+            return symbol.asClassSymbol().getQualifiedName().toString();
+        }
+        return element.getSimpleName().toString();
+    }
+
 
 }

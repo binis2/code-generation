@@ -37,20 +37,12 @@ public abstract class CompileHelper {
 
     @SneakyThrows
     public static boolean compile(TestClassLoader loader, List<Pair<String, String>> files) {
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-
-        DiagnosticCollector<JavaFileObject> diagnostics =
-                new DiagnosticCollector<>();
-
+        var compiler = ToolProvider.getSystemJavaCompiler();
+        var diagnostics = new DiagnosticCollector<JavaFileObject>();
         var objects = files.stream().collect(Collectors.toMap(Pair::getKey, f -> new JavaByteObject(f.getKey())));
-
-        StandardJavaFileManager standardFileManager =
-                compiler.getStandardFileManager(diagnostics, null, null);
-
-        JavaFileManager fileManager = createFileManager(standardFileManager, objects);
-
-        JavaCompiler.CompilationTask task = compiler.getTask(null,
-                fileManager, diagnostics, null, null, getCompilationUnits(files));
+        var standardFileManager = compiler.getStandardFileManager(diagnostics, null, null);
+        var fileManager = createFileManager(standardFileManager, objects);
+        var task = compiler.getTask(null, fileManager, diagnostics, null, null, getCompilationUnits(files));
 
         if (!task.call()) {
             diagnostics.getDiagnostics().forEach(System.out::println);
@@ -80,7 +72,7 @@ public abstract class CompileHelper {
     }
 
     public static Iterable<? extends JavaFileObject> getCompilationUnits(List<Pair<String, String>> files) {
-        return files.stream().map(f -> new JavaSourceObject(f.getKey(), f.getValue())).collect(Collectors.toList());
+        return files.stream().map(f -> new JavaSourceObject(f.getKey(), f.getValue())).toList();
     }
 
 }

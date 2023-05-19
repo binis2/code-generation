@@ -58,6 +58,10 @@ public class ElementAnnotationUtils extends ElementUtils {
         return result;
     }
 
+    public static CGAnnotation addAnnotation(Element element, Class<? extends Annotation> annotation) {
+        return addAnnotation(element, annotation, Map.of());
+    }
+
     public static CGAnnotation addAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
         var maker = TreeMaker.create();
         var decl = getDeclaration(element, maker);
@@ -83,6 +87,9 @@ public class ElementAnnotationUtils extends ElementUtils {
         return ann;
     }
 
+    public static CGAnnotation addOrReplaceAnnotation(Element element, Class<? extends Annotation> annotation) {
+        return addOrReplaceAnnotation(element, annotation, Map.of());
+    }
     public static CGAnnotation addOrReplaceAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
         removeAnnotation(element, annotation);
         return addAnnotation(element, annotation, attributes);

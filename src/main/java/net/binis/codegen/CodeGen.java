@@ -30,16 +30,15 @@ import net.binis.codegen.discoverer.AnnotationDiscoverer;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
+import net.binis.codegen.generation.core.Parsables;
 import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
-import net.binis.codegen.objects.Pair;
 import net.binis.codegen.tools.CollectionUtils;
 import org.apache.commons.cli.*;
 
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -140,7 +139,7 @@ public class CodeGen {
         });
     }
 
-    public static void processSources(List<Pair<String, Element>> files) {
+    public static void processSources(Parsables files) {
         var parser = lookup.getParser();
         for (var file : files) {
             try {
@@ -151,7 +150,7 @@ public class CodeGen {
                 log.info("Parsed {} - {}", fileName, parse);
                 parse.getResult().ifPresent(u ->
                         u.getTypes().forEach(t ->
-                                handleType(parser, t, fileName, file.getValue())));
+                                handleType(parser, t, fileName, file.getValue().getElements())));
             } catch (Exception e) {
                 log.error("Unable to parse {}", file, e);
             }
@@ -177,7 +176,7 @@ public class CodeGen {
 
 
     @SuppressWarnings("unchecked")
-    public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName, Element element) {
+    public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName, List<Element> elements) {
         var pack = t.findCompilationUnit().get().getPackageDeclaration().orElseThrow(() -> new GenericCodeGenException("'" + fileName + "' have no package declaration!"));
         var className = pack.getNameAsString() + '.' + t.getNameAsString();
         if (t.getAnnotationByName("ConstantPrototype").isPresent()) {
@@ -188,13 +187,10 @@ public class CodeGen {
                             .prototypeFileName(fileName)
                             .prototypeClassName(className)
                             .parser(parser)
-                            .element(element)
+                            .rawElements(elements)
                             .build());
         } else {
             var name = getClassName(t);
-            if (nonNull(element) && ElementKind.METHOD.equals(element.getKind())) {
-                element = element.getEnclosingElement();
-            }
             checkForNestedClasses(t.asTypeDeclaration(), fileName, parser);
             lookup.registerParsed(name,
                     Parsed.builder()
@@ -203,7 +199,7 @@ public class CodeGen {
                             .prototypeFileName(fileName)
                             .prototypeClassName(className)
                             .parser(parser)
-                            .element(element)
+                            .rawElements(elements)
                             .build());
         }
     }

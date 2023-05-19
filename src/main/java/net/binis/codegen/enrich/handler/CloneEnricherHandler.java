@@ -81,15 +81,9 @@ public class CloneEnricherHandler extends BaseEnricher implements CloneEnricher 
 
             var initExpr = "result." + field.getName() + " = " + field.getName();
             switch (collection.getImplementorInterface()) {
-                case "java.util.List":
-                    initExpr += ".stream().collect(Collectors.toList());";
-                    break;
-                case "java.util.Set":
-                    initExpr += ".stream().collect(Collectors.toSet());";
-                    break;
-                case "java.util.Map":
-                    initExpr += ".entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));";
-                    break;
+                case "java.util.List" -> initExpr += ".stream().collect(Collectors.toList());";
+                case "java.util.Set" -> initExpr += ".stream().collect(Collectors.toSet());";
+                case "java.util.Map" -> initExpr += ".entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));";
             }
 
             body.addStatement(new IfStmt().setCondition(new BinaryExpr().setLeft(new NameExpr().setName(field.getName())).setRight(new NullLiteralExpr()).setOperator(BinaryExpr.Operator.NOT_EQUALS)).setThenStmt(

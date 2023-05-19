@@ -66,10 +66,12 @@ public abstract class JavaCompilerObject {
         if (JavaCompilerObject.class.isAssignableFrom(cls)) {
             return this.getClass().equals(cls);
         } else {
-            return getCls().equals(cls);
+            return instance.getClass().equals(cls);
         }
     }
 
-
-
+    @Override
+    public String toString() {
+        return instance.toString();
+    }
 }

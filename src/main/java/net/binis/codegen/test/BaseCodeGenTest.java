@@ -20,20 +20,14 @@ package net.binis.codegen.test;
  * #L%
  */
 
-import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.CodeGen;
-import net.binis.codegen.discoverer.AnnotationDiscoverer;
-import net.binis.codegen.discovery.Discoverer;
 import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
-import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
-import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
 import net.binis.codegen.objects.Pair;
 import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.tuple.Triple;
@@ -45,7 +39,6 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,20 +51,14 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.CompileHelper.createFileManager;
 import static net.binis.codegen.generation.core.CompileHelper.getCompilationUnits;
-import static net.binis.codegen.generation.core.Helpers.*;
+import static net.binis.codegen.generation.core.Helpers.classExists;
+import static net.binis.codegen.generation.core.Helpers.lookup;
 import static net.binis.codegen.tools.Tools.ifNull;
 import static net.binis.codegen.tools.Tools.with;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-public abstract class BaseCodeGenTest {
-
-    protected JavaParser parser = lookup.getParser();
-
-    static {
-        AnnotationDiscoverer.findAnnotations().stream().filter(Discoverer.DiscoveredService::isTemplate).forEach(a ->
-                Structures.registerTemplate(a.getCls()));
-    }
+public abstract class BaseCodeGenTest extends BaseCodeTest {
 
     @BeforeEach
     public void beforeEach() {
@@ -82,17 +69,6 @@ public abstract class BaseCodeGenTest {
     @AfterEach
     public void afterEach() {
         CodeFactory.unregisterType(BaseCodeGenTest.class);
-    }
-
-    protected String getAsString(CompilationUnit file) {
-        var printer = new CodeGenPrettyPrinter();
-
-        sortImports(file);
-        if (file.getType(0).isClassOrInterfaceDeclaration()) {
-            sortClass(file.getType(0).asClassOrInterfaceDeclaration());
-        }
-
-        return printer.print(file);
     }
 
     protected void generate() {
@@ -112,44 +88,6 @@ public abstract class BaseCodeGenTest {
         });
     }
 
-    protected void cleanUp() {
-        Helpers.cleanUp();
-    }
-
-    @SuppressWarnings("unchecked")
-    protected void load(List<Pair<String, String>> list, String resource) {
-        var source = resourceAsString(resource);
-
-        var parse = parser.parse(source);
-        assertTrue(parse.isSuccessful(), parse.toString());
-
-        parse.getResult().get().findFirst(TypeDeclaration.class).ifPresent(declaration -> {
-            if (nonNull(list)) {
-                declaration.getFullyQualifiedName().ifPresent(name ->
-                        list.add(Pair.of((String) name, source)));
-            }
-
-            if (declaration.isAnnotationDeclaration()) {
-                Structures.registerTemplate(declaration.asAnnotationDeclaration());
-            }
-
-            parse.getResult().ifPresent(u ->
-                    u.getTypes().forEach(t ->
-                            CodeGen.handleType(parser, t, resource, null)));
-        });
-    }
-
-    protected String loadExecute(List<Pair<String, String>> list, String resource) {
-        var source = resourceAsString(resource);
-        var className = source.substring(source.indexOf("package") + 8, source.indexOf(';')) + ".Execute";
-
-        if (nonNull(list)) {
-            list.add(Pair.of(className, source));
-        }
-
-        return className;
-    }
-
     protected void compare(CompilationUnit unit, String resource) {
         if (nonNull(resource)) {
             assertEquals(resourceAsString(resource), getAsString(unit), resource);
@@ -163,53 +101,55 @@ public abstract class BaseCodeGenTest {
     }
 
 
-    protected void testSingleExecute(String prototype, String resClass, String resInterface, String resExecute) {
-        testSingleExecute(prototype, resClass, resInterface, null, 1, resExecute, false, false, false);
+    protected TestClassLoader testSingleExecute(String prototype, String resClass, String resInterface, String resExecute) {
+        return testSingleExecute(prototype, resClass, resInterface, null, 1, resExecute, false, false, false);
     }
 
-    protected void testSingleExecute(String prototype, String resClass, String resInterface, int expected, String resExecute) {
-        testSingleExecute(prototype, resClass, resInterface, null, expected, resExecute, false, false, false);
+    protected TestClassLoader testSingleExecute(String prototype, String resClass, String resInterface, int expected, String resExecute) {
+        return testSingleExecute(prototype, resClass, resInterface, null, expected, resExecute, false, false, false);
     }
 
-    protected void testSingleImplementation(String prototype, String resClass) {
-        testSingleExecute(prototype, resClass, null, null, 1, null, false, true, false);
+    protected TestClassLoader testSingleImplementation(String prototype, String resClass) {
+        return testSingleExecute(prototype, resClass, null, null, 1, null, false, true, false);
     }
 
-    protected void testSingle(String prototype, String resClass, String resInterface) {
-        testSingle(prototype, resClass, resInterface, null, 1);
+    protected TestClassLoader testSingle(String prototype, String resClass, String resInterface) {
+        return testSingle(prototype, resClass, resInterface, null, 1);
     }
 
-    protected void testSingleWithCustom(String prototype, String resClass, String resInterface, String... custom) {
-        testSingleExecute(prototype, resClass, resInterface, null, 1, null, false, false, false, custom);
+    protected TestClassLoader testSingleWithCustom(String prototype, String resClass, String resInterface, String... custom) {
+        return testSingleExecute(prototype, resClass, resInterface, null, 1, null, false, false, false, custom);
     }
 
-    protected void testSingle(String prototype, String resClass, String resInterface, String pathToSave) {
-        testSingle(prototype, resClass, resInterface, pathToSave, 1);
+    protected TestClassLoader testSingle(String prototype, String resClass, String resInterface, String pathToSave) {
+        return testSingle(prototype, resClass, resInterface, pathToSave, 1);
     }
 
-    protected void testSingle(String prototype, String resClass, String resInterface, int expected) {
-        testSingle(prototype, resClass, resInterface, null, expected);
+    protected TestClassLoader testSingle(String prototype, String resClass, String resInterface, int expected) {
+        return testSingle(prototype, resClass, resInterface, null, expected);
     }
 
-    protected void testSingleSkip(String prototype, String resClass, String resInterface, boolean skipPrototype, boolean skipCompilation) {
-        testSingleExecute(prototype, resClass, resInterface, null, 1, null, skipCompilation, false, skipPrototype);
+    protected TestClassLoader testSingleSkip(String prototype, String resClass, String resInterface, boolean skipPrototype, boolean skipCompilation) {
+        return testSingleExecute(prototype, resClass, resInterface, null, 1, null, skipCompilation, false, skipPrototype);
     }
 
 
-    protected void testSingle(String prototype, String resClass, String resInterface, int expected, boolean skipCompilation) {
-        testSingleExecute(prototype, resClass, resInterface, null, expected, null, skipCompilation, false, false);
+    protected TestClassLoader testSingle(String prototype, String resClass, String resInterface, int expected, boolean skipCompilation) {
+        return testSingleExecute(prototype, resClass, resInterface, null, expected, null, skipCompilation, false, false);
     }
 
-    protected void testSingle(String prototype, String resClass, String resInterface, String pathToSave, int expected) {
-        testSingleExecute(prototype, resClass, resInterface, pathToSave, expected, null, false, false, false);
+    protected TestClassLoader testSingle(String prototype, String resClass, String resInterface, String pathToSave, int expected) {
+        return testSingleExecute(prototype, resClass, resInterface, pathToSave, expected, null, false, false, false);
     }
 
     @SuppressWarnings("unchecked")
-    protected void testSingleExecute(String prototype, String resClass, String resInterface, String pathToSave, int expected, String resExecute, boolean skipCompilation, boolean includePrototype, boolean skipPrototypeCompilation, String... custom) {
+    protected TestClassLoader testSingleExecute(String prototype, String resClass, String resInterface, String pathToSave, int expected, String resExecute, boolean skipCompilation, boolean includePrototype, boolean skipPrototypeCompilation, String... custom) {
         var list = newList();
         load(list, prototype);
+        TestClassLoader protoLoader = null;
         if (!skipPrototypeCompilation) {
-            assertTrue(compile(new TestClassLoader(), list, null));
+            protoLoader = new TestClassLoader();
+            assertTrue(compile(protoLoader, list, null));
         }
         generate();
 
@@ -265,6 +205,9 @@ public abstract class BaseCodeGenTest {
         if (!skipCompilation) {
             var loader = new TestClassLoader();
             assertTrue(compile(loader, list2, resExecute));
+            return loader;
+        } else {
+            return protoLoader;
         }
     }
 
@@ -278,32 +221,32 @@ public abstract class BaseCodeGenTest {
         return result;
     }
 
-    protected void testMultiPass(List<Pair<List<Triple<String, String, String>>, Integer>> passes) {
-        testMultiPassExecute(passes, null, null);
+    protected TestClassLoader testMultiPass(List<Pair<List<Triple<String, String, String>>, Integer>> passes) {
+        return testMultiPassExecute(passes, null, null);
     }
 
-    protected void testMulti(List<Triple<String, String, String>> files) {
-        testMulti(files, null);
+    protected TestClassLoader testMulti(List<Triple<String, String, String>> files) {
+        return testMulti(files, null);
     }
 
-    protected void testMulti(List<Triple<String, String, String>> files, int expected) {
-        testMultiExecute(files, expected, null, null, false);
+    protected TestClassLoader testMulti(List<Triple<String, String, String>> files, int expected) {
+        return testMultiExecute(files, expected, null, null, false);
     }
 
-    protected void testMulti(List<Triple<String, String, String>> files, String pathToSave) {
-        testMultiExecute(files, files.size(), pathToSave, null, false);
+    protected TestClassLoader testMulti(List<Triple<String, String, String>> files, String pathToSave) {
+        return testMultiExecute(files, files.size(), pathToSave, null, false);
     }
 
-    protected void testMultiImplementation(List<Triple<String, String, String>> files) {
-        testMultiExecute(files, files.size(), null, null, true);
+    protected TestClassLoader testMultiImplementation(List<Triple<String, String, String>> files) {
+        return testMultiExecute(files, files.size(), null, null, true);
     }
 
 
-    protected void testMultiExecute(List<Triple<String, String, String>> files, String resExecute) {
-        testMultiExecute(files, files.size(), null, resExecute, false);
+    protected TestClassLoader testMultiExecute(List<Triple<String, String, String>> files, String resExecute) {
+        return testMultiExecute(files, files.size(), null, resExecute, false);
     }
 
-    protected void testMultiExecute(List<Triple<String, String, String>> files, int expected, String pathToSave, String resExecute, boolean includePrototype) {
+    protected TestClassLoader testMultiExecute(List<Triple<String, String, String>> files, int expected, String pathToSave, String resExecute, boolean includePrototype) {
         var list = newList();
         files.forEach(t ->
                 load(list, t.getLeft()));
@@ -350,9 +293,10 @@ public abstract class BaseCodeGenTest {
 
         var loader = new TestClassLoader();
         assertTrue(compile(loader, compileList, resExecute));
+        return loader;
     }
 
-    protected void testMultiPassExecute(List<Pair<List<Triple<String, String, String>>, Integer>> passes, String pathToSave, String resExecute) {
+    protected TestClassLoader testMultiPassExecute(List<Pair<List<Triple<String, String, String>>, Integer>> passes, String pathToSave, String resExecute) {
         var loader = new TestClassLoader();
         var list = newList();
         var compileList = new ArrayList<Pair<String, String>>();
@@ -400,6 +344,7 @@ public abstract class BaseCodeGenTest {
 
             assertTrue(compile(loader, compileList, resExecute));
         });
+        return loader;
     }
 
 
@@ -412,11 +357,12 @@ public abstract class BaseCodeGenTest {
         log.info("Saving - {}", fileName);
     }
 
-    protected void testSingleWithBase(String basePrototype, String baseClassName, String prototype, String className, String baseClass, String baseInterface, String resClass, String resInterface) {
+    protected TestClassLoader testSingleWithBase(String basePrototype, String baseClassName, String prototype, String className, String baseClass, String baseInterface, String resClass, String resInterface) {
         var src = newList();
         load(src, basePrototype);
         load(src, prototype);
-        assertTrue(compile(new TestClassLoader(), src, null));
+        var loader = new TestClassLoader();
+        assertTrue(compile(loader, src, null));
         generate();
 
         assertEquals(2, lookup.parsed().size());
@@ -440,9 +386,10 @@ public abstract class BaseCodeGenTest {
         });
 
         assertTrue(compile(new TestClassLoader(), list, null));
+        return loader;
     }
 
-    protected void testSingleWithMixIn(String basePrototype, String baseClassName, String prototype, String className, String baseClass, String baseInterface, String mixInInterface) {
+    protected TestClassLoader testSingleWithMixIn(String basePrototype, String baseClassName, String prototype, String className, String baseClass, String baseInterface, String mixInInterface) {
         var src = newList();
         load(src, basePrototype);
         load(src, prototype);
@@ -464,92 +411,9 @@ public abstract class BaseCodeGenTest {
                     list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
                 }));
 
-        assertTrue(compile(new TestClassLoader(), list, null));
-    }
-
-    @SuppressWarnings("unchecked")
-    @SneakyThrows
-    protected boolean compile(TestClassLoader loader, List<Pair<String, String>> files, String resExecute) {
-        String className = null;
-        if (nonNull(resExecute)) {
-            className = loadExecute(files, resExecute);
-        }
-
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-
-        DiagnosticCollector<JavaFileObject> diagnostics =
-                new DiagnosticCollector<>();
-
-        var objects = files.stream().collect(Collectors.toMap(Pair::getKey, f -> new JavaByteObject(f.getKey())));
-
-        StandardJavaFileManager standardFileManager =
-                compiler.getStandardFileManager(diagnostics, null, null);
-
-        JavaFileManager fileManager = createFileManager(standardFileManager, objects);
-
-        JavaCompiler.CompilationTask task = compiler.getTask(null,
-                fileManager, diagnostics, List.of("-Xlint:unchecked"), null, getCompilationUnits(files));
-
-        if (!task.call()) {
-            diagnostics.getDiagnostics().forEach(System.out::println);
-            fileManager.close();
-            return false;
-        }
-        diagnostics.getDiagnostics().forEach(System.out::println);
-        fileManager.close();
-
-        files.forEach(f ->
-                with(objects.get(f.getKey()), o ->
-                        ifNull(loader.findClass(f.getKey()), () ->
-                                loader.define(f.getKey(), o))));
-
-        if (nonNull(resExecute)) {
-            var cls = loader.findClass(className);
-            assertNotNull(cls, "Executor class not found!");
-            assertNotNull(cls.getSuperclass(), "Executor doesn't inherit TestExecutor!");
-            assertEquals(TestExecutor.class, cls.getSuperclass(), "Executor doesn't inherit TestExecutor!");
-            defineObjects(loader, objects);
-            Reflection.withLoader(loader, () ->
-                    assertTrue(TestExecutor.test((Class<? extends TestExecutor>) cls), "Test execution failed!"));
-        }
-
-        return true;
-    }
-
-    private void defineObjects(TestClassLoader loader, Map<String, JavaByteObject> objects) {
-        defineObjects(loader, objects, objects.size());
-    }
-
-    private void defineObjects(TestClassLoader loader, Map<String, JavaByteObject> objects, int tries) {
-        var error = false;
-
-        for (var entry : objects.entrySet()) {
-            if (isNull(loader.findClass(entry.getKey()))) {
-                try {
-                    loader.define(entry.getKey(), entry.getValue());
-                } catch (NoClassDefFoundError ex) {
-                    error = true;
-                }
-            }
-        }
-
-        if (error && tries > 0) {
-            defineObjects(loader, objects, tries - 1);
-        }
-    }
-
-    @SneakyThrows
-    private String resourceAsString(String resource) {
-        try {
-            return new String(Files.readAllBytes(Paths.get(getClass().getClassLoader().getResource(resource).toURI())));
-        } catch (Exception e) {
-            log.error("Unable to load resource: {}!", resource);
-            throw e;
-        }
-    }
-
-    protected List<Pair<String, String>> newList() {
-        return new ArrayList<>();
+        var loader = new TestClassLoader();
+        assertTrue(compile(loader, list, null));
+        return loader;
     }
 
     protected UnaryOperator<String> testSourcesLookup() {
