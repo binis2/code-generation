@@ -1,4 +1,12 @@
 # Change Log
+**21-05-2023** ver. 1.1.0
+* Generation: ** Breaking change ** Redesign enrichers framework to support every possible element.
+* Generation: Added field introduction support for element manipulation.
+* Generation: Added method invocation support for element manipulation.
+* Generation: Added parsing support Java 17 language features.
+* Annotation Processor: Extended annotation processor to support internally registered enrichers.
+* Test: Added support for compiler element enrichment tests.
+
 **01-05-2023** ver. 1.0.8
 * Generation: Added recursive check for custom prototypes.
 * Generation: Made iterating over CGList more convenient.
