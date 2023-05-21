@@ -1,6 +1,6 @@
 # Change Log
 **21-05-2023** ver. 1.1.0
-* Generation: ** Breaking change ** Redesign enrichers framework to support every possible element.
+* Generation: (**Breaking change**) Redesign enrichers framework to support every possible element.
 * Generation: Added field introduction support for element manipulation.
 * Generation: Added method invocation support for element manipulation.
 * Generation: Added parsing support Java 17 language features.
