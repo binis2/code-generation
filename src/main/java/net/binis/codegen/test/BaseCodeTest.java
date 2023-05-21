@@ -33,6 +33,7 @@ import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
 import net.binis.codegen.objects.Pair;
 import net.binis.codegen.tools.Reflection;
+import org.junit.jupiter.api.BeforeEach;
 
 import javax.tools.*;
 import java.nio.file.Files;
@@ -61,6 +62,12 @@ public abstract class BaseCodeTest {
         AnnotationDiscoverer.findAnnotations().stream().filter(Discoverer.DiscoveredService::isTemplate).forEach(a ->
                 Structures.registerTemplate(a.getCls()));
     }
+
+    @BeforeEach
+    public void beforeEach() {
+        Helpers.cleanUp();
+    }
+
 
     protected String getAsString(CompilationUnit file) {
         var printer = new CodeGenPrettyPrinter();

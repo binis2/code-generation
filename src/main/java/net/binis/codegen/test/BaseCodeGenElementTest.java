@@ -20,9 +20,25 @@ package net.binis.codegen.test;
  * #L%
  */
 
+import net.binis.codegen.factory.CodeFactory;
+import net.binis.codegen.generation.core.Helpers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class BaseCodeGenElementTest extends BaseCodeTest {
+
+    @BeforeEach
+    public void beforeEach() {
+        Helpers.cleanUp();
+        CodeFactory.registerType(BaseCodeGenElementTest.class, () -> this);
+    }
+
+    @AfterEach
+    public void afterEach() {
+        CodeFactory.unregisterType(BaseCodeGenElementTest.class);
+    }
 
     public TestClassLoader testSingle(String path) {
         var list = newList();

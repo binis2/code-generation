@@ -697,8 +697,7 @@ public class Generator {
         } else {
             for (var i = 0; i < node.getChildNodes().size(); i++) {
                 var n = node.getChildNodes().get(i);
-                if (n instanceof MethodCallExpr) {
-                    var method = (MethodCallExpr) n;
+                if (n instanceof MethodCallExpr method) {
                     var parent = parse.findField(method.getNameAsString());
                     if (parent.isEmpty() && nonNull(parse.getBase())) {
                         parent = parse.getBase().findField(method.getNameAsString());
@@ -733,15 +732,11 @@ public class Generator {
     private static void checkForDeclaredConstants(Node type) {
         //TODO: Handle more cases
         for (var node : type.getChildNodes()) {
-            if (node instanceof FieldAccessExpr) {
-                var expr = (FieldAccessExpr) node;
-                if (expr.getChildNodes().size() > 1 && expr.getChildNodes().get(0) instanceof NameExpr && expr.getChildNodes().get(1) instanceof SimpleName) {
-                    var namespace = (NameExpr) expr.getChildNodes().get(0);
-                    var name = ((SimpleName) expr.getChildNodes().get(1)).asString();
-
+            if (node instanceof FieldAccessExpr expr) {
+                if (expr.getChildNodes().size() > 1 && expr.getChildNodes().get(0) instanceof NameExpr namespace && expr.getChildNodes().get(1) instanceof SimpleName name) {
                     var decl = declaredConstants.get(namespace.getNameAsString());
                     if (nonNull(decl)) {
-                        decl.stream().filter(p -> p.getValue().equals(name)).findFirst().ifPresent(
+                        decl.stream().filter(p -> p.getValue().equals(name.asString())).findFirst().ifPresent(
                                 c -> namespace.setName(c.getKey())
                         );
                     }
