@@ -28,6 +28,10 @@ import static net.binis.codegen.tools.Reflection.loadClass;
 @Slf4j
 public class CGLiteral extends CGExpression {
 
+    public static Class theClass() {
+        return loadClass("com.sun.tools.javac.tree.JCTree$JCLiteral");
+    }
+
     public CGLiteral(Object instance) {
         super(instance);
     }
@@ -38,6 +42,6 @@ public class CGLiteral extends CGExpression {
 
     @Override
     protected void init() {
-        cls = loadClass("com.sun.tools.javac.tree.JCTree$JCLiteral");
+        cls = CGLiteral.theClass();
     }
 }
