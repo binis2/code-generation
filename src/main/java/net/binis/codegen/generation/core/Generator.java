@@ -157,6 +157,8 @@ public class Generator {
         var name = node instanceof NodeWithSimpleName<?> s ? s.getNameAsString() : node instanceof NodeWithName<?> n ? n.getNameAsString() : "";
         if (name.isEmpty() && node instanceof FieldDeclaration field) {
             name = "field." + field.getVariables().get(0).getNameAsString();
+        } else if (node instanceof Parameter) {
+            name = "param." + name;
         }
         var parent = node.getParentNode();
         if (parent.isPresent() && !(parent.get() instanceof CompilationUnit)) {
@@ -167,15 +169,15 @@ public class Generator {
 
     private static String getElementName(Element element) {
         var name = element.getSimpleName().toString();
-        if (ElementKind.FIELD.equals(element.getKind())) {
-            name = "field." + name;
+        switch (element.getKind()) {
+            case FIELD -> name = "field." + name;
+            case PARAMETER -> name = "param." + name;
         }
         if (nonNull(element.getEnclosingElement()) && !ElementKind.PACKAGE.equals(element.getEnclosingElement().getKind())) {
             return getElementName(element.getEnclosingElement()) + "." + name;
         }
         return name;
     }
-
 
     private static Element findElement(Node node, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
         if (nonNull(parsed.getRawElements())) {
@@ -214,10 +216,10 @@ public class Generator {
         handleEnrichersSetup(properties);
 
         var parse = switch (properties.getStrategy()) {
-            case CLASSIC -> handleClassicStrategy(prsd, type, typeDeclaration, properties);
+            case PROTOTYPE -> handlePrototypeStrategy(prsd, type, typeDeclaration, properties);
             case IMPLEMENTATION -> handleImplementationStrategy(prsd, type, typeDeclaration, properties);
             case PLAIN -> handlePlainStrategy(prsd, type, typeDeclaration, properties);
-            case METHOD, NONE -> handleNoneStrategy(prsd, type, typeDeclaration, properties);
+            case NONE -> handleNoneStrategy(prsd, type, typeDeclaration, properties);
         };
 
         processingTypes.remove(typeDeclaration.getNameAsString());
@@ -227,7 +229,7 @@ public class Generator {
                 ElementAnnotationUtils.addOrReplaceAnnotation(element, lombok.Generated.class, Map.of()));
     }
 
-    private static Structures.Parsed handleClassicStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
+    private static Structures.Parsed handlePrototypeStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
         var unit = new CompilationUnit();
         unit.addImport("javax.annotation.processing.Generated");
         var spec = unit.addClass(properties.getClassName());
@@ -781,18 +783,18 @@ public class Generator {
         parse.getConstants().put(name, data.build());
     }
 
-    @SuppressWarnings("unchecked")
     private static Structures.PrototypeDataHandler getProperties(AnnotationExpr prototype) {
-        var type = (BodyDeclaration) prototype.getParentNode().get();
-        var iName = Holder.of("");
-        var cName = "";
-        if (type.isClassOrInterfaceDeclaration()) {
-            iName.set(defaultInterfaceName((ClassOrInterfaceDeclaration) type));
-            cName = defaultClassName((ClassOrInterfaceDeclaration) type);
-        }
-
         var prototypeClass = getExternalClassName(prototype, prototype.getNameAsString());
         var builder = Structures.builder(prototypeClass);
+
+        var iName = Holder.of("");
+        var cName = "";
+        if (prototype.getParentNode().get() instanceof BodyDeclaration<?> body && body instanceof ClassOrInterfaceDeclaration type) {
+            iName.set(defaultInterfaceName(type));
+            cName = defaultClassName(type);
+            builder.classPackage(defaultClassPackage(type))
+                    .interfacePackage(defaultInterfacePackage(type));
+        }
 
         nullCheck(loadClass(prototypeClass), cls -> builder.prototypeAnnotation((Class) cls));
 
@@ -910,14 +912,6 @@ public class Generator {
         builder.className(cName).interfaceName(iName.get()).longModifierName(iName.get() + ".Modify");
 
         var result = builder.build();
-
-        if (isNull(result.getClassPackage()) && type.isClassOrInterfaceDeclaration()) {
-            result.setClassPackage(defaultClassPackage((ClassOrInterfaceDeclaration) type));
-        }
-
-        if (isNull(result.getInterfacePackage()) && type.isClassOrInterfaceDeclaration()) {
-            result.setInterfacePackage(defaultInterfacePackage((ClassOrInterfaceDeclaration) type));
-        }
 
         if (isNull(result.getEnrichers())) {
             result.setEnrichers(new ArrayList<>());
@@ -1156,13 +1150,13 @@ public class Generator {
         }
 
         switch (parsed.getProperties().getStrategy()) {
-            case CLASSIC -> handleExternalMethodClassicStrategy(parsed, declaration, spec, cls, generic);
+            case PROTOTYPE -> handleExternalMethodPrototypeStrategy(parsed, declaration, spec, cls, generic);
             case IMPLEMENTATION -> handleExternalMethodImplementationStrategy(parsed, declaration, spec, cls, generic);
         }
 
     }
 
-    private static void handleExternalMethodClassicStrategy(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, Map<String, Type> generic) {
+    private static void handleExternalMethodPrototypeStrategy(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, Class<?> cls, Map<String, Type> generic) {
         var properties = parsed.getProperties();
 
         for (var method : cls.getDeclaredMethods()) {

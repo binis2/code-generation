@@ -544,7 +544,7 @@ public class Structures {
 
     public static PrototypeDataHandler.PrototypeDataHandlerBuilder defaultBuilder() {
         return PrototypeDataHandler.builder()
-                .strategy(GenerationStrategy.CLASSIC)
+                .strategy(GenerationStrategy.PROTOTYPE)
                 .generateConstructor(true)
                 .generateInterface(true)
                 .generateImplementation(true)

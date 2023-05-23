@@ -29,7 +29,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
 @CodePrototypeTemplate
-@CodePrototype(strategy = GenerationStrategy.METHOD, enrichers = ValidatorEnricher.class)
+@CodePrototype(strategy = GenerationStrategy.NONE, enrichers = ValidatorEnricher.class)
 @Target(ElementType.METHOD)
 public @interface Validator {
     String message() default "";

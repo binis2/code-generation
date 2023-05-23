@@ -22,10 +22,10 @@ package net.binis.codegen.enrich.handler.base;
 
 import net.binis.codegen.annotation.type.GenerationStrategy;
 
-public abstract class BaseClassicStrategyEnricher extends BaseStrategyEnricher {
+public abstract class BasePrototypeStrategyEnricher extends BaseStrategyEnricher {
 
     public GenerationStrategy supportedStrategy() {
-        return GenerationStrategy.CLASSIC;
+        return GenerationStrategy.PROTOTYPE;
     }
 
 }

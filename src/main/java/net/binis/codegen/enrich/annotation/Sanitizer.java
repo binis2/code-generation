@@ -29,7 +29,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
 @CodePrototypeTemplate
-@CodePrototype(strategy = GenerationStrategy.METHOD, enrichers = SanitizerEnricher.class)
+@CodePrototype(strategy = GenerationStrategy.NONE, enrichers = SanitizerEnricher.class)
 @Target({ElementType.METHOD})
 public @interface Sanitizer {
     String message() default "";
