@@ -48,4 +48,10 @@ public abstract class BaseCodeGenElementTest extends BaseCodeTest {
         return loader;
     }
 
+    public Class<?> testSingle(String path, String cls) {
+        var loader = testSingle(path);
+        return loader.findClass(cls);
+    }
+
+
 }
