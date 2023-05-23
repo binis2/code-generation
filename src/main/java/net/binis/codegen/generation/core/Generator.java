@@ -143,9 +143,9 @@ public class Generator {
                 .filter(a -> Structures.defaultProperties.containsKey(getExternalClassName(declarationUnit, a.getNameAsString())))
                 .forEach(a ->
                         a.getParentNode().ifPresent(parent ->
-                                prsd.getElements().computeIfAbsent(getElementName(a), name ->
+                                prsd.getElements().computeIfAbsent(getElementName(parent), name ->
                                         Structures.ParsedElementDescription.builder()
-                                                .node(a.getParentNode().orElse(a))
+                                                .node(parent)
                                                 .element(findElement(parent, prsd))
                                                 .prototype(a)
                                                 .properties(getProperties(a))
@@ -159,6 +159,8 @@ public class Generator {
             name = "field." + field.getVariables().get(0).getNameAsString();
         } else if (node instanceof Parameter) {
             name = "param." + name;
+        } else if (node instanceof ConstructorDeclaration) {
+            name = "<init>";
         }
         var parent = node.getParentNode();
         if (parent.isPresent() && !(parent.get() instanceof CompilationUnit)) {
@@ -792,8 +794,6 @@ public class Generator {
         if (prototype.getParentNode().get() instanceof BodyDeclaration<?> body && body instanceof ClassOrInterfaceDeclaration type) {
             iName.set(defaultInterfaceName(type));
             cName = defaultClassName(type);
-            builder.classPackage(defaultClassPackage(type))
-                    .interfacePackage(defaultInterfacePackage(type));
         }
 
         nullCheck(loadClass(prototypeClass), cls -> builder.prototypeAnnotation((Class) cls));
@@ -912,6 +912,15 @@ public class Generator {
         builder.className(cName).interfaceName(iName.get()).longModifierName(iName.get() + ".Modify");
 
         var result = builder.build();
+
+        var parent = prototype.getParentNode().get();
+        if (isNull(result.getClassPackage()) && parent instanceof ClassOrInterfaceDeclaration type) {
+            result.setClassPackage(defaultClassPackage((ClassOrInterfaceDeclaration) type));
+        }
+
+        if (isNull(result.getInterfacePackage()) && parent instanceof ClassOrInterfaceDeclaration type) {
+            result.setInterfacePackage(defaultInterfacePackage((ClassOrInterfaceDeclaration) type));
+        }
 
         if (isNull(result.getEnrichers())) {
             result.setEnrichers(new ArrayList<>());
