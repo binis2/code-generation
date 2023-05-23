@@ -37,7 +37,7 @@ public class ElementUtils {
         return switch (element.getKind()) {
             case CLASS, ENUM, INTERFACE -> CGClassDeclaration.create(maker.getTrees(), element);
             case METHOD -> CGMethodDeclaration.create(maker.getTrees(), element);
-            case FIELD -> CGVariableDecl.create(maker.getTrees(), element);
+            case FIELD, PARAMETER -> CGVariableDecl.create(maker.getTrees(), element);
             default -> throw new GenericCodeGenException("Invalid element kind: " + element.getKind().toString());
         };
     }
