@@ -41,6 +41,10 @@ public class CGVarSymbol extends CGSymbol {
         super(instance);
     }
 
+    public String getVariableType() {
+        return Reflection.getFieldValue(instance, "type").toString();
+    }
+
     @Override
     protected void init() {
         cls = theClass();

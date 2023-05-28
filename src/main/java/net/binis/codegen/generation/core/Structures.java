@@ -338,6 +338,16 @@ public class Structures {
             return element;
         }
 
+        public Element getPrototypeElement() {
+            if (nonNull(rawElements)) {
+                return rawElements.stream()
+                        .filter(e -> ElementKind.INTERFACE.equals(e.getKind()) && e.getSimpleName().toString().equals(declaration.getNameAsString()))
+                        .findFirst()
+                        .orElse(null);
+            }
+            return null;
+        }
+
         @Builder.Default
         @EqualsAndHashCode.Exclude
         @ToString.Exclude

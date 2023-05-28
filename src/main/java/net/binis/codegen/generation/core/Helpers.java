@@ -207,7 +207,12 @@ public class Helpers {
     }
 
     public static String getExternalClassName(Node node, String type) {
-        var unit = node.findCompilationUnit().orElseThrow(() -> new GenericCodeGenException("Node is not part of unit!"));
+        if (Helpers.isJavaType(type)) {
+            return type;
+        }
+
+        var unit = node.findCompilationUnit().orElseThrow(() ->
+                new GenericCodeGenException("Node is not part of unit!"));
         if (nonNull(lookup.findParsed(type))) {
             return type;
         }

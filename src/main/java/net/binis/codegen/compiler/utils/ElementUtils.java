@@ -90,6 +90,8 @@ public class ElementUtils {
         var symbol = new CGSymbol(element);
         if (symbol.is(CGClassSymbol.theClass())) {
             return symbol.asClassSymbol().getQualifiedName().toString();
+        } else if (symbol.is(CGVarSymbol.theClass())) {
+            return symbol.asVarSymbol().getVariableType();
         }
         return element.getSimpleName().toString();
     }

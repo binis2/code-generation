@@ -22,9 +22,11 @@ package net.binis.codegen.compiler;
 
 import com.sun.source.util.Trees;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.compiler.utils.ElementUtils;
 
 import javax.lang.model.element.Element;
 
+import static net.binis.codegen.tools.Reflection.getFieldValue;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
@@ -40,6 +42,14 @@ public class CGVariableDecl extends CGDeclaration {
 
     public CGVariableDecl(Object instance) {
         super(instance);
+    }
+
+    public String getVariableType() {
+        return getFieldValue(instance, "vartype").toString();
+    }
+
+    public String getFullVariableType() {
+        return ElementUtils.getSymbolFullName(getSymbol().getElement());
     }
 
     public static Class theClass() {

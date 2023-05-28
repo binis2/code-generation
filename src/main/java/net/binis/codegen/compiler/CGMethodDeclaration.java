@@ -25,10 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.lang.model.element.Element;
 
-import static net.binis.codegen.tools.Reflection.loadClass;
+import static java.util.Objects.isNull;
+import static net.binis.codegen.tools.Reflection.*;
 
 @Slf4j
 public class CGMethodDeclaration extends CGDeclaration {
+
+    protected CGList<CGVariableDecl> params;
 
     public static CGMethodDeclaration create(Trees trees, Element element) {
         return new CGMethodDeclaration(trees, element);
@@ -38,9 +41,22 @@ public class CGMethodDeclaration extends CGDeclaration {
         super(trees, element);
     }
 
+    public CGList<CGVariableDecl> getParameters() {
+        if (isNull(params)) {
+            params = new CGList<>(getFieldValue(instance, "params"), this::onModify, CGVariableDecl.class);
+        }
+        return params;
+    }
+
     @Override
     protected void init() {
         cls = loadClass("com.sun.tools.javac.tree.JCTree$JCMethodDecl");
     }
+
+    private void onModify(CGList<CGVariableDecl> list) {
+        setFieldValue(instance, "annotations", list.getInstance());
+        params = list;
+    }
+
 
 }

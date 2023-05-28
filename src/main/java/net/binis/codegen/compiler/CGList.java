@@ -23,6 +23,7 @@ package net.binis.codegen.compiler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.base.JavaCompilerObject;
+import net.binis.codegen.factory.CodeFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -45,6 +46,8 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
 
     protected Class<T> containedClass;
     protected Method mAppend;
+
+    protected Method mGet;
 
     public CGList(Object instance, Consumer<CGList<T>> onModify, Class<T> containedClass) {
         super();
@@ -80,9 +83,15 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
         return new CGList(invokeStatic(method, new Object[]{params}), null, cls);
     }
 
-
     public int size() {
         return (int) invoke("size", instance);
+    }
+
+    public T get(int index) {
+        if (isNull(mGet)) {
+            mGet = findMethod("get", cls, int.class);
+        }
+        return CodeFactory.create(containedClass, invoke(mGet, instance, index));
     }
 
     @SuppressWarnings("unchecked")

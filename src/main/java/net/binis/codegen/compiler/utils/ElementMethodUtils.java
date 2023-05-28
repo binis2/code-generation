@@ -20,8 +20,14 @@ package net.binis.codegen.compiler.utils;
  * #L%
  */
 
+import com.github.javaparser.ast.Node;
+import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.*;
 
+import javax.lang.model.element.Element;
+import java.util.List;
+
+@Slf4j
 public class ElementMethodUtils extends ElementUtils {
 
     public static CGExpression createStaticMethodInvocation(Class<?> cls, String methodName, CGExpression... params) {
@@ -46,4 +52,18 @@ public class ElementMethodUtils extends ElementUtils {
         return maker.Apply(CGList.nil(CGExpression.class), method, CGList.from(params, CGExpression.class));
     }
 
+    public static boolean paramsMatch(Element e, List<String> list) {
+        if (getDeclaration(e) instanceof CGMethodDeclaration decl) {
+            var params = decl.getParameters();
+            if (params.size() == list.size()) {
+                for (int i = 0; i < params.size(); i++) {
+                    if (!params.get(i).getFullVariableType().equals(list.get(i))) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
 }

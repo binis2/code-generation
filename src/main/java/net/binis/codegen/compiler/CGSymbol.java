@@ -57,8 +57,17 @@ public class CGSymbol extends JavaCompilerObject {
         if (is(CGClassSymbol.theClass())) {
             return new CGClassSymbol(instance);
         } else {
-            throw new ClassCastException("unable to cast to CGClassSymbol");
+            throw new ClassCastException("Unable to cast to CGClassSymbol");
         }
     }
+
+    public CGVarSymbol asVarSymbol() {
+        if (is(CGVarSymbol.theClass())) {
+            return new CGVarSymbol(instance);
+        } else {
+            throw new ClassCastException("Unable to cast to CGVarSymbol");
+        }
+    }
+
 
 }

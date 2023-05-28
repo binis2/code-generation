@@ -40,6 +40,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
 import net.binis.codegen.annotation.type.GenerationStrategy;
 import net.binis.codegen.compiler.utils.ElementAnnotationUtils;
+import net.binis.codegen.compiler.utils.ElementMethodUtils;
+import net.binis.codegen.compiler.utils.ElementUtils;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
@@ -596,6 +598,7 @@ public class Generator {
                     handleDefaultInterfaceMethodBody(parse, body, false);
                     method.setBody(body).addModifier(DEFAULT);
                     intf.addMember(handleForAnnotations(unit, method, false));
+                    handleCodeImplementationInjection(parse.getPrototypeElement(), method, declaration);
                 });
             } else {
                 if (methodExists(intf, method, false)) {
@@ -613,6 +616,7 @@ public class Generator {
                 var body = b.clone();
                 handleDefaultMethodBody(parse, body, false);
                 method.setBody(body);
+                handleCodeImplementationInjection(parse.getPrototypeElement(), method, declaration);
             });
 
             if (methodExists(spec, method, false)) {
@@ -620,6 +624,21 @@ public class Generator {
             }
 
             spec.addMember(handleForAnnotations(unit, method, true));
+        }
+    }
+
+    private static void handleCodeImplementationInjection(Element element, MethodDeclaration method, MethodDeclaration original) {
+        if (nonNull(element) && !method.isAnnotationPresent(CodeImplementation.class)) {
+            element.getEnclosedElements().stream()
+                    .filter(e -> ElementKind.METHOD.equals(e.getKind()))
+                    .filter(e -> e.getSimpleName().toString().equals(method.getNameAsString()))
+                    .filter(e ->
+                            ElementMethodUtils.paramsMatch(e, method.getParameters().stream().map(p ->
+                                    getExternalClassName(original, p.getType().asString())).toList()))
+                    .findFirst()
+                    .ifPresent(e ->
+                            //TODO: Handle imports
+                            ElementAnnotationUtils.addAnnotation(e, CodeImplementation.class, Map.of("value", withRes(method.getBody().get().toString(), s -> s.substring(1, s.length() - 1)).trim())));
         }
     }
 
@@ -646,51 +665,8 @@ public class Generator {
     }
 
     private static boolean handleDefaultMethodBody(PrototypeDescription<ClassOrInterfaceDeclaration> parse, Node node, boolean isGetter) {
-        var typeDeclaration = parse.getDeclaration();
-        if (isGetter && node.getParentNode().isPresent() && node.getParentNode().get().getChildNodes().size() == 2 && node.getParentNode().get().getChildNodes().get(1) instanceof SimpleName) {
-            var name = (SimpleName) node.getParentNode().get().getChildNodes().get(1);
-            var parent = parse.findField(name.toString());
-            if (parent.isEmpty() && nonNull(parse.getBase())) {
-                parent = parse.getBase().findField(name.toString());
-            }
-            if (parent.isPresent()) {
-                name.setIdentifier(getGetterName(name.asString(), ""));
-            }
-        } else {
-            for (var i = 0; i < node.getChildNodes().size(); i++) {
-                var n = node.getChildNodes().get(i);
-                if (n instanceof MethodCallExpr) {
-                    var method = (MethodCallExpr) n;
-                    var parent = parse.findField(method.getNameAsString());
-                    if (parent.isEmpty() && nonNull(parse.getBase())) {
-                        parent = parse.getBase().findField(method.getNameAsString());
-                    }
-
-                    if (parent.isPresent()) {
-                        notNull(parent.get().getPrototype(), p ->
-                                handleDefaultMethodBody(p, n, true));
-
-                        return node.replace(method, new FieldAccessExpr().setName(method.getName()));
-                    } else {
-                        if (handleDefaultMethodBody(parse, n, false)) {
-                            handleDefaultMethodBody(parse, node, false);
-                        }
-                    }
-
-                } else {
-                    if (handleDefaultMethodBody(parse, n, isGetter)) {
-                        handleDefaultMethodBody(parse, node, isGetter);
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean handleDefaultInterfaceMethodBody(PrototypeDescription<ClassOrInterfaceDeclaration> parse, Node node, boolean isGetter) {
-        var typeDeclaration = parse.getDeclaration();
-        if (isGetter && node.getParentNode().isPresent() && node.getParentNode().get().getChildNodes().size() == 2 && node.getParentNode().get().getChildNodes().get(1) instanceof SimpleName) {
-            var name = (SimpleName) node.getParentNode().get().getChildNodes().get(1);
+        //TODO: Actual params type checks!
+        if (isGetter && node.getParentNode().isPresent() && node.getParentNode().get().getChildNodes().size() == 2 && node.getParentNode().get().getChildNodes().get(1) instanceof SimpleName name) {
             var parent = parse.findField(name.toString());
             if (parent.isEmpty() && nonNull(parse.getBase())) {
                 parent = parse.getBase().findField(name.toString());
@@ -708,7 +684,49 @@ public class Generator {
                     }
 
                     if (parent.isPresent()) {
-                        notNull(lookup.findParsed(getExternalClassName(typeDeclaration.findCompilationUnit().get(), parent.get().getType())), p ->
+                        notNull(parent.get().getPrototype(), p ->
+                                handleDefaultMethodBody(p, n, true));
+
+                        var exp = new FieldAccessExpr().setName(method.getName());
+                        if (method.getScope().isPresent()) {
+                            exp.setScope(method.getScope().get());
+                        }
+                        return node.replace(method, exp);
+                    } else {
+                        if (handleDefaultMethodBody(parse, n, false)) {
+                            handleDefaultMethodBody(parse, node, false);
+                        }
+                    }
+                } else {
+                    if (handleDefaultMethodBody(parse, n, isGetter)) {
+                        handleDefaultMethodBody(parse, node, isGetter);
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean handleDefaultInterfaceMethodBody(PrototypeDescription<ClassOrInterfaceDeclaration> parse, Node node, boolean isGetter) {
+        if (isGetter && node.getParentNode().isPresent() && node.getParentNode().get().getChildNodes().size() == 2 && node.getParentNode().get().getChildNodes().get(1) instanceof SimpleName name) {
+            var parent = parse.findField(name.toString());
+            if (parent.isEmpty() && nonNull(parse.getBase())) {
+                parent = parse.getBase().findField(name.toString());
+            }
+            if (parent.isPresent()) {
+                name.setIdentifier(getGetterName(name.asString(), ""));
+            }
+        } else {
+            for (var i = 0; i < node.getChildNodes().size(); i++) {
+                var n = node.getChildNodes().get(i);
+                if (n instanceof MethodCallExpr method) {
+                    var parent = parse.findField(method.getNameAsString());
+                    if (parent.isEmpty() && nonNull(parse.getBase())) {
+                        parent = parse.getBase().findField(method.getNameAsString());
+                    }
+
+                    if (parent.isPresent()) {
+                        notNull(lookup.findParsed(getExternalClassName(parse.getDeclaration(), parent.get().getType())), p ->
                                 handleDefaultInterfaceMethodBody(p, n, true));
 
                         if (nonNull(parent.get().getInterfaceGetter())) {
@@ -721,7 +739,6 @@ public class Generator {
                             handleDefaultInterfaceMethodBody(parse, node, false);
                         }
                     }
-
                 } else {
                     if (handleDefaultInterfaceMethodBody(parse, n, isGetter)) {
                         handleDefaultInterfaceMethodBody(parse, node, isGetter);
