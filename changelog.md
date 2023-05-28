@@ -1,4 +1,15 @@
 # Change Log
+**28-05-2023** ver. 1.1.1
+* Generation: (**Breaking change**) Renamed CLASSIC generation strategy to PROTOTYPE.
+* Generation: (**Breaking change**) Removed METHOD generation strategy.
+* Generation: Added automatic @CodeImplementation injection for prototypes with default methods.
+* Generation: Added support for parameter annotations element manipulation.
+* Generation: Added support for constructor element manipulation.
+* Generation: Fixed class mapping of CGLiteral.
+* IDEA Plugin: Automatic code re-generation on saving prototype changes.
+* IDEA Plugin: More reliable cache eviction on prototype changes.
+* IDEA Plugin: More reliable annotation parameters reading.
+
 **21-05-2023** ver. 1.1.0
 * Generation: (**Breaking change**) Redesign enrichers framework to support every possible element.
 * Generation: Added field introduction support for element manipulation.
