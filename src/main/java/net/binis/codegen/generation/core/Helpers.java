@@ -207,8 +207,9 @@ public class Helpers {
     }
 
     public static String getExternalClassName(Node node, String type) {
-        if (Helpers.isJavaType(type)) {
-            return type;
+        var java = getJavaType(type);
+        if (nonNull(java)) {
+            return java;
         }
 
         var unit = node.findCompilationUnit().orElseThrow(() ->
@@ -1000,6 +1001,19 @@ public class Helpers {
     public static boolean isJavaType(String type) {
         return primitiveTypes.contains(type) || classExists("java.lang." + type);
     }
+
+    public static String getJavaType(String type) {
+        if (primitiveTypes.contains(type)) {
+            return type;
+        }
+        var cls = "java.lang." + type;
+        if (classExists(cls)) {
+            return cls;
+        }
+
+        return null;
+    }
+
 
     public static boolean isPrimitiveType(String type) {
         return primitiveTypes.contains(type);
