@@ -29,12 +29,15 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.enrich.CustomDescription;
 import net.binis.codegen.enrich.PrototypeLookup;
+import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
+import javax.lang.model.element.Element;
+import javax.tools.Diagnostic;
 import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -225,5 +228,15 @@ public class PrototypeLookupHandler implements PrototypeLookup {
         external.clear();
         prototypeMaps.clear();
     }
+
+    public void error(String message, Element element) {
+        if (nonNull(getProcessingEnvironment())) {
+            log.error(message);
+            getProcessingEnvironment().getMessager().printMessage(Diagnostic.Kind.ERROR, message, element);
+        } else {
+            throw new GenericCodeGenException(message);
+        }
+    }
+
 
 }

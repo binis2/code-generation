@@ -34,6 +34,7 @@ import net.binis.codegen.options.CodeOption;
 import org.apache.commons.lang3.tuple.Triple;
 
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -97,7 +98,11 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     Element getElement();
 
+    Element getPrototypeElement();
+
     List<Element> getRawElements();
+
+    Element findElement(String name, ElementKind... kind);
 
     ClassOrInterfaceDeclaration getParent();
 

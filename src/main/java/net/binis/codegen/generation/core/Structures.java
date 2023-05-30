@@ -348,6 +348,17 @@ public class Structures {
             return null;
         }
 
+        public Element findElement(String name, ElementKind... kind) {
+            if (nonNull(rawElements)) {
+                return rawElements.stream()
+                        .filter(e -> in(e.getKind(), kind) && e.getSimpleName().toString().equals(name))
+                        .findFirst()
+                        .orElse(null);
+            }
+            return null;
+        }
+
+
         @Builder.Default
         @EqualsAndHashCode.Exclude
         @ToString.Exclude

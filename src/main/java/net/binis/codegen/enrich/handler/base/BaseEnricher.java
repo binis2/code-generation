@@ -86,12 +86,7 @@ public abstract class BaseEnricher implements PrototypeEnricher {
     }
 
     protected void error(String message, Element element) {
-        if (nonNull(lookup.getProcessingEnvironment())) {
-            log.error(message);
-            lookup.getProcessingEnvironment().getMessager().printMessage(Diagnostic.Kind.ERROR, message, element);
-        } else {
-            throw new GenericCodeGenException(message);
-        }
+        lookup.error(message, element);
     }
 
 }

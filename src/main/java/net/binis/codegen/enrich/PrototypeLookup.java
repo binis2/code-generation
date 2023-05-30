@@ -28,6 +28,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
+import javax.lang.model.element.Element;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -71,5 +72,7 @@ public interface PrototypeLookup {
     CustomDescription createCustomDescription(String id);
     CustomDescription getCustomDescription(String id);
     Collection<CustomDescription> custom();
+
+    void error(String message, Element element);
 
 }

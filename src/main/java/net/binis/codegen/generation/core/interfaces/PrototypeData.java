@@ -35,10 +35,20 @@ public interface PrototypeData {
     String getPrototypeFullName();
     String getName();
     String getClassName();
+
+    default String getClassFullName() {
+        return getClassPackage() + "." + getClassName();
+    }
+
     String getClassPackage();
     boolean isClassGetters();
     boolean isClassSetters();
     String getInterfaceName();
+
+    default String getInterfaceFullName() {
+        return getInterfacePackage() + "." + getInterfaceName();
+    }
+
     String getInterfacePackage();
     boolean isInterfaceSetters();
     String getModifierName();

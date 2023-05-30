@@ -58,6 +58,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import java.lang.annotation.Target;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
@@ -105,6 +106,9 @@ public class Generator {
                         processed.set(processed.get() + 1);
                     } else if (processForClass(parser, prsd, type, prototype)) {
                         processed.set(processed.get() + 1);
+                    } else {
+                        with(ErrorHelpers.calculatePrototypeAnnotationError(type.asClassOrInterfaceDeclaration(), getProperties(prototype)), message ->
+                                lookup.error(message, prsd.findElement(type.getNameAsString(), ElementKind.CLASS, ElementKind.INTERFACE)));
                     }
                 });
             } else if (type.isEnumDeclaration()) {
@@ -234,6 +238,10 @@ public class Generator {
     }
 
     private static Structures.Parsed handlePrototypeStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
+        if (properties.getInterfaceFullName().equals(properties.getPrototypeFullName())) {
+            lookup.error("Either rename class to '" + properties.getInterfaceName() + "Prototype' or move it to a '*.prototypes.*' package!", prsd.getPrototypeElement());
+        }
+
         var unit = new CompilationUnit();
         unit.addImport("javax.annotation.processing.Generated");
         var spec = unit.addClass(properties.getClassName());
@@ -802,7 +810,7 @@ public class Generator {
         parse.getConstants().put(name, data.build());
     }
 
-    private static Structures.PrototypeDataHandler getProperties(AnnotationExpr prototype) {
+    public static Structures.PrototypeDataHandler getProperties(AnnotationExpr prototype) {
         var prototypeClass = getExternalClassName(prototype, prototype.getNameAsString());
         var builder = Structures.builder(prototypeClass);
 

@@ -151,7 +151,7 @@ public abstract class BaseCodeTest {
         var params = new ArrayList<>(Arrays.asList(args));
         params.add("-Xlint:unchecked");
         JavaCompiler.CompilationTask task = compiler.getTask(null,
-                fileManager, diagnostics, params, null, /*List.of("net.binis.codegen.annotation.processor.CodeGenAnnotationProcessor"),*/ getCompilationUnits(files));
+                fileManager, diagnostics, params, null, getCompilationUnits(files));
 
         if (!task.call()) {
             diagnostics.getDiagnostics().forEach(System.out::println);

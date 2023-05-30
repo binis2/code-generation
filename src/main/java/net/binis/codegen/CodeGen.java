@@ -28,10 +28,7 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.discoverer.AnnotationDiscoverer;
 import net.binis.codegen.exception.GenericCodeGenException;
-import net.binis.codegen.generation.core.Generator;
-import net.binis.codegen.generation.core.Helpers;
-import net.binis.codegen.generation.core.Parsables;
-import net.binis.codegen.generation.core.Structures;
+import net.binis.codegen.generation.core.*;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
@@ -39,6 +36,7 @@ import net.binis.codegen.tools.CollectionUtils;
 import org.apache.commons.cli.*;
 
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -191,7 +189,7 @@ public class CodeGen {
                             .build());
         } else {
             var name = getClassName(t);
-            checkForNestedClasses(t.asTypeDeclaration(), fileName, parser);
+            checkForNestedClasses(t.asTypeDeclaration(), fileName, parser, elements);
             lookup.registerParsed(name,
                     Parsed.builder()
                             .declaration(t.asTypeDeclaration())
@@ -205,26 +203,33 @@ public class CodeGen {
     }
 
     @SuppressWarnings("unchecked")
-    public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, JavaParser parser) {
+    public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, JavaParser parser, List<Element> elements) {
         if (type.isClassOrInterfaceDeclaration() && Generator.getCodeAnnotation(type.asClassOrInterfaceDeclaration()).isEmpty()) {
             type.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(nested -> {
-                if (nested.asClassOrInterfaceDeclaration().isInterface() && Generator.getCodeAnnotation(nested).isPresent()) {
-                    var parent = type.findCompilationUnit().get();
-                    var unit = new CompilationUnit().setPackageDeclaration(parent.getPackageDeclaration().get());
-                    var nestedType = nested.clone();
-                    parent.getImports().forEach(unit::addImport);
-                    unit.addType(nestedType);
-                    var cName = getClassName(nestedType);
+                var ann = Generator.getCodeAnnotation(nested);
+                if (ann.isPresent()) {
+                    if (nested.asClassOrInterfaceDeclaration().isInterface()) {
+                        var parent = type.findCompilationUnit().get();
+                        var unit = new CompilationUnit().setPackageDeclaration(parent.getPackageDeclaration().get());
+                        var nestedType = nested.clone();
+                        parent.getImports().forEach(unit::addImport);
+                        unit.addType(nestedType);
+                        var cName = getClassName(nestedType);
 
-                    lookup.registerParsed(cName,
-                            Structures.Parsed.builder()
-                                    .declaration(nestedType.asTypeDeclaration())
-                                    .declarationUnit(unit)
-                                    .prototypeFileName(fileName)
-                                    .prototypeClassName(cName)
-                                    .parser(parser)
-                                    .nested(true)
-                                    .build());
+                        lookup.registerParsed(cName,
+                                Structures.Parsed.builder()
+                                        .declaration(nestedType.asTypeDeclaration())
+                                        .declarationUnit(unit)
+                                        .prototypeFileName(fileName)
+                                        .prototypeClassName(cName)
+                                        .parser(parser)
+                                        .nested(true)
+                                        .build());
+                    } else {
+                        with(ErrorHelpers.calculatePrototypeAnnotationError(nested.asClassOrInterfaceDeclaration(), Generator.getProperties(ann.get())), message ->
+                                lookup.error(message, elements.stream().filter(e ->
+                                        ElementKind.CLASS.equals(e.getKind()) && e.getSimpleName().toString().equals(nested.getNameAsString())).findFirst().orElse(null)));
+                    }
                 }
             });
         }
