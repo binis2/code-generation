@@ -30,6 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+
 public class ElementAnnotationUtils extends ElementUtils {
 
     public static CGAnnotation findAnnotation(Element element, Class<? extends Annotation> annotation) {
@@ -63,6 +66,10 @@ public class ElementAnnotationUtils extends ElementUtils {
     }
 
     public static CGAnnotation addAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
+        if (isNull(attributes)) {
+            attributes = Map.of();
+        }
+
         var maker = TreeMaker.create();
         var decl = getDeclaration(element, maker);
 
@@ -87,6 +94,10 @@ public class ElementAnnotationUtils extends ElementUtils {
         return ann;
     }
 
+    public static CGAnnotation addAnnotation(Element element, Class<? extends Annotation> annotation, CGExpression... attributes) {
+        return addAnnotation(element, annotation, expressionToList(attributes));
+    }
+
     public static CGAnnotation addOrReplaceAnnotation(Element element, Class<? extends Annotation> annotation) {
         return addOrReplaceAnnotation(element, annotation, Map.of());
     }
@@ -95,7 +106,17 @@ public class ElementAnnotationUtils extends ElementUtils {
         return addAnnotation(element, annotation, attributes);
     }
 
+    public static CGAnnotation addOrReplaceAnnotation(Element element, Class<? extends Annotation> annotation, CGExpression... attributes) {
+        removeAnnotation(element, annotation);
+        return addAnnotation(element, annotation, attributes);
+    }
+
     public static CGAnnotation replaceAnnotation(Element element, CGAnnotation oldAnnotation, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
+        removeAnnotation(element, oldAnnotation);
+        return addAnnotation(element, annotation, attributes);
+    }
+
+    public static CGAnnotation replaceAnnotation(Element element, CGAnnotation oldAnnotation, Class<? extends Annotation> annotation, CGExpression... attributes) {
         removeAnnotation(element, oldAnnotation);
         return addAnnotation(element, annotation, attributes);
     }
@@ -253,6 +274,18 @@ public class ElementAnnotationUtils extends ElementUtils {
         }
 
         return classNameIdent;
+    }
+
+    protected static CGList<CGExpression> expressionToList(CGExpression... expressions) {
+        var list = CGList.nil(CGExpression.class);
+        if (nonNull(expressions)) {
+            for (var attr : expressions) {
+                if (nonNull(attr)) {
+                    list = list.append(attr);
+                }
+            }
+        }
+        return list;
     }
 
 }
