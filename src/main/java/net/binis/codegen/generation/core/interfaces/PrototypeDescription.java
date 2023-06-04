@@ -104,6 +104,8 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     Element findElement(String name, ElementKind... kind);
 
+    Element findElement(Element parent, String name, ElementKind kind);
+
     ClassOrInterfaceDeclaration getParent();
 
     EmbeddedModifierType getEmbeddedModifierType();

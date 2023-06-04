@@ -47,6 +47,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static com.github.javaparser.ast.Modifier.Keyword.PROTECTED;
@@ -241,8 +242,11 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
             intf.addMember(modifierFields);
             description.registerClass(MODIFIER_FIELDS_KEY, modifierFields);
             intf.findCompilationUnit().ifPresent(dest ->
-                    imports.forEach(pair ->
-                            notNull(getExternalClassNameIfExists(pair.getKey(), pair.getValue()), dest::addImport)));
+                    imports.stream()
+                            .map(pair -> getExternalClassNameIfExists(pair.getKey(), pair.getValue()))
+                            .filter(Objects::nonNull)
+                            .filter(cls -> !isJavaType(cls))
+                            .forEach(dest::addImport));
         }
 
         if (nonNull(embedded)) {
@@ -328,7 +332,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     var proto = parsed.getDeclaration().asClassOrInterfaceDeclaration();
                     var generics = buildGenerics(proto.getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(base.getNameAsString())).findFirst().get(), base);
                     parsed.getBase().getFields().forEach(field ->
-                            with(generics.get(field.getType()), t -> with(getExternalClassName(proto.findCompilationUnit().get(), t.asString()), n -> with(lookup.findParsed(n), p -> {
+                            with(generics.get(field.getType().asString()), t -> with(getExternalClassName(proto.findCompilationUnit().get(), t.asString()), n -> with(lookup.findParsed(n), p -> {
                                 if (p.equals(description)) {
                                     if (field.isCollection()) {
                                         description.addEmbeddedModifier(EmbeddedModifierType.COLLECTION);
@@ -460,13 +464,15 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
 
     private MethodDeclaration addModifier(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierClassName, String modifierName, boolean isClass, Type generic, String cast, PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         MethodDeclaration method;
-        var type = declaration.isGenericField() ? generic.asString() : declaration.isGenericMethod() ? "Object" : declaration.getType();
+        var type = declaration.isGenericField() ? generic.asString() : declaration.isGenericMethod() ? "Object" : declaration.getType().asString();
         if (isNull(type)) {
             type = isNull(declaration.getDescription()) || "dummy".equals(unit(declaration.getDescription()).getPackageDeclaration().get().getNameAsString()) ?
                     handleType(unit(declaration.getDeclaration()), unit(spec), declaration.getDeclaration().getVariables().get(0).getType()) :
                     (declaration.getDescription().getTypeParameters().isEmpty() ? handleType(unit(declaration.getDescription()), unit(spec), declaration.getDeclaration().getVariable(0).getType()) : "Object");
         } else {
-            unit(spec).addImport(declaration.getFullType());
+            if (!isJavaType(declaration.getFullType())) {
+                unit(spec).addImport(declaration.getFullType());
+            }
         }
         method = new MethodDeclaration().setName(declaration.getName())
                 .setType(modifierName)

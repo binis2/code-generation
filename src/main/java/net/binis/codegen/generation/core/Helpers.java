@@ -207,11 +207,6 @@ public class Helpers {
     }
 
     public static String getExternalClassName(Node node, String type) {
-        var java = getJavaType(type);
-        if (nonNull(java)) {
-            return java;
-        }
-
         var unit = node.findCompilationUnit().orElseThrow(() ->
                 new GenericCodeGenException("Node is not part of unit!"));
         if (nonNull(lookup.findParsed(type))) {
@@ -262,6 +257,10 @@ public class Helpers {
             if (nonNull(cls)) {
                 result = cls.getCanonicalName();
             }
+        }
+
+        if (isNull(result) && primitiveTypes.contains(type)) {
+            result = type;
         }
 
         return result;
@@ -999,7 +998,7 @@ public class Helpers {
     }
 
     public static boolean isJavaType(String type) {
-        return primitiveTypes.contains(type) || classExists("java.lang." + type);
+        return nonNull(type) && primitiveTypes.contains(type) || classExists("java.lang." + type);
     }
 
     public static String getJavaType(String type) {
@@ -1155,15 +1154,15 @@ public class Helpers {
                 var type = Holder.<Type>blank();
                 var proto = Holder.<PrototypeDescription<ClassOrInterfaceDeclaration>>blank();
                 description.getInterface().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(intf.getNameAsString())).findFirst().ifPresent(t ->
-                        type.set(buildGeneric(field.getType(), t, intf)));
+                        type.set(buildGeneric(field.getType().asString(), t, intf)));
                 description.getDeclaration().asClassOrInterfaceDeclaration().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(field.getParsed().getDeclaration().getNameAsString())).findFirst().ifPresent(t ->
-                        proto.set(lookup.findParsed(getExternalClassName(description.getDeclaration().asClassOrInterfaceDeclaration().findCompilationUnit().get(), buildGeneric(field.getType(), t, intf).asString()))));
+                        proto.set(lookup.findParsed(getExternalClassName(description.getDeclaration().asClassOrInterfaceDeclaration().findCompilationUnit().get(), buildGeneric(field.getType().asString(), t, intf).asString()))));
                 if (type.isPresent()) {
                     return Pair.of(type.get(), proto.get());
                 }
             }
             if (nonNull(field.getGenerics())) {
-                var type = field.getGenerics().get(field.getType());
+                var type = field.getGenerics().get(field.getType().asString());
                 if (nonNull(type)) {
                     return Pair.of(type, null);
                 }
@@ -1178,7 +1177,7 @@ public class Helpers {
             } else {
                 var result = field.getDescription().getType();
                 if (nonNull(lookup.findParsed(Helpers.getExternalClassName(field.getDescription().findCompilationUnit().get(), result.asString())))) {
-                    result = lookup.getParser().parseClassOrInterfaceType(field.getType()).getResult().get();
+                    result = lookup.getParser().parseClassOrInterfaceType(field.getType().asString()).getResult().get();
                 } else if (nonNull(field.getDeclaration())) {
                     result = field.getDeclaration().getCommonType();
                 }

@@ -153,7 +153,7 @@ public class Structures {
         private FieldDeclaration declaration;
         private MethodDeclaration description;
         private String fullType;
-        private String type;
+        private Type type;
         private boolean collection;
         private boolean external;
         private boolean genericMethod;
@@ -358,6 +358,16 @@ public class Structures {
             return null;
         }
 
+        public Element findElement(Element parent, String name, ElementKind kind) {
+            if (nonNull(parent)) {
+                return parent.getEnclosedElements().stream()
+                        .filter(e -> e.getKind().equals(kind))
+                        .filter(e -> e.getSimpleName().toString().equals(name))
+                        .findFirst()
+                        .orElse(null);
+            }
+            return null;
+        }
 
         @Builder.Default
         @EqualsAndHashCode.Exclude
@@ -631,8 +641,12 @@ public class Structures {
                                     builder.classSetters(handleBooleanExpression(member.getDefaultValue().get()));
                             case "baseModifierClass" ->
                                     builder.baseModifierClass(handleClassExpression(member.getDefaultValue().get()));
-                            case "mixInClass" ->
-                                    builder.mixInClass(handleClassExpression(member.getDefaultValue().get()));
+                            case "mixInClass" -> {
+                                var cls = handleClassExpression(member.getDefaultValue().get());
+                                if (!"void".equals(cls)) {
+                                    builder.mixInClass(cls);
+                                }
+                            }
                             case "interfacePath" ->
                                     builder.interfacePath(handleStringExpression(member.getDefaultValue().get()));
                             case "generateInterface" ->

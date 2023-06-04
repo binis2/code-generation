@@ -52,8 +52,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.generation.core.Structures.Parsed;
-import static net.binis.codegen.tools.Tools.nullCheck;
-import static net.binis.codegen.tools.Tools.with;
+import static net.binis.codegen.tools.Tools.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Slf4j
@@ -227,8 +226,8 @@ public class CodeGen {
                                         .build());
                     } else {
                         with(ErrorHelpers.calculatePrototypeAnnotationError(nested.asClassOrInterfaceDeclaration(), Generator.getProperties(ann.get())), message ->
-                                lookup.error(message, elements.stream().filter(e ->
-                                        ElementKind.CLASS.equals(e.getKind()) && e.getSimpleName().toString().equals(nested.getNameAsString())).findFirst().orElse(null)));
+                                lookup.error(message, withRes(elements, el -> el.stream().filter(e ->
+                                        ElementKind.CLASS.equals(e.getKind()) && e.getSimpleName().toString().equals(nested.getNameAsString())).findFirst().orElse(null))));
                     }
                 }
             });

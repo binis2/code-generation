@@ -39,6 +39,7 @@ import net.binis.codegen.enrich.Enrichers;
 import net.binis.codegen.enrich.ValidationEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
+import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
@@ -49,6 +50,7 @@ import net.binis.codegen.tools.ContextInterpolator;
 import net.binis.codegen.tools.Holder;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.lang.model.element.ElementKind;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -57,6 +59,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.EnrichHelpers.*;
 import static net.binis.codegen.generation.core.Helpers.*;
+import static net.binis.codegen.tools.Reflection.invoke;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
 
@@ -68,6 +71,9 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
     protected static final String MESSAGE = "message";
     protected static final String MESSAGES = "messages";
     protected static final String AS_CODE = "asCode";
+    protected static final String TARGETS = "targets";
+
+    protected static final Class<?> TARGETS_AWARE = loadClass("net.binis.codegen.validation.consts.ValidationTargets$TargetsAware");
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
@@ -253,7 +259,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         handleSanitizationAnnotation(ann, params);
         //TODO: Handle aliases
 
-        return params.build();
+        return checkTargets(params.build(), field);
     }
 
     protected Params getSanitizationParams(PrototypeField field, AnnotationExpr annotation, Class<?> annotationClass) {
@@ -262,7 +268,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
 
         if (!Sanitize.class.equals(annotationClass)) {
             var ann = annotationClass.getDeclaredAnnotation(Sanitize.class);
-            params.cls(ann.value().getSimpleName()).params(Arrays.asList(ann.params()));
+            params.cls(ann.value().getSimpleName()).params(Arrays.asList(ann.params())).targets(processTargetsClass(ann.targets()));
             cls = ann.value().getCanonicalName();
             field.getDeclaration().findCompilationUnit().get().addImport(cls);
 
@@ -271,7 +277,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             handleSanitizationAnnotation(annotation, params);
         }
 
-        var result = params.build();
+        var result = checkTargets(params.build(), field);
 
         if (isNull(result.getAsCode())) {
             notNull(loadClass(isNull(cls) ? getExternalClassName(field.getParsed().getDeclaration().findCompilationUnit().get(), result.getCls()) : cls), c ->
@@ -291,6 +297,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         var cls = pair.getValue().asClassExpr().getTypeAsString();
                         params.cls(cls).full(getExternalClassName(pair, cls));
                     }
+                    case TARGETS -> params.targets(processTargets(pair.getValue()));
                     case PARAMS ->
                             params.params(pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).map(StringLiteralExpr::asString).collect(Collectors.toList()));
                     case AS_CODE -> params.asCode(pair.getValue().asStringLiteralExpr().asString());
@@ -308,7 +315,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         handleValidationAnnotation(ann, params);
         //TODO: Handle aliases
 
-        return params.build();
+        return checkTargets(params.build(), field);
     }
 
     protected Params getValidationParams(PrototypeField field, AnnotationExpr annotation, Class<?> annotationClass) {
@@ -318,13 +325,13 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         if (!Validate.class.equals(annotationClass)) {
             var ann = annotationClass.getDeclaredAnnotation(Validate.class);
             cls = ann.value().getCanonicalName();
-            params.cls(ann.value().getSimpleName()).full(cls).params(Arrays.asList(ann.params())).message(ann.message());
+            params.cls(ann.value().getSimpleName()).full(cls).params(Arrays.asList(ann.params())).message(ann.message()).targets(processTargetsClass(ann.targets()));
             handleAliases(field, annotation, annotationClass, params);
         } else {
             handleValidationAnnotation(annotation, params);
         }
 
-        var result = params.build();
+        var result = checkTargets(params.build(), field);
 
         if (isNull(result.getAsCode())) {
             notNull(loadClass(isNull(cls) ? getExternalClassName(unit(field.getParsed().getDeclaration()), result.getCls()) : cls), c ->
@@ -355,6 +362,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         }
                     }
                     case AS_CODE -> params.asCode(pair.getValue().asStringLiteralExpr().asString());
+                    case TARGETS -> params.targets(processTargets(pair.getValue()));
                     default -> {
                         //Do nothing
                     }
@@ -415,6 +423,14 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                     });
         }
 
+        Arrays.stream(annotationClass.getDeclaredMethods())
+                .filter(m -> TARGETS.equals(m.getName()))
+                .filter(m -> m.getReturnType().equals(Class[].class))
+                .filter(m -> isNull(m.getDeclaredAnnotation(AliasFor.class)))
+                .findFirst().ifPresent(m ->
+                        params.targets(processTargetsClass((Class[]) m.getDefaultValue())));
+
+
         parOrder.stream().filter(p -> !p.alt).forEach(p ->
                 list.add(checkAsCode(p.getValue(), p.getAnnotation())));
         var msgs = 0;
@@ -461,6 +477,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         }
                     }
                     case AS_CODE -> params.asCode(pair.getValue().asStringLiteralExpr().asString());
+                    case TARGETS -> params.targets(processTargets(pair.getValue()));
                     case PARAMS -> {
                         if (pair.getValue().isArrayInitializerExpr()) {
                             list.addAll(pair.getValue().asArrayInitializerExpr().getValues().stream()
@@ -770,7 +787,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         handleExecutionAnnotation(ann, params);
         //TODO: Handle aliases
 
-        return params.build();
+        return checkTargets(params.build(), field);
     }
 
     protected Params getExecutionParams(PrototypeField field, AnnotationExpr annotation, Class<?> annotationClass) {
@@ -779,7 +796,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
 
         if (!Execute.class.equals(annotationClass)) {
             var ann = annotationClass.getDeclaredAnnotation(Execute.class);
-            params.cls(ann.value().getSimpleName()).params(Arrays.asList(ann.params()));
+            params.cls(ann.value().getSimpleName()).params(Arrays.asList(ann.params())).targets(processTargetsClass(ann.targets()));
             cls = ann.value().getCanonicalName();
             unit(field.getDeclaration()).addImport(cls);
 
@@ -788,7 +805,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             handleExecutionAnnotation(annotation, params);
         }
 
-        var result = params.build();
+        var result = checkTargets(params.build(), field);
 
         if (isNull(result.getAsCode())) {
             notNull(loadClass(isNull(cls) ? getExternalClassName(field.getParsed().getDeclaration().findCompilationUnit().get(), result.getCls()) : cls), c ->
@@ -809,6 +826,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         params.cls(cls).full(getExternalClassName(pair, cls));
                     }
                     case MESSAGE -> params.message(pair.getValue().asStringLiteralExpr().asString());
+                    case TARGETS -> params.targets(processTargets(pair.getValue()));
                     case PARAMS ->
                             params.params(pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).map(StringLiteralExpr::asString).collect(Collectors.toList()));
                     case AS_CODE -> params.asCode(pair.getValue().asStringLiteralExpr().asString());
@@ -1001,6 +1019,55 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         return result;
     }
 
+    protected List<String> processTargets(Expression value) {
+        if (value instanceof ClassExpr expr) {
+            return List.of(getExternalClassName(expr, expr.getType().asString()));
+        }
+        if (value instanceof ArrayInitializerExpr expr) {
+            return expr.getValues().stream()
+                    .filter(ClassExpr.class::isInstance)
+                    .map(ClassExpr.class::cast)
+                    .map(e -> getExternalClassName(e, e.getType().asString()))
+                    .toList();
+        }
+
+        return List.of();
+    }
+
+    @SuppressWarnings("unchecked")
+    protected List<String> processTargetsClass(Class[] value) {
+        var result = new ArrayList<String>();
+
+        for (var cls : value) {
+            if (nonNull(TARGETS_AWARE) && TARGETS_AWARE.isAssignableFrom(cls)) {
+                with(CodeFactory.create(cls), inst ->
+                        Arrays.stream((Class[]) invoke("targets", inst))
+                                .map(Class::getCanonicalName)
+                                .forEach(result::add));
+            } else {
+                result.add(cls.getCanonicalName());
+            }
+        }
+
+        return result;
+    }
+
+    protected Params checkTargets(Params params, PrototypeField field) {
+        if (nonNull(params.getTargets()) && !params.getTargets().isEmpty()) {
+            var cls = Holder.of(field.getFullType());
+
+            if (field.isCollection()) {
+                cls.set(getExternalClassName(field.getDescription(), field.getType().asClassOrInterfaceType().getTypeArguments().get().get(0).toString()));
+            }
+
+            if (params.getTargets().stream().noneMatch(c -> c.equals(cls.get()))) {
+                var element = field.getParsed().findElement(field.getParsed().getPrototypeElement(), field.getName(), ElementKind.METHOD);
+                error("Target '" + cls + "' is not in the list of allowed targets for '" + params.getCls() + "': " + params.getTargets(), element);
+            }
+        }
+        return params;
+    }
+
     @Data
     @Builder
     protected static class Params {
@@ -1008,8 +1075,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         protected String cls;
         protected String message;
         protected List<Object> messages;
-
         protected List<Object> params;
+        protected List<String> targets;
         protected String asCode;
 
         protected CompilationUnit annotation;

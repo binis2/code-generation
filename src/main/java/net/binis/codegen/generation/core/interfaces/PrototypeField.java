@@ -36,7 +36,7 @@ public interface PrototypeField {
     MethodDeclaration getDescription();
     FieldDeclaration getDeclaration();
     String getFullType();
-    String getType();
+    Type getType();
     boolean isCollection();
     boolean isExternal();
     boolean isGenericMethod();

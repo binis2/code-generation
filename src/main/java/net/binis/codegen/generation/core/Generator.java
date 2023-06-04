@@ -315,7 +315,7 @@ public class Generator {
         });
 
         if (nonNull(properties.getMixInClass()) && isNull(parse.getMixIn())) {
-            throw new GenericCodeGenException("Mix in Class " + properties.getPrototypeName() + " must inherit " + properties.getMixInClass());
+            lookup.error("Mix in Class " + properties.getPrototypeName() + " must inherit " + properties.getMixInClass(), prsd.getPrototypeElement());
         }
 
         if (properties.isGenerateInterface()) {
@@ -479,7 +479,7 @@ public class Generator {
                 var dummy = envelopWithDummyClass(method);
                 field.getDescription().findCompilationUnit().ifPresent(u -> u.getImports().forEach(dummy::addImport));
 
-                addField(parse, parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, method, nonNull(field.getGenerics()) ? field.getGenerics().values().iterator().next() : buildGeneric(field.getType(), type, parsed.getDeclaration().asClassOrInterfaceDeclaration()));
+                addField(parse, parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, method, nonNull(field.getGenerics()) ? field.getGenerics().values().iterator().next() : buildGeneric(field.getType().asString(), type, parsed.getDeclaration().asClassOrInterfaceDeclaration()));
             });
         }
 
@@ -734,7 +734,7 @@ public class Generator {
                     }
 
                     if (parent.isPresent()) {
-                        notNull(lookup.findParsed(getExternalClassName(parse.getDeclaration(), parent.get().getType())), p ->
+                        notNull(lookup.findParsed(getExternalClassName(parse.getDeclaration(), parent.get().getType().asString())), p ->
                                 handleDefaultInterfaceMethodBody(p, n, true));
 
                         if (nonNull(parent.get().getInterfaceGetter())) {
@@ -1587,7 +1587,7 @@ public class Generator {
                     .prototype(collection ? prototypeMap.get(CollectionsHandler.getCollectionType(method.getType())) :
                             (isNull(generic) ? lookup.findParsed(getExternalClassName(unit, method.getType().asString())) : null))
                     .typePrototypes(!prototypeMap.isEmpty() ? prototypeMap : null)
-                    .type(field.getElementType().asString())
+                    .type(field.getElementType())
                     .fullType(getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
                     .parent(nonNull(parsed.getBase()) ? findField(parsed.getBase(), fieldName) : null)
                     .build();
@@ -1651,7 +1651,7 @@ public class Generator {
                     .generics(nonNull(generic) && !generic.isEmpty() ? generic : null)
                     .genericMethod(genericMethod)
                     .fullType(genericMethod ? null : getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
-                    .type(genericMethod ? method.getTypeParameter(0).getNameAsString() : field.getElementType().asString())
+                    .type(genericMethod ? lookup.getParser().parseType(method.getTypeParameter(0).getNameAsString()).getResult().get() : field.getElementType())
                     //TODO: enable prototypes
                     .build();
             parsed.getFields().add(result);
@@ -1686,7 +1686,7 @@ public class Generator {
                     .generics(generic)
                     .genericMethod(false) //TODO: Handling for generic methods
                     .fullType(getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
-                    .type(field.getElementType().asString())
+                    .type(field.getElementType())
                     //TODO: enable prototypes
                     .build();
             parsed.getFields().add(result);
@@ -1757,7 +1757,7 @@ public class Generator {
                     .generics(generic)
                     .genericMethod(genericMethod)
                     .fullType(genericMethod ? null : getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
-                    .type(genericMethod ? parseMethodSignature(method) : field.getElementType().asString())
+                    .type(genericMethod ? lookup.getParser().parseType(parseMethodSignature(method)).getResult().get() : field.getElementType())
                     //TODO: enable ignores
                     .prototype(prototype)
                     .build();
@@ -1814,7 +1814,7 @@ public class Generator {
                     .generics(generic)
                     .genericMethod(genericMethod)
                     .fullType(genericMethod ? null : getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
-                    .type(genericMethod ? parseMethodSignature(method) : field.getElementType().asString())
+                    .type(genericMethod ? lookup.getParser().parseType(parseMethodSignature(method)).getResult().get() : field.getElementType())
                     //TODO: enable ignores
                     //TODO: enable prototypes
                     .build();
@@ -1918,7 +1918,7 @@ public class Generator {
         var name = getSetterName(fieldName);
         String returnType = null;
         if (nonNull(field.getType())) {
-            returnType = field.getType();
+            returnType = field.getType().asString();
         } else if (nonNull(field.getGenerics())) {
             returnType = field.getGenerics().get(declaration.getType().asString()).asString();
         }
