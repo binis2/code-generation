@@ -1,4 +1,12 @@
 # Change Log
+**04-06-2023** ver. 1.1.2
+* Validation: Added targeting type checks for validations.
+* Generation: Added errors in cases when annotating wrong elements and when prototype naming is wrong.
+* Generation: Element utils improvements.
+* IDEA Plugin: Removed automatic code re-generation till it works properly.
+* IDEA Plugin: Added targeting type checks for validations.
+* IDEA Plugin: Added errors in cases when annotating wrong elements and when prototype naming is wrong.
+
 **28-05-2023** ver. 1.1.1
 * Generation: (**Breaking change**) Renamed CLASSIC generation strategy to PROTOTYPE.
 * Generation: (**Breaking change**) Removed METHOD generation strategy.
