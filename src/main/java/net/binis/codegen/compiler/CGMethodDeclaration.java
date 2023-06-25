@@ -41,6 +41,10 @@ public class CGMethodDeclaration extends CGDeclaration {
         super(trees, element);
     }
 
+    public CGMethodDeclaration(Object instance) {
+        super(instance);
+    }
+
     public CGList<CGVariableDecl> getParameters() {
         if (isNull(params)) {
             params = new CGList<>(getFieldValue(instance, "params"), this::onModify, CGVariableDecl.class);

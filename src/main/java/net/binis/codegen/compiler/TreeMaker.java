@@ -89,6 +89,16 @@ public class TreeMaker extends JavaCompilerObject {
         return new CGFieldAccess(invoke(method, instance, base.getInstance(), sym.getInstance()));
     }
 
+    public CGStatement Call(CGExpression apply) {
+        var method = findMethod("Call", instance.getClass(), CGExpression.theClass());
+        return new CGStatement(invoke(method, instance, apply.getInstance()));
+    }
+
+    public CGStatement Assignment(CGSymbol v, CGExpression rhs) {
+        var method = findMethod("Assignment", instance.getClass(), CGSymbol.theClass(), CGExpression.theClass());
+        return new CGStatement(invoke(method, instance, v.getInstance(), rhs.getInstance()));
+    }
+
     public CGNewArray NewArray(CGExpression elemtype,
                                CGList<CGExpression> dims,
                                CGList<CGExpression> elems) {
@@ -101,6 +111,11 @@ public class TreeMaker extends JavaCompilerObject {
         return new CGPrimitiveTypeTree(invoke(method, instance, typetag.getInstance()));
     }
 
+    public CGArrayTypeTree TypeArray(CGExpression elemtype) {
+        var method = findMethod("TypeArray", instance.getClass(), CGExpression.theClass());
+        return new CGArrayTypeTree(invoke(method, instance, elemtype.getInstance()));
+    }
+
     public CGTypeCast TypeCast(CGTree clazz, CGExpression expr) {
         var method = findMethod("TypeCast", instance.getClass(), CGTree.theClass(), CGExpression.theClass());
         return new CGTypeCast(invoke(method, instance, clazz.getInstance(), expr.getInstance()));
@@ -108,7 +123,7 @@ public class TreeMaker extends JavaCompilerObject {
 
     public CGVariableDecl VarDef(CGModifiers mods, CGName name, CGExpression vartype, CGExpression init) {
         var method = findMethod("VarDef", instance.getClass(), CGModifiers.theClass(), CGName.theClass(), CGExpression.theClass(), CGExpression.theClass());
-        return new CGVariableDecl(invoke(method, instance, mods.getInstance(), name.getInstance(), vartype.getInstance(), init.getInstance()));
+        return new CGVariableDecl(invoke(method, instance, mods.getInstance(), name.getInstance(), vartype.getInstance(), nonNull(init) ? init.getInstance() : null));
     }
 
     public CGVariableDecl VarDef(CGModifiers mods, CGName name, CGExpression vartype, CGExpression init, boolean declaredUsingVar) {
@@ -124,6 +139,33 @@ public class TreeMaker extends JavaCompilerObject {
     public CGVariableDecl VarDef(CGVarSymbol symbol, CGExpression init) {
         var method = findMethod("VarDef", instance.getClass(), CGVarSymbol.theClass(), CGExpression.theClass());
         return new CGVariableDecl(invoke(method, instance, symbol.getInstance(), nonNull(init) ? init.getInstance() : null));
+    }
+
+    public CGMethodDeclaration MethodDef(CGModifiers mods,
+                                         CGName name,
+                                         CGExpression restype,
+                                         CGList<CGTypeParameter> typarams,
+                                         CGList<CGVariableDecl> params,
+                                         CGList<CGExpression> thrown,
+                                         CGBlock body,
+                                         CGExpression defaultValue) {
+        var method = findMethod("MethodDef", instance.getClass(), CGModifiers.theClass(), CGName.theClass(), CGExpression.theClass(), CGList.theClass(), CGList.theClass(), CGList.theClass(), CGBlock.theClass(), CGExpression.theClass());
+        return new CGMethodDeclaration(invoke(method, instance, mods.getInstance(), name.getInstance(), restype.getInstance(), typarams.getInstance(), params.getInstance(), thrown.getInstance(), body.getInstance(), nonNull(defaultValue) ? defaultValue.getInstance() : null));
+    }
+
+    public CGModifiers Modifiers(long flags, CGList<CGAnnotation> annotations) {
+        var method = findMethod("Modifiers", instance.getClass(), long.class, CGList.theClass());
+        return new CGModifiers(invoke(method, instance, flags, nonNull(annotations) ? annotations.getInstance() : CGList.nil(CGAnnotation.class)));
+    }
+
+    public CGModifiers Modifiers(long flags) {
+        var method = findMethod("Modifiers", instance.getClass(), long.class);
+        return new CGModifiers(invoke(method, instance, flags));
+    }
+
+    public CGBlock Block(long flags, CGList<CGStatement> stats) {
+        var method = findMethod("Block", instance.getClass(), long.class, CGList.theClass());
+        return new CGBlock(invoke(method, instance, flags, stats.getInstance()));
     }
 
     public CGSymbol getSymbol(String className) {

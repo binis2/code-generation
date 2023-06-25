@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.discovery.Discoverer;
 
 import javax.annotation.processing.Filer;
-import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 import java.io.*;
 import java.nio.charset.StandardCharsets;

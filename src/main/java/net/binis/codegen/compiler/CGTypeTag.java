@@ -56,6 +56,8 @@ public class CGTypeTag extends JavaCompilerObject {
     public static final CGTypeTag DOUBLE = new CGTypeTag(values.get("DOUBLE"));
     public static final CGTypeTag BOOLEAN = new CGTypeTag(values.get("BOOLEAN"));
     public static final CGTypeTag ARRAY = new CGTypeTag(values.get("ARRAY"));
+    public static final CGTypeTag VOID = new CGTypeTag(values.get("VOID"));
+
 
     public CGTypeTag(Object instance) {
         super();

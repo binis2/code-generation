@@ -21,32 +21,18 @@ package net.binis.codegen.compiler;
  */
 
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.compiler.base.JavaCompilerObject;
 
-import static net.binis.codegen.tools.Reflection.*;
+import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
-public class CGTree extends JavaCompilerObject {
+public class CGArrayTypeTree extends CGExpression {
 
-    public static Class theClass() {
-        return loadClass("com.sun.tools.javac.tree.JCTree");
-    }
-
-    public CGTree(Object instance) {
-        super();
-        this.instance = instance;
-    }
-
-    public CGType getType() {
-        return new CGType(getFieldValue(instance, "type"));
-    }
-
-    public void setType(CGType type) {
-        setFieldValue(instance, "type", type.getInstance());
+    public CGArrayTypeTree(Object instance) {
+        super(instance);
     }
 
     @Override
     protected void init() {
-        cls = theClass();
+        cls = loadClass("com.sun.tools.javac.tree.JCTree$JCArrayTypeTree");
     }
 }

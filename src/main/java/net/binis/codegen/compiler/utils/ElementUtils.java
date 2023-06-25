@@ -82,6 +82,10 @@ public class ElementUtils {
         return e;
     }
 
+    public static CGExpression chainDotsString(String elems) {
+        return chainDots(TreeMaker.create(), null, null, elems.split("\\."));
+    }
+
     public static CGExpression chainDotsString(JavaCompilerObject node, String elems) {
         return chainDots(node, null, null, elems.split("\\."));
     }
@@ -96,5 +100,28 @@ public class ElementUtils {
         return element.getSimpleName().toString();
     }
 
+    public static CGExpression classToExpression(Class<?> cls) {
+        var maker = TreeMaker.create();
+
+        if (cls.isPrimitive()) {
+            var tag = switch (cls.getName()) {
+                case "byte" -> CGTypeTag.BYTE;
+                case "char" -> CGTypeTag.CHAR;
+                case "short" -> CGTypeTag.SHORT;
+                case "long" -> CGTypeTag.LONG;
+                case "float" -> CGTypeTag.FLOAT;
+                case "int" -> CGTypeTag.INT;
+                case "double" -> CGTypeTag.DOUBLE;
+                case "boolean" -> CGTypeTag.BOOLEAN;
+                case "void" ->  CGTypeTag.VOID;
+                default -> throw new IllegalStateException("Unexpected value: " + cls.getName());
+            };
+            return maker.TypeIdent(tag);
+        } else if (cls.isArray()) {
+            return maker.TypeArray(classToExpression(cls.getComponentType()));
+        }
+
+        return maker.QualIdent(maker.getSymbol(cls.getCanonicalName()));
+    }
 
 }

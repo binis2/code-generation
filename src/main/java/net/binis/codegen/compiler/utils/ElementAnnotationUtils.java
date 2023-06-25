@@ -61,25 +61,29 @@ public class ElementAnnotationUtils extends ElementUtils {
         return result;
     }
 
-    public static CGAnnotation addAnnotation(Element element, Class<? extends Annotation> annotation) {
-        return addAnnotation(element, annotation, Map.of());
-    }
-
-    public static CGAnnotation addAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
+    public static CGAnnotation createAnnotation(Class<? extends Annotation> annotation, Map<String, Object> attributes) {
         if (isNull(attributes)) {
             attributes = Map.of();
         }
 
         var maker = TreeMaker.create();
-        var decl = getDeclaration(element, maker);
 
         var list = CGList.nil(CGExpression.class);
         for (var attr : attributes.entrySet()) {
             list = list.append(maker.Assign(maker.Ident(CGName.create(attr.getKey())), calcExpression(maker, attr.getValue())));
         }
 
-        var ann = maker.Annotation(maker.QualIdent(maker.getSymbol(annotation.getCanonicalName())), list);
+        return maker.Annotation(maker.QualIdent(maker.getSymbol(annotation.getCanonicalName())), list);
+    }
 
+    public static CGAnnotation addAnnotation(Element element, Class<? extends Annotation> annotation) {
+        return addAnnotation(element, annotation, Map.of());
+    }
+
+    public static CGAnnotation addAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
+        var maker = TreeMaker.create();
+        var decl = getDeclaration(element, maker);
+        var ann = createAnnotation(annotation, attributes);
         decl.getModifiers().getAnnotations().append(ann);
         return ann;
     }
@@ -101,6 +105,7 @@ public class ElementAnnotationUtils extends ElementUtils {
     public static CGAnnotation addOrReplaceAnnotation(Element element, Class<? extends Annotation> annotation) {
         return addOrReplaceAnnotation(element, annotation, Map.of());
     }
+
     public static CGAnnotation addOrReplaceAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
         removeAnnotation(element, annotation);
         return addAnnotation(element, annotation, attributes);
@@ -227,7 +232,9 @@ public class ElementAnnotationUtils extends ElementUtils {
 
 
     protected static CGExpression calcExpression(TreeMaker maker, Object value) {
-        if (value instanceof String) {
+        if (value instanceof CGExpression v) {
+            return v;
+        } else if (value instanceof String) {
             return maker.Literal(CGTypeTag.CLASS, value);
         } else if (value instanceof Boolean b) {
             return maker.Literal(CGTypeTag.BOOLEAN, b ? 1 : 0);
@@ -245,9 +252,9 @@ public class ElementAnnotationUtils extends ElementUtils {
             return maker.TypeCast(maker.TypeIdent(CGTypeTag.SHORT), maker.Literal(CGTypeTag.INT, value));
         } else if (value instanceof Byte) {
             return maker.TypeCast(maker.TypeIdent(CGTypeTag.BYTE), maker.Literal(CGTypeTag.INT, value));
-        } else if (value instanceof Enum) {
+        } else if (value instanceof Enum e) {
             var symbol = maker.getSymbol(value.getClass().getCanonicalName());
-            return maker.Select(maker.QualIdent(symbol), CGName.create(value.toString()));
+            return maker.Select(maker.QualIdent(symbol), CGName.create(e.name()));
         } else if (value instanceof Class c) {
             var symbol = maker.getSymbol(c.getCanonicalName());
             return maker.Select(maker.QualIdent(symbol), CGName.create("class"));

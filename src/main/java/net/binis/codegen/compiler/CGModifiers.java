@@ -27,7 +27,7 @@ import static java.util.Objects.isNull;
 import static net.binis.codegen.tools.Reflection.*;
 
 @Slf4j
-public class CGModifiers extends JavaCompilerObject {
+public class CGModifiers extends CGTree {
 
     protected final JavaCompilerObject declaration;
     protected CGList<CGAnnotation> annotations;
@@ -37,9 +37,14 @@ public class CGModifiers extends JavaCompilerObject {
     }
 
     public CGModifiers(JavaCompilerObject declaration) {
-        super();
+        super(null);
         this.declaration = declaration;
         instance = invoke("getModifiers", declaration.getInstance());
+    }
+
+    public CGModifiers(Object instance) {
+        super(instance);
+        declaration = null;
     }
 
     @Override
@@ -62,4 +67,5 @@ public class CGModifiers extends JavaCompilerObject {
     public void setAnnotations(CGList<CGAnnotation> list) {
         onModify(list);
     }
+
 }

@@ -36,6 +36,7 @@ import net.binis.codegen.tools.Reflection;
 import org.junit.jupiter.api.BeforeEach;
 
 import javax.tools.*;
+import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -161,10 +162,9 @@ public abstract class BaseCodeTest {
         diagnostics.getDiagnostics().forEach(System.out::println);
         fileManager.close();
 
-        files.forEach(f ->
-                with(objects.get(f.getKey()), o ->
-                        ifNull(loader.findClass(f.getKey()), () ->
-                                loader.define(f.getKey(), o))));
+        objects.forEach((k, o) ->
+                ifNull(loader.findClass(k), () ->
+                        loader.define(k, o)));
 
         if (nonNull(resExecute)) {
             var cls = loader.findClass(className);

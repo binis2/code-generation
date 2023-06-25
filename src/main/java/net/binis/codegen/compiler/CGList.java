@@ -29,6 +29,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static java.util.Objects.isNull;
@@ -81,6 +82,12 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
         var method = findMethod("from", theClass(), Object[].class);
         var params = Arrays.stream(array).map(JavaCompilerObject::getInstance).toArray();
         return new CGList(invokeStatic(method, new Object[]{params}), null, cls);
+    }
+
+    public static <T extends JavaCompilerObject> CGList<T> from(List<T> list, Class<T> cls) {
+        var result = CGList.nil(cls);
+        list.forEach(result::append);
+        return result;
     }
 
     public int size() {
