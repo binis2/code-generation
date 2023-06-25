@@ -141,6 +141,11 @@ public class TreeMaker extends JavaCompilerObject {
         return new CGVariableDecl(invoke(method, instance, symbol.getInstance(), nonNull(init) ? init.getInstance() : null));
     }
 
+    public CGVariableDecl Param(CGName name, CGType argtype, CGSymbol owner) {
+        var method = findMethod("Param", instance.getClass(), CGName.theClass(), CGType.theClass(), CGSymbol.theClass());
+        return new CGVariableDecl(invoke(method, instance, name.getInstance(), argtype.getInstance(), owner.getInstance()));
+    }
+
     public CGMethodDeclaration MethodDef(CGModifiers mods,
                                          CGName name,
                                          CGExpression restype,
