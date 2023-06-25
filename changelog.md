@@ -1,4 +1,11 @@
 # Change Log
+**25-06-2023** ver. 1.1.3
+* Annotation: Moved module access hacks to generation module.
+* Generation: Added support for adding methods via element manipulation.
+* IDEA Plugin: Added generated enums support.
+* IDEA Plugin: Added discoverability of non-exposed templates.
+* IDEA Plugin: Added IndexNotReady handling for usage provider.
+
 **04-06-2023** ver. 1.1.2
 * Validation: Added targeting type checks for validations.
 * Generation: Added errors in cases when annotating wrong elements and when prototype naming is wrong.
