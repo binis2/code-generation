@@ -44,7 +44,7 @@ public abstract class BaseCodeGenElementTest extends BaseCodeTest {
         var list = newList();
         load(list, path);
         TestClassLoader loader = new TestClassLoader();
-        assertTrue(compile(loader, list, null, "-XprintProcessorInfo"));
+        assertTrue(compile(loader, list, null, true,"-XprintProcessorInfo"));
         return loader;
     }
 

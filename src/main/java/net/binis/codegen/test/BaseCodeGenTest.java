@@ -149,7 +149,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
         TestClassLoader protoLoader = null;
         if (!skipPrototypeCompilation) {
             protoLoader = new TestClassLoader();
-            assertTrue(compile(protoLoader, list, null));
+            assertTrue(compile(protoLoader, list, null, false));
         }
         generate();
 
@@ -204,7 +204,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
 
         if (!skipCompilation) {
             var loader = new TestClassLoader();
-            assertTrue(compile(loader, list2, resExecute));
+            assertTrue(compile(loader, list2, resExecute, false));
             return loader;
         } else {
             return protoLoader;
@@ -250,7 +250,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
         var list = newList();
         files.forEach(t ->
                 load(list, t.getLeft()));
-        assertTrue(compile(new TestClassLoader(), list, null));
+        assertTrue(compile(new TestClassLoader(), list, null, false));
         lookup.registerExternalLookup(s ->
                 list.stream().filter(e ->
                         e.getLeft().equals(s)).map(Pair::getRight).findFirst().orElse(null));
@@ -292,7 +292,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
                 }));
 
         var loader = new TestClassLoader();
-        assertTrue(compile(loader, compileList, resExecute));
+        assertTrue(compile(loader, compileList, resExecute, false));
         return loader;
     }
 
@@ -306,7 +306,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
             var expected = pass.getValue().intValue();
             files.forEach(t ->
                     load(list, t.getLeft()));
-            assertTrue(compile(loader, list, null));
+            assertTrue(compile(loader, list, null, false));
             generate();
 
             assertEquals(expected, lookup.parsed().size());
@@ -342,7 +342,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
                         }
                     }));
 
-            assertTrue(compile(loader, compileList, resExecute));
+            assertTrue(compile(loader, compileList, resExecute, false));
         });
         return loader;
     }
@@ -362,7 +362,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
         load(src, basePrototype);
         load(src, prototype);
         var loader = new TestClassLoader();
-        assertTrue(compile(loader, src, null));
+        assertTrue(compile(loader, src, null, false));
         generate();
 
         assertEquals(2, lookup.parsed().size());
@@ -385,7 +385,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
             list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
         });
 
-        assertTrue(compile(new TestClassLoader(), list, null));
+        assertTrue(compile(new TestClassLoader(), list, null, false));
         return loader;
     }
 
@@ -393,7 +393,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
         var src = newList();
         load(src, basePrototype);
         load(src, prototype);
-        assertTrue(compile(new TestClassLoader(), src, null));
+        assertTrue(compile(new TestClassLoader(), src, null, false));
         generate();
 
         assertEquals(2, lookup.parsed().size());
@@ -412,7 +412,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
                 }));
 
         var loader = new TestClassLoader();
-        assertTrue(compile(loader, list, null));
+        assertTrue(compile(loader, list, null, false));
         return loader;
     }
 

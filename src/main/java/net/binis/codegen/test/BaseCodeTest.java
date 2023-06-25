@@ -131,7 +131,7 @@ public abstract class BaseCodeTest {
 
     @SuppressWarnings("unchecked")
     @SneakyThrows
-    protected boolean compile(TestClassLoader loader, List<Pair<String, String>> files, String resExecute, String... args) {
+    protected boolean compile(TestClassLoader loader, List<Pair<String, String>> files, String resExecute, boolean loadAll, String... args) {
         String className = null;
         if (nonNull(resExecute)) {
             className = loadExecute(files, resExecute);
@@ -162,9 +162,16 @@ public abstract class BaseCodeTest {
         diagnostics.getDiagnostics().forEach(System.out::println);
         fileManager.close();
 
-        objects.forEach((k, o) ->
-                ifNull(loader.findClass(k), () ->
-                        loader.define(k, o)));
+        if (loadAll) {
+            objects.forEach((k, o) ->
+                    ifNull(loader.findClass(k), () ->
+                            loader.define(k, o)));
+        } else {
+            files.forEach(f ->
+                    with(objects.get(f.getKey()), o ->
+                            ifNull(loader.findClass(f.getKey()), () ->
+                                    loader.define(f.getKey(), o))));
+        }
 
         if (nonNull(resExecute)) {
             var cls = loader.findClass(className);
