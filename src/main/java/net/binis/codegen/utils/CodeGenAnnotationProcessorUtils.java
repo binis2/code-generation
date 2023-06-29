@@ -9,9 +9,9 @@ package net.binis.codegen.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,8 +22,6 @@ package net.binis.codegen.utils;
 
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.tools.Reflection;
-import net.binis.codegen.utils.dummy.Parent;
-import sun.misc.Unsafe;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.tools.Diagnostic;
@@ -31,81 +29,69 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.tools.Reflection.getUnsafe;
-import static net.binis.codegen.tools.Reflection.loadClass;
+import static net.binis.codegen.tools.Reflection.*;
 
 @Slf4j
 public class CodeGenAnnotationProcessorUtils {
 
-    public static void addOpensForCodeGen(Class cls) {
-        Class<?> cModule;
+    public static void addOpensForCodeGen(boolean openCompiler) {
         try {
-            cModule = Class.forName("java.lang.Module");
-        } catch (ClassNotFoundException e) {
-            return; //jdk8-; this is not needed.
-        }
-
-        var unsafe = getUnsafe();
-        var jdkCompilerModule = getJdkCompilerModule();
-        var ownModule = getOwnModule(cls);
-        String[] allPkgs = {
-                "com.sun.tools.javac.code",
-                "com.sun.tools.javac.comp",
-                "com.sun.tools.javac.file",
-                "com.sun.tools.javac.main",
-                "com.sun.tools.javac.model",
-                "com.sun.tools.javac.parser",
-                "com.sun.tools.javac.processing",
-                "com.sun.tools.javac.tree",
-                "com.sun.tools.javac.util",
-                "com.sun.tools.javac.jvm",
-        };
-
-        try {
-            Method m = cModule.getDeclaredMethod("implAddOpens", String.class, cModule);
-            long firstFieldOffset = getFirstFieldOffset(unsafe);
-            unsafe.putBooleanVolatile(m, firstFieldOffset, true);
-            for (String p : allPkgs) {
-                m.invoke(jdkCompilerModule, p, ownModule);
+            var cModule = loadClass("java.lang.Module");
+            if (isNull(cModule)) {
+                return; //jdk8-; this is not needed.
             }
-        } catch (Exception ignore) {
-        }
-    }
 
-    private static long getFirstFieldOffset(Unsafe unsafe) {
-        try {
-            return unsafe.objectFieldOffset(Parent.class.getDeclaredField("first"));
-        } catch (NoSuchFieldException e) {
-            // can't happen.
-            throw new RuntimeException(e);
-        } catch (SecurityException e) {
-            // can't happen
-            throw new RuntimeException(e);
-        }
-    }
+            var method = findMethod("implAddExportsOrOpens", cModule, String.class, cModule, boolean.class, boolean.class);
+            var module = getStaticFieldValue(cModule, "EVERYONE_MODULE");
 
-    private static Object getJdkCompilerModule() {
-        try {
-            Class<?> cModuleLayer = Class.forName("java.lang.ModuleLayer");
-            Method mBoot = cModuleLayer.getDeclaredMethod("boot");
-            Object bootLayer = mBoot.invoke(null);
-            Class<?> cOptional = Class.forName("java.util.Optional");
-            Method mFindModule = cModuleLayer.getDeclaredMethod("findModule", String.class);
-            Object oCompilerO = mFindModule.invoke(bootLayer, "jdk.compiler");
-            return cOptional.getDeclaredMethod("get").invoke(oCompilerO);
+            openRuntimeModules(method, module);
+
+            if (openCompiler) {
+                openCompilerModules(method, module);
+            }
         } catch (Exception e) {
-            return null;
+            log.error("Failed to open modules", e);
         }
     }
 
-    private static Object getOwnModule(Class cls) {
-        try {
-            Method m = Reflection.findMethod("getModule", Class.class);
-            return m.invoke(cls);
-        } catch (Exception e) {
-            return null;
+    private static void openRuntimeModules(Method method, Object module) {
+        var javaBaseModule = Reflection.invoke("getModule", String.class);
+        invoke(method, javaBaseModule, "jdk.internal.loader", module, true, true);
+        invoke(method, javaBaseModule, "jdk.internal.module", module, true, true);
+        invoke(method, javaBaseModule, "jdk.internal.vm", module, true, true);
+        invoke(method, javaBaseModule, "jdk.internal.vm.annotation", module, true, true);
+        invoke(method, javaBaseModule, "java.lang", module, true, true);
+        invoke(method, javaBaseModule, "java.lang.invoke", module, true, true);
+        invoke(method, javaBaseModule, "java.lang.module", module, true, true);
+        invoke(method, javaBaseModule, "java.lang.reflect", module, true, true); // for jailbreak
+        invoke(method, javaBaseModule, "java.net", module, true, true);
+
+
+        Class<?> desktop = loadClass("java.awt.Desktop");
+        if (desktop == null) {
+            return;
         }
+        var javaDesktop = invoke("getModule", desktop);
+        invoke(method, javaDesktop, "sun.awt", module, true, true);
+    }
+
+    private static void openCompilerModules(Method method, Object module) {
+        var jdkCompilerModule = invoke("getModule", loadClass("com.sun.tools.javac.code.Symbol"));
+        invoke(method, jdkCompilerModule, "com.sun.tools.javac.api", module, true, true);
+        invoke(method, jdkCompilerModule, "com.sun.tools.javac.code", module, true, true);
+        invoke(method, jdkCompilerModule, "com.sun.tools.javac.comp", module, true, true);
+        invoke(method, jdkCompilerModule, "com.sun.tools.javac.file", module, true, true);
+        invoke(method, jdkCompilerModule, "com.sun.tools.javac.jvm", module, true, true);
+        invoke(method, jdkCompilerModule, "com.sun.tools.javac.main", module, true, true);
+        invoke(method, jdkCompilerModule, "com.sun.tools.javac.model", module, true, true);
+        invoke(method, jdkCompilerModule, "com.sun.tools.javac.parser", module, true, true);
+        invoke(method, jdkCompilerModule, "com.sun.tools.javac.platform", module, true, true);
+        invoke(method, jdkCompilerModule, "com.sun.tools.javac.processing", module, true, true);
+        invoke(method, jdkCompilerModule, "com.sun.tools.javac.resources", module, true, true);
+        invoke(method, jdkCompilerModule, "com.sun.tools.javac.tree", module, true, true);
+        invoke(method, jdkCompilerModule, "com.sun.tools.javac.util", module, true, true);
     }
 
     public static Object getJavacProcessingEnvironment(ProcessingEnvironment processingEnv, Object procEnv) {
