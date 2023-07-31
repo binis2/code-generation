@@ -57,6 +57,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
@@ -1486,7 +1487,7 @@ public class Generator {
                                 }
                                 if (isNull(ann.getAnnotation(CodeAnnotation.class)) && isNull(ann.getAnnotation(CodePrototypeTemplate.class))) {
                                     var target = ann.getAnnotation(Target.class);
-                                    if (target != null && !target.toString().equals("TYPE")) {
+                                    if (target == null || Arrays.asList(target.value()).contains(ElementType.TYPE)) {
                                         if (next.get()) {
                                             intf.addAnnotation(a);
                                         } else {
