@@ -95,27 +95,45 @@ public abstract class BaseCodeTest {
         }
     }
 
+    @SneakyThrows
+    protected String silentResourceAsString(String resource) {
+        try {
+            return new String(Files.readAllBytes(Paths.get(getClass().getClassLoader().getResource(resource).toURI())));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+
     @SuppressWarnings("unchecked")
     protected void load(List<Pair<String, String>> list, String resource) {
         var source = resourceAsString(resource);
 
         var parse = parser.parse(source);
-        assertTrue(parse.isSuccessful(), parse.toString());
 
-        parse.getResult().get().findFirst(TypeDeclaration.class).ifPresent(declaration -> {
-            if (nonNull(list)) {
-                declaration.getFullyQualifiedName().ifPresent(name ->
-                        list.add(Pair.of((String) name, source)));
+        if (!parse.isSuccessful()) {
+            var name = silentResourceAsString(resource + ".desc");
+            if (nonNull(name)) {
+                list.add(Pair.of(name, source));
+            } else {
+                assertTrue(parse.isSuccessful(), parse.toString());
             }
+        } else {
+            parse.getResult().get().findFirst(TypeDeclaration.class).ifPresent(declaration -> {
+                if (nonNull(list)) {
+                    declaration.getFullyQualifiedName().ifPresent(name ->
+                            list.add(Pair.of((String) name, source)));
+                }
 
-            if (declaration.isAnnotationDeclaration()) {
-                Structures.registerTemplate(declaration.asAnnotationDeclaration());
-            }
+                if (declaration.isAnnotationDeclaration()) {
+                    Structures.registerTemplate(declaration.asAnnotationDeclaration());
+                }
 
-            parse.getResult().ifPresent(u ->
-                    u.getTypes().forEach(t ->
-                            CodeGen.handleType(parser, t, resource, null)));
-        });
+                parse.getResult().ifPresent(u ->
+                        u.getTypes().forEach(t ->
+                                CodeGen.handleType(parser, t, resource, null)));
+            });
+        }
     }
 
     protected String loadExecute(List<Pair<String, String>> list, String resource) {

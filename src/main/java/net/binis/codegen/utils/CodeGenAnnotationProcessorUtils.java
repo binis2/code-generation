@@ -43,8 +43,11 @@ public class CodeGenAnnotationProcessorUtils {
                 return; //jdk8-; this is not needed.
             }
 
+
             var method = findMethod("implAddExportsOrOpens", cModule, String.class, cModule, boolean.class, boolean.class);
             var module = getStaticFieldValue(cModule, "EVERYONE_MODULE");
+            //var module = getStaticFieldValue(cModule, "ALL_UNNAMED_MODULE");
+            //var module = findMethod("getModule", Class.class).invoke(CodeGenAnnotationProcessorUtils.class);
 
             openRuntimeModules(method, module);
 
@@ -67,7 +70,6 @@ public class CodeGenAnnotationProcessorUtils {
         invoke(method, javaBaseModule, "java.lang.module", module, true, true);
         invoke(method, javaBaseModule, "java.lang.reflect", module, true, true); // for jailbreak
         invoke(method, javaBaseModule, "java.net", module, true, true);
-
 
         Class<?> desktop = loadClass("java.awt.Desktop");
         if (desktop == null) {
