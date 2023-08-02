@@ -23,6 +23,9 @@ package net.binis.codegen.compiler;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.base.JavaCompilerObject;
 
+import javax.lang.model.element.Modifier;
+import java.util.Set;
+
 import static java.util.Objects.isNull;
 import static net.binis.codegen.tools.Reflection.*;
 
@@ -45,6 +48,16 @@ public class CGModifiers extends CGTree {
     public CGModifiers(Object instance) {
         super(instance);
         declaration = null;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Set<Modifier> getFlags() {
+        return (Set) invoke("getFlags", instance);
+    }
+
+    @SuppressWarnings("unchecked")
+    public long flags() {
+        return getFieldValue(instance, "flags");
     }
 
     @Override

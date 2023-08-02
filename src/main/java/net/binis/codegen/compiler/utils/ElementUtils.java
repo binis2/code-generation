@@ -23,20 +23,28 @@ package net.binis.codegen.compiler.utils;
 import net.binis.codegen.compiler.*;
 import net.binis.codegen.compiler.base.JavaCompilerObject;
 import net.binis.codegen.exception.GenericCodeGenException;
+import net.binis.codegen.factory.CodeFactory;
 
 import javax.lang.model.element.Element;
 import java.lang.reflect.Array;
+import java.util.HashMap;
+import java.util.Map;
+
+import static java.util.Objects.nonNull;
+import static net.binis.codegen.tools.Reflection.invokeStatic;
 
 public class ElementUtils {
 
-    protected static CGDeclaration getDeclaration(Element element) {
+    public static Map<String, Class<? extends JavaCompilerObject>> CLASS_MAP = initClassMap();
+
+    public static CGDeclaration getDeclaration(Element element) {
         var maker = TreeMaker.create();
         return getDeclaration(element, maker);
     }
 
     protected static CGDeclaration getDeclaration(Element element, TreeMaker maker) {
         return switch (element.getKind()) {
-            case CLASS, ENUM, INTERFACE -> CGClassDeclaration.create(maker.getTrees(), element);
+            case CLASS, ENUM, INTERFACE, ANNOTATION_TYPE -> CGClassDeclaration.create(maker.getTrees(), element);
             case METHOD, CONSTRUCTOR -> CGMethodDeclaration.create(maker.getTrees(), element);
             case FIELD, PARAMETER -> CGVariableDecl.create(maker.getTrees(), element);
             default -> throw new GenericCodeGenException("Invalid element kind: " + element.getKind().toString());
@@ -184,5 +192,18 @@ public class ElementUtils {
         return classNameIdent;
     }
 
+    protected static Map<String, Class<? extends JavaCompilerObject>> initClassMap() {
+        var result = new HashMap<String, Class<? extends JavaCompilerObject>>();
+        registerClass(result, CGVariableDecl.class);
+        registerClass(result, CGMethodDeclaration.class);
+        return result;
+    }
+
+    protected static void registerClass(Map<String, Class<? extends JavaCompilerObject>> map, Class<? extends JavaCompilerObject> registerClass) {
+        if (invokeStatic("theClass", registerClass) instanceof Class<?> cls) {
+            map.put(cls.getCanonicalName(), registerClass);
+            CodeFactory.registerType(cls, params -> CodeFactory.create(registerClass, params));
+        }
+    }
 
 }

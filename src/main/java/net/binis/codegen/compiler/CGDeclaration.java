@@ -25,6 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.base.JavaCompilerObject;
 
 import javax.lang.model.element.Element;
+import javax.lang.model.element.Modifier;
+
+import java.util.Set;
 
 import static java.util.Objects.isNull;
 import static net.binis.codegen.tools.Reflection.*;
@@ -35,7 +38,7 @@ public abstract class CGDeclaration extends JavaCompilerObject {
     protected CGModifiers modifiers;
 
     @SuppressWarnings("unchecked")
-    public CGDeclaration(Trees trees, Element element) {
+    protected CGDeclaration(Trees trees, Element element) {
         super();
         instance = trees.getTree(element);
         if (!cls.isAssignableFrom(instance.getClass())) {
@@ -44,7 +47,7 @@ public abstract class CGDeclaration extends JavaCompilerObject {
     }
 
     @SuppressWarnings("unchecked")
-    public CGDeclaration(Object instance) {
+    protected CGDeclaration(Object instance) {
         super();
         this.instance = instance;
         if (!cls.isAssignableFrom(instance.getClass())) {

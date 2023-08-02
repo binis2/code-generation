@@ -20,9 +20,9 @@ package net.binis.codegen.compiler;
  * #L%
  */
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.base.JavaCompilerObject;
+import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.factory.CodeFactory;
 
 import java.lang.reflect.Constructor;
@@ -31,6 +31,9 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -101,6 +104,10 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
         return CodeFactory.create(containedClass, invoke(mGet, instance, index));
     }
 
+    public Stream<T> stream() {
+        return StreamSupport.stream(spliterator(), false);
+    }
+
     @SuppressWarnings("unchecked")
     public Iterator<T> iterator() {
         return new ProxyIterator((Iterator) invoke("iterator", instance), containedClass);
@@ -110,10 +117,22 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
 
         protected Iterator iterator;
         protected Constructor constructor;
+        protected Function<Object, Object> func;
 
         public ProxyIterator(Iterator iterator, Class cls) {
             this.iterator = iterator;
-            constructor = findConstructor(cls, Object.class);
+            if (JavaCompilerObject.class.equals(cls)) {
+                func = inst -> nullCheck(CodeFactory.create(inst.getClass(), inst), inst);
+            } else {
+                constructor = findConstructor(cls, Object.class);
+                func = inst -> {
+                    try {
+                        return constructor.newInstance(inst);
+                    } catch (Exception e) {
+                        throw new GenericCodeGenException(e);
+                    }
+                };
+            }
         }
 
         @Override
@@ -121,10 +140,9 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
             return iterator.hasNext();
         }
 
-        @SneakyThrows
         @Override
         public Object next() {
-            return constructor.newInstance(iterator.next());
+            return func.apply(iterator.next());
         }
     }
 }

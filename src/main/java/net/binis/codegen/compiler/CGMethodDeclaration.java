@@ -33,6 +33,10 @@ public class CGMethodDeclaration extends CGDeclaration {
 
     protected CGList<CGVariableDecl> params;
 
+    public static Class theClass() {
+        return loadClass("com.sun.tools.javac.tree.JCTree$JCMethodDecl");
+    }
+
     public static CGMethodDeclaration create(Trees trees, Element element) {
         return new CGMethodDeclaration(trees, element);
     }
@@ -54,7 +58,7 @@ public class CGMethodDeclaration extends CGDeclaration {
 
     @Override
     protected void init() {
-        cls = loadClass("com.sun.tools.javac.tree.JCTree$JCMethodDecl");
+        cls = CGMethodDeclaration.theClass();
     }
 
     private void onModify(CGList<CGVariableDecl> list) {
