@@ -1,4 +1,16 @@
 # Change Log
+**02-08-2023** ver. 1.1.4
+* Compiler Plugin: Initial version.
+* Compiler Plugin: Annotation inheritance.
+* Compiler Plugin: Bracketless method calls.
+* Core: Improved reflection utils to discover hidden fields.
+* Test: Added testability for unparsable classes. 
+* Generation: Fixed target discovery for foreign annotations.
+* IDEA Plugin: Added support for annotation inheritance.
+* IDEA Plugin: Added support for bracketless method calls.
+* IDEA Plugin: Various fixes.
+* ALL Modules: Updated dependencies.
+
 **25-06-2023** ver. 1.1.3
 * Annotation: Moved module access hacks to generation module.
 * Generation: Added support for adding methods via element manipulation.
