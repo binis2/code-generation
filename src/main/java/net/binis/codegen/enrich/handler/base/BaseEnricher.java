@@ -89,4 +89,21 @@ public abstract class BaseEnricher implements PrototypeEnricher {
         lookup.error(message, element);
     }
 
+    protected void warn(String message) {
+        warn(message, null);
+    }
+
+    protected void warn(String message, Element element) {
+        lookup.warn(message, element);
+    }
+
+    protected void note(String message) {
+        note(message, null);
+    }
+
+    protected void note(String message, Element element) {
+        lookup.note(message, element);
+    }
+
+
 }

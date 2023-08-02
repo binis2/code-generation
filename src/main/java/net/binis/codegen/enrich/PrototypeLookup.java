@@ -75,4 +75,9 @@ public interface PrototypeLookup {
 
     void error(String message, Element element);
 
+    void warn(String message, Element element);
+
+    void note(String message, Element element);
+
+
 }

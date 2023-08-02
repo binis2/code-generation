@@ -238,5 +238,23 @@ public class PrototypeLookupHandler implements PrototypeLookup {
         }
     }
 
+    public void warn(String message, Element element) {
+        if (nonNull(getProcessingEnvironment())) {
+            log.warn(message);
+            getProcessingEnvironment().getMessager().printMessage(Diagnostic.Kind.WARNING, message, element);
+        } else {
+            throw new GenericCodeGenException(message);
+        }
+    }
+
+    public void note(String message, Element element) {
+        if (nonNull(getProcessingEnvironment())) {
+            log.info(message);
+            getProcessingEnvironment().getMessager().printMessage(Diagnostic.Kind.NOTE, message, element);
+        } else {
+            throw new GenericCodeGenException(message);
+        }
+    }
+
 
 }
