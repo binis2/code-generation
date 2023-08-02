@@ -851,6 +851,7 @@ public class Helpers {
 
     public static void registerKnownEnrichers() {
         registerEnricher(AsEnricherHandler.class);
+        registerEnricher(LogEnricherHandler.class);
         registerEnricher(CloneEnricherHandler.class);
         registerEnricher(CreatorEnricherHandler.class);
         registerEnricher(CreatorModifierEnricherHandler.class);
