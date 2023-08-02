@@ -28,8 +28,10 @@ import net.binis.codegen.factory.CodeFactory;
 import javax.annotation.processing.ProcessingEnvironment;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Helpers.lookup;
 import static net.binis.codegen.tools.Reflection.invoke;
+import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
 public abstract class JavaCompilerObject {
@@ -41,7 +43,7 @@ public abstract class JavaCompilerObject {
 
     protected JavaCompilerObject() {
         this.env = CodeFactory.create(ProcessingEnvironment.class, lookup.getProcessingEnvironment());
-        context = invoke("getContext", env);
+        context = (nonNull(env)) ? invoke("getContext", env) : CodeFactory.create(loadClass("com.sun.tools.javac.util.Context"));
         if (isNull(context)) {
             log.error("Unable to get context from {}!", env.getClass());
         }
@@ -56,6 +58,10 @@ public abstract class JavaCompilerObject {
 
     public Object getInstance() {
         return instance;
+    }
+
+    public Object getContext() {
+        return context;
     }
 
     public CGName toName(String name) {

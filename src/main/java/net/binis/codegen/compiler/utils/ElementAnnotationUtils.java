@@ -230,59 +230,6 @@ public class ElementAnnotationUtils extends ElementUtils {
         annotation.setArguments(list);
     }
 
-
-    protected static CGExpression calcExpression(TreeMaker maker, Object value) {
-        if (value instanceof CGExpression v) {
-            return v;
-        } else if (value instanceof String) {
-            return maker.Literal(CGTypeTag.CLASS, value);
-        } else if (value instanceof Boolean b) {
-            return maker.Literal(CGTypeTag.BOOLEAN, b ? 1 : 0);
-        } else if (value instanceof Long) {
-            return maker.Literal(CGTypeTag.LONG, value);
-        } else if (value instanceof Integer) {
-            return maker.Literal(CGTypeTag.INT, value);
-        } else if (value instanceof Double) {
-            return maker.Literal(CGTypeTag.DOUBLE, value);
-        } else if (value instanceof Float) {
-            return maker.Literal(CGTypeTag.FLOAT, value);
-        } else if (value instanceof Character c) {
-            return maker.Literal(CGTypeTag.CHAR, (int) c);
-        } else if (value instanceof Short) {
-            return maker.TypeCast(maker.TypeIdent(CGTypeTag.SHORT), maker.Literal(CGTypeTag.INT, value));
-        } else if (value instanceof Byte) {
-            return maker.TypeCast(maker.TypeIdent(CGTypeTag.BYTE), maker.Literal(CGTypeTag.INT, value));
-        } else if (value instanceof Enum e) {
-            var symbol = maker.getSymbol(value.getClass().getCanonicalName());
-            return maker.Select(maker.QualIdent(symbol), CGName.create(e.name()));
-        } else if (value instanceof Class c) {
-            var symbol = maker.getSymbol(c.getCanonicalName());
-            return maker.Select(maker.QualIdent(symbol), CGName.create("class"));
-        } else if (value.getClass().isArray()) {
-            var length = Array.getLength(value);
-            var list = CGList.nil(CGExpression.class);
-            for (var i = 0; i < length; i++) {
-                list.append(calcExpression(maker, Array.get(value, i)));
-            }
-            return maker.NewArray(null, CGList.nil(CGExpression.class), list);
-        }
-
-        //TODO: Handle all possible cases.
-        return classIdent(maker, value.toString());
-    }
-
-    protected static CGExpression classIdent(TreeMaker maker, String className) {
-        String[] strings = className.split("\\.");
-
-        CGExpression classNameIdent = maker.Ident(CGName.create(strings[0]));
-
-        for (int i = 1; i < strings.length; i++) {
-            classNameIdent = maker.Select(classNameIdent, CGName.create(strings[i]));
-        }
-
-        return classNameIdent;
-    }
-
     protected static CGList<CGExpression> expressionToList(CGExpression... expressions) {
         var list = CGList.nil(CGExpression.class);
         if (nonNull(expressions)) {

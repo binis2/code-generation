@@ -9,9 +9,9 @@ package net.binis.codegen.compiler.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@ import net.binis.codegen.compiler.base.JavaCompilerObject;
 import net.binis.codegen.exception.GenericCodeGenException;
 
 import javax.lang.model.element.Element;
+import java.lang.reflect.Array;
 
 public class ElementUtils {
 
@@ -104,24 +105,84 @@ public class ElementUtils {
         var maker = TreeMaker.create();
 
         if (cls.isPrimitive()) {
-            var tag = switch (cls.getName()) {
-                case "byte" -> CGTypeTag.BYTE;
-                case "char" -> CGTypeTag.CHAR;
-                case "short" -> CGTypeTag.SHORT;
-                case "long" -> CGTypeTag.LONG;
-                case "float" -> CGTypeTag.FLOAT;
-                case "int" -> CGTypeTag.INT;
-                case "double" -> CGTypeTag.DOUBLE;
-                case "boolean" -> CGTypeTag.BOOLEAN;
-                case "void" ->  CGTypeTag.VOID;
-                default -> throw new IllegalStateException("Unexpected value: " + cls.getName());
-            };
-            return maker.TypeIdent(tag);
+            return maker.TypeIdent(primitiveTypeTag(cls));
         } else if (cls.isArray()) {
             return maker.TypeArray(classToExpression(cls.getComponentType()));
         }
 
         return maker.QualIdent(maker.getSymbol(cls.getCanonicalName()));
     }
+
+    public static CGTypeTag primitiveTypeTag(Class<?> cls) {
+        return switch (cls.getName()) {
+            case "byte" -> CGTypeTag.BYTE;
+            case "char" -> CGTypeTag.CHAR;
+            case "short" -> CGTypeTag.SHORT;
+            case "long" -> CGTypeTag.LONG;
+            case "float" -> CGTypeTag.FLOAT;
+            case "int" -> CGTypeTag.INT;
+            case "double" -> CGTypeTag.DOUBLE;
+            case "boolean" -> CGTypeTag.BOOLEAN;
+            case "void" -> CGTypeTag.VOID;
+            default -> throw new IllegalStateException("Unexpected value: " + cls.getName());
+        };
+    }
+
+    public static CGExpression calcExpression(TreeMaker maker, Object value) {
+        if (value instanceof CGExpression v) {
+            return v;
+        } else if (value instanceof String) {
+            return maker.Literal(CGTypeTag.CLASS, value);
+        } else if (value instanceof Boolean b) {
+            return maker.Literal(CGTypeTag.BOOLEAN, b ? 1 : 0);
+        } else if (value instanceof Long) {
+            return maker.Literal(CGTypeTag.LONG, value);
+        } else if (value instanceof Integer) {
+            return maker.Literal(CGTypeTag.INT, value);
+        } else if (value instanceof Double) {
+            return maker.Literal(CGTypeTag.DOUBLE, value);
+        } else if (value instanceof Float) {
+            return maker.Literal(CGTypeTag.FLOAT, value);
+        } else if (value instanceof Character c) {
+            return maker.Literal(CGTypeTag.CHAR, (int) c);
+        } else if (value instanceof Short) {
+            return maker.TypeCast(maker.TypeIdent(CGTypeTag.SHORT), maker.Literal(CGTypeTag.INT, value));
+        } else if (value instanceof Byte) {
+            return maker.TypeCast(maker.TypeIdent(CGTypeTag.BYTE), maker.Literal(CGTypeTag.INT, value));
+        } else if (value instanceof Enum e) {
+            var symbol = maker.getSymbol(value.getClass().getCanonicalName());
+            return maker.Select(maker.QualIdent(symbol), CGName.create(e.name()));
+        } else if (value instanceof Class c) {
+            try {
+                return maker.Select(maker.TypeIdent(primitiveTypeTag(c)), CGName.create("class"));
+            } catch (IllegalStateException e) {
+                var symbol = maker.getSymbol(c.getCanonicalName());
+                return maker.Select(maker.QualIdent(symbol), CGName.create("class"));
+            }
+        } else if (value.getClass().isArray()) {
+            var length = Array.getLength(value);
+            var list = CGList.nil(CGExpression.class);
+            for (var i = 0; i < length; i++) {
+                list.append(calcExpression(maker, Array.get(value, i)));
+            }
+            return maker.NewArray(null, CGList.nil(CGExpression.class), list);
+        }
+
+        //TODO: Handle all possible cases.
+        return classIdent(maker, value.toString());
+    }
+
+    protected static CGExpression classIdent(TreeMaker maker, String className) {
+        String[] strings = className.split("\\.");
+
+        CGExpression classNameIdent = maker.Ident(CGName.create(strings[0]));
+
+        for (int i = 1; i < strings.length; i++) {
+            classNameIdent = maker.Select(classNameIdent, CGName.create(strings[i]));
+        }
+
+        return classNameIdent;
+    }
+
 
 }

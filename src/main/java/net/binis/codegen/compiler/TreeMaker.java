@@ -20,8 +20,10 @@ package net.binis.codegen.compiler;
  * #L%
  */
 
+import com.sun.source.util.JavacTask;
 import com.sun.source.util.Trees;
 import net.binis.codegen.compiler.base.JavaCompilerObject;
+import net.binis.codegen.factory.CodeFactory;
 
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.*;
@@ -42,7 +44,11 @@ public class TreeMaker extends JavaCompilerObject {
     protected void init() {
         cls = loadClass("com.sun.tools.javac.tree.TreeMaker");
         instance = invokeStatic("instance", cls, context);
-        trees = Trees.instance(env);
+        if (nonNull(env)) {
+            trees = Trees.instance(env);
+        } else {
+            trees = Trees.instance(CodeFactory.create(JavacTask.class));
+        }
     }
 
     public Trees getTrees() {
