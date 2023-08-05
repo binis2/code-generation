@@ -25,12 +25,13 @@ import net.binis.codegen.compiler.CGClassDeclaration;
 import net.binis.codegen.compiler.CGVariableDecl;
 import net.binis.codegen.compiler.utils.ElementFieldUtils;
 import net.binis.codegen.compiler.utils.ElementMethodUtils;
+import net.binis.codegen.compiler.utils.ElementUtils;
 import net.binis.codegen.enrich.LogEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.interfaces.ElementDescription;
 
-import java.lang.reflect.Modifier;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.reflect.Modifier.*;
 import static net.binis.codegen.compiler.utils.ElementUtils.getDeclaration;
@@ -46,9 +47,10 @@ public class LogEnricherHandler extends BaseEnricher implements LogEnricher {
                     .filter(CGVariableDecl.class::isInstance)
                     .map(CGVariableDecl.class::cast)
                     .noneMatch(f -> "log".equals(f.getName().toString()))) {
-                var factoryMethod = ElementMethodUtils.createStaticMethodInvocation(Logger.class, "getLogger",
-                        ElementMethodUtils.createClassMethodInvocation(description.getElement().getSimpleName().toString(), "getName"));
-                ElementFieldUtils.addField(description.getElement(), "log", Logger.class, PROTECTED | STATIC | FINAL, factoryMethod);
+
+                var factoryMethod = ElementMethodUtils.createStaticMethodInvocation(LoggerFactory.class, "getLogger",
+                        ElementUtils.selfType(cls));
+                ElementFieldUtils.addField(description.getElement(), "log", Logger.class, PRIVATE | STATIC | FINAL, factoryMethod);
             } else {
                 note("Log field already defined.", description.getElement());
             }

@@ -67,7 +67,7 @@ public abstract class CGDeclaration extends JavaCompilerObject {
     }
 
     public CGName getName() {
-        return new CGName(getFieldValue(instance, "name"));
+        return new CGName((Object) getFieldValue(instance, "name"));
     }
 
     private <T extends JavaCompilerObject> void onDefsModify(CGList<T> list) {

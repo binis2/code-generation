@@ -38,6 +38,7 @@ import java.util.stream.StreamSupport;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.*;
+import static net.binis.codegen.tools.Tools.nullCheck;
 
 @Slf4j
 public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject implements Iterable<T> {

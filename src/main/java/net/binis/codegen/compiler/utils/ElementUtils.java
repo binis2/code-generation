@@ -51,7 +51,7 @@ public class ElementUtils {
         };
     }
 
-    protected static CGFieldAccess selfType(CGClassDeclaration decl) {
+    public static CGFieldAccess selfType(CGClassDeclaration decl) {
         var maker = TreeMaker.create();
         var name = decl.getName();
         return maker.Select(maker.Ident(name), decl.toName("class"));
