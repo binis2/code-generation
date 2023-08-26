@@ -20,7 +20,9 @@ package net.binis.codegen.compiler;
  * #L%
  */
 
-import static net.binis.codegen.tools.Reflection.loadClass;
+import net.binis.codegen.compiler.base.JavaCompilerObject;
+
+import static net.binis.codegen.tools.Reflection.*;
 
 public class CGBlock extends CGStatement {
     public CGBlock(Object instance) {
@@ -29,6 +31,14 @@ public class CGBlock extends CGStatement {
 
     public static Class theClass() {
         return loadClass("com.sun.tools.javac.tree.JCTree$JCBlock");
+    }
+
+    public CGList<CGStatement> getStatements() {
+        return new CGList<>(getFieldValue(instance, "stats"), this::onStatsModify, CGStatement.class);
+    }
+
+    protected <T extends JavaCompilerObject> void onStatsModify(CGList<T> list) {
+        setFieldValue(instance, "stats", list.getInstance());
     }
 
     @Override

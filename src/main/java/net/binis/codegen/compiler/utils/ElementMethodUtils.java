@@ -40,6 +40,27 @@ public class ElementMethodUtils extends ElementUtils {
         return def;
     }
 
+    public static CGMethodDeclaration addConstructor(Element element, long flags, List<CGVariableDecl> params) {
+        var maker = TreeMaker.create();
+        var declaration = getDeclaration(element, maker);
+        return addConstructor((CGClassDeclaration) declaration, flags, params);
+    }
+
+    public static CGMethodDeclaration addConstructor(CGClassDeclaration cls, long flags, List<CGVariableDecl> params) {
+        var body = createBlock(createStatement(createMethodInvocation("super")));
+        var maker = TreeMaker.create();
+        var def = maker.MethodDef(maker.Modifiers(flags), CGName.create("<init>"), null, CGList.nil(CGTypeParameter.class), CGList.from(params, CGVariableDecl.class), CGList.nil(CGExpression.class), body, null);
+        cls.getDefs().append(def);
+        return def;
+    }
+
+
+    public static CGExpression createMethodInvocation(String methodName, CGExpression... params) {
+        var maker = TreeMaker.create();
+        var method = chainDotsString(maker, methodName);
+        return maker.Apply(CGList.nil(CGExpression.class), method, CGList.from(params, CGExpression.class));
+    }
+
     public static CGExpression createStaticMethodInvocation(Class<?> cls, String methodName, CGExpression... params) {
         return createStaticMethodInvocation(cls.getCanonicalName(), methodName, params);
     }

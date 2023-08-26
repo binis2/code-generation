@@ -70,11 +70,33 @@ public abstract class CGDeclaration extends JavaCompilerObject {
         return new CGName((Object) getFieldValue(instance, "name"));
     }
 
-    private <T extends JavaCompilerObject> void onDefsModify(CGList<T> list) {
+    protected <T extends JavaCompilerObject> void onDefsModify(CGList<T> list) {
         setFieldValue(instance, "defs", list.getInstance());
     }
 
     public CGSymbol getSymbol() {
         return new CGSymbol(getFieldValue(instance, "sym"));
     }
+
+    public boolean isFinal() {
+        return (getModifiers().flags() & CGFlags.FINAL) == CGFlags.FINAL;
+    }
+
+    public boolean isPublic() {
+        return (getModifiers().flags() & CGFlags.PUBLIC) == CGFlags.PUBLIC;
+    }
+
+    public boolean isPrivate() {
+        return (getModifiers().flags() & CGFlags.PRIVATE) == CGFlags.PRIVATE;
+    }
+
+    public boolean isProtected() {
+        return (getModifiers().flags() & CGFlags.PROTECTED) == CGFlags.PROTECTED;
+    }
+
+    public boolean isStatic() {
+        return (getModifiers().flags() & CGFlags.STATIC) == CGFlags.STATIC;
+    }
+
+
 }

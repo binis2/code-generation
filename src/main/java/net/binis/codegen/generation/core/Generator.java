@@ -1433,7 +1433,7 @@ public class Generator {
     private static void handleAnnotation(CompilationUnit unit, BodyDeclaration<?> body, AnnotationExpr ann) {
         body.getAnnotations().stream().filter(a -> a.getNameAsString().equals(ann.getNameAsString())).findFirst().ifPresent(a ->
                 body.getAnnotations().remove(a));
-        body.addAnnotation(ann);
+        body.addAnnotation(ann.clone());
 
         notNull(getExternalClassNameIfExists(unit, ann.getNameAsString()), i ->
                 body.findCompilationUnit().ifPresent(u -> u.addImport(sanitizeImport(i))));

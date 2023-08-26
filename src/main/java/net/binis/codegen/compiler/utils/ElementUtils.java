@@ -30,7 +30,6 @@ import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.invokeStatic;
 
 public class ElementUtils {
@@ -177,10 +176,10 @@ public class ElementUtils {
         }
 
         //TODO: Handle all possible cases.
-        return classIdent(maker, value.toString());
+        return createFieldAccess(maker, value.toString());
     }
 
-    protected static CGExpression classIdent(TreeMaker maker, String className) {
+    public static CGExpression createFieldAccess(TreeMaker maker, String className) {
         String[] strings = className.split("\\.");
 
         CGExpression classNameIdent = maker.Ident(CGName.create(strings[0]));

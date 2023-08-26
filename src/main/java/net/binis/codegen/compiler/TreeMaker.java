@@ -161,7 +161,7 @@ public class TreeMaker extends JavaCompilerObject {
                                          CGBlock body,
                                          CGExpression defaultValue) {
         var method = findMethod("MethodDef", instance.getClass(), CGModifiers.theClass(), CGName.theClass(), CGExpression.theClass(), CGList.theClass(), CGList.theClass(), CGList.theClass(), CGBlock.theClass(), CGExpression.theClass());
-        return new CGMethodDeclaration(invoke(method, instance, mods.getInstance(), name.getInstance(), restype.getInstance(), typarams.getInstance(), params.getInstance(), thrown.getInstance(), body.getInstance(), nonNull(defaultValue) ? defaultValue.getInstance() : null));
+        return new CGMethodDeclaration(invoke(method, instance, mods.getInstance(), name.getInstance(), nonNull(restype) ? restype.getInstance() : null, typarams.getInstance(), params.getInstance(), thrown.getInstance(), body.getInstance(), nonNull(defaultValue) ? defaultValue.getInstance() : null));
     }
 
     public CGModifiers Modifiers(long flags, CGList<CGAnnotation> annotations) {
