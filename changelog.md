@@ -1,4 +1,13 @@
 # Change Log
+**27-08-2023** ver. 1.1.5
+* Generation: Prototype annotations are now cloned before attaching to generated classes.
+* Generation: Added enricher augmentation descriptors.
+* Generation: Added LogEnricher. (similar to @Slf4j)
+* Generation: Added InjectionEnricher. (creates constructor with all final fields that are not initialized)
+* Generation: Extended enricher reporting abilities.
+* IDEA Plugin: Fixed various issues.
+* IDEA Plugin: Added support for enricher augmentation.
+
 **02-08-2023** ver. 1.1.4
 * Compiler Plugin: Initial version.
 * Compiler Plugin: Annotation inheritance.
