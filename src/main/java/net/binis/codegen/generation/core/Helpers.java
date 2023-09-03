@@ -229,6 +229,10 @@ public class Helpers {
         return result;
     }
 
+    public static String getFQN(NodeWithName<?> node) {
+        return getExternalClassName((Node) node, node.getNameAsString());
+    }
+
     public static String getExternalClassNameIfExists(Node node, String t) {
         var unit = node.findCompilationUnit().orElseThrow(() -> new GenericCodeGenException("Node is not part of unit!"));
         var idx = t.indexOf('<');
