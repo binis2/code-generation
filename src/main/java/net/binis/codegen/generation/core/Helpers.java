@@ -229,7 +229,7 @@ public class Helpers {
         return result;
     }
 
-    public static String getFQN(NodeWithName<?> node) {
+    public static String getFQName(NodeWithName<?> node) {
         return getExternalClassName((Node) node, node.getNameAsString());
     }
 
