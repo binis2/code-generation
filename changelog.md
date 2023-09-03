@@ -1,4 +1,9 @@
 # Change Log
+**03-09-2023** ver. 1.1.6
+* Core: Extended BaseStringInterpolator to hold information about the segments expression splits into.
+* Generator: Extended enricher helper functions.
+* ALL: Updated dependencies.
+
 **27-08-2023** ver. 1.1.5
 * Generation: Prototype annotations are now cloned before attaching to generated classes.
 * Generation: Added enricher augmentation descriptors.

@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>dev.binis</groupId>
     <artifactId>code-generator</artifactId>
-    <version>1.1.5</version>
+    <version>1.1.6</version>
     <name>code-generator</name>
     <description>Binis Code Generation</description>
     <url>https://github.com/binis2/code-generation</url>
@@ -65,23 +65,23 @@
         <dependency>
             <groupId>dev.binis</groupId>
             <artifactId>code-generator-core</artifactId>
-            <version>1.1.5</version>
+            <version>1.1.6</version>
         </dependency>
         <dependency>
             <groupId>dev.binis</groupId>
             <artifactId>code-generator-spring</artifactId>
-            <version>1.1.5</version>
+            <version>1.1.6</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.github.javaparser</groupId>
             <artifactId>javaparser-symbol-solver-core</artifactId>
-            <version>3.25.3</version>
+            <version>3.25.5</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.12.0</version>
+            <version>3.13.0</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -118,7 +118,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>5.4.0</version>
+            <version>5.5.0</version>
         </dependency>
     </dependencies>
 
@@ -240,7 +240,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.4.0</version>
                 <executions>
                     <execution>
                         <id>enforce-maven</id>
