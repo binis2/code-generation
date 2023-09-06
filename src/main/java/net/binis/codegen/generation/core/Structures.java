@@ -97,6 +97,7 @@ public class Structures {
         private String name;
         private String className;
         private String classPackage;
+        private boolean classPackageSet;
         private boolean classGetters;
         private boolean classSetters;
         private String interfaceName;
@@ -294,6 +295,8 @@ public class Structures {
         protected String parentClassName;
 
         protected ClassOrInterfaceDeclaration parent;
+
+        protected String parentPackage;
 
         @Builder.Default
         protected EmbeddedModifierType embeddedModifierType = EmbeddedModifierType.NONE;
@@ -502,8 +505,8 @@ public class Structures {
         protected String id;
 
         @Builder(builderMethodName = "bldr")
-        public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, CompilationUnit declarationUnit, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean codeEnum, String parentClassName, ClassOrInterfaceDeclaration parent, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, CompilationUnit interfaceUnit, CompilationUnit implementationUnit, Map<String, ElementDescription> elements, Element element, List<Element> rawElements, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
-            super(processed, invalid, parser, compiled, prototypeFileName, prototypeClassName, properties, parsedName, parsedFullName, interfaceName, interfaceFullName, constants, declaration, declarationUnit, files, custom, base, mixIn, nested, codeEnum, parentClassName, parent, embeddedModifierType, classes, fields, spec, intf, interfaceUnit, implementationUnit, elements, rawElements, element, initializers, customInitializers, postProcessActions);
+        public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, CompilationUnit declarationUnit, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean codeEnum, String parentClassName, ClassOrInterfaceDeclaration parent, String parentPackage, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, CompilationUnit interfaceUnit, CompilationUnit implementationUnit, Map<String, ElementDescription> elements, Element element, List<Element> rawElements, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
+            super(processed, invalid, parser, compiled, prototypeFileName, prototypeClassName, properties, parsedName, parsedFullName, interfaceName, interfaceFullName, constants, declaration, declarationUnit, files, custom, base, mixIn, nested, codeEnum, parentClassName, parent, parentPackage, embeddedModifierType, classes, fields, spec, intf, interfaceUnit, implementationUnit, elements, rawElements, element, initializers, customInitializers, postProcessActions);
             this.id = id;
             this.files = initFiles();
         }

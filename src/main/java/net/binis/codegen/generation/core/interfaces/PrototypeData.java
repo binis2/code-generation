@@ -41,6 +41,7 @@ public interface PrototypeData {
     }
 
     String getClassPackage();
+    boolean isClassPackageSet();
     boolean isClassGetters();
     boolean isClassSetters();
     String getInterfaceName();

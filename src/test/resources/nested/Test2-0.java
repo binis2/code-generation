@@ -1,6 +1,7 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.codegen.test.objects;
 
+import net.binis.codegen.test.objects.TestRequest.SubRequest;
 import net.binis.codegen.factory.CodeFactory;
 import javax.annotation.processing.Generated;
 

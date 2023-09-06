@@ -29,11 +29,6 @@ import org.junit.jupiter.api.Test;
 @Slf4j
 class NestedClassTest extends BaseCodeGenTest {
 
-    @BeforeEach
-    public void cleanUp() {
-        Helpers.cleanUp();
-    }
-
     @Test
     void test() {
         testSingle("nested/Test1.java", "nested/Test1-0.java", "nested/Test1-1.java", 2);
@@ -42,6 +37,16 @@ class NestedClassTest extends BaseCodeGenTest {
     @Test
     void testNestedPrototype() {
         testSingle("nested/Test2.java", "nested/Test2-0.java", "nested/Test2-1.java", 2);
+    }
+
+    @Test
+    void testNestedImplementation() {
+        testSingleImplementation("nested/Test3.java", "nested/Test3-0.java", 2);
+    }
+
+    @Test
+    void testNestedPrototypeWithReference() {
+        testSingle("nested/Test4.java", "nested/Test4-0.java", "nested/Test4-1.java", 3);
     }
 
 

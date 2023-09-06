@@ -221,6 +221,7 @@ public class Generator {
         properties.setPrototypeName(typeDeclaration.getNameAsString());
         properties.setPrototypeFullName(typeDeclaration.getFullyQualifiedName().orElseThrow());
         addProcessingType(typeDeclaration.getNameAsString(), properties.getInterfacePackage(), properties.getInterfaceName(), properties.getClassPackage(), properties.getClassName());
+        ((Structures.Parsed) prsd).setProperties(properties);
         ensureParsedParents(typeDeclaration, properties);
         handleEnrichersSetup(properties);
 
@@ -246,7 +247,7 @@ public class Generator {
         var unit = new CompilationUnit();
         unit.addImport("javax.annotation.processing.Generated");
         var spec = unit.addClass(properties.getClassName());
-        unit.setPackageDeclaration(properties.getClassPackage());
+        unit.setPackageDeclaration(isNull(prsd.getParentPackage()) || properties.isClassPackageSet() ? properties.getClassPackage() : prsd.getParentPackage());
         spec.addModifier(PUBLIC);
 
         if (properties.isGenerateConstructor()) {
@@ -256,7 +257,7 @@ public class Generator {
         var iUnit = new CompilationUnit();
         iUnit.addImport("javax.annotation.processing.Generated");
         var intf = iUnit.addClass(properties.getInterfaceName()).setInterface(true);
-        iUnit.setPackageDeclaration(properties.getInterfacePackage());
+        iUnit.setPackageDeclaration(calcInterfacePackage(prsd));
         intf.addModifier(PUBLIC);
 
         var parse = (Structures.Parsed) lookup.findParsed(getClassName(typeDeclaration));
@@ -387,11 +388,19 @@ public class Generator {
         return parse;
     }
 
+    protected static String calcInterfacePackage(PrototypeDescription<ClassOrInterfaceDeclaration> prsd) {
+        if (nonNull(prsd.getParent())) {
+            var parent = lookup.findParsed(prsd.getParentClassName());
+            return calcInterfacePackage(parent) + "." + parent.getProperties().getInterfaceName();
+        }
+        return isNull(prsd.getParentPackage()) ? prsd.getProperties().getInterfacePackage() : prsd.getParentPackage();
+    }
+
     private static Structures.Parsed handleImplementationStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
         var unit = new CompilationUnit();
         unit.addImport("javax.annotation.processing.Generated");
         var spec = unit.addClass(properties.getClassName());
-        unit.setPackageDeclaration(properties.getClassPackage());
+        unit.setPackageDeclaration(isNull(prsd.getParentPackage()) ? properties.getClassPackage() : prsd.getParentPackage());
         spec.addModifier(PUBLIC);
         spec.addImplementedType(prsd.getDeclaration().getNameAsString());
         prsd.getDeclaration().getFullyQualifiedName().ifPresent(unit::addImport);

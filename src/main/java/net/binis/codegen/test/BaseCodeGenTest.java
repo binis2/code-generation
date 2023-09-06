@@ -109,6 +109,10 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
         return testSingleExecute(prototype, resClass, resInterface, null, expected, resExecute, false, false, false);
     }
 
+    protected TestClassLoader testSingleImplementation(String prototype, String resClass, int expected) {
+        return testSingleExecute(prototype, resClass, null, null, expected, null, false, true, false);
+    }
+
     protected TestClassLoader testSingleImplementation(String prototype, String resClass) {
         return testSingleExecute(prototype, resClass, null, null, 1, null, false, true, false);
     }
@@ -149,7 +153,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
         TestClassLoader protoLoader = null;
         if (!skipPrototypeCompilation) {
             protoLoader = new TestClassLoader();
-            assertTrue(compile(protoLoader, list, null, false));
+            assertTrue(compile(protoLoader, list, null, true));
         }
         generate();
 
@@ -204,7 +208,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
 
         if (!skipCompilation) {
             var loader = new TestClassLoader();
-            assertTrue(compile(loader, list2, resExecute, false));
+            assertTrue(compile(loader, list2, resExecute, true));
             return loader;
         } else {
             return protoLoader;

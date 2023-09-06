@@ -152,7 +152,7 @@ public abstract class CompiledPrototypesHandler {
         }
 
         if (StringUtils.isNotBlank(ann.implementationPackage())) {
-            builder.classPackage(ann.implementationPackage());
+            builder.classPackage(ann.implementationPackage()).classPackageSet(true);
         }
 
         if (nonNull(ann.strategy())) {

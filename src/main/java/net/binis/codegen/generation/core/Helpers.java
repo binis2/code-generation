@@ -1090,7 +1090,8 @@ public class Helpers {
         if (description.isNested() && nonNull(description.getParentClassName())) {
             return getBasePackage(lookup.findParsed(description.getParentClassName()));
         }
-        return description.getProperties().getClassPackage();
+
+        return isNull(description.getParentPackage()) || description.getProperties().isClassPackageSet() ? description.getProperties().getClassPackage() : description.getParentPackage();
     }
 
     private static void addInitializerInternal(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, Node node, boolean embedded) {

@@ -209,7 +209,8 @@ public class CodeGen {
                 if (ann.isPresent()) {
                     if (nested.asClassOrInterfaceDeclaration().isInterface()) {
                         var parent = type.findCompilationUnit().get();
-                        var unit = new CompilationUnit().setPackageDeclaration(parent.getPackageDeclaration().get());
+                        var pack = parent.getPackageDeclaration().get().getNameAsString();
+                        var unit = new CompilationUnit().setPackageDeclaration(pack + "." + type.getNameAsString());
                         var nestedType = nested.clone();
                         parent.getImports().forEach(unit::addImport);
                         unit.addType(nestedType);
@@ -223,6 +224,7 @@ public class CodeGen {
                                         .prototypeClassName(cName)
                                         .parser(parser)
                                         .nested(true)
+                                        .parentPackage(pack)
                                         .build());
                     } else {
                         with(ErrorHelpers.calculatePrototypeAnnotationError(nested.asClassOrInterfaceDeclaration(), Generator.getProperties(ann.get())), message ->
