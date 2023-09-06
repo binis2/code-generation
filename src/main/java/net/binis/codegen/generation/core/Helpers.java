@@ -51,6 +51,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Holder;
 import net.binis.codegen.tools.Reflection;
+import net.binis.codegen.tools.Tools;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -694,8 +695,8 @@ public class Helpers {
 
     public static Structures.Ignores getIgnores(CompilationUnit unit, BodyDeclaration<?> member) {
         var result = Structures.Ignores.builder();
-        member.getAnnotations().forEach(annotation -> notNull(getExternalClassName(unit, annotation.getNameAsString()), className ->
-                notNull(loadClass(className), cls -> {
+        member.getAnnotations().forEach(annotation -> Tools.with(getExternalClassName(unit, annotation.getNameAsString()), className ->
+                Tools.with(loadClass(className), cls -> {
                     if (Ignore.class.equals(cls)) {
                         annotation.getChildNodes().forEach(node -> {
                             if (node instanceof MemberValuePair pair) {
@@ -718,7 +719,7 @@ public class Helpers {
                             }
                         });
                     } else {
-                        notNull(cls.getAnnotation(Ignore.class), ann -> result
+                        Tools.with(cls.getAnnotation(Ignore.class), ann -> result
                                 .forField(ann.forField())
                                 .forClass(ann.forClass())
                                 .forInterface(ann.forInterface())
@@ -881,28 +882,28 @@ public class Helpers {
     }
 
     public static void handleEnrichersSetup(PrototypeData properties) {
-        notNull(properties.getEnrichers(), enrichers ->
+        Tools.with(properties.getEnrichers(), enrichers ->
                 enrichers.forEach(e -> e.setup(properties)));
     }
 
     public static void handleInheritedEnrichersSetup(PrototypeData properties) {
-        notNull(properties.getInheritedEnrichers(), enrichers ->
+        Tools.with(properties.getInheritedEnrichers(), enrichers ->
                 enrichers.forEach(e -> e.setup(properties)));
     }
 
     private static List<PrototypeEnricher> getEnrichersList(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
         var map = new HashMap<Class<?>, PrototypeEnricher>();
 
-        notNull(parsed.getBase(), base ->
-                notNull(base.getProperties().getInheritedEnrichers(), l ->
+        Tools.with(parsed.getBase(), base ->
+                Tools.with(base.getProperties().getInheritedEnrichers(), l ->
                         l.forEach(e -> map.put(e.getClass(), e))));
 
-        notNull(parsed.getMixIn(), mixIn ->
-                notNull(mixIn.getBase(), base ->
-                        notNull(base.getProperties().getInheritedEnrichers(), l ->
+        Tools.with(parsed.getMixIn(), mixIn ->
+                Tools.with(mixIn.getBase(), base ->
+                        Tools.with(base.getProperties().getInheritedEnrichers(), l ->
                                 l.forEach(e -> map.put(e.getClass(), e)))));
 
-        notNull(parsed.getProperties().getEnrichers(), l ->
+        Tools.with(parsed.getProperties().getEnrichers(), l ->
                 l.forEach(e -> map.put(e.getClass(), e)));
 
         var list = new ArrayList<>(map.values());
@@ -913,7 +914,7 @@ public class Helpers {
     private static List<PrototypeEnricher> getEnrichersList(ElementDescription method) {
         var map = new HashMap<Class<?>, PrototypeEnricher>();
 
-        notNull(method.getProperties().getEnrichers(), l ->
+        Tools.with(method.getProperties().getEnrichers(), l ->
                 l.forEach(e -> map.put(e.getClass(), e)));
 
         var list = new ArrayList<>(map.values());
@@ -1027,7 +1028,7 @@ public class Helpers {
 
     public static void handleImports(Node declaration, ClassOrInterfaceDeclaration type) {
         declaration.findCompilationUnit().ifPresent(decl ->
-                notNull(type, tt -> type.findCompilationUnit().ifPresent(unit ->
+                Tools.with(type, tt -> type.findCompilationUnit().ifPresent(unit ->
                         findUsedTypes(type).stream().map(t -> getClassImport(decl, t)).filter(Objects::nonNull).forEach(unit::addImport))));
     }
 

@@ -39,6 +39,7 @@ import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Reflection;
+import net.binis.codegen.tools.Tools;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -53,7 +54,7 @@ import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.EnrichHelpers.block;
 import static net.binis.codegen.generation.core.EnrichHelpers.expression;
 import static net.binis.codegen.generation.core.Helpers.*;
-import static net.binis.codegen.tools.Tools.notNull;
+import static net.binis.codegen.tools.Tools.with;
 import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
@@ -551,7 +552,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                         }));
 
         declaration.asClassOrInterfaceDeclaration().getExtendedTypes().forEach(t ->
-                notNull(lookup.findParsed(Helpers.getExternalClassName(declaration.findCompilationUnit().get(), t.getNameAsString())), parsed -> {
+                Tools.with(lookup.findParsed(Helpers.getExternalClassName(declaration.findCompilationUnit().get(), t.getNameAsString())), parsed -> {
                     if (isNull(parsed.getCompiled())) {
                         addPresets(description, parsed.getDeclaration(), intf, spec);
                     } else {

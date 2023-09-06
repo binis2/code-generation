@@ -48,6 +48,7 @@ import net.binis.codegen.options.Options;
 import net.binis.codegen.tools.CollectionUtils;
 import net.binis.codegen.tools.ContextInterpolator;
 import net.binis.codegen.tools.Holder;
+import net.binis.codegen.tools.Tools;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.lang.model.element.ElementKind;
@@ -149,7 +150,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                 generateExecution(description, field, annotation, cls, collection, mixIn);
             }
         } else {
-            notNull(lookup.findExternal(name), d ->
+            Tools.with(lookup.findExternal(name), d ->
                     handleAnnotationFromSource(description, d.getDeclaration().asAnnotationDeclaration(), field, annotation, form, collection, mixIn));
         }
 
@@ -280,8 +281,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         var result = checkTargets(params.build(), field);
 
         if (isNull(result.getAsCode())) {
-            notNull(loadClass(isNull(cls) ? getExternalClassName(field.getParsed().getDeclaration().findCompilationUnit().get(), result.getCls()) : cls), c ->
-                    notNull(c.getDeclaredAnnotation(AsCode.class), a -> result.setAsCode(a.value())));
+            Tools.with(loadClass(isNull(cls) ? getExternalClassName(field.getParsed().getDeclaration().findCompilationUnit().get(), result.getCls()) : cls), c ->
+                    Tools.with(c.getDeclaredAnnotation(AsCode.class), a -> result.setAsCode(a.value())));
         }
 
         return result;
@@ -334,8 +335,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         var result = checkTargets(params.build(), field);
 
         if (isNull(result.getAsCode())) {
-            notNull(loadClass(isNull(cls) ? getExternalClassName(unit(field.getParsed().getDeclaration()), result.getCls()) : cls), c ->
-                    notNull(c.getDeclaredAnnotation(AsCode.class), a -> result.setAsCode(a.value())));
+            Tools.with(loadClass(isNull(cls) ? getExternalClassName(unit(field.getParsed().getDeclaration()), result.getCls()) : cls), c ->
+                    Tools.with(c.getDeclaredAnnotation(AsCode.class), a -> result.setAsCode(a.value())));
         }
 
         return result;
@@ -808,8 +809,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         var result = checkTargets(params.build(), field);
 
         if (isNull(result.getAsCode())) {
-            notNull(loadClass(isNull(cls) ? getExternalClassName(field.getParsed().getDeclaration().findCompilationUnit().get(), result.getCls()) : cls), c ->
-                    notNull(c.getDeclaredAnnotation(AsCode.class), a -> result.setAsCode(a.value())));
+            Tools.with(loadClass(isNull(cls) ? getExternalClassName(field.getParsed().getDeclaration().findCompilationUnit().get(), result.getCls()) : cls), c ->
+                    Tools.with(c.getDeclaredAnnotation(AsCode.class), a -> result.setAsCode(a.value())));
         }
 
         return result;
@@ -851,7 +852,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         if (!"sanitize".equals(method)) {
             m.addArgument(calcMessage(params));
         }
-        notNull(params.getParams(), p -> p.forEach(param ->
+        Tools.with(params.getParams(), p -> p.forEach(param ->
                 m.addArgument(buildParamsStr(param, params, field, modifier, collection))));
         if (!ModifierType.COLLECTION.equals(modifier)) {
             mCall.setScope(m);

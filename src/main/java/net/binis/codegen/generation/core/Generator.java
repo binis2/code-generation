@@ -41,7 +41,6 @@ import net.binis.codegen.annotation.*;
 import net.binis.codegen.annotation.type.GenerationStrategy;
 import net.binis.codegen.compiler.utils.ElementAnnotationUtils;
 import net.binis.codegen.compiler.utils.ElementMethodUtils;
-import net.binis.codegen.compiler.utils.ElementUtils;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
@@ -51,6 +50,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.options.CodeOption;
 import net.binis.codegen.tools.Holder;
+import net.binis.codegen.tools.Tools;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -59,7 +59,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
@@ -599,8 +598,8 @@ public class Generator {
     private static void cleanUpInterface(ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration intf) {
         declaration.findCompilationUnit().ifPresent(unit ->
                 intf.getExtendedTypes().forEach(t ->
-                        notNull(getExternalClassName(unit, t.getNameAsString()), className ->
-                                notNull(loadClass(className), cls ->
+                        Tools.with(getExternalClassName(unit, t.getNameAsString()), className ->
+                                Tools.with(loadClass(className), cls ->
                                         cleanUpInterface(cls, intf)))));
     }
 
@@ -671,8 +670,8 @@ public class Generator {
 
         for (var i = method.getAnnotations().size() - 1; i >= 0; i--) {
             var ann = method.getAnnotation(i);
-            notNull(getExternalClassName(unit, method.getAnnotation(i).getNameAsString()), className ->
-                    notNull(loadClass(className), cls -> {
+            Tools.with(getExternalClassName(unit, method.getAnnotation(i).getNameAsString()), className ->
+                    Tools.with(loadClass(className), cls -> {
                         if (cls.isAnnotationPresent(CodeAnnotation.class)) {
                             method.remove(ann);
                         }
@@ -702,7 +701,7 @@ public class Generator {
                     }
 
                     if (parent.isPresent()) {
-                        notNull(parent.get().getPrototype(), p ->
+                        Tools.with(parent.get().getPrototype(), p ->
                                 handleDefaultMethodBody(p, n, true));
 
                         var exp = new FieldAccessExpr().setName(method.getName());
@@ -744,7 +743,7 @@ public class Generator {
                     }
 
                     if (parent.isPresent()) {
-                        notNull(lookup.findParsed(getExternalClassName(parse.getDeclaration(), parent.get().getType().asString())), p ->
+                        Tools.with(lookup.findParsed(getExternalClassName(parse.getDeclaration(), parent.get().getType().asString())), p ->
                                 handleDefaultInterfaceMethodBody(p, n, true));
 
                         if (nonNull(parent.get().getInterfaceGetter())) {
@@ -789,7 +788,7 @@ public class Generator {
         declaration.findCompilationUnit().ifPresent(unit -> {
             for (var node : type.getChildNodes()) {
                 if (node instanceof ClassExpr expr) {
-                    notNull(lookup.findParsed(getExternalClassName(unit, expr.getTypeAsString())), p -> {
+                    Tools.with(lookup.findParsed(getExternalClassName(unit, expr.getTypeAsString())), p -> {
                         if (isNull(p.getMixIn())) {
                             expr.setType(findProperType(p, unit, expr));
                         } else {
@@ -965,10 +964,10 @@ public class Generator {
             result.setInheritedEnrichers(new ArrayList<>());
         }
 
-        notNull(result.getPredefinedEnrichers(), list ->
+        Tools.with(result.getPredefinedEnrichers(), list ->
                 list.forEach(e -> checkEnrichers(result.getEnrichers(), e)));
 
-        notNull(result.getPredefinedInheritedEnrichers(), list ->
+        Tools.with(result.getPredefinedInheritedEnrichers(), list ->
                 list.forEach(e -> checkEnrichers(result.getInheritedEnrichers(), e)));
 
         return result;
@@ -1054,9 +1053,9 @@ public class Generator {
             }
         }
 
-        notNull(properties.getMixInClass(), c ->
-                notNull(getExternalClassName(declaration.findCompilationUnit().get(), c),
-                        name -> notNull(lookup.findParsed(name), parse ->
+        Tools.with(properties.getMixInClass(), c ->
+                Tools.with(getExternalClassName(declaration.findCompilationUnit().get(), c),
+                        name -> Tools.with(lookup.findParsed(name), parse ->
                                 condition(!parse.isProcessed(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get(), parse)))));
 
         declaration.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(cls ->
@@ -1072,7 +1071,7 @@ public class Generator {
                                     .parent(declaration)
                                     .build());
 
-                    notNull(lookup.findParsed(clsName), parse ->
+                    Tools.with(lookup.findParsed(clsName), parse ->
                             condition(!parse.isProcessed(), () -> generateCodeForPrototype(declaration.findCompilationUnit().get(), parse, cls, ann)));
                 }));
     }
@@ -1360,7 +1359,7 @@ public class Generator {
     private static void handleFieldAnnotations(CompilationUnit unit, FieldDeclaration field, MethodDeclaration method, boolean compiledAnnotations, PrototypeField proto) {
         var next = Holder.of(false);
         method.getAnnotations().forEach(a ->
-                notNull(getExternalClassName(unit, a.getNameAsString()), name -> {
+                Tools.with(getExternalClassName(unit, a.getNameAsString()), name -> {
                     var ann = loadClass(name);
                     if (nonNull(ann)) {
                         if (ForInterface.class.equals(ann)) {
@@ -1444,7 +1443,7 @@ public class Generator {
                 body.getAnnotations().remove(a));
         body.addAnnotation(ann.clone());
 
-        notNull(getExternalClassNameIfExists(unit, ann.getNameAsString()), i ->
+        Tools.with(getExternalClassNameIfExists(unit, ann.getNameAsString()), i ->
                 body.findCompilationUnit().ifPresent(u -> u.addImport(sanitizeImport(i))));
 
     }
@@ -1454,7 +1453,7 @@ public class Generator {
         if (existing.isEmpty()) {
             body.addAnnotation(ann);
 
-            notNull(getExternalClassNameIfExists(unit, ann.getNameAsString()), i ->
+            Tools.with(getExternalClassNameIfExists(unit, ann.getNameAsString()), i ->
                     body.findCompilationUnit().ifPresent(u -> u.addImport(sanitizeImport(i))));
         }
     }
@@ -1464,14 +1463,14 @@ public class Generator {
                 method.getAnnotations().remove(a));
         method.addAnnotation(ann);
 
-        notNull(getExternalClassNameIfExists(unit, ann.getNameAsString()), destinationUnit::addImport);
+        Tools.with(getExternalClassNameIfExists(unit, ann.getNameAsString()), destinationUnit::addImport);
     }
 
 
     @SuppressWarnings("unchecked")
     private static void handleMethodAnnotations(MethodDeclaration method, MethodDeclaration declaration, PrototypeField field) {
         declaration.getAnnotations().forEach(a ->
-                notNull(getExternalClassName(declaration.findCompilationUnit().get(), a.getNameAsString()), name -> {
+                Tools.with(getExternalClassName(declaration.findCompilationUnit().get(), a.getNameAsString()), name -> {
                     var ann = loadClass(name);
                     if (nonNull(ann) && !ann.isAnnotationPresent(CodeAnnotation.class) && !field.getDeclaration().isAnnotationPresent((Class) ann)) {
                         var target = ann.getAnnotation(Target.class);
@@ -1487,7 +1486,7 @@ public class Generator {
         var next = Holder.of(false);
         declaration.findCompilationUnit().ifPresent(unit ->
                 declaration.getAnnotations().forEach(a ->
-                        notNull(getExternalClassName(unit, a.getNameAsString()), name -> {
+                        Tools.with(getExternalClassName(unit, a.getNameAsString()), name -> {
                             var ann = loadClass(name);
                             if (nonNull(ann)) {
                                 if (ForInterface.class.equals(ann)) {
@@ -2062,7 +2061,7 @@ public class Generator {
     private static void mergeAnnotations(MethodDeclaration source, CompilationUnit destinationUnit, MethodDeclaration destination) {
         source.findCompilationUnit().ifPresent(unit -> {
             for (var ann : destination.getAnnotations()) {
-                notNull(getExternalClassNameIfExists(destinationUnit, ann.getNameAsString()), unit::addImport);
+                Tools.with(getExternalClassNameIfExists(destinationUnit, ann.getNameAsString()), unit::addImport);
             }
             for (var ann : source.getAnnotations()) {
                 handleAnnotation(unit, destination, ann, destinationUnit);
@@ -2288,10 +2287,10 @@ public class Generator {
             result.setInheritedEnrichers(new ArrayList<>());
         }
 
-        notNull(result.getPredefinedEnrichers(), list ->
+        Tools.with(result.getPredefinedEnrichers(), list ->
                 list.forEach(e -> checkEnrichers(result.getEnrichers(), e)));
 
-        notNull(result.getPredefinedInheritedEnrichers(), list ->
+        Tools.with(result.getPredefinedInheritedEnrichers(), list ->
                 list.forEach(e -> checkEnrichers(result.getInheritedEnrichers(), e)));
 
         return result;

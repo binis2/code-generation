@@ -35,6 +35,7 @@ import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.tools.Holder;
+import net.binis.codegen.tools.Tools;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.annotation.Annotation;
@@ -51,7 +52,7 @@ import static net.binis.codegen.generation.core.EnrichHelpers.block;
 import static net.binis.codegen.generation.core.Generator.generateCodeForClass;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Reflection.loadClass;
-import static net.binis.codegen.tools.Tools.notNull;
+import static net.binis.codegen.tools.Tools.with;
 import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
@@ -59,8 +60,8 @@ public abstract class CompiledPrototypesHandler {
 
     public static boolean handleCompiledPrototype(String compiledPrototype) {
         var result = Holder.of(false);
-        notNull(loadClass(compiledPrototype), c ->
-                notNull(c.getAnnotation(CodePrototype.class), ann -> {
+        Tools.with(loadClass(compiledPrototype), c ->
+                Tools.with(c.getAnnotation(CodePrototype.class), ann -> {
                     var declaration = new CompilationUnit().setPackageDeclaration(c.getPackageName()).addClass(c.getSimpleName()).setInterface(true);
 
                     for (var p : c.getTypeParameters()) {
@@ -93,8 +94,8 @@ public abstract class CompiledPrototypesHandler {
 
     public static boolean handleCompiledEnumPrototype(String compiledPrototype) {
         var result = Holder.of(false);
-        notNull(loadClass(compiledPrototype), c ->
-                notNull(c.getAnnotation(EnumPrototype.class), ann -> {
+        Tools.with(loadClass(compiledPrototype), c ->
+                Tools.with(c.getAnnotation(EnumPrototype.class), ann -> {
                     if (c.isEnum()) {
                         var declaration = new CompilationUnit().setPackageDeclaration(c.getPackageName()).addEnum(c.getSimpleName());
 
@@ -230,7 +231,7 @@ public abstract class CompiledPrototypesHandler {
     private static void checkBaseClassForEnrichers(Class<?> cls, List<PrototypeEnricher> list) {
         for (var intf : cls.getInterfaces()) {
             //TODO: Handle predefined enrichers
-            notNull(intf.getAnnotation(CodePrototype.class), ann ->
+            Tools.with(intf.getAnnotation(CodePrototype.class), ann ->
                     checkEnrichers(list, ann.inheritedEnrichers()));
             checkBaseClassForEnrichers(intf, list);
         }

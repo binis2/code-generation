@@ -20,6 +20,8 @@ package net.binis.codegen.tools;
  * #L%
  */
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -28,6 +30,7 @@ import java.util.function.Supplier;
 
 import static java.util.Objects.nonNull;
 
+@Slf4j
 public class Tools {
 
     private Tools() {
@@ -48,12 +51,6 @@ public class Tools {
 
     public static <T, R> T nullCheck(R object, Function<R, T> func, T defaultObject) {
         return nonNull(object) ? func.apply(object) : defaultObject;
-    }
-
-    public static <R> void notNull(R object, Consumer<R> consumer) {
-        if (nonNull(object)) {
-            consumer.accept(object);
-        }
     }
 
     public static <R> void with(R object, Consumer<R> consumer) {
@@ -100,6 +97,30 @@ public class Tools {
     public static void condition(boolean condition, Runnable task) {
         if (condition) {
             task.run();
+        }
+    }
+
+    public static void tryCatch(Runnable task, Consumer<Throwable> onException) {
+        try {
+            task.run();
+        } catch (Throwable e) {
+            onException.accept(e);
+        }
+    }
+
+    public static void tryCatch(Runnable task) {
+        try {
+            task.run();
+        } catch (Throwable e) {
+            //Do nothing
+        }
+    }
+
+    public static void tryCatchLog(Runnable task) {
+        try {
+            task.run();
+        } catch (Throwable e) {
+            log.error("Error executing task!", e);
         }
     }
 
