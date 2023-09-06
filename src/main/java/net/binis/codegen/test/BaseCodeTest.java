@@ -181,9 +181,7 @@ public abstract class BaseCodeTest {
         fileManager.close();
 
         if (loadAll) {
-            objects.forEach((k, o) ->
-                    ifNull(loader.findClass(k), () ->
-                            loader.define(k, o)));
+            loadObjects(loader, objects);
         } else {
             files.forEach(f ->
                     with(objects.get(f.getKey()), o ->
@@ -202,6 +200,25 @@ public abstract class BaseCodeTest {
         }
 
         return true;
+    }
+
+    protected void loadObjects(TestClassLoader loader, Map<String, JavaByteObject> objects) {
+        var lastFailed = 0;
+        var failed = 0;
+        do {
+            lastFailed = failed;
+            failed = 0;
+            for (var pair : objects.entrySet()) {
+                if (isNull(loader.findClass(pair.getKey()))) {
+                    try {
+                        loader.define(pair.getKey(), pair.getValue());
+                    } catch (NoClassDefFoundError e) {
+                        failed++;
+                    }
+                }
+            }
+        } while (failed > 0 || failed != lastFailed);
+
     }
 
     protected void defineObjects(TestClassLoader loader, Map<String, JavaByteObject> objects) {
