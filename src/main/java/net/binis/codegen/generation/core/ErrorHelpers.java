@@ -29,7 +29,7 @@ import static net.binis.codegen.tools.Tools.in;
 public class ErrorHelpers {
 
     public static String calculatePrototypeAnnotationError(ClassOrInterfaceDeclaration type, PrototypeData properties) {
-        if (in(properties.getStrategy(), PROTOTYPE, IMPLEMENTATION, PLAIN) && !type.isInterface()) {
+        if (in(properties.getStrategy(), PROTOTYPE, PLAIN) && !type.isInterface()) {
             return "@" + properties.getPrototypeAnnotation().getSimpleName() + " is allowed only on interfaces!";
         }
         return null;
