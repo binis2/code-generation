@@ -1,4 +1,12 @@
 # Change Log
+**09-09-2023** ver. 1.1.7
+* Generator: (**Breaking change**) Replace Tools.notNull() with Tools.with() to remove duplicated routines.
+* Generator: Fixed handling of nested prototypes with IMPLEMENTATION strategy.
+* Generator: Fixed false positive compilation error when using IMPLEMENTATION strategy.
+* Test: Updated loader to load all compiled objects.
+* IDEA Plugin: Added check if CodeGen is used in project before enabling the plugin functionalities.
+* IDEA Plugin: Fixed false positive errors when using IMPLEMENTATION strategy.
+
 **03-09-2023** ver. 1.1.6
 * Core: Extended BaseStringInterpolator to hold information about the segments expression splits into.
 * Generator: Extended enricher helper functions.
