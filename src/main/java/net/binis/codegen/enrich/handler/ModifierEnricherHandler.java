@@ -43,6 +43,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.generation.core.types.ModifierType;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
@@ -293,7 +294,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
 
     private String handleBaseModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         var baseModifier = description.getProperties().getBaseModifierClass();
-        if (isNull(baseModifier)) {
+        if (isNull(baseModifier) || StringUtils.isBlank(baseModifier) || "void".equals(baseModifier)) {
             if (!description.getProperties().isBase()) {
                 description.getInterface().findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.modifier.BaseModifier"));
             }

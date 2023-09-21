@@ -594,11 +594,11 @@ public class Structures {
             defaultProperties.put(ann.getCanonicalName(), () -> {
                 var builder = defaultBuilder();
 
+                readAnnotation(null, ann, builder, Structures::annotationDefaultValue);
+
                 for (var a : ann.getAnnotations()) {
                     checkAnnotation(a, a.annotationType(), builder, Structures::readAnnotationValue);
                 }
-
-                readAnnotation(null, ann, builder, Structures::annotationDefaultValue);
 
                 return builder;
             });
@@ -707,7 +707,7 @@ public class Structures {
                         builder.base(pair.getValue().asBooleanLiteralExpr().getValue());
                     case "baseModifierClass" -> {
                         var value = pair.getValue().asClassExpr().getTypeAsString();
-                        if (StringUtils.isNotBlank(value)) {
+                        if (StringUtils.isNotBlank(value) && !"void".equals(value)) {
                             builder.baseModifierClass(value);
                         }
                     }
@@ -781,6 +781,13 @@ public class Structures {
         return result;
     }
 
+    public static PrototypeData readAnnotation(Annotation ann) {
+        var builder = defaultBuilder();
+        readAnnotation(null, ann.annotationType(), builder, Structures::annotationDefaultValue);
+        checkAnnotation(ann, ann.annotationType(), builder, Structures::readAnnotationValue);
+        return builder.build();
+    }
+
     @SuppressWarnings("unchecked")
     private static void readAnnotation(Annotation ann, Class<?> cls, PrototypeDataHandler.PrototypeDataHandlerBuilder builder, BiFunction<Method, Annotation, Object> func) {
         for (var method : cls.getDeclaredMethods()) {
@@ -828,10 +835,10 @@ public class Structures {
         if (value.isArrayInitializerExpr()) {
             value.asArrayInitializerExpr().getValues().forEach(v ->
                     with(handleClassExpression(v), r ->
-                            with(loadClass(r), c -> result.add(c))));
+                            with(loadClass(r), result::add)));
         } else if (value.isClassExpr()) {
             with(handleClassExpression(value), r ->
-                    with(loadClass(r), c -> result.add(c)));
+                    with(loadClass(r), result::add));
         } else {
             log.warn("Class expression not implemented: {}", value.getClass().getCanonicalName());
         }
@@ -840,7 +847,8 @@ public class Structures {
 
     private static String handleClassExpression(Expression value) {
         if (value.isClassExpr()) {
-            return Helpers.getExternalClassNameIfExists(value.findCompilationUnit().get(), value.asClassExpr().getType().toString());
+            var cls = Helpers.getExternalClassNameIfExists(value.findCompilationUnit().get(), value.asClassExpr().getType().toString());
+            return "void".equals(cls) ? null : cls;
         }
         log.warn("Class expression not implemented: {}", value.getClass().getCanonicalName());
         return null;

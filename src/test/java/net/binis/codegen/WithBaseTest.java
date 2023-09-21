@@ -56,6 +56,11 @@ class WithBaseTest extends BaseCodeGenTest {
                 "base/baseTest3-0.java", "base/baseTest3-1.java");
     }
 
+    @Test
+    void withCompiledBase() {
+        testSingle("base/base3.java", "base/base3-0.java", "base/base3-1.java", 2);
+    }
+
 
 
 }

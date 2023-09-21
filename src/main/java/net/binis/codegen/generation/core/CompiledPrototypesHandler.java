@@ -53,7 +53,6 @@ import static net.binis.codegen.generation.core.Generator.generateCodeForClass;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.with;
-import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
 public abstract class CompiledPrototypesHandler {
@@ -61,7 +60,7 @@ public abstract class CompiledPrototypesHandler {
     public static boolean handleCompiledPrototype(String compiledPrototype) {
         var result = Holder.of(false);
         Tools.with(loadClass(compiledPrototype), c ->
-                Tools.with(c.getAnnotation(CodePrototype.class), ann -> {
+                Generator.getCodeAnnotation(c).ifPresent(ann -> {
                     var declaration = new CompilationUnit().setPackageDeclaration(c.getPackageName()).addClass(c.getSimpleName()).setInterface(true);
 
                     for (var p : c.getTypeParameters()) {
@@ -132,49 +131,51 @@ public abstract class CompiledPrototypesHandler {
         }
     }
 
-    private static Structures.PrototypeDataHandler handleProperties(ClassOrInterfaceDeclaration type, Class<?> cls, CodePrototype ann) {
+    @SuppressWarnings("unchecked")
+    private static Structures.PrototypeDataHandler handleProperties(ClassOrInterfaceDeclaration type, Class<?> cls, Annotation ann) {
         var iName = Holder.of(defaultInterfaceName(type));
         var cName = defaultClassName(type);
+        var props = Structures.readAnnotation(ann);
 
         var builder = Structures.builder(cls.getSimpleName())
                 .classPackage(defaultClassPackage(type))
                 .interfacePackage(defaultInterfacePackage(type));
 
-        if (StringUtils.isNotBlank((ann.name()))) {
-            var intf = ann.name().replace("Entity", "");
-            builder.name(ann.name())
-                    .className(ann.name())
+        if (StringUtils.isNotBlank((props.getName()))) {
+            var intf = props.getName().replace("Entity", "");
+            builder.name(props.getName())
+                    .className(props.getName())
                     .interfaceName(intf)
                     .longModifierName(intf + "." + Constants.MODIFIER_INTERFACE_NAME);
         }
 
-        if (StringUtils.isNotBlank(ann.interfaceName())) {
-            iName.set(ann.interfaceName());
+        if (StringUtils.isNotBlank(props.getInterfaceName())) {
+            iName.set(props.getInterfaceName());
         }
 
-        if (StringUtils.isNotBlank(ann.implementationPackage())) {
-            builder.classPackage(ann.implementationPackage()).classPackageSet(true);
+        if (StringUtils.isNotBlank(props.getClassPackage())) {
+            builder.classPackage(props.getClassPackage()).classPackageSet(true);
         }
 
-        if (nonNull(ann.strategy())) {
-            builder.strategy(ann.strategy());
+        if (nonNull(props.getStrategy())) {
+            builder.strategy(props.getStrategy());
         }
 
-        if (StringUtils.isNotBlank(ann.basePath())) {
-            builder.basePath(ann.basePath());
+        if (StringUtils.isNotBlank(props.getBasePath())) {
+            builder.basePath(props.getBasePath());
         }
 
-        builder.base(ann.base())
-                .classGetters(ann.classGetters())
-                .classSetters(ann.classSetters())
-                .interfaceSetters(ann.interfaceSetters())
-                .generateConstructor(ann.generateConstructor())
-                .generateInterface(ann.generateInterface())
-                .generateImplementation(ann.generateImplementation())
-                .mixInClass(nonNull(ann.mixInClass()) && !void.class.equals(ann.mixInClass()) ? ann.mixInClass().getCanonicalName() : null)
-                .baseModifierClass(nonNull(ann.baseModifierClass()) && !void.class.equals(ann.baseModifierClass()) ? ann.baseModifierClass().getCanonicalName() : null)
-                .enrichers(checkEnrichers(ann.enrichers()))
-                .inheritedEnrichers(checkEnrichers(ann.inheritedEnrichers()));
+        builder.base(props.isBase())
+                .classGetters(props.isClassGetters())
+                .classSetters(props.isClassSetters())
+                .interfaceSetters(props.isInterfaceSetters())
+                .generateConstructor(props.isGenerateConstructor())
+                .generateInterface(props.isGenerateInterface())
+                .generateImplementation(props.isGenerateImplementation())
+                .mixInClass(props.getMixInClass())
+                .baseModifierClass(props.getBaseModifierClass())
+                .predefinedEnrichers(((Structures.PrototypeDataHandler) props).getPredefinedEnrichers())
+                .predefinedInheritedEnrichers(((Structures.PrototypeDataHandler) props).getPredefinedInheritedEnrichers());
 
         if (cName.equals(iName.get())) {
             cName = iName.get() + "Impl";
@@ -194,29 +195,34 @@ public abstract class CompiledPrototypesHandler {
 
         checkBaseClassForEnrichers(cls, result.getEnrichers());
 
-        //TODO: Handle predefined enrichers
+        Tools.with(result.getPredefinedEnrichers(), list ->
+                list.forEach(e -> checkEnrichers(result.getEnrichers(), e)));
+
+        Tools.with(result.getPredefinedInheritedEnrichers(), list ->
+                list.forEach(e -> checkEnrichers(result.getInheritedEnrichers(), e)));
 
         return result;
 
     }
 
-    private static Structures.PrototypeDataHandler handleProperties(EnumDeclaration type, Class<?> cls, EnumPrototype ann) {
+    private static Structures.PrototypeDataHandler handleProperties(EnumDeclaration type, Class<?> cls, Annotation ann) {
         var iName = Holder.of(defaultInterfaceName(type));
         var cName = defaultClassName(type);
+        var props = Structures.readAnnotation(ann);
 
         var builder = Structures.builder(cls.getSimpleName())
                 .classPackage(defaultClassPackage(type))
                 .interfacePackage(defaultInterfacePackage(type));
 
-        if (StringUtils.isNotBlank((ann.name()))) {
-            var intf = ann.name().replace("Entity", "");
-            builder.name(ann.name())
-                    .className(ann.name())
+        if (StringUtils.isNotBlank((props.getName()))) {
+            var intf = props.getName().replace("Entity", "");
+            builder.name(props.getName())
+                    .className(props.getName())
                     .interfaceName(intf)
                     .longModifierName(intf + "." + Constants.MODIFIER_INTERFACE_NAME);
         }
 
-        builder.mixInClass(nonNull(ann.mixIn()) && !void.class.equals(ann.mixIn()) ? ann.mixIn().getCanonicalName() : null);
+        builder.mixInClass(props.getMixInClass());
 
         if (cName.equals(iName.get())) {
             cName = iName.get() + "Impl";
@@ -243,7 +249,7 @@ public abstract class CompiledPrototypesHandler {
         return list;
     }
 
-    private static List<PrototypeEnricher> checkEnrichers(List<PrototypeEnricher> list, Class<? extends Enricher>[] enrichers) {
+    private static List<PrototypeEnricher> checkEnrichers(List<PrototypeEnricher> list, Class<? extends Enricher>... enrichers) {
         Arrays.stream(enrichers)
                 .map(CodeFactory::create)
                 .filter(Objects::nonNull)

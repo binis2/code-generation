@@ -22,6 +22,7 @@ package net.binis.codegen.test;
 
 import javax.tools.SimpleJavaFileObject;
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -37,6 +38,7 @@ public class JavaByteObject extends SimpleJavaFileObject {
 
     @Override
     public OutputStream openOutputStream() throws IOException {
+        //return new FileOutputStream("c:\\temp\\test.class");
         return outputStream;
     }
 

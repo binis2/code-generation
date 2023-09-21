@@ -57,6 +57,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
@@ -582,6 +583,20 @@ public class Generator {
         return Optional.empty();
     }
 
+    public static Optional<Annotation> getCodeAnnotation(Class cls) {
+        for (var name : Structures.defaultProperties.keySet()) {
+            var aCls = loadClass(name);
+            if (nonNull(aCls)) {
+                var ann = cls.getAnnotation(aCls);
+                if (nonNull(ann)) {
+                    return Optional.of(ann);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+
     private static void cleanUpInterface(Class<?> cls, ClassOrInterfaceDeclaration intf) {
         var toRemove = new ArrayList<MethodDeclaration>();
 
@@ -875,7 +890,7 @@ public class Generator {
                         break;
                     case "baseModifierClass":
                         value = pair.getValue().asClassExpr().getTypeAsString();
-                        if (StringUtils.isNotBlank(value)) {
+                        if (StringUtils.isNotBlank(value) && !"void".equals(value)) {
                             builder.baseModifierClass(value);
                         }
                         break;
@@ -949,11 +964,11 @@ public class Generator {
 
         var parent = prototype.getParentNode().get();
         if (isNull(result.getClassPackage()) && parent instanceof ClassOrInterfaceDeclaration type) {
-            result.setClassPackage(defaultClassPackage((ClassOrInterfaceDeclaration) type));
+            result.setClassPackage(defaultClassPackage(type));
         }
 
         if (isNull(result.getInterfacePackage()) && parent instanceof ClassOrInterfaceDeclaration type) {
-            result.setInterfacePackage(defaultInterfacePackage((ClassOrInterfaceDeclaration) type));
+            result.setInterfacePackage(defaultInterfacePackage(type));
         }
 
         if (isNull(result.getEnrichers())) {
@@ -1024,7 +1039,7 @@ public class Generator {
 
 
     @SuppressWarnings("unchecked")
-    private static void checkEnrichers(List<PrototypeEnricher> list, Class enricher) {
+    public static void checkEnrichers(List<PrototypeEnricher> list, Class enricher) {
         if (list.stream().noneMatch(e -> enricher.isAssignableFrom(e.getClass()))) {
             var e = CodeFactory.create(enricher);
             if (e instanceof PrototypeEnricher en) {
