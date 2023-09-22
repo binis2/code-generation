@@ -20,7 +20,6 @@ package net.binis.codegen.enrich.handler;
  * #L%
  */
 
-import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.type.PrimitiveType;
 import net.binis.codegen.enrich.HibernateEnricher;

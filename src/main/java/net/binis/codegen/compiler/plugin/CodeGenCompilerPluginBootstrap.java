@@ -32,7 +32,6 @@ public class CodeGenCompilerPluginBootstrap implements Plugin {
     private Plugin _delegate;
 
     public CodeGenCompilerPluginBootstrap() {
-        log.info("Binis CodeGen plugin started...");
         try {
             var util = Reflection.loadClass("net.binis.codegen.utils.CodeGenAnnotationProcessorUtils");
             var method = Reflection.findMethod("addOpensForCodeGen", util, boolean.class);
@@ -40,6 +39,7 @@ public class CodeGenCompilerPluginBootstrap implements Plugin {
 
             var cls = Reflection.loadClass("net.binis.codegen.compiler.plugin.CodeGenCompilerPlugin");
             _delegate = (Plugin) Reflection.instantiate(cls);
+            log.info("Binis CodeGen plugin loaded...");
         } catch (Exception e) {
             _delegate = null;
         }
