@@ -1,4 +1,15 @@
 # Change Log
+**24-09-2023** ver. 1.1.8
+* Core: Extended mapper functionality to mark mappings as value producers.
+* Core: Better mapper handling for null values.
+* Core: Added default construction for Map, Set and List.
+* Core: Added mapping for Object -> Map.
+* Core: Added support for registering foreign factories.
+* Generation: Fixed handling of compiled prototypes with custom annotations.
+* Spring Configuration: Registered ApplicationContext as foreign factory.
+* Hibernate: Updated to support Hibenrate 6.2
+* ALL: Updated dependencies. 
+
 **09-09-2023** ver. 1.1.7
 * Generator: (**Breaking change**) Replace Tools.notNull() with Tools.with() to remove duplicated routines.
 * Generator: Fixed handling of nested prototypes with IMPLEMENTATION strategy.

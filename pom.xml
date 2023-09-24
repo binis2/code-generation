@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>dev.binis</groupId>
     <artifactId>code-generator</artifactId>
-    <version>1.1.7</version>
+    <version>1.1.8</version>
     <name>code-generator</name>
     <description>Binis Code Generation</description>
     <url>https://github.com/binis2/code-generation</url>
@@ -65,12 +65,12 @@
         <dependency>
             <groupId>dev.binis</groupId>
             <artifactId>code-generator-core</artifactId>
-            <version>1.1.7</version>
+            <version>1.1.8</version>
         </dependency>
         <dependency>
             <groupId>dev.binis</groupId>
             <artifactId>code-generator-spring</artifactId>
-            <version>1.1.7</version>
+            <version>1.1.8</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -97,7 +97,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>2.0.7</version>
+            <version>2.0.9</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -224,7 +224,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.5.0</version>
+                    <version>3.6.0</version>
                     <executions>
                         <execution>
                             <id>attach-javadocs</id>
@@ -240,7 +240,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.4.0</version>
+                <version>3.4.1</version>
                 <executions>
                     <execution>
                         <id>enforce-maven</id>
@@ -308,7 +308,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
-                <version>2.16.0</version>
+                <version>2.16.1</version>
                 <reportSets>
                     <reportSet>
                         <reports>
