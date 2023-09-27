@@ -1,4 +1,4 @@
-package net.binis.codegen.enrich.handler;
+package net.binis.codegen.enrich.handler.constructor;
 
 /*-
  * #%L
@@ -24,30 +24,29 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.*;
 import net.binis.codegen.compiler.utils.ElementMethodUtils;
 import net.binis.codegen.compiler.utils.ElementUtils;
-import net.binis.codegen.enrich.InjectionEnricher;
+import net.binis.codegen.enrich.constructor.RequiredArgsConstructorEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.interfaces.ElementDescription;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static java.util.Objects.isNull;
 import static net.binis.codegen.compiler.CGFlags.PUBLIC;
 import static net.binis.codegen.compiler.utils.ElementUtils.getDeclaration;
 
 @Slf4j
-public class InjectionEnricherHandler extends BaseEnricher implements InjectionEnricher {
+public abstract class BaseArgsConstructorEnricherHandler extends BaseEnricher {
 
     @Override
     public void enrichElement(ElementDescription description) {
         var declaration = getDeclaration(description.getElement());
         if (declaration instanceof CGClassDeclaration cls && !cls.isInterface() && !cls.isEnum() && !cls.isAnnotation()) {
-            var fields = cls.getDefs().stream()
+            var fields = applyFieldsFilter(cls.getDefs().stream()
                     .filter(CGVariableDecl.class::isInstance)
-                    .map(CGVariableDecl.class::cast)
-                    .filter(CGVariableDecl::isFinal)
-                    .filter(v -> !v.isStatic())
-                    .filter(v -> isNull(v.getInitializer()))
+                    .map(CGVariableDecl.class::cast))
                     .toList();
+
             if (!fields.isEmpty() && cls.getDefs().stream()
                     .filter(CGMethodDeclaration.class::isInstance)
                     .map(CGMethodDeclaration.class::cast)
@@ -57,9 +56,13 @@ public class InjectionEnricherHandler extends BaseEnricher implements InjectionE
                 createConstructor(cls, fields);
             }
         } else {
-            note("Injection is applicable only for classes.", description.getElement());
+            note(getName() + "ArgsConstructor is applicable only for classes.", description.getElement());
         }
     }
+
+    protected abstract Stream<CGVariableDecl> applyFieldsFilter(Stream<CGVariableDecl> stream);
+
+    protected abstract String getName();
 
     protected void createConstructor(CGClassDeclaration cls, List<CGVariableDecl> fields) {
         var maker = TreeMaker.create();

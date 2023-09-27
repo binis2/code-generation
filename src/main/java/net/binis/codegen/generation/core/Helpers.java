@@ -71,7 +71,8 @@ import static net.binis.codegen.generation.core.EnrichHelpers.annotation;
 import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.tools.Reflection.instantiate;
 import static net.binis.codegen.tools.Reflection.loadClass;
-import static net.binis.codegen.tools.Tools.*;
+import static net.binis.codegen.tools.Tools.nullCheck;
+import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
 public class Helpers {
@@ -857,7 +858,6 @@ public class Helpers {
     public static void registerKnownEnrichers() {
         registerEnricher(AsEnricherHandler.class);
         registerEnricher(LogEnricherHandler.class);
-        registerEnricher(InjectionEnricherHandler.class);
         registerEnricher(CloneEnricherHandler.class);
         registerEnricher(CreatorEnricherHandler.class);
         registerEnricher(CreatorModifierEnricherHandler.class);

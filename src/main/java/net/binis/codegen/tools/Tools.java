@@ -183,6 +183,14 @@ public class Tools {
         }
     }
 
+    public static <T> T as(Object obj, Class<T> intf) {
+        if (nonNull(obj) && intf.isAssignableFrom(obj.getClass())) {
+            return intf.cast(obj);
+        }
+
+        return null;
+    }
+
     public static <T, R> R asRes(Object obj, Class<T> intf, Function<T, R> func) {
         if (nonNull(obj) && intf.isAssignableFrom(obj.getClass())) {
             return func.apply(intf.cast(obj));
@@ -200,7 +208,6 @@ public class Tools {
         run.run();
         return System.currentTimeMillis() - start;
     }
-
 
 }
 
