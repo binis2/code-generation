@@ -53,5 +53,14 @@ public abstract class BaseCodeGenElementTest extends BaseCodeTest {
         return loader.findClass(cls);
     }
 
+    public TestClassLoader testMulti(String... paths) {
+        var list = newList();
+        for (var path : paths) {
+            load(list, path);
+        }
+        TestClassLoader loader = new TestClassLoader();
+        assertTrue(compile(loader, list, null, true,"-XprintProcessorInfo"));
+        return loader;
+    }
 
 }
