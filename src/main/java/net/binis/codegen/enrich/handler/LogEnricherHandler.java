@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import static java.lang.reflect.Modifier.*;
 import static net.binis.codegen.compiler.utils.ElementUtils.getDeclaration;
 
-@Slf4j
 public class LogEnricherHandler extends BaseEnricher implements LogEnricher {
 
     @Override

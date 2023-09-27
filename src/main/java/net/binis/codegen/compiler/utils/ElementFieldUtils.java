@@ -31,7 +31,7 @@ public class ElementFieldUtils extends ElementUtils {
     public static CGVariableDecl addField(Element element, String name, Class<?> type, long flags, CGExpression init) {
         var maker = TreeMaker.create();
         var declaration = getDeclaration(element, maker);
-        var def = maker.VarDef(CGVarSymbol.create(flags, CGName.create(name), CGSymtab.type(type.getCanonicalName()), declaration.getSymbol()), nonNull(init) ? init : null);
+        var def = maker.VarDef(maker.Modifiers(flags) , CGName.create(name), chainDotsString(type.getCanonicalName()), nonNull(init) ? init : null);
         declaration.getDefs().append(def);
         return def;
     }
