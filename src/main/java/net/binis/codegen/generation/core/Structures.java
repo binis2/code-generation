@@ -141,6 +141,27 @@ public class Structures {
                 custom.put(name, value);
                 return this;
             }
+
+            public PrototypeDataHandlerBuilder predefinedEnrichers(List<Class<? extends Enricher>> predefinedEnrichers) {
+                if (isNull(this.predefinedEnrichers)) {
+                    this.predefinedEnrichers = new ArrayList<>();
+                    this.predefinedEnrichers.addAll(predefinedEnrichers);
+                } else {
+                    predefinedEnrichers.stream().filter(e -> !this.predefinedEnrichers.contains(e)).forEach(this.predefinedEnrichers::add);
+                }
+                return this;
+            }
+
+            public PrototypeDataHandlerBuilder predefinedInheritedEnrichers(List<Class<? extends Enricher>> predefinedInheritedEnrichers) {
+                if (isNull(this.predefinedInheritedEnrichers)) {
+                    this.predefinedInheritedEnrichers = new ArrayList<>();
+                    this.predefinedInheritedEnrichers.addAll(predefinedInheritedEnrichers);
+                } else {
+                    predefinedInheritedEnrichers.stream().filter(e -> !this.predefinedInheritedEnrichers.contains(e)).forEach(this.predefinedInheritedEnrichers::add);
+                }
+                return this;
+            }
+
         }
 
     }
@@ -594,11 +615,12 @@ public class Structures {
             defaultProperties.put(ann.getCanonicalName(), () -> {
                 var builder = defaultBuilder();
 
-                readAnnotation(null, ann, builder, Structures::annotationDefaultValue);
-
                 for (var a : ann.getAnnotations()) {
                     checkAnnotation(a, a.annotationType(), builder, Structures::readAnnotationValue);
                 }
+
+                readAnnotation(null, ann, builder, Structures::annotationDefaultValue);
+
 
                 return builder;
             });
@@ -771,7 +793,11 @@ public class Structures {
         } else {
             if (!checkedAnnotations.contains(cls)) {
                 for (var a : cls.getAnnotations()) {
-                    result |= checkAnnotation(a, a.annotationType(), builder, func);
+                    var isProto = checkAnnotation(a, a.annotationType(), builder, func);
+                    if (isProto && isNull(cls.getAnnotation(CodePrototypeTemplate.class))) {
+                        readAnnotation(ann, cls, builder, Structures::readAnnotationValue);
+                    }
+                    result |= isProto;
                 }
                 if (!result) {
                     checkedAnnotations.add(cls);
