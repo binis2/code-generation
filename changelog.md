@@ -1,4 +1,13 @@
 # Change Log
+**28-09-2023** ver. 1.1.9
+* Core: Better handling of @Default creation.
+* Generation: Added constructor enrichers to replicate Lombok functionality into enrichers.
+* Generation: Added @NotInitializedArgsConstructorEnricher.
+* Generation: Prototype inheritance adds inherited enrichers to the list as well.
+* Generation: Fixed compiler crash adding fields routine when used multiple times.
+* Test: Added testing utility function to test multiple element augmented classes at once.
+* IDEA Plugin: Fixed error suppression for nested classes.
+
 **24-09-2023** ver. 1.1.8
 * Core: Extended mapper functionality to mark mappings as value producers.
 * Core: Better mapper handling for null values.
