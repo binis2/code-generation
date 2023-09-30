@@ -29,12 +29,10 @@ import net.binis.codegen.generation.core.Generator;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.objects.Pair;
-import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-import javax.tools.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.nio.file.Files;
@@ -44,16 +42,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.generation.core.CompileHelper.createFileManager;
-import static net.binis.codegen.generation.core.CompileHelper.getCompilationUnits;
 import static net.binis.codegen.generation.core.Helpers.classExists;
 import static net.binis.codegen.generation.core.Helpers.lookup;
-import static net.binis.codegen.tools.Tools.ifNull;
 import static net.binis.codegen.tools.Tools.with;
 import static org.junit.jupiter.api.Assertions.*;
 

@@ -25,8 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.lang.model.element.Element;
 
-import java.util.List;
-
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.*;

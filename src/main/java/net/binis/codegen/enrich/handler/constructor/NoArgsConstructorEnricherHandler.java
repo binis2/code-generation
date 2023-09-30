@@ -25,8 +25,6 @@ import net.binis.codegen.enrich.constructor.RequiredArgsConstructorEnricher;
 
 import java.util.stream.Stream;
 
-import static java.util.Objects.isNull;
-
 public class NoArgsConstructorEnricherHandler extends BaseArgsConstructorEnricherHandler implements RequiredArgsConstructorEnricher {
 
 

@@ -60,7 +60,6 @@ import static net.binis.codegen.generation.core.EnrichHelpers.*;
 import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Tools.with;
-import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
 public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnricher {

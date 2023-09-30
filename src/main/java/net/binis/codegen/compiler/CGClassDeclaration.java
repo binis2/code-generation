@@ -24,7 +24,6 @@ import com.sun.source.util.Trees;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.lang.model.element.Element;
-
 import java.lang.reflect.Modifier;
 
 import static net.binis.codegen.tools.Reflection.getStaticFieldValue;
@@ -36,6 +35,15 @@ public class CGClassDeclaration extends CGDeclaration {
     protected final int ENUM = getStaticFieldValue(Modifier.class, "ENUM");
     protected final int ANNOTATION = getStaticFieldValue(Modifier.class, "ANNOTATION");
 
+    public static Class theClass() {
+        return loadClass("com.sun.tools.javac.tree.JCTree$JCClassDecl");
+    }
+
+    protected CGClassDeclaration(Object instance) {
+        super(instance);
+    }
+
+
     public static CGClassDeclaration create(Trees trees, Element element) {
         return new CGClassDeclaration(trees, element);
     }
@@ -46,7 +54,7 @@ public class CGClassDeclaration extends CGDeclaration {
 
     @Override
     protected void init() {
-        cls = loadClass("com.sun.tools.javac.tree.JCTree$JCClassDecl");
+        cls = CGClassDeclaration.theClass();
     }
 
     public boolean isInterface() {

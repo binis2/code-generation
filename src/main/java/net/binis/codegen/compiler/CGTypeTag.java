@@ -26,7 +26,7 @@ import net.binis.codegen.compiler.base.JavaCompilerObject;
 import java.util.HashMap;
 import java.util.Map;
 
-import static net.binis.codegen.tools.Reflection.*;
+import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
 public class CGTypeTag extends JavaCompilerObject {

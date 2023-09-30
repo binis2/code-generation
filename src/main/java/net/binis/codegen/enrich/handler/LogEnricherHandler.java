@@ -20,7 +20,6 @@ package net.binis.codegen.enrich.handler;
  * #L%
  */
 
-import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.CGClassDeclaration;
 import net.binis.codegen.compiler.CGVariableDecl;
 import net.binis.codegen.compiler.utils.ElementFieldUtils;
@@ -29,7 +28,6 @@ import net.binis.codegen.compiler.utils.ElementUtils;
 import net.binis.codegen.enrich.LogEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.interfaces.ElementDescription;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

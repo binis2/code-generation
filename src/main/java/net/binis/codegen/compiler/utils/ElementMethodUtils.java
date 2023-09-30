@@ -20,14 +20,11 @@ package net.binis.codegen.compiler.utils;
  * #L%
  */
 
-import com.github.javaparser.ast.Node;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.*;
 
 import javax.lang.model.element.Element;
 import java.util.List;
-
-import static java.util.Objects.nonNull;
 
 @Slf4j
 public class ElementMethodUtils extends ElementUtils {
@@ -49,7 +46,14 @@ public class ElementMethodUtils extends ElementUtils {
     public static CGMethodDeclaration addConstructor(CGClassDeclaration cls, long flags, List<CGVariableDecl> params) {
         var body = createBlock(createStatement(createMethodInvocation("super")));
         var maker = TreeMaker.create();
+
         var def = maker.MethodDef(maker.Modifiers(flags), CGName.create("<init>"), null, CGList.nil(CGTypeParameter.class), CGList.from(params, CGVariableDecl.class), CGList.nil(CGExpression.class), body, null);
+
+        var last = cls.getDefs().last();
+        var pos = cls.getPos();//nonNull(last) ? CGTreeInfo.endPos(last) : CGTreeInfo.endPos(cls);
+        def.setPos(pos);
+        params.forEach(param -> param.setPos(pos));
+
         cls.getDefs().append(def);
         return def;
     }

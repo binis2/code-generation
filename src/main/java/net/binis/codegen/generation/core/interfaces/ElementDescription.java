@@ -22,7 +22,6 @@ package net.binis.codegen.generation.core.interfaces;
 
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 
 import javax.lang.model.element.Element;

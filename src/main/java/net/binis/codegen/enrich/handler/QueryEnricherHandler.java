@@ -55,7 +55,6 @@ import static net.binis.codegen.generation.core.EnrichHelpers.block;
 import static net.binis.codegen.generation.core.EnrichHelpers.expression;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Tools.with;
-import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
 public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher {

@@ -22,6 +22,7 @@ package net.binis.codegen.compiler.base;
 
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.CGName;
+import net.binis.codegen.compiler.CGType;
 import net.binis.codegen.compiler.JavacElements;
 import net.binis.codegen.factory.CodeFactory;
 
@@ -30,8 +31,8 @@ import javax.annotation.processing.ProcessingEnvironment;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Helpers.lookup;
-import static net.binis.codegen.tools.Reflection.invoke;
-import static net.binis.codegen.tools.Reflection.loadClass;
+import static net.binis.codegen.tools.Reflection.*;
+import static net.binis.codegen.tools.Tools.withRes;
 
 @Slf4j
 public abstract class JavaCompilerObject {
@@ -62,6 +63,18 @@ public abstract class JavaCompilerObject {
 
     public Object getContext() {
         return context;
+    }
+
+    public CGType getType() {
+        return withRes(getFieldValue(instance, "type"), CGType::new);
+    }
+
+    public int getPos() {
+        return getFieldValue(instance, "pos");
+    }
+
+    public void setPos(int pos) {
+        setFieldValue(instance, "pos", pos);
     }
 
     public CGName toName(String name) {

@@ -20,6 +20,7 @@ package net.binis.codegen.compiler.utils;
  * #L%
  */
 
+import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.*;
 import net.binis.codegen.compiler.base.JavaCompilerObject;
 import net.binis.codegen.exception.GenericCodeGenException;
@@ -32,6 +33,7 @@ import java.util.Map;
 
 import static net.binis.codegen.tools.Reflection.invokeStatic;
 
+@Slf4j
 public class ElementUtils {
 
     public static Map<String, Class<? extends JavaCompilerObject>> CLASS_MAP = initClassMap();
@@ -195,6 +197,7 @@ public class ElementUtils {
         var result = new HashMap<String, Class<? extends JavaCompilerObject>>();
         registerClass(result, CGVariableDecl.class);
         registerClass(result, CGMethodDeclaration.class);
+        registerClass(result, CGClassDeclaration.class);
         return result;
     }
 
@@ -204,5 +207,63 @@ public class ElementUtils {
             CodeFactory.registerType(cls, params -> CodeFactory.create(registerClass, params));
         }
     }
+
+    public static CGExpression cloneType(TreeMaker maker, JavaCompilerObject in) {
+        if (in == null) return null;
+
+        if (in.is(CGPrimitiveTypeTree.theClass())) {
+            return maker.TypeIdent(new CGPrimitiveTypeTree(in.getInstance()).getTypeTag());
+        }
+
+        if (in.is(CGIdent.theClass())) {
+            return maker.Ident(CGName.create(new CGIdent(in.getInstance()).getName()));
+        }
+
+//        if (in instanceof CGFieldAccess fa) {
+//            return maker.Select(cloneType(maker, fa.getSelected()), fa.getName());
+//        }
+
+//        if (in instanceof CGArrayTypeTree att) {
+//            return maker.TypeArray(cloneType(maker, att.elemtype));
+//        }
+
+//        if (in instanceof CGTypeApply ta) {
+//            ListBuffer<CGExpression> lb = new ListBuffer<JCTree.JCExpression>();
+//            for (JCTree.JCExpression typeArg : ta.arguments) {
+//                lb.append(cloneType0(maker, typeArg));
+//            }
+//            return maker.TypeApply(cloneType0(maker, ta.clazz), lb.toList());
+//        }
+
+//        if (in instanceof CGWildcard) {
+//            JCTree.JCWildcard w = (JCTree.JCWildcard) in;
+//            JCTree.JCExpression newInner = cloneType0(maker, w.inner);
+//            JCTree.TypeBoundKind newKind;
+//            switch (w.getKind()) {
+//                case SUPER_WILDCARD:
+//                    newKind = maker.TypeBoundKind(BoundKind.SUPER);
+//                    break;
+//                case EXTENDS_WILDCARD:
+//                    newKind = maker.TypeBoundKind(BoundKind.EXTENDS);
+//                    break;
+//                default:
+//                case UNBOUNDED_WILDCARD:
+//                    newKind = maker.TypeBoundKind(BoundKind.UNBOUND);
+//                    break;
+//            }
+//            return maker.Wildcard(newKind, newInner);
+//        }
+
+//        if (JCAnnotatedTypeReflect.is(in)) {
+//            JCTree.JCExpression underlyingType = cloneType0(maker, JCAnnotatedTypeReflect.getUnderlyingType(in));
+//            List<JCTree.JCAnnotation> anns = copyAnnotations(JCAnnotatedTypeReflect.getAnnotations(in));
+//            return JCAnnotatedTypeReflect.create(anns, underlyingType);
+//        }
+
+        log.warn("Unhandled clone type case: {}", in.getInstance().getClass().getCanonicalName());
+        // This is somewhat unsafe, but it's better than outright throwing an exception here. Returning null will just cause an exception down the pipeline.
+        return (CGExpression) in;
+    }
+
 
 }

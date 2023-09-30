@@ -21,23 +21,18 @@ package net.binis.codegen.enrich.handler.base;
  */
 
 import com.github.javaparser.JavaParser;
-import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.enrich.PrototypeLookup;
-import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.generation.core.interfaces.ElementDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
-import javax.lang.model.element.Element;
-import javax.tools.Diagnostic;
 
+import javax.lang.model.element.Element;
 import java.util.Collections;
 import java.util.List;
-
-import static java.util.Objects.nonNull;
 
 @Slf4j
 public abstract class BaseEnricher implements PrototypeEnricher {

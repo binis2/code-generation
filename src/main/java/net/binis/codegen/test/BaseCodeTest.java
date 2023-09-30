@@ -36,7 +36,6 @@ import net.binis.codegen.tools.Reflection;
 import org.junit.jupiter.api.BeforeEach;
 
 import javax.tools.*;
-import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;

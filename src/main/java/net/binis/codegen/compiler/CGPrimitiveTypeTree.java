@@ -22,6 +22,7 @@ package net.binis.codegen.compiler;
 
 import lombok.extern.slf4j.Slf4j;
 
+import static net.binis.codegen.tools.Reflection.getFieldValue;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
@@ -31,8 +32,17 @@ public class CGPrimitiveTypeTree extends CGExpression {
         super(instance);
     }
 
+    public static Class theClass() {
+        return loadClass("com.sun.tools.javac.tree.JCTree$JCPrimitiveTypeTree");
+    }
+
+    public CGTypeTag getTypeTag() {
+        return new CGTypeTag(getFieldValue(instance, "typetag"));
+    }
+
+
     @Override
     protected void init() {
-        cls = loadClass("com.sun.tools.javac.tree.JCTree$JCPrimitiveTypeTree");
+        cls = CGPrimitiveTypeTree.theClass();
     }
 }

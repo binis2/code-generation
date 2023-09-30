@@ -39,6 +39,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.*;
 import static net.binis.codegen.tools.Tools.nullCheck;
+import static net.binis.codegen.tools.Tools.withRes;
 
 @Slf4j
 public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject implements Iterable<T> {
@@ -50,9 +51,11 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
     protected final Consumer<CGList<T>> onModify;
 
     protected Class<T> containedClass;
-    protected Method mAppend;
+    protected static Method mAppend;
 
-    protected Method mGet;
+    protected static Method mGet;
+
+    protected static Method mLast;
 
     public CGList(Object instance, Consumer<CGList<T>> onModify, Class<T> containedClass) {
         super();
@@ -105,6 +108,14 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
         return CodeFactory.create(containedClass, invoke(mGet, instance, index));
     }
 
+    @SuppressWarnings("unchecked")
+    public T last() {
+        if (isNull(mLast)) {
+            mLast = findMethod("last", cls);
+        }
+        return withRes(invoke(mLast, instance), inst -> (T) (containedClass.equals(JavaCompilerObject.class) ? CodeFactory.create(inst.getClass(), inst) : CodeFactory.create(containedClass, inst)));
+    }
+
     public Stream<T> stream() {
         return StreamSupport.stream(spliterator(), false);
     }
@@ -123,7 +134,8 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
         public ProxyIterator(Iterator iterator, Class cls) {
             this.iterator = iterator;
             if (JavaCompilerObject.class.equals(cls)) {
-                func = inst -> nullCheck(CodeFactory.create(inst.getClass(), inst), inst);
+                func = inst ->
+                        nullCheck(CodeFactory.create(inst.getClass(), inst), inst);
             } else {
                 constructor = findConstructor(cls, Object.class);
                 func = inst -> {

@@ -20,18 +20,11 @@ package net.binis.codegen.test;
  * #L%
  */
 
-import com.github.javaparser.ast.body.TypeDeclaration;
-import net.binis.codegen.CodeGen;
 import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.Helpers;
-import net.binis.codegen.generation.core.Structures;
-import net.binis.codegen.objects.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-import java.util.List;
-
-import static java.util.Objects.nonNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class BaseCodeGenCompilerTest extends BaseCodeTest {

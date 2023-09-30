@@ -31,6 +31,10 @@ public class CGIdent extends CGExpression {
         super(instance);
     }
 
+    public static Class theClass() {
+        return loadClass("com.sun.tools.javac.tree.JCTree$JCIdent");
+    }
+
     public String getName() {
         return invoke("getName", instance).toString();
     }
@@ -39,9 +43,14 @@ public class CGIdent extends CGExpression {
         return new CGSymbol(getFieldValue(instance, "sym"));
     }
 
+    public void setSymbol(CGSymbol symbol) {
+        setFieldValue(instance, "sym", symbol.getInstance());
+    }
+
+
 
     @Override
     protected void init() {
-        cls = loadClass("com.sun.tools.javac.tree.JCTree$JCIdent");
+        cls = CGIdent.theClass();
     }
 }

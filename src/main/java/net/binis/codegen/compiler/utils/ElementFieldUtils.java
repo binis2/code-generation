@@ -20,7 +20,10 @@ package net.binis.codegen.compiler.utils;
  * #L%
  */
 
-import net.binis.codegen.compiler.*;
+import net.binis.codegen.compiler.CGExpression;
+import net.binis.codegen.compiler.CGName;
+import net.binis.codegen.compiler.CGVariableDecl;
+import net.binis.codegen.compiler.TreeMaker;
 
 import javax.lang.model.element.Element;
 
@@ -32,6 +35,7 @@ public class ElementFieldUtils extends ElementUtils {
         var maker = TreeMaker.create();
         var declaration = getDeclaration(element, maker);
         var def = maker.VarDef(maker.Modifiers(flags) , CGName.create(name), chainDotsString(type.getCanonicalName()), nonNull(init) ? init : null);
+        def.setPos(declaration.getPos());
         declaration.getDefs().append(def);
         return def;
     }
@@ -40,6 +44,8 @@ public class ElementFieldUtils extends ElementUtils {
         return addField(element, name, type, flags, null);
     }
 
-
+    public static CGExpression copyType(TreeMaker treeMaker, CGVariableDecl field) {
+        return nonNull(field.getType()) ? treeMaker.Type(field.getType()) : field.getVarType();
+    }
 
 }

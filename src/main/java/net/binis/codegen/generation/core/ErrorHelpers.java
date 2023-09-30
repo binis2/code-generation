@@ -23,7 +23,8 @@ package net.binis.codegen.generation.core;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 
-import static net.binis.codegen.annotation.type.GenerationStrategy.*;
+import static net.binis.codegen.annotation.type.GenerationStrategy.PLAIN;
+import static net.binis.codegen.annotation.type.GenerationStrategy.PROTOTYPE;
 import static net.binis.codegen.tools.Tools.in;
 
 public class ErrorHelpers {

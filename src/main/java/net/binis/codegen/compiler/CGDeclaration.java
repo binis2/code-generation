@@ -25,12 +25,10 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.base.JavaCompilerObject;
 
 import javax.lang.model.element.Element;
-import javax.lang.model.element.Modifier;
-
-import java.util.Set;
 
 import static java.util.Objects.isNull;
-import static net.binis.codegen.tools.Reflection.*;
+import static net.binis.codegen.tools.Reflection.getFieldValue;
+import static net.binis.codegen.tools.Reflection.setFieldValue;
 
 @Slf4j
 public abstract class CGDeclaration extends JavaCompilerObject {
