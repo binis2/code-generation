@@ -1,4 +1,10 @@
 # Change Log
+**10-10-2023** ver. 1.1.10
+* Core: Improved reflection class params matching.
+* Generation: Fixed compiler crash when using constructor enrichers.
+* Generation: Removed some false positive compiler notes.
+* Generation: Fixed generation of nested prototypes inside classes annotated with CodeGen annotations.
+
 **28-09-2023** ver. 1.1.9
 * Core: Better handling of @Default creation.
 * Generation: Added constructor enrichers to replicate Lombok functionality into enrichers.
