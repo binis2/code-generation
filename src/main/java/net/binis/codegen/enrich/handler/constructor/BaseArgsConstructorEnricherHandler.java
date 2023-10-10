@@ -40,18 +40,20 @@ public abstract class BaseArgsConstructorEnricherHandler extends BaseEnricher {
     @Override
     public void enrichElement(ElementDescription description) {
         var declaration = getDeclaration(description.getElement());
-        if (declaration instanceof CGClassDeclaration cls && !cls.isInterface() && !cls.isEnum() && !cls.isAnnotation()) {
-            var fields = applyFieldsFilter(cls.getDefs().stream()
-                    .filter(CGVariableDecl.class::isInstance)
-                    .map(CGVariableDecl.class::cast))
-                    .toList();
-            if (!fields.isEmpty() && cls.getDefs().stream()
-                    .filter(CGMethodDeclaration.class::isInstance)
-                    .map(CGMethodDeclaration.class::cast)
-                    .filter(CGMethodDeclaration::isConstructor)
-                    .filter(m -> m.getParameters().size() == fields.size())
-                    .noneMatch(m -> matchParamTypes(m, fields))) {
-                createConstructor(cls, fields);
+        if (declaration instanceof CGClassDeclaration cls && !cls.isInterface() && !cls.isEnum()) {
+            if (!cls.isAnnotation()) {
+                var fields = applyFieldsFilter(cls.getDefs().stream()
+                        .filter(CGVariableDecl.class::isInstance)
+                        .map(CGVariableDecl.class::cast))
+                        .toList();
+                if (!fields.isEmpty() && cls.getDefs().stream()
+                        .filter(CGMethodDeclaration.class::isInstance)
+                        .map(CGMethodDeclaration.class::cast)
+                        .filter(CGMethodDeclaration::isConstructor)
+                        .filter(m -> m.getParameters().size() == fields.size())
+                        .noneMatch(m -> matchParamTypes(m, fields))) {
+                    createConstructor(cls, fields);
+                }
             }
         } else {
             note(getName() + "ArgsConstructor is applicable only for classes.", description.getElement());
@@ -68,7 +70,7 @@ public abstract class BaseArgsConstructorEnricherHandler extends BaseEnricher {
                 .map(f -> maker.VarDef(maker.Modifiers(CGFlags.PARAMETER | CGFlags.FINAL), CGName.create(f.getName().toString()), cloneType(maker, f.getVarType()), null))
                 .toList()).getBody();
         fields.forEach(field ->
-            body.getStatements().append(ElementMethodUtils.createStatement(maker.Assign(ElementUtils.createFieldAccess(maker, "this." + field.getName()), maker.Ident(field.getName())))));
+                body.getStatements().append(ElementMethodUtils.createStatement(maker.Assign(ElementUtils.createFieldAccess(maker, "this." + field.getName()), maker.Ident(field.getName())))));
     }
 
     protected boolean matchParamTypes(CGMethodDeclaration method, List<CGVariableDecl> fields) {

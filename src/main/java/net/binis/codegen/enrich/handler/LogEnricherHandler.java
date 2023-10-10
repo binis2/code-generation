@@ -39,17 +39,19 @@ public class LogEnricherHandler extends BaseEnricher implements LogEnricher {
     @Override
     public void enrichElement(ElementDescription description) {
         var declaration = getDeclaration(description.getElement());
-        if (declaration instanceof CGClassDeclaration cls && !cls.isInterface() && !cls.isEnum() && !cls.isAnnotation()) {
-            if (cls.getDefs().stream()
-                    .filter(CGVariableDecl.class::isInstance)
-                    .map(CGVariableDecl.class::cast)
-                    .noneMatch(f -> "log".equals(f.getName().toString()))) {
+        if (declaration instanceof CGClassDeclaration cls && !cls.isInterface() && !cls.isEnum()) {
+            if (!cls.isAnnotation()) {
+                if (cls.getDefs().stream()
+                        .filter(CGVariableDecl.class::isInstance)
+                        .map(CGVariableDecl.class::cast)
+                        .noneMatch(f -> "log".equals(f.getName().toString()))) {
 
-                var factoryMethod = ElementMethodUtils.createStaticMethodInvocation(LoggerFactory.class, "getLogger",
-                        ElementUtils.selfType(cls));
-                ElementFieldUtils.addField(description.getElement(), "log", Logger.class, PRIVATE | STATIC | FINAL, factoryMethod);
-            } else {
-                note("Log field already defined.", description.getElement());
+                    var factoryMethod = ElementMethodUtils.createStaticMethodInvocation(LoggerFactory.class, "getLogger",
+                            ElementUtils.selfType(cls));
+                    ElementFieldUtils.addField(description.getElement(), "log", Logger.class, PRIVATE | STATIC | FINAL, factoryMethod);
+                } else {
+                    note("Log field already defined.", description.getElement());
+                }
             }
         } else {
             note("Log is applicable only for classes.", description.getElement());
