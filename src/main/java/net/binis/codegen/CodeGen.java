@@ -26,6 +26,7 @@ import com.github.javaparser.ast.body.AnnotationDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.annotation.type.GenerationStrategy;
 import net.binis.codegen.discoverer.AnnotationDiscoverer;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.generation.core.*;
@@ -91,7 +92,7 @@ public class CodeGen {
         lookup.parsed().stream().filter(PrototypeDescription::isProcessed).filter(p -> !p.isNested() || isNull(p.getParentClassName())).forEach(p ->
                 saveParsed(destination, impl_destination, p));
         lookup.custom().forEach(p ->
-            saveParsed(destination, impl_destination, p));
+                saveParsed(destination, impl_destination, p));
     }
 
     private static void saveParsed(String destination, String impl_destination, PrototypeDescription<ClassOrInterfaceDeclaration> p) {
@@ -203,36 +204,40 @@ public class CodeGen {
 
     @SuppressWarnings("unchecked")
     public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, JavaParser parser, List<Element> elements) {
-        if (type.isClassOrInterfaceDeclaration() && Generator.getCodeAnnotation(type.asClassOrInterfaceDeclaration()).isEmpty()) {
-            type.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(nested -> {
-                var ann = Generator.getCodeAnnotation(nested);
-                if (ann.isPresent()) {
-                    if (nested.asClassOrInterfaceDeclaration().isInterface()) {
-                        var parent = type.findCompilationUnit().get();
-                        var pack = parent.getPackageDeclaration().get().getNameAsString();
-                        var unit = new CompilationUnit().setPackageDeclaration(pack + "." + type.getNameAsString());
-                        var nestedType = nested.clone();
-                        parent.getImports().forEach(unit::addImport);
-                        unit.addType(nestedType);
-                        var cName = getClassName(nestedType);
+        if (type.isClassOrInterfaceDeclaration()) {
+            var properties = Generator.getCodeAnnotationProperties(type.asClassOrInterfaceDeclaration());
 
-                        lookup.registerParsed(cName,
-                                Structures.Parsed.builder()
-                                        .declaration(nestedType.asTypeDeclaration())
-                                        .declarationUnit(unit)
-                                        .prototypeFileName(fileName)
-                                        .prototypeClassName(cName)
-                                        .parser(parser)
-                                        .nested(true)
-                                        .parentPackage(pack)
-                                        .build());
-                    } else {
-                        with(ErrorHelpers.calculatePrototypeAnnotationError(nested.asClassOrInterfaceDeclaration(), Generator.getProperties(ann.get())), message ->
-                                lookup.error(message, withRes(elements, el -> el.stream().filter(e ->
-                                        ElementKind.CLASS.equals(e.getKind()) && e.getSimpleName().toString().equals(nested.getNameAsString())).findFirst().orElse(null))));
+            if (properties.isEmpty() || !GenerationStrategy.PROTOTYPE.equals(properties.get().getStrategy())) {
+                type.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(nested -> {
+                    var ann = Generator.getCodeAnnotation(nested);
+                    if (ann.isPresent()) {
+                        if (nested.asClassOrInterfaceDeclaration().isInterface()) {
+                            var parent = type.findCompilationUnit().get();
+                            var pack = parent.getPackageDeclaration().get().getNameAsString();
+                            var unit = new CompilationUnit().setPackageDeclaration(pack + "." + type.getNameAsString());
+                            var nestedType = nested.clone();
+                            parent.getImports().forEach(unit::addImport);
+                            unit.addType(nestedType);
+                            var cName = getClassName(nestedType);
+
+                            lookup.registerParsed(cName,
+                                    Structures.Parsed.builder()
+                                            .declaration(nestedType.asTypeDeclaration())
+                                            .declarationUnit(unit)
+                                            .prototypeFileName(fileName)
+                                            .prototypeClassName(cName)
+                                            .parser(parser)
+                                            .nested(true)
+                                            .parentPackage(pack)
+                                            .build());
+                        } else {
+                            with(ErrorHelpers.calculatePrototypeAnnotationError(nested.asClassOrInterfaceDeclaration(), Generator.getProperties(ann.get())), message ->
+                                    lookup.error(message, withRes(elements, el -> el.stream().filter(e ->
+                                            ElementKind.CLASS.equals(e.getKind()) && e.getSimpleName().toString().equals(nested.getNameAsString())).findFirst().orElse(null))));
+                        }
                     }
-                }
-            });
+                });
+            }
         }
     }
 

@@ -583,6 +583,17 @@ public class Generator {
         return Optional.empty();
     }
 
+    public static Optional<PrototypeData> getCodeAnnotationProperties(BodyDeclaration<?> type) {
+        for (var name : Structures.defaultProperties.keySet()) {
+            var ann = Helpers.getAnnotationByFullName(type, name);
+            if (ann.isPresent()) {
+                return Optional.of(Structures.defaultProperties.get(name).get().build());
+            }
+        }
+        return Optional.empty();
+    }
+
+
     public static Optional<Annotation> getCodeAnnotation(Class cls) {
         for (var name : Structures.defaultProperties.keySet()) {
             var aCls = loadClass(name);
