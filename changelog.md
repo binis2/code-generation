@@ -1,4 +1,10 @@
 # Change Log
+**12-10-2023** ver. 1.1.11
+* Generation: Modify Enricher adds @Generated annotation to all generated classes.
+* Generation: Added SuppressSpotBugsWarningsOption for Modifier Enricher.
+* Generation: Query Enricher adds @Generated annotation to all generated classes.
+* IDEA Plugin: Fixed incomplete annotations errors.
+
 **10-10-2023** ver. 1.1.10
 * Core: Improved reflection class params matching.
 * Generation: Fixed compiler crash when using constructor enrichers.
