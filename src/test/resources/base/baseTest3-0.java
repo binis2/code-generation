@@ -26,6 +26,7 @@ public class TestImpl extends BaseImpl implements Test, Modifiable<Test.Modify> 
         return new TestModifyImpl(this);
     }
 
+    @Generated("ModifierEnricher")
     protected class TestModifyImpl extends BaseModifierImpl<Test.Modify, Test> implements Test.Modify {
 
         protected TestModifyImpl(Test parent) {

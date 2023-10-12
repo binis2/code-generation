@@ -27,6 +27,7 @@ public class TestImpl extends GenericImpl<DefaultPayload> implements Test, Modif
     // endregion
 
     // region inner classes
+    @Generated("ModifierEnricher")
     protected class TestModifyImpl extends BaseModifierImpl<Test.Modify, Test> implements Test.Modify {
 
         protected TestModifyImpl(Test parent) {

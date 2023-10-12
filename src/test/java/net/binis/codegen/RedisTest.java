@@ -27,11 +27,6 @@ import org.junit.jupiter.api.Test;
 
 class RedisTest extends BaseCodeGenTest {
 
-    @BeforeEach
-    public void cleanUp() {
-        Helpers.cleanUp();
-    }
-
     @Test
     void test() {
         testSingle("redis/RedisTest1.java", "redis/RedisTest1-0.java", "redis/RedisTest1-1.java", 1, true);

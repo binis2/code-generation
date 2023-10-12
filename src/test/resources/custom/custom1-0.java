@@ -31,6 +31,7 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
     // endregion
 
     // region inner classes
+    @Generated("ModifierEnricher")
     protected class TestModifyImpl extends AsyncEntityModifierImpl<Test.Modify, Test> implements Test.Modify {
 
         protected TestModifyImpl(Test parent) {

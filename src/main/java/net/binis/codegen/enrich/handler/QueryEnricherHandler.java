@@ -41,6 +41,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Reflection;
 import net.binis.codegen.tools.Tools;
 
+import javax.annotation.processing.Generated;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -58,6 +59,8 @@ import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
 public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher {
+
+    public static final String QUERY_ENRICHER = "\"QueryEnricher\"";
 
     public static final String OPERATION = "Operation";
     private static final String QUERY_START = "QueryStarter";
@@ -159,6 +162,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addModifier(PUBLIC)
                 .setBody(new BlockStmt()
                         .addStatement(new ReturnStmt("(" + QUERY_AGGREGATE_OPERATION + ") aggregateStart(new " + entity + QUERY_ORDER + QUERY_IMPL + "(this, " + entity + QUERY_EXECUTOR + QUERY_IMPL + ".this::aggregateIdentifier))")));
+        impl.addSingleMemberAnnotation(Generated.class, QUERY_ENRICHER);
         spec.addMember(impl);
 
         var qExecSelect = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + "Select" + QUERY_EXECUTOR + QUERY_IMPL)
@@ -166,6 +170,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addModifier(STATIC)
                 .addExtendedType(impl.getNameAsString())
                 .addImplementedType(entity + "." + QUERY_SELECT);
+        qExecSelect.addSingleMemberAnnotation(Generated.class, QUERY_ENRICHER);
 
         var qExecFields = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + "Fields" + QUERY_EXECUTOR + QUERY_IMPL)
                 .addModifier(PROTECTED)
@@ -173,12 +178,15 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addExtendedType(impl.getNameAsString())
                 .addImplementedType(entity + "." + QUERY_FIELDS_START)
                 .addImplementedType("EmbeddedFields");
+        qExecFields.addSingleMemberAnnotation(Generated.class, QUERY_ENRICHER);
 
         var orderImpl = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), false, entity + QUERY_ORDER + QUERY_IMPL)
                 .addModifier(PROTECTED)
                 .addExtendedType(QUERY_ORDER + "er")
                 .addImplementedType(entity + "." + QUERY_ORDER)
                 .addImplementedType(entity + "." + QUERY_AGGREGATE);
+
+        orderImpl.addSingleMemberAnnotation(Generated.class, QUERY_ENRICHER);
 
         orderImpl.addConstructor(PROTECTED)
                 .addParameter(entity + QUERY_EXECUTOR + QUERY_IMPL, "executor")
@@ -203,6 +211,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                 .addExtendedType("BaseQueryNameImpl")
                 .addImplementedType(entity + "." + QUERY_NAME)
                 .addImplementedType("QueryEmbed");
+        qNameImpl.addSingleMemberAnnotation(Generated.class, QUERY_ENRICHER);
         spec.addMember(qNameImpl);
 
         var qFields = new ClassOrInterfaceDeclaration(Modifier.createModifierList(), true, QUERY_FIELDS)

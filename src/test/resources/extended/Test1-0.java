@@ -41,6 +41,7 @@ public class TestAnnotationImpl implements TestAnnotation, Modifiable<TestAnnota
     // endregion
 
     // region inner classes
+    @Generated("ModifierEnricher")
     protected class TestAnnotationModifyImpl extends BaseModifierImpl<TestAnnotation.Modify, TestAnnotation> implements TestAnnotation.Modify {
 
         protected TestAnnotationModifyImpl(TestAnnotation parent) {

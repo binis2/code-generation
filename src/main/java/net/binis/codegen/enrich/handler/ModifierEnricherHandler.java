@@ -43,9 +43,11 @@ import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.generation.core.types.ModifierType;
+import net.binis.codegen.options.SuppressSpotBugsWarningOption;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.annotation.processing.Generated;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -87,10 +89,10 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         ClassOrInterfaceDeclaration embeddedModifierSolo = null;
         ClassOrInterfaceDeclaration embeddedModifierCollection = null;
 
-        ClassOrInterfaceDeclaration modifierClass;
-        ClassOrInterfaceDeclaration embeddedModifierClass;
-        ClassOrInterfaceDeclaration embeddedModifierSoloClass;
-        ClassOrInterfaceDeclaration embeddedModifierCollectionClass;
+        ClassOrInterfaceDeclaration modifierClass = null;
+        ClassOrInterfaceDeclaration embeddedModifierClass = null;
+        ClassOrInterfaceDeclaration embeddedModifierSoloClass = null;
+        ClassOrInterfaceDeclaration embeddedModifierCollectionClass = null;
 
         if (!EmbeddedModifierType.NONE.equals(embeddedType)) {
             intf.findCompilationUnit().ifPresent(u -> u.addImport("net.binis.codegen.modifier.BaseModifier"));
@@ -163,6 +165,16 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         }
         if (isNull(description.getMixIn()) && !description.getProperties().isBase()) {
             spec.addImplementedType("Modifiable<" + intf.getNameAsString() + "." + modifier.getNameAsString() + ">");
+        }
+        addGenerated(modifierClass);
+        addGenerated(embeddedModifierClass);
+        addGenerated(embeddedModifierSoloClass);
+        addGenerated(embeddedModifierCollectionClass);
+    }
+
+    private void addGenerated(ClassOrInterfaceDeclaration cls) {
+        if (nonNull(cls)) {
+            cls.addSingleMemberAnnotation(Generated.class, "\"ModifierEnricher\"");
         }
     }
 
@@ -257,7 +269,12 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
         } else {
             if (nonNull(modifierClass)) {
                 modifierClass.addExtendedType(baseModifier + "<" + description.getInterfaceName() + "." + properties.getModifierName() + ", " + description.getInterfaceName() + ">");
-                modifierClass.addMethod("done", PUBLIC).setType(description.getInterfaceName()).setBody(returnBlock((isNull(description.getMixIn()) ? description.getProperties().getClassName() : description.getMixIn().getProperties().getClassName()) + ".this"));
+                var done = modifierClass.addMethod("done", PUBLIC);
+                done.setType(description.getInterfaceName()).setBody(returnBlock((isNull(description.getMixIn()) ? description.getProperties().getClassName() : description.getMixIn().getProperties().getClassName()) + ".this"));
+                if (description.hasOption(SuppressSpotBugsWarningOption.class)) {
+                    done.findCompilationUnit().ifPresent(unit -> unit.addImport("edu.umd.cs.findbugs.annotations.SuppressFBWarnings"));
+                    done.addSingleMemberAnnotation("SuppressFBWarnings", "\"EI_EXPOSE_REP\"");
+                }
             }
         }
         baseModifier = handleBaseModifier(description);
@@ -439,19 +456,6 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
             method
                     .addModifier(PUBLIC)
                     .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName("new " + modifierClassName + "(this)"))));
-        } else {
-            method.setBody(null);
-        }
-    }
-
-    private static void addDoneMethod(ClassOrInterfaceDeclaration spec, String parentName, String parentClassName, boolean isClass) {
-        var method = spec
-                .addMethod("done")
-                .setType(parentName);
-        if (isClass) {
-            method
-                    .addModifier(PUBLIC)
-                    .setBody(new BlockStmt().addStatement(new ReturnStmt().setExpression(new NameExpr().setName(parentClassName + ".this"))));
         } else {
             method.setBody(null);
         }

@@ -66,6 +66,7 @@ public class RedisTestImpl implements RedisTest, Modifiable<RedisTest.Modify>, S
         return new RedisTestModifyImpl(this);
     }
 
+    @Generated("ModifierEnricher")
     @SuppressWarnings("unchecked")
     protected class RedisTestModifyImpl extends BaseModifierImpl<RedisTest.Modify, RedisTest> implements RedisTest.Modify {
 

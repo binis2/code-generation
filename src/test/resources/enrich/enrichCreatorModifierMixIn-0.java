@@ -52,6 +52,7 @@ public class TestImpl implements Test, MixIn, Modifiable<Test.Modify> {
     // endregion
 
     // region inner classes
+    @Generated("ModifierEnricher")
     protected class MixInModifyImpl extends BaseModifierImpl<MixIn.Modify, MixIn> implements MixIn.Modify {
 
         protected MixInModifyImpl(MixIn parent) {
@@ -73,6 +74,7 @@ public class TestImpl implements Test, MixIn, Modifiable<Test.Modify> {
         }
     }
 
+    @Generated("ModifierEnricher")
     protected class TestModifyImpl extends BaseModifierImpl<Test.Modify, Test> implements Test.Modify {
 
         protected TestModifyImpl(Test parent) {

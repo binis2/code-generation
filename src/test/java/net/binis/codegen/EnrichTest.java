@@ -27,11 +27,6 @@ import org.junit.jupiter.api.Test;
 
 class EnrichTest extends BaseCodeGenTest {
 
-    @BeforeEach
-    public void cleanUp() {
-        Helpers.cleanUp();
-    }
-
     @Test
     void enrichAs() {
         testSingle("enrich/enrichAs.java", "enrich/enrichAs-0.java", "enrich/enrichAs-1.java");

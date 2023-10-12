@@ -99,6 +99,7 @@ public class PresetTestImpl implements PresetTest {
     // endregion
 
     // region inner classes
+    @Generated("QueryEnricher")
     protected static class PresetTestFieldsQueryExecutorImpl extends PresetTestQueryExecutorImpl implements PresetTest.QueryFieldsStart, EmbeddedFields {
 
         public PresetTest.QueryOperationFields parent() {
@@ -108,6 +109,7 @@ public class PresetTestImpl implements PresetTest {
         }
     }
 
+    @Generated("QueryEnricher")
     protected static abstract class PresetTestQueryExecutorImpl extends QueryExecutor implements PresetTest.QueryUpdate {
 
         protected PresetTestQueryExecutorImpl() {
@@ -191,6 +193,7 @@ public class PresetTestImpl implements PresetTest {
             return identifier("type");
         }
 
+        @Generated("QueryEnricher")
         protected class PresetTestQueryOrderImpl extends QueryOrderer implements PresetTest.QueryOrder, PresetTest.QueryAggregate {
 
             protected PresetTestQueryOrderImpl(PresetTestQueryExecutorImpl executor, Function<String, Object> func) {
@@ -221,6 +224,7 @@ public class PresetTestImpl implements PresetTest {
         }
     }
 
+    @Generated("QueryEnricher")
     protected static class PresetTestQueryNameImpl extends BaseQueryNameImpl implements PresetTest.QueryName, QueryEmbed {
 
         public QueryFunctions data() {
@@ -266,6 +270,7 @@ public class PresetTestImpl implements PresetTest {
         }
     }
 
+    @Generated("QueryEnricher")
     protected static class PresetTestSelectQueryExecutorImpl extends PresetTestQueryExecutorImpl implements PresetTest.QuerySelect {
 
         public PresetTest.QueryName parent() {

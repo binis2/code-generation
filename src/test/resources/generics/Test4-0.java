@@ -30,6 +30,7 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
     // endregion
 
     // region inner classes
+    @Generated("ModifierEnricher")
     protected class AccountOverviewCardModifyImpl extends BaseModifierImpl<AccountOverviewCard.Modify, AccountOverviewCard> implements AccountOverviewCard.Modify {
 
         protected AccountOverviewCardModifyImpl(AccountOverviewCard parent) {
