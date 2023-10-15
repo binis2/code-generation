@@ -48,12 +48,12 @@ import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.objects.Pair;
 import net.binis.codegen.options.CodeOption;
 import net.binis.codegen.tools.Holder;
 import net.binis.codegen.tools.Tools;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -101,20 +101,21 @@ public class Generator {
 
         for (var type : parser.getTypes()) {
             if (type.isClassOrInterfaceDeclaration()) {
-                getCodeAnnotation(type).ifPresent(prototype -> {
+                getCodeAnnotations(type).ifPresent(prototypes -> {
                     if (type.asClassOrInterfaceDeclaration().isInterface()) {
-                        generateCodeForPrototype(parser, prsd, type, prototype);
+                        generateCodeForPrototype(parser, prsd, type, prototypes);
                         processed.set(processed.get() + 1);
-                    } else if (processForClass(parser, prsd, type, prototype)) {
+                    } else if (processForClass(parser, prsd, type, prototypes)) {
                         processed.set(processed.get() + 1);
                     } else {
-                        with(ErrorHelpers.calculatePrototypeAnnotationError(type.asClassOrInterfaceDeclaration(), getProperties(prototype)), message ->
-                                lookup.error(message, prsd.findElement(type.getNameAsString(), ElementKind.CLASS, ElementKind.INTERFACE)));
+                        prototypes.forEach(prototype ->
+                                with(ErrorHelpers.calculatePrototypeAnnotationError(type.asClassOrInterfaceDeclaration(), prototype.getValue()), message ->
+                                        lookup.error(message, prsd.findElement(type.getNameAsString(), ElementKind.CLASS, ElementKind.INTERFACE))));
                     }
                 });
             } else if (type.isEnumDeclaration()) {
-                getCodeAnnotation(type).ifPresent(prototype -> {
-                    generateCodeForEnum(parser, prsd, type, prototype);
+                getCodeAnnotations(type).ifPresent(prototypes -> {
+                    generateCodeForEnum(parser, prsd, type, prototypes);
                     processed.set(processed.get() + 1);
                 });
             }
@@ -149,15 +150,27 @@ public class Generator {
         declarationUnit.findAll(AnnotationExpr.class).stream()
                 .filter(a -> Structures.defaultProperties.containsKey(getExternalClassName(declarationUnit, a.getNameAsString())))
                 .forEach(a ->
-                        a.getParentNode().ifPresent(parent ->
-                                prsd.getElements().computeIfAbsent(getElementName(parent), name ->
-                                        Structures.ParsedElementDescription.builder()
+                        a.getParentNode().ifPresent(parent -> {
+                            var name = getElementName(parent);
+                            if (prsd.getElements().containsKey(name)) {
+                                prsd.getElements().get(name).add(Structures.ParsedElementDescription.builder()
+                                        .node(parent)
+                                        .element(findElement(parent, prsd))
+                                        .prototype(a)
+                                        .properties(getProperties(a))
+                                        .description(prsd)
+                                        .build());
+                            } else {
+                                prsd.getElements().put(name,
+                                        new ArrayList<>(Collections.singletonList(Structures.ParsedElementDescription.builder()
                                                 .node(parent)
                                                 .element(findElement(parent, prsd))
                                                 .prototype(a)
                                                 .properties(getProperties(a))
                                                 .description(prsd)
                                                 .build())));
+                            }
+                        }));
     }
 
     private static String getElementName(Node node) {
@@ -191,33 +204,42 @@ public class Generator {
     private static Element findElement(Node node, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
         if (nonNull(parsed.getRawElements())) {
             var name = getElementName(node);
-            return parsed.getRawElements().stream().filter(e -> name.equals(getElementName(e))).findFirst().orElse(null);
+            return parsed.getRawElements().stream()
+                    .map(Pair::getKey)
+                    .filter(e -> name.equals(getElementName(e)))
+                    .findFirst()
+                    .orElse(null);
         } else {
             return null;
         }
     }
 
-    private static boolean processForClass(CompilationUnit parser, PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, AnnotationExpr prototype) {
+    private static boolean processForClass(CompilationUnit parser, PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, List<Pair<AnnotationExpr, Structures.PrototypeDataHandler>> prototypes) {
         var typeDeclaration = type.asClassOrInterfaceDeclaration();
-        var properties = getProperties(prototype);
 
-        if (GenerationStrategy.NONE.equals(properties.getStrategy())) {
-            log.info("Processing - {}", typeDeclaration.getNameAsString());
-            handleEnrichersSetup(properties);
-            handleNoneStrategy(prsd, type, typeDeclaration, properties);
-            return true;
+        var result = false;
+        for (var prototype : prototypes) {
+
+            var properties = prototype.getValue();
+
+            if (GenerationStrategy.NONE.equals(properties.getStrategy())) {
+                log.info("Processing - {} (@{})", typeDeclaration.getNameAsString(), prototype.getKey().getNameAsString());
+                handleEnrichersSetup(properties);
+                handleNoneStrategy(prsd, type, typeDeclaration, properties);
+                result = true;
+            }
         }
 
-        return false;
+        return result;
     }
 
-    public static void generateCodeForPrototype(CompilationUnit parser, PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, AnnotationExpr prototype) {
+    public static void generateCodeForPrototype(CompilationUnit parser, PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, List<Pair<AnnotationExpr, Structures.PrototypeDataHandler>> prototypes) {
 
         var typeDeclaration = type.asClassOrInterfaceDeclaration();
 
         log.info("Processing - {}", typeDeclaration.getNameAsString());
 
-        var properties = nonNull(prsd) && nonNull(prsd.getCompiled()) ? (Structures.PrototypeDataHandler) prsd.getProperties() : getProperties(prototype);
+        var properties = nonNull(prsd) && nonNull(prsd.getCompiled()) ? (Structures.PrototypeDataHandler) prsd.getProperties() : prototypes.get(0).getValue();
         properties.setPrototypeName(typeDeclaration.getNameAsString());
         properties.setPrototypeFullName(typeDeclaration.getFullyQualifiedName().orElseThrow());
         addProcessingType(typeDeclaration.getNameAsString(), properties.getInterfacePackage(), properties.getInterfaceName(), properties.getClassPackage(), properties.getClassName());
@@ -461,7 +483,7 @@ public class Generator {
     private static Structures.Parsed handleNoneStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
         var parse = (Structures.Parsed) prsd;
 
-        parse.setProperties(properties);
+        parse.addProperties(properties);
         return parse;
     }
 
@@ -573,14 +595,25 @@ public class Generator {
         });
     }
 
-    public static Optional<AnnotationExpr> getCodeAnnotation(BodyDeclaration<?> type) {
+    public static Optional<List<Pair<AnnotationExpr, Structures.PrototypeDataHandler>>> getCodeAnnotations(BodyDeclaration<?> type) {
+        var list = new ArrayList<Pair<AnnotationExpr, Structures.PrototypeDataHandler>>();
         for (var name : Structures.defaultProperties.keySet()) {
-            var ann = Helpers.getAnnotationByFullName(type, name);
-            if (ann.isPresent()) {
-                return ann;
+            Helpers.getAnnotationByFullName(type, name).ifPresent(ann -> list.add(Pair.of(ann, getProperties(ann))));
+        }
+
+        list.sort(Comparator.comparing(a -> a.getValue().getStrategy()));
+
+        if (list.size() > 1) {
+            var i = 1;
+            while (i < list.size()) {
+                if (!GenerationStrategy.NONE.equals(list.get(i).getValue().getStrategy())) {
+                    log.warn("Multiple prototype annotations found ({})", list.get(i).getKey().getNameAsString());
+                }
+                i++;
             }
         }
-        return Optional.empty();
+
+        return list.isEmpty() ? Optional.empty() : Optional.of(list);
     }
 
     public static Optional<PrototypeData> getCodeAnnotationProperties(BodyDeclaration<?> type) {
@@ -594,7 +627,7 @@ public class Generator {
     }
 
 
-    public static Optional<Annotation> getCodeAnnotation(Class cls) {
+    public static Optional<Annotation> getCodeAnnotations(Class cls) {
         for (var name : Structures.defaultProperties.keySet()) {
             var aCls = loadClass(name);
             if (nonNull(aCls)) {
@@ -1090,7 +1123,7 @@ public class Generator {
                                 condition(!parse.isProcessed(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get(), parse)))));
 
         declaration.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(cls ->
-                Generator.getCodeAnnotation(cls).ifPresent(ann -> {
+                Generator.getCodeAnnotations(cls).ifPresent(ann -> {
                     var clsName = getClassName(cls);
                     lookup.registerParsed(clsName,
                             Structures.Parsed.builder()
@@ -1110,7 +1143,7 @@ public class Generator {
     private static void ensureParsedParents(EnumDeclaration declaration, PrototypeDescription<?> parse) {
         if (nonNull(parse) && isNull(parse.getCompiled()) && !parse.isProcessed()) {
             if (parse.getDeclaration().isEnumDeclaration()) {
-                generateCodeForEnum(parse.getDeclaration().findCompilationUnit().get(), parse, parse.getDeclaration(), parse.getDeclaration().getAnnotationByClass(EnumPrototype.class).orElse(null));
+                generateCodeForEnum(parse.getDeclaration().findCompilationUnit().get(), parse, parse.getDeclaration(), getCodeAnnotations(parse.getDeclaration()).orElse(null));
             } else {
                 throw new GenericCodeGenException("Class '" + parse.getDeclaration().getFullyQualifiedName().get() + "' is not enum!");
             }
@@ -2109,13 +2142,13 @@ public class Generator {
         });
     }
 
-    public static void generateCodeForEnum(CompilationUnit declarationUnit, PrototypeDescription<?> prsd, TypeDeclaration<?> type, AnnotationExpr prototype) {
+    public static void generateCodeForEnum(CompilationUnit declarationUnit, PrototypeDescription<?> prsd, TypeDeclaration<?> type, List<Pair<AnnotationExpr, Structures.PrototypeDataHandler>> prototype) {
         if (type.isEnumDeclaration()) {
             var typeDeclaration = type.asEnumDeclaration();
 
             log.info("Processing - {}", typeDeclaration.getNameAsString());
 
-            var properties = getEnumProperties(prototype);
+            var properties = getEnumProperties(prototype.get(0).getKey());
             properties.setPrototypeName(typeDeclaration.getNameAsString());
             properties.setPrototypeFullName(typeDeclaration.getFullyQualifiedName().orElseThrow());
 
@@ -2385,9 +2418,11 @@ public class Generator {
     }
 
     public static void generateCodeForElements(PrototypeDescription<ClassOrInterfaceDeclaration> prsd) {
-        for (var element : prsd.getElements().values()) {
-            handleEnrichersSetup(element.getProperties());
-            Helpers.handleEnrichers(element);
+        for (var elements : prsd.getElements().values()) {
+            for (var element : elements) {
+                handleEnrichersSetup(element.getProperties());
+                Helpers.handleEnrichers(element);
+            }
         }
     }
 

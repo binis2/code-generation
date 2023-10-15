@@ -30,6 +30,7 @@ import net.binis.codegen.annotation.type.EmbeddedModifierType;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.GeneratedFile;
 import net.binis.codegen.generation.core.Structures;
+import net.binis.codegen.objects.Pair;
 import net.binis.codegen.options.CodeOption;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -53,6 +54,7 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     String getPrototypeClassName();
 
     PrototypeData getProperties();
+    List<PrototypeData> getAdditionalProperties();
 
     String getParsedName();
     String getParsedFullName();
@@ -94,13 +96,13 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     String getParentClassName();
 
-    Map<String, ElementDescription> getElements();
+    Map<String, List<ElementDescription>> getElements();
 
     Element getElement();
 
     Element getPrototypeElement();
 
-    List<Element> getRawElements();
+    List<Pair<Element, Object>> getRawElements();
 
     Element findElement(String name, ElementKind... kind);
 
@@ -128,5 +130,7 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
     GeneratedFile getCustomFile(String id);
 
     Map<String, Structures.GeneratedFileHandler> getCustomFiles();
+
+    void addProperties(Structures.PrototypeDataHandler properties);
 }
 

@@ -20,7 +20,10 @@ package net.binis.codegen.generation.core;
  * #L%
  */
 
+import net.binis.codegen.objects.Pair;
+
 import javax.lang.model.element.Element;
+import java.lang.annotation.Annotation;
 import java.util.*;
 
 public class Parsables extends HashMap<String, Parsables.Entry> implements Iterable<Map.Entry<String, Parsables.Entry>> {
@@ -38,23 +41,23 @@ public class Parsables extends HashMap<String, Parsables.Entry> implements Itera
         return entrySet().iterator();
     }
 
-    public static class Entry implements Iterable<Element> {
-        protected List<Element> elements = new ArrayList<>();
+    public static class Entry implements Iterable<Pair<Element, Object>> {
+        protected List<Pair<Element, Object>> elements = new ArrayList<>();
 
         protected Entry() {
             //Do nothing
         }
 
-        public void add(Element element) {
-            elements.add(element);
+        public void add(Element element, Object annotation) {
+            elements.add(Pair.of(element, annotation));
         }
 
         @Override
-        public Iterator<Element> iterator() {
+        public Iterator<Pair<Element, Object>> iterator() {
             return elements.iterator();
         }
 
-        public List<Element> getElements() {
+        public List<Pair<Element, Object>> getElements() {
             return Collections.unmodifiableList(elements);
         }
     }

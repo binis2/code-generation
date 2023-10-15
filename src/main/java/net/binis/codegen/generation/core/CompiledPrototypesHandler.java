@@ -60,7 +60,7 @@ public abstract class CompiledPrototypesHandler {
     public static boolean handleCompiledPrototype(String compiledPrototype) {
         var result = Holder.of(false);
         Tools.with(loadClass(compiledPrototype), c ->
-                Generator.getCodeAnnotation(c).ifPresent(ann -> {
+                Generator.getCodeAnnotations(c).ifPresent(ann -> {
                     var declaration = new CompilationUnit().setPackageDeclaration(c.getPackageName()).addClass(c.getSimpleName()).setInterface(true);
 
                     for (var p : c.getTypeParameters()) {

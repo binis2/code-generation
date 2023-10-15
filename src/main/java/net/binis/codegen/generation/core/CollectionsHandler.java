@@ -35,7 +35,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
-import org.apache.commons.lang3.tuple.Pair;
+import net.binis.codegen.objects.Pair;
 
 import java.util.List;
 import java.util.stream.Collectors;

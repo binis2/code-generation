@@ -906,6 +906,14 @@ public class Helpers {
         Tools.with(parsed.getProperties().getEnrichers(), l ->
                 l.forEach(e -> map.put(e.getClass(), e)));
 
+        parsed.getAdditionalProperties().forEach(properties ->
+                Tools.with(properties.getInheritedEnrichers(), l ->
+                        l.forEach(e -> map.put(e.getClass(), e))));
+
+        parsed.getAdditionalProperties().forEach(properties ->
+                Tools.with(properties.getEnrichers(), l ->
+                        l.forEach(e -> map.put(e.getClass(), e))));
+
         var list = new ArrayList<>(map.values());
         list.sort(Comparator.comparingInt(PrototypeEnricher::order).reversed());
         return list;
@@ -976,6 +984,7 @@ public class Helpers {
             log.error("Failed to enrich {} with {}", element.getNode() instanceof NodeWithSimpleName s ? s.getNameAsString() : element.getNode() instanceof NodeWithName n ? n.getNameAsString() : "element", enricher.getClass(), e);
         }
     }
+
     private static String calcModifierExpression(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         if (nonNull(description)) {
             var modClass = description.getRegisteredClass(EMBEDDED_MODIFIER_KEY);

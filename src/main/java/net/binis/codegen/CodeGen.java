@@ -33,6 +33,7 @@ import net.binis.codegen.generation.core.*;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
+import net.binis.codegen.objects.Pair;
 import net.binis.codegen.tools.CollectionUtils;
 import org.apache.commons.cli.*;
 
@@ -174,7 +175,7 @@ public class CodeGen {
 
 
     @SuppressWarnings("unchecked")
-    public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName, List<Element> elements) {
+    public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName, List<Pair<Element, Object>> elements) {
         var pack = t.findCompilationUnit().get().getPackageDeclaration().orElseThrow(() -> new GenericCodeGenException("'" + fileName + "' have no package declaration!"));
         var className = pack.getNameAsString() + '.' + t.getNameAsString();
         if (t.getAnnotationByName("ConstantPrototype").isPresent()) {
@@ -203,13 +204,13 @@ public class CodeGen {
     }
 
     @SuppressWarnings("unchecked")
-    public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, JavaParser parser, List<Element> elements) {
+    public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, JavaParser parser, List<Pair<Element, Object>> elements) {
         if (type.isClassOrInterfaceDeclaration()) {
             var properties = Generator.getCodeAnnotationProperties(type.asClassOrInterfaceDeclaration());
 
             if (properties.isEmpty() || !GenerationStrategy.PROTOTYPE.equals(properties.get().getStrategy())) {
                 type.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(nested -> {
-                    var ann = Generator.getCodeAnnotation(nested);
+                    var ann = Generator.getCodeAnnotations(nested);
                     if (ann.isPresent()) {
                         if (nested.asClassOrInterfaceDeclaration().isInterface()) {
                             var parent = type.findCompilationUnit().get();
@@ -231,9 +232,10 @@ public class CodeGen {
                                             .parentPackage(pack)
                                             .build());
                         } else {
-                            with(ErrorHelpers.calculatePrototypeAnnotationError(nested.asClassOrInterfaceDeclaration(), Generator.getProperties(ann.get())), message ->
-                                    lookup.error(message, withRes(elements, el -> el.stream().filter(e ->
-                                            ElementKind.CLASS.equals(e.getKind()) && e.getSimpleName().toString().equals(nested.getNameAsString())).findFirst().orElse(null))));
+                            ann.get().forEach(prototype ->
+                            with(ErrorHelpers.calculatePrototypeAnnotationError(nested.asClassOrInterfaceDeclaration(), prototype.getValue()), message ->
+                                    lookup.error(message, withRes(elements, el -> el.stream().map(Pair::getKey).filter(e ->
+                                            ElementKind.CLASS.equals(e.getKind()) && e.getSimpleName().toString().equals(nested.getNameAsString())).findFirst().orElse(null)))));
                         }
                     }
                 });
