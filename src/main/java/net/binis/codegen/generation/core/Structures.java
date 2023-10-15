@@ -730,7 +730,8 @@ public class Structures {
                     case "baseModifierClass" -> {
                         var value = pair.getValue().asClassExpr().getTypeAsString();
                         if (StringUtils.isNotBlank(value) && !"void".equals(value)) {
-                            builder.baseModifierClass(value);
+                            var full = Helpers.getExternalClassNameIfExists(pair, value);
+                            builder.baseModifierClass(nonNull(full) ? full : value);
                         }
                     }
                     case "mixInClass" -> {

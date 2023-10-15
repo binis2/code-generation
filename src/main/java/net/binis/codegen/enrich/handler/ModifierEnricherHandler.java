@@ -296,10 +296,14 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
             return "BaseModifierImpl";
         }
         var full = getExternalClassNameIfExists(description.getDeclaration().findCompilationUnit().get(), baseModifier);
+        if (isNull(full) && nonNull(description.getBase())) {
+            full = getExternalClassNameIfExists(description.getBase().getDeclaration().findCompilationUnit().get(), baseModifier);
+        }
         if (isNull(full)) {
             full = baseModifier;
             baseModifier = full.substring(Math.max(0, full.lastIndexOf('.') + 1));
         }
+
         var path = full.substring(0, full.indexOf(baseModifier)) + "impl." + baseModifier + "Impl";
         if (!description.getProperties().isBase()) {
             (isNull(description.getMixIn()) ? description : description.getMixIn())
