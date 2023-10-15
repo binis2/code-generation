@@ -165,7 +165,11 @@ public class PrototypeLookupHandler implements PrototypeLookup {
 
     @Override
     public PrototypeDescription<ClassOrInterfaceDeclaration> findByInterfaceName(String name) {
-        return parsed.values().stream().filter(p -> p.getInterfaceName().equals(name)).findFirst().orElse(null);
+        return parsed.values().stream()
+                .filter(p -> nonNull(p.getInterfaceName()))
+                .filter(p -> p.getInterfaceName().equals(name))
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
