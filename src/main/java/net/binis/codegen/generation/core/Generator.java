@@ -863,13 +863,17 @@ public class Generator {
                 var name = pair.getNameAsString();
                 switch (name) {
                     case "name":
-                        var value = pair.getValue().asStringLiteralExpr().asString();
-                        if (StringUtils.isNotBlank(value)) {
-                            var intf = value.replace("Entity", "");
-                            builder.name(value)
-                                    .className(value)
-                                    .interfaceName(intf)
-                                    .longModifierName(intf + "." + Constants.MODIFIER_INTERFACE_NAME);
+                        if (pair.getValue().isStringLiteralExpr()) {
+                            var value = pair.getValue().asStringLiteralExpr().asString();
+                            if (StringUtils.isNotBlank(value)) {
+                                var intf = value.replace("Entity", "");
+                                builder.name(value)
+                                        .className(value)
+                                        .interfaceName(intf)
+                                        .longModifierName(intf + "." + Constants.MODIFIER_INTERFACE_NAME);
+                            }
+                        } else {
+                            builder.custom("_name", pair.getValue());
                         }
                         break;
                     case "generateConstructor":
@@ -882,7 +886,7 @@ public class Generator {
                         builder.generateInterface(pair.getValue().asBooleanLiteralExpr().getValue());
                         break;
                     case "interfaceName":
-                        value = pair.getValue().asStringLiteralExpr().asString();
+                        var value = pair.getValue().asStringLiteralExpr().asString();
                         if (StringUtils.isNotBlank(value)) {
                             iName.set(pair.getValue().asStringLiteralExpr().asString());
                         }
@@ -902,7 +906,8 @@ public class Generator {
                     case "baseModifierClass":
                         value = pair.getValue().asClassExpr().getTypeAsString();
                         if (StringUtils.isNotBlank(value) && !"void".equals(value)) {
-                            builder.baseModifierClass(value);
+                            var full = Helpers.getExternalClassNameIfExists(pair, value);
+                            builder.baseModifierClass(nonNull(full) ? full : value);
                         }
                         break;
                     case "mixInClass":
