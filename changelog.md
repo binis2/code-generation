@@ -1,4 +1,12 @@
 # Change Log
+**15-10-2023** ver. 1.1.12
+* Core: CodeFactory is able to instantiate objects with different constructors.
+* Generation: Added handling of multiple prototype annotations on single class.
+* Generation: Fixed base modifier class discovery in some corner cases.
+* Generation: Fixed parsing error when prototype name is not string literal.
+* Generation: Fixed NPE when searching for prototype by interface name.
+* Compiler Plugin: Fixed annotation extending to target only annotations.
+
 **12-10-2023** ver. 1.1.11
 * Generation: Modify Enricher adds @Generated annotation to all generated classes.
 * Generation: Added SuppressSpotBugsWarningsOption for Modifier Enricher.
