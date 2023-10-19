@@ -139,6 +139,8 @@ public class PrototypeLookupHandler implements PrototypeLookup {
                             .spec(res.get().getType(0).isClassOrInterfaceDeclaration() ? res.get().getType(0).asClassOrInterfaceDeclaration() : null)
                             .build());
                 }
+            } else {
+                external.put(prototype, null);
             }
         }
     }
@@ -196,7 +198,7 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     @Override
     public boolean isExternal(String prototype) {
         handleExternal(prototype);
-        return external.containsKey(prototype);
+        return nonNull(external.get(prototype));
     }
 
     @Override

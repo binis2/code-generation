@@ -359,17 +359,9 @@ public class CodeGen {
         }
     }
 
-    public static void processTemplate(String name, String source) {
+    public static void processTemplate(String name, CompilationUnit unit) {
         log.info("Processing template: {}", name);
-        var parser = lookup.getParser();
-        var parse = parser.parse(source);
-        parse.getResult().ifPresentOrElse(u ->
-                        u.getTypes().forEach(CodeGen::handleTemplate),
-                () -> {
-                    log.error("Failed template processing ({}) with:", name);
-                    parse.getProblems().forEach(p ->
-                            log.error("    {}:{} {}", p.getCause().map(Object::toString).orElse(""), p.getMessage(), p.getLocation().map(Object::toString).orElse("")));
-                });
+        unit.getTypes().forEach(CodeGen::handleTemplate);
     }
 
     public static void handleTemplate(TypeDeclaration<?> t) {

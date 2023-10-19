@@ -653,11 +653,15 @@ public class Structures {
     @SuppressWarnings("unchecked")
     public static void registerTemplate(AnnotationDeclaration template) {
         defaultProperties.put(template.getFullyQualifiedName().get(), () -> {
-            var builder = defaultBuilder();
-
-            template.getAnnotations().stream()
+            var parent = template.getAnnotations().stream()
                     .filter(a -> defaultProperties.containsKey(getExternalClassName(template, a.getNameAsString())))
-                    .forEach(a -> readAnnotation(a, builder));
+                    .findFirst();
+
+            var builder = parent.isPresent() ? defaultProperties.get(getExternalClassName(template, parent.get().getNameAsString())).get() : defaultBuilder();
+
+            if (parent.isPresent()) {
+                readAnnotation(parent.get(), builder);
+            }
 
             template.getMembers().stream()
                     .filter(BodyDeclaration::isAnnotationMemberDeclaration)
