@@ -146,51 +146,51 @@ public class PresetTestImpl implements PresetTest {
         }
 
         public QueryAggregateOperation aggregate() {
-            return (QueryAggregateOperation) aggregateStart(new PresetTestQueryOrderImpl(this, PresetTestQueryExecutorImpl.this::aggregateIdentifier));
+            return (QueryAggregateOperation) _aggregateStart(new PresetTestQueryOrderImpl(this, PresetTestQueryExecutorImpl.this::_aggregateIdentifier));
         }
 
         public QuerySelectOperation data(int data) {
-            return identifier("data", data);
+            return $identifier("data", data);
         }
 
         public QueryFunctions data() {
-            return identifier("data");
+            return $identifier("data");
         }
 
         public QueryCollectionFunctions list_() {
-            return identifier("list");
+            return $identifier("list");
         }
 
         public PresetTest.QueryOrder order() {
-            return (PresetTest.QueryOrder) orderStart(new PresetTestQueryOrderImpl(this, PresetTestQueryExecutorImpl.this::orderIdentifier));
+            return (PresetTest.QueryOrder) _orderStart(new PresetTestQueryOrderImpl(this, PresetTestQueryExecutorImpl.this::_orderIdentifier));
         }
 
         public QuerySelectOperation parent(PresetTest parent) {
-            return identifier("parent", parent);
+            return $identifier("parent", parent);
         }
 
         public QuerySelectOperation test(boolean test) {
-            return identifier("test", test);
+            return $identifier("test", test);
         }
 
         public QueryFunctions test() {
-            return identifier("test");
+            return $identifier("test");
         }
 
         public QuerySelectOperation title(String title) {
-            return identifier("title", title);
+            return $identifier("title", title);
         }
 
         public QueryFunctions title() {
-            return identifier("title");
+            return $identifier("title");
         }
 
         public QuerySelectOperation type(String type) {
-            return identifier("type", type);
+            return $identifier("type", type);
         }
 
         public QueryFunctions type() {
-            return identifier("type");
+            return $identifier("type");
         }
 
         @Generated("QueryEnricher")
@@ -228,11 +228,11 @@ public class PresetTestImpl implements PresetTest {
     protected static class PresetTestQueryNameImpl extends BaseQueryNameImpl implements PresetTest.QueryName, QueryEmbed {
 
         public QueryFunctions data() {
-            return executor.identifier("data");
+            return executor.$identifier("data");
         }
 
         public QuerySelectOperation data(int data) {
-            return executor.identifier("data", data);
+            return executor.$identifier("data", data);
         }
 
         public PresetTest.QueryName parent() {
@@ -242,31 +242,31 @@ public class PresetTestImpl implements PresetTest {
         }
 
         public QuerySelectOperation parent(PresetTest parent) {
-            return executor.identifier("parent", parent);
+            return executor.$identifier("parent", parent);
         }
 
         public QueryFunctions test() {
-            return executor.identifier("test");
+            return executor.$identifier("test");
         }
 
         public QuerySelectOperation test(boolean test) {
-            return executor.identifier("test", test);
+            return executor.$identifier("test", test);
         }
 
         public QueryFunctions title() {
-            return executor.identifier("title");
+            return executor.$identifier("title");
         }
 
         public QuerySelectOperation title(String title) {
-            return executor.identifier("title", title);
+            return executor.$identifier("title", title);
         }
 
         public QueryFunctions type() {
-            return executor.identifier("type");
+            return executor.$identifier("type");
         }
 
         public QuerySelectOperation type(String type) {
-            return executor.identifier("type", type);
+            return executor.$identifier("type", type);
         }
     }
 

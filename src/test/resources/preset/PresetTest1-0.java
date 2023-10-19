@@ -115,35 +115,35 @@ public class PresetTestImpl implements PresetTest {
         }
 
         public QueryAggregateOperation aggregate() {
-            return (QueryAggregateOperation) aggregateStart(new PresetTestQueryOrderImpl(this, PresetTestQueryExecutorImpl.this::aggregateIdentifier));
+            return (QueryAggregateOperation) _aggregateStart(new PresetTestQueryOrderImpl(this, PresetTestQueryExecutorImpl.this::_aggregateIdentifier));
         }
 
         public QuerySelectOperation data(int data) {
-            return identifier("data", data);
+            return $identifier("data", data);
         }
 
         public QueryFunctions data() {
-            return identifier("data");
+            return $identifier("data");
         }
 
         public QueryCollectionFunctions list_() {
-            return identifier("list");
+            return $identifier("list");
         }
 
         public PresetTest.QueryOrder order() {
-            return (PresetTest.QueryOrder) orderStart(new PresetTestQueryOrderImpl(this, PresetTestQueryExecutorImpl.this::orderIdentifier));
+            return (PresetTest.QueryOrder) _orderStart(new PresetTestQueryOrderImpl(this, PresetTestQueryExecutorImpl.this::_orderIdentifier));
         }
 
         public QuerySelectOperation parent(PresetTest parent) {
-            return identifier("parent", parent);
+            return $identifier("parent", parent);
         }
 
         public QuerySelectOperation title(String title) {
-            return identifier("title", title);
+            return $identifier("title", title);
         }
 
         public QueryFunctions title() {
-            return identifier("title");
+            return $identifier("title");
         }
 
         @Generated("QueryEnricher")
@@ -173,11 +173,11 @@ public class PresetTestImpl implements PresetTest {
     protected static class PresetTestQueryNameImpl extends BaseQueryNameImpl implements PresetTest.QueryName, QueryEmbed {
 
         public QueryFunctions data() {
-            return executor.identifier("data");
+            return executor.$identifier("data");
         }
 
         public QuerySelectOperation data(int data) {
-            return executor.identifier("data", data);
+            return executor.$identifier("data", data);
         }
 
         public PresetTest.QueryName parent() {
@@ -187,15 +187,15 @@ public class PresetTestImpl implements PresetTest {
         }
 
         public QuerySelectOperation parent(PresetTest parent) {
-            return executor.identifier("parent", parent);
+            return executor.$identifier("parent", parent);
         }
 
         public QueryFunctions title() {
-            return executor.identifier("title");
+            return executor.$identifier("title");
         }
 
         public QuerySelectOperation title(String title) {
-            return executor.identifier("title", title);
+            return executor.$identifier("title", title);
         }
     }
 

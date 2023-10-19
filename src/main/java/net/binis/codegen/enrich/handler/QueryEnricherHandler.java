@@ -157,11 +157,11 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         impl.addMethod("order").setType(entity + "." + QUERY_ORDER)
                 .addModifier(PUBLIC)
                 .setBody(new BlockStmt()
-                        .addStatement(new ReturnStmt("(" + entity + "." + QUERY_ORDER + ") orderStart(new " + entity + QUERY_ORDER + QUERY_IMPL + "(this, " + entity + QUERY_EXECUTOR + QUERY_IMPL + ".this::orderIdentifier))")));
+                        .addStatement(new ReturnStmt("(" + entity + "." + QUERY_ORDER + ") _orderStart(new " + entity + QUERY_ORDER + QUERY_IMPL + "(this, " + entity + QUERY_EXECUTOR + QUERY_IMPL + ".this::_orderIdentifier))")));
         impl.addMethod("aggregate").setType(QUERY_AGGREGATE_OPERATION)
                 .addModifier(PUBLIC)
                 .setBody(new BlockStmt()
-                        .addStatement(new ReturnStmt("(" + QUERY_AGGREGATE_OPERATION + ") aggregateStart(new " + entity + QUERY_ORDER + QUERY_IMPL + "(this, " + entity + QUERY_EXECUTOR + QUERY_IMPL + ".this::aggregateIdentifier))")));
+                        .addStatement(new ReturnStmt("(" + QUERY_AGGREGATE_OPERATION + ") _aggregateStart(new " + entity + QUERY_ORDER + QUERY_IMPL + "(this, " + entity + QUERY_EXECUTOR + QUERY_IMPL + ".this::_aggregateIdentifier))")));
         impl.addSingleMemberAnnotation(Generated.class, QUERY_ENRICHER);
         spec.addMember(impl);
 
@@ -416,7 +416,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                                 .setType(QUERY_COLLECTION_FUNCTIONS)
                                 .addModifier(PUBLIC)
                                 .setBody(new BlockStmt()
-                                        .addStatement(new ReturnStmt("identifier(\"" + fName + "\")")));
+                                        .addStatement(new ReturnStmt("$identifier(\"" + fName + "\")")));
                     }
                 }
             } else {
@@ -427,7 +427,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                         .addModifier(PUBLIC)
                         .addParameter(type, fName)
                         .setBody(new BlockStmt()
-                                .addStatement(new ReturnStmt("identifier(\"" + fName + "\", " + fName + ")")));
+                                .addStatement(new ReturnStmt("$identifier(\"" + fName + "\", " + fName + ")")));
 
                 if (!trans) {
                     if (isNull(desc.getPrototype()) || isNull(desc.getPrototype().getRegisteredClass(Constants.QUERY_OPERATION_FIELDS_INTF_KEY))) {
@@ -482,14 +482,14 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                         funcs.addMethod(name).setType(QUERY_FUNCTIONS + "<" + Helpers.handleGenericPrimitiveType(type) + "," + QUERY_GENERIC + ">").setBody(null);
                         impl.addMethod(name, PUBLIC).setType(QUERY_FUNCTIONS)
                                 .setBody(new BlockStmt()
-                                        .addStatement(new ReturnStmt("identifier(\"" + fName + "\")")));
+                                        .addStatement(new ReturnStmt("$identifier(\"" + fName + "\")")));
 
 
                         qNameImpl.addMethod(name)
                                 .setType(QUERY_FUNCTIONS)
                                 .addModifier(PUBLIC)
                                 .setBody(new BlockStmt()
-                                        .addStatement(new ReturnStmt("executor.identifier(\"" + fName + "\")")));
+                                        .addStatement(new ReturnStmt("executor.$identifier(\"" + fName + "\")")));
                     }
                 }
 
@@ -505,7 +505,7 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                         .addModifier(PUBLIC)
                         .addParameter(type, fName)
                         .setBody(new BlockStmt()
-                                .addStatement(new ReturnStmt("executor.identifier(\"" + fName + "\", " + fName + ")")));
+                                .addStatement(new ReturnStmt("executor.$identifier(\"" + fName + "\", " + fName + ")")));
 
                 desc.getDescription().getAnnotations().forEach(a -> {
                     var cls = Helpers.getExternalClassNameIfExists(desc.getDescription().findCompilationUnit().get(), a.getNameAsString());
