@@ -48,5 +48,9 @@ class BasicsTest extends BaseCodeGenTest {
         ));
     }
 
+    @Test
+    void testAddField() {
+        testSingle("basic/TestAdd.java", "basic/TestAdd-0.java", "basic/TestAdd-1.java");
+    }
 
 }

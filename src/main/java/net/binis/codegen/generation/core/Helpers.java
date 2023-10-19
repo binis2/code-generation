@@ -20,10 +20,7 @@ package net.binis.codegen.generation.core;
  * #L%
  */
 
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.ImportDeclaration;
-import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
@@ -1165,7 +1162,7 @@ public class Helpers {
     }
 
     public static Pair<Type, PrototypeDescription<ClassOrInterfaceDeclaration>> getFieldType(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field) {
-        if (field.getDescription().getTypeParameters().isEmpty()) {
+        if (isNull(field.getDescription()) || field.getDescription().getTypeParameters().isEmpty()) {
             if (field.isGenericField()) {
                 var intf = field.getParsed().getInterface();
                 var type = Holder.<Type>blank();
@@ -1193,7 +1190,8 @@ public class Helpers {
                 return Pair.of(field.getDeclaration().getVariables().get(0).getType(), null);
             } else {
                 var result = field.getDescription().getType();
-                if (nonNull(lookup.findParsed(Helpers.getExternalClassName(field.getDescription().findCompilationUnit().get(), result.asString())))) {
+                var unit = field.getDescription().findCompilationUnit().orElse(null);
+                if (nonNull(unit) && nonNull(lookup.findParsed(Helpers.getExternalClassName(unit, result.asString())))) {
                     result = lookup.getParser().parseClassOrInterfaceType(field.getType().asString()).getResult().get();
                 } else if (nonNull(field.getDeclaration())) {
                     result = field.getDeclaration().getCommonType();
@@ -1337,4 +1335,5 @@ public class Helpers {
             return Optional.empty();
         }
     }
+
 }

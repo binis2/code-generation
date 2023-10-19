@@ -21,11 +21,18 @@ package net.binis.codegen.generation.core;
  */
 
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.Statement;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.Type;
+import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
+import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
 import static net.binis.codegen.generation.core.Helpers.lookup;
 
@@ -54,6 +61,27 @@ public class EnrichHelpers {
     public static AnnotationExpr annotation(String code) {
         return lookup.getParser().parseAnnotation(code).getResult().get();
     }
+
+    public static PrototypeField addField(PrototypeDescription<ClassOrInterfaceDeclaration> description, String name, String type) {
+        return addField(description, name, new ClassOrInterfaceType(type));
+    }
+
+    public static PrototypeField addField(PrototypeDescription<ClassOrInterfaceDeclaration> description, String name, Type type) {
+        var field = description.getImplementation().addField(String.class, name, Modifier.Keyword.PROTECTED);
+
+        var result = Structures.FieldData.builder()
+                .parsed((Structures.Parsed<ClassOrInterfaceDeclaration>) description)
+                .declaration(field)
+                .description(new MethodDeclaration().setName(name).setType(type))
+                .name(name)
+                .fullType(Helpers.getExternalClassNameIfExists(description.getDeclarationUnit(), type.asString()))
+                .type(type)
+                .ignores(Structures.Ignores.builder().build())
+                .build();
+        description.getFields().add(result);
+        return result;
+    }
+
 
     private EnrichHelpers() {
         //Do nothing
