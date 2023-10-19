@@ -1053,7 +1053,26 @@ public class Generator {
         var map = new HashMap<Class<? extends Enricher>, PrototypeEnricher>();
         expression.getValues().stream()
                 .filter(Expression::isClassExpr)
-                .map(e -> loadClass(getExternalClassName(expression.findCompilationUnit().get(), e.asClassExpr().getType().asString())))
+                .map(e -> {
+                    var className = e.asClassExpr().getType().asString();
+                    var cls = loadClass(className);
+                    if (isNull(cls)) {
+                        className = getExternalClassName(expression.findCompilationUnit().get(), className);
+                        cls = loadClass(className);
+                    }
+
+                    if (isNull(cls)) {
+                        if (lookup.isExternal(className)) {
+                            if (expression.findAncestor(ClassOrInterfaceDeclaration.class).isPresent()) {
+                                lookup.error("Enricher " + className + " is being compiled! It's not usable in the same module as it is defined!", null);
+                            }
+                        } else {
+                            lookup.error("Enricher " + className + " is not found in the classpath!", null);
+                        }
+                    }
+
+                    return cls;
+                })
                 .filter(Objects::nonNull)
                 .filter(Enricher.class::isAssignableFrom)
                 .forEach(enricher -> initEnricher(enricher, map));

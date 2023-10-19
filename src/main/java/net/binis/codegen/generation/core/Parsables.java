@@ -23,7 +23,6 @@ package net.binis.codegen.generation.core;
 import net.binis.codegen.objects.Pair;
 
 import javax.lang.model.element.Element;
-import java.lang.annotation.Annotation;
 import java.util.*;
 
 public class Parsables extends HashMap<String, Parsables.Entry> implements Iterable<Map.Entry<String, Parsables.Entry>> {

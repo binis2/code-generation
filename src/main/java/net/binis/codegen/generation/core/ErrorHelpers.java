@@ -23,6 +23,7 @@ package net.binis.codegen.generation.core;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 
+import static java.util.Objects.nonNull;
 import static net.binis.codegen.annotation.type.GenerationStrategy.PLAIN;
 import static net.binis.codegen.annotation.type.GenerationStrategy.PROTOTYPE;
 import static net.binis.codegen.tools.Tools.in;
@@ -31,7 +32,9 @@ public class ErrorHelpers {
 
     public static String calculatePrototypeAnnotationError(ClassOrInterfaceDeclaration type, PrototypeData properties) {
         if (in(properties.getStrategy(), PROTOTYPE, PLAIN) && !type.isInterface()) {
-            return "@" + properties.getPrototypeAnnotation().getSimpleName() + " is allowed only on interfaces!";
+            if (nonNull(properties.getPrototypeAnnotation())) {
+                return "@" + properties.getPrototypeAnnotation().getSimpleName() + " is allowed only on interfaces!";
+            }
         }
         return null;
     }

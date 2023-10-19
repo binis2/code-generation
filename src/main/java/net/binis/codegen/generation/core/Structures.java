@@ -39,6 +39,7 @@ import net.binis.codegen.enrich.CustomDescription;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.GeneratedFile;
 import net.binis.codegen.enrich.PrototypeEnricher;
+import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.interfaces.*;
 import net.binis.codegen.generation.core.types.ModifierType;
 import net.binis.codegen.objects.Pair;
@@ -659,9 +660,8 @@ public class Structures {
 
             var builder = parent.isPresent() ? defaultProperties.get(getExternalClassName(template, parent.get().getNameAsString())).get() : defaultBuilder();
 
-            if (parent.isPresent()) {
-                readAnnotation(parent.get(), builder);
-            }
+            parent.ifPresent(annotationExpr ->
+                    readAnnotation(annotationExpr, builder));
 
             template.getMembers().stream()
                     .filter(BodyDeclaration::isAnnotationMemberDeclaration)
@@ -674,15 +674,15 @@ public class Structures {
                             case "generateConstructor" ->
                                     builder.generateConstructor(handleBooleanExpression(member.getDefaultValue().get()));
                             case "options" ->
-                                    builder.options(handleClassExpression(member.getDefaultValue().get(), Set.class));
+                                    builder.options(handleClassExpression(member.getDefaultValue().get(), Set.class, CodeOption.class));
                             case "interfaceName" ->
                                     builder.interfaceName(handleStringExpression(member.getDefaultValue().get()));
                             case "implementationPath" ->
                                     builder.implementationPath(handleStringExpression(member.getDefaultValue().get()));
                             case "enrichers" ->
-                                    builder.predefinedEnrichers(handleClassExpression(member.getDefaultValue().get(), List.class));
+                                    builder.predefinedEnrichers(handleClassExpression(member.getDefaultValue().get(), List.class, Enricher.class));
                             case "inheritedEnrichers" ->
-                                    builder.predefinedInheritedEnrichers(handleClassExpression(member.getDefaultValue().get(), List.class));
+                                    builder.predefinedInheritedEnrichers(handleClassExpression(member.getDefaultValue().get(), List.class, Enricher.class));
                             case "interfaceSetters" ->
                                     builder.interfaceSetters(handleBooleanExpression(member.getDefaultValue().get()));
                             case "classGetters" ->
@@ -796,11 +796,11 @@ public class Structures {
                         }
                     }
                     case "enrichers" ->
-                        builder.predefinedEnrichers(handleClassExpression(pair.getValue(), List.class));
+                        builder.predefinedEnrichers(handleClassExpression(pair.getValue(), List.class, Enricher.class));
                     case "inheritedEnrichers" ->
-                        builder.predefinedInheritedEnrichers(handleClassExpression(pair.getValue(), List.class));
+                        builder.predefinedInheritedEnrichers(handleClassExpression(pair.getValue(), List.class, Enricher.class));
                     case "options" ->
-                        builder.options(handleClassExpression(pair.getValue(), Set.class));
+                        builder.options(handleClassExpression(pair.getValue(), Set.class, CodeOption.class));
                     default -> {}
                 }
             } else if (node instanceof Name) {
@@ -882,19 +882,35 @@ public class Structures {
 
 
     @SuppressWarnings("unchecked")
-    private static <T extends Collection> T handleClassExpression(Expression value, Class<T> cls) {
-        var result = Set.class.equals(cls) ? new HashSet<>() : new ArrayList<>();
+    private static <T extends Collection> T handleClassExpression(Expression value, Class<T> container, Class cls) {
+        var result = Set.class.equals(container) ? new HashSet<>() : new ArrayList<>();
         if (value.isArrayInitializerExpr()) {
             value.asArrayInitializerExpr().getValues().forEach(v ->
                     with(handleClassExpression(v), r ->
-                            with(loadClass(r), result::add)));
+                            with(checkLoadClass(r, cls), result::add)));
         } else if (value.isClassExpr()) {
             with(handleClassExpression(value), r ->
-                    with(loadClass(r), result::add));
+                    with(checkLoadClass(r, cls), result::add));
         } else {
             log.warn("Class expression not implemented: {}", value.getClass().getCanonicalName());
         }
         return (T) result;
+    }
+
+    private static Class checkLoadClass(String r, Class cls) {
+        var result = loadClass(r);
+
+        if (isNull(result)) {
+            if (lookup.isExternal(r)) {
+                if (Enricher.class.equals(cls)) {
+                    result = ErrorOnInvokeEnricher.class;
+                }
+            } else {
+                lookup.error("Option or Enricher '" + r + "' is not found in the classpath!", null);
+            }
+        }
+
+        return result;
     }
 
     private static String handleClassExpression(Expression value) {
@@ -956,6 +972,20 @@ public class Structures {
             value = null;
         }
         return value;
+    }
+
+    protected static class ErrorOnInvokeEnricher extends BaseEnricher {
+
+        @Override
+        public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+            lookup.error("Usage of enrichers that are not compiled yet!", description.getElement());
+        }
+
+        @Override
+        public int order() {
+            return 0;
+        }
+
     }
 
 
