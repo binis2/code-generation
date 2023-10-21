@@ -978,7 +978,7 @@ public class Structures {
 
         @Override
         public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-            lookup.error("Usage of enrichers that are not compiled yet!", description.getElement());
+            lookup.warn("Usage of enrichers that are not compiled yet!", description.getElement());
         }
 
         @Override
