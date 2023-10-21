@@ -1,4 +1,13 @@
 # Change Log
+**15-10-2023** ver. 1.1.13
+* Generation: Added helper function to add custom field to prototype.
+* Generation: Reworked discovery of custom prototypes in the same compiling cycle.
+* Generation: Added check if there is attempt of using not yet compiled enrichers.
+* Spring: Renamed QueryExecutor internal routines to be less likely to collide with prototype defined fields.
+* IDEA Plugin: Added support for method augmentation.
+* IDEA Plugin: More reliable library discovery.
+* IDEA Plugin: Added internal cache eviction on file save.
+
 **15-10-2023** ver. 1.1.12
 * Core: CodeFactory is able to instantiate objects with different constructors.
 * Generation: Added handling of multiple prototype annotations on single class.
