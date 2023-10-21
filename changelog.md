@@ -1,5 +1,5 @@
 # Change Log
-**15-10-2023** ver. 1.1.13
+**21-10-2023** ver. 1.1.13
 * Generation: Added helper function to add custom field to prototype.
 * Generation: Reworked discovery of custom prototypes in the same compiling cycle.
 * Generation: Added check if there is attempt of using not yet compiled enrichers.
