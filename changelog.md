@@ -1,4 +1,9 @@
 # Change Log
+**24-10-2023** ver. 1.1.14
+* Generation: Fixed usage of compiled Enum prototypes. 
+* Generation: Fixed handling of prototypes as generic type arguments.
+* IDEA Plugin: Fixed caching of processed prototypes.
+
 **21-10-2023** ver. 1.1.13
 * Generation: Added helper function to add custom field to prototype.
 * Generation: Reworked discovery of custom prototypes in the same compiling cycle.
