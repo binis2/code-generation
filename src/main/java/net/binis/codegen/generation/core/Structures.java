@@ -145,21 +145,25 @@ public class Structures {
             }
 
             public PrototypeDataHandlerBuilder predefinedEnrichers(List<Class<? extends Enricher>> predefinedEnrichers) {
-                if (isNull(this.predefinedEnrichers)) {
-                    this.predefinedEnrichers = new ArrayList<>();
-                    this.predefinedEnrichers.addAll(predefinedEnrichers);
-                } else {
-                    predefinedEnrichers.stream().filter(e -> !this.predefinedEnrichers.contains(e)).forEach(this.predefinedEnrichers::add);
+                if (nonNull(predefinedEnrichers)) {
+                    if (isNull(this.predefinedEnrichers)) {
+                        this.predefinedEnrichers = new ArrayList<>();
+                        this.predefinedEnrichers.addAll(predefinedEnrichers);
+                    } else {
+                        predefinedEnrichers.stream().filter(e -> !this.predefinedEnrichers.contains(e)).forEach(this.predefinedEnrichers::add);
+                    }
                 }
                 return this;
             }
 
             public PrototypeDataHandlerBuilder predefinedInheritedEnrichers(List<Class<? extends Enricher>> predefinedInheritedEnrichers) {
-                if (isNull(this.predefinedInheritedEnrichers)) {
-                    this.predefinedInheritedEnrichers = new ArrayList<>();
-                    this.predefinedInheritedEnrichers.addAll(predefinedInheritedEnrichers);
-                } else {
-                    predefinedInheritedEnrichers.stream().filter(e -> !this.predefinedInheritedEnrichers.contains(e)).forEach(this.predefinedInheritedEnrichers::add);
+                if (nonNull(predefinedInheritedEnrichers)) {
+                    if (isNull(this.predefinedInheritedEnrichers)) {
+                        this.predefinedInheritedEnrichers = new ArrayList<>();
+                        this.predefinedInheritedEnrichers.addAll(predefinedInheritedEnrichers);
+                    } else {
+                        predefinedInheritedEnrichers.stream().filter(e -> !this.predefinedInheritedEnrichers.contains(e)).forEach(this.predefinedInheritedEnrichers::add);
+                    }
                 }
                 return this;
             }

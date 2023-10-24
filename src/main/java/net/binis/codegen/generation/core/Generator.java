@@ -1119,21 +1119,32 @@ public class Generator {
         }
     }
 
+    private static void processParentType(ClassOrInterfaceDeclaration declaration, PrototypeData properties, Type type, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        if (nonNull(parsed)) {
+            if (!parsed.isProcessed()) {
+                generateCodeForClass(parsed.getDeclaration().findCompilationUnit().get(), parsed);
+            } else {
+                if (!parsed.isProcessed()) {
+                    notProcessed.add(Pair.of(properties, parsed));
+                }
+            }
+        } else {
+            handleCompiledPrototype(getExternalClassName(declaration.findCompilationUnit().get(), type.asString()));
+        }
+
+    }
+
     @SuppressWarnings("unchecked")
     private static void ensureParsedParents(ClassOrInterfaceDeclaration declaration, PrototypeData properties) {
         for (var extended : declaration.getExtendedTypes()) {
-            var parsed = getParsed(extended);
-            if (nonNull(parsed)) {
-                if (!parsed.isProcessed()) {
-                    generateCodeForClass(parsed.getDeclaration().findCompilationUnit().get(), parsed);
-                } else {
-                    if (!parsed.isProcessed()) {
-                        notProcessed.add(Pair.of(properties, parsed));
-                    }
-                }
-            } else {
-                handleCompiledPrototype(getExternalClassName(declaration.findCompilationUnit().get(), extended.getNameAsString()));
-            }
+            extended.getTypeArguments().ifPresent(args ->
+                    args.forEach(arg -> {
+                        var parsed = lookup.findParsed(getExternalClassName(declaration.findCompilationUnit().get(), arg.asString()));
+                        if (isNull(parsed) || !properties.equals(parsed.getProperties())) {
+                            processParentType(declaration, properties, new ClassOrInterfaceType(null, arg.asString()), parsed);
+                        }
+                    }));
+            processParentType(declaration, properties, extended, getParsed(extended));
         }
 
         Tools.with(properties.getMixInClass(), c ->
@@ -1207,18 +1218,21 @@ public class Generator {
                     var interfaces = cls.getInterfaces();
                     Map<String, Type> typeArguments = null;
                     if (type.getTypeArguments().isPresent()) {
-                        typeArguments = processGenerics(cls, type.getTypeArguments().get());
+                        typeArguments = processGenerics(parsed, cls, type.getTypeArguments().get());
                     }
                     for (var i = 0; i < interfaces.length; i++) {
                         java.lang.reflect.Type[] types = null;
-                        if (generics[i] instanceof ParameterizedType) {
-                            types = ((ParameterizedType) generics[i]).getActualTypeArguments();
+                        if (generics[i] instanceof ParameterizedType pType) {
+                            types = pType.getActualTypeArguments();
                         }
                         handleExternalInterface(parsed, declaration, spec, interfaces[i], typeArguments, types);
                     }
                     handleExternalInterface(parsed, declaration, spec, cls, typeArguments, null);
                     if (nonNull(intf)) {
                         intf.addExtendedType(handleType(declaration.findCompilationUnit().get(), intf.findCompilationUnit().get(), type));
+                        if (nonNull(spec)) {
+                            handleGenericTypes(declaration.findCompilationUnit().get(), declaration.findCompilationUnit().get(), type, null);
+                        }
                     } else {
                         if (spec.getImplementedTypes().stream().noneMatch(type::equals)) {
                             spec.addImplementedType(handleType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), type));
@@ -2344,7 +2358,12 @@ public class Generator {
                 var name = pair.getNameAsString();
                 switch (name) {
                     case "name" -> builder.name(pair.getValue().asStringLiteralExpr().asString());
-                    case "mixIn" -> builder.mixInClass(pair.getValue().asClassExpr().getTypeAsString());
+                    case "mixIn" -> {
+                        var value = pair.getValue().asClassExpr().getTypeAsString();
+                        if (!"void".equals(value)) {
+                            builder.mixInClass(value);
+                        }
+                    }
                     case "ordinalOffset" ->
                             builder.ordinalOffset(pair.getValue().asIntegerLiteralExpr().asNumber().intValue());
                     case "enrichers" -> checkEnrichers(builder::enrichers, handleInitializerAnnotation(pair));

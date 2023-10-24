@@ -68,6 +68,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.*;
 import static net.binis.codegen.generation.core.EnrichHelpers.annotation;
+import static net.binis.codegen.generation.core.Generator.generateCodeForClass;
 import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.tools.Reflection.instantiate;
 import static net.binis.codegen.tools.Reflection.loadClass;
@@ -590,7 +591,7 @@ public class Helpers {
         return result;
     }
 
-    public static Map<String, Type> processGenerics(Class<?> cls, NodeList<Type> generics) {
+    public static Map<String, Type> processGenerics(Structures.Parsed<ClassOrInterfaceDeclaration> prsd, Class<?> cls, NodeList<Type> generics) {
         Map<String, Type> result = null;
         var types = parseGenericClassSignature(cls);
 
@@ -605,7 +606,10 @@ public class Helpers {
             if (generic.isClassOrInterfaceType()) {
                 var parsed = getParsed(generic.asClassOrInterfaceType());
                 if (nonNull(parsed)) {
-                    generic = new ClassOrInterfaceType().setName(parsed.getInterface().getNameAsString());
+                    if (!parsed.isProcessed() && !parsed.equals(prsd)) {
+                        generateCodeForClass(parsed.getDeclaration().findCompilationUnit().get(), parsed);
+                    }
+                    generic = new ClassOrInterfaceType(parsed.getInterfaceName());
                 }
             }
             result.put(types.get(i), generic);

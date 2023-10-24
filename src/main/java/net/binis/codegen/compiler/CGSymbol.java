@@ -25,6 +25,7 @@ import net.binis.codegen.compiler.base.JavaCompilerObject;
 
 import javax.lang.model.element.Element;
 
+import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.getFieldValue;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
@@ -46,6 +47,11 @@ public class CGSymbol extends JavaCompilerObject {
 
     public String getName() {
         return getFieldValue(instance, "name").toString();
+    }
+
+    public CGType getType() {
+        var type = getFieldValue(instance, "type");
+        return nonNull(type) ? new CGType(type) : null;
     }
 
     @Override

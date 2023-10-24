@@ -22,9 +22,7 @@ package net.binis.codegen.generation.core;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.EnumDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.MemberValuePair;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.CodeAnnotation;
@@ -50,6 +48,7 @@ import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.EnrichHelpers.annotation;
 import static net.binis.codegen.generation.core.EnrichHelpers.block;
 import static net.binis.codegen.generation.core.Generator.generateCodeForClass;
+import static net.binis.codegen.generation.core.Generator.generateCodeForEnum;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.with;
@@ -57,27 +56,39 @@ import static net.binis.codegen.tools.Tools.with;
 @Slf4j
 public abstract class CompiledPrototypesHandler {
 
+    @SuppressWarnings("unchecked")
     public static boolean handleCompiledPrototype(String compiledPrototype) {
         var result = Holder.of(false);
         Tools.with(loadClass(compiledPrototype), c ->
                 Generator.getCodeAnnotations(c).ifPresent(ann -> {
-                    var declaration = new CompilationUnit().setPackageDeclaration(c.getPackageName()).addClass(c.getSimpleName()).setInterface(true);
 
-                    for (var p : c.getTypeParameters()) {
-                        declaration.addTypeParameter(p.getName());
-                    }
+                    var declaration = c.isEnum() ? new CompilationUnit().setPackageDeclaration(c.getPackageName()).addEnum(c.getSimpleName()) : new CompilationUnit().setPackageDeclaration(c.getPackageName()).addClass(c.getSimpleName()).setInterface(true);
 
                     handleAnnotations(c, declaration);
-                    handleFields(c, declaration);
-                    handleDefaultMethods(c, declaration);
-                    var props = handleProperties(declaration, c, ann);
+
+                    Structures.PrototypeDataHandler props;
+                    if (declaration instanceof ClassOrInterfaceDeclaration decl) {
+                        for (var p : c.getTypeParameters()) {
+                            decl.addTypeParameter(p.getName());
+                        }
+                        handleFields(c, decl);
+                        handleDefaultMethods(c, decl);
+                        props = handleProperties(decl, c, ann);
+                    } else {
+                        var decl = (EnumDeclaration) declaration;
+                        props = handleProperties(decl, c, ann);
+                        Arrays.stream(c.getEnumConstants()).forEach(cnst ->
+                                decl.addEntry(new EnumConstantDeclaration(cnst.toString())));
+                        //decl.addEntry();
+                    }
+
                     var unit = declaration.findCompilationUnit().orElse(null);
 
                     var parsed = Structures.Parsed.<ClassOrInterfaceDeclaration>builder()
                             .compiled(c)
                             .properties(props)
                             .parser(lookup.getParser())
-                            .declaration(declaration)
+                            .declaration((TypeDeclaration) declaration)
                             .declarationUnit(unit);
 
                     var prsd = parsed.build();
@@ -326,7 +337,7 @@ public abstract class CompiledPrototypesHandler {
         }
     }
 
-    private static void handleAnnotations(Class<?> cls, ClassOrInterfaceDeclaration declaration) {
+    private static void handleAnnotations(Class<?> cls, TypeDeclaration declaration) {
         var unit = declaration.findCompilationUnit().get();
         for (var ann : cls.getAnnotations()) {
             var annotation = annotation(ann.toString());

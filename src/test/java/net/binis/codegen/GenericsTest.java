@@ -32,11 +32,6 @@ import java.util.List;
 @Slf4j
 class GenericsTest extends BaseCodeGenTest {
 
-    @BeforeEach
-    public void cleanUp() {
-        Helpers.cleanUp();
-    }
-
     @Test
     void testGenerics() {
         testMulti(List.of(
@@ -75,5 +70,20 @@ class GenericsTest extends BaseCodeGenTest {
     void testGenericsWithCompiledBaseAndNestedPrototype() {
         testSingleExecute("generics/Test5.java", "generics/Test5-0.java", "generics/Test5-1.java", 3, "generics/Test5-2.java");
     }
+
+    @Test
+    void testGenericsWithEnum() {
+        testMulti(List.of(
+                Triple.of("generics/Prototype5.java", "generics/Prototype5-0.java", "generics/Prototype5-1.java"),
+                Triple.of("generics/Prototype6.java", "generics/Prototype6-0.java", "generics/Prototype6-1.java")
+        ));
+    }
+
+    @Test
+    void testGenericsWithCompiledEnum() {
+        testSingle("generics/Prototype8.java", "generics/Prototype8-0.java", "generics/Prototype8-1.java", 2);
+    }
+
+
 
 }
