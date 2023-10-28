@@ -60,5 +60,12 @@ class EnumBasicsTest extends BaseCodeGenTest {
         testSingle("basic/enum/enrichTest1.java", "basic/enum/enrichTest1-0.java", "basic/enum/enrichTest1-1.java");
     }
 
+    @Test
+    void testQuery() {
+        testMulti(List.of(
+                Triple.of("basic/enum/EnumTest3.java", "basic/enum/EnumTest3-0.java", "basic/enum/EnumTest3-1.java"),
+                Triple.of("basic/enum/EnumTest4.java", "basic/enum/EnumTest4-0.java", "basic/enum/EnumTest4-1.java")));
+    }
+
 
 }

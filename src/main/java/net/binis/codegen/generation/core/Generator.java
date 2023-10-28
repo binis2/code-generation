@@ -130,7 +130,7 @@ public class Generator {
                 if (item.getValue().isProcessed()) {
                     var parse = (Structures.Parsed<ClassOrInterfaceDeclaration>) lookup.findParsed(item.getKey().getPrototypeFullName());
                     parse.getDeclaration().asClassOrInterfaceDeclaration().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(item.getValue().getDeclaration().asClassOrInterfaceDeclaration().getNameAsString())).forEach(t ->
-                            handleParsedExtendedType(parse, item.getValue(), parse.getImplementation(), parse.getInterface(), parse.getProperties(), t));
+                            handleParsedExtendedType(parse, item.getValue(), parse.getImplementation(), parse.getInterface(), parse.getProperties(), t, false));
                     i.remove();
                 }
             }
@@ -331,10 +331,10 @@ public class Generator {
 
             if (nonNull(parsed)) {
                 if (parsed.isProcessed()) {
-                    handleParsedExtendedType(parse, parsed, spec, intf, properties, t);
+                    handleParsedExtendedType(parse, parsed, spec, intf, properties, t, false);
                 }
             } else {
-                handleExternalInterface(parse, typeDeclaration, spec, intf, t);
+                handleExternalInterface(parse, typeDeclaration, spec, intf, t, false);
             }
         });
 
@@ -459,7 +459,7 @@ public class Generator {
                     //handleParsedExtendedType(parse, parsed, spec, intf, properties, t);
                 }
             } else {
-                handleExternalInterface(parse, typeDeclaration, spec, null, t);
+                handleExternalInterface(parse, typeDeclaration, spec, null, t, false);
             }
         });
 
@@ -504,7 +504,7 @@ public class Generator {
         }
     }
 
-    private static void handleParsedExtendedType(Structures.Parsed<ClassOrInterfaceDeclaration> parse, PrototypeDescription<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, PrototypeData properties, ClassOrInterfaceType type) {
+    private static void handleParsedExtendedType(Structures.Parsed<ClassOrInterfaceDeclaration> parse, PrototypeDescription<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, PrototypeData properties, ClassOrInterfaceType type, boolean alreadyAdded) {
         if (!parsed.getProperties().isBase() && !parsed.getProperties().getPrototypeName().equals(parse.getProperties().getMixInClass())) {
             parsed.getFields().forEach(field -> {
                 var method = field.getDescription().clone();
@@ -1208,7 +1208,7 @@ public class Generator {
         handleImports(declaration.getImplementation(), spec);
     }
 
-    private static boolean handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceType type) {
+    private static boolean handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceType type, boolean alreadyAdded) {
         var className = getExternalClassName(declaration.findCompilationUnit().get(), type.getNameAsString());
         if (nonNull(className)) {
             var cls = loadClass(className);
@@ -1229,13 +1229,17 @@ public class Generator {
                     }
                     handleExternalInterface(parsed, declaration, spec, cls, typeArguments, null);
                     if (nonNull(intf)) {
-                        intf.addExtendedType(handleType(declaration.findCompilationUnit().get(), intf.findCompilationUnit().get(), type));
+                        if (!alreadyAdded) {
+                            intf.addExtendedType(handleType(declaration.findCompilationUnit().get(), intf.findCompilationUnit().get(), type));
+                        }
                         if (nonNull(spec)) {
                             handleGenericTypes(declaration.findCompilationUnit().get(), declaration.findCompilationUnit().get(), type, null);
                         }
                     } else {
                         if (spec.getImplementedTypes().stream().noneMatch(type::equals)) {
-                            spec.addImplementedType(handleType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), type));
+                            if (!alreadyAdded) {
+                                spec.addImplementedType(handleType(declaration.findCompilationUnit().get(), spec.findCompilationUnit().get(), type));
+                            }
                         }
                     }
                 } else {
@@ -1254,7 +1258,9 @@ public class Generator {
                             implementPrototype(parsed, spec, external, generics, true);
                             ((Structures.Parsed) external).setImplementation(org);
                             if (nonNull(intf)) {
-                                intf.addExtendedType(external.getDeclaration().getNameAsString());
+                                if (!alreadyAdded) {
+                                    intf.addExtendedType(external.getDeclaration().getNameAsString());
+                                }
                                 var eType = intf.getExtendedTypes().getLast().get();
                                 type.getTypeArguments().ifPresent(args -> args.forEach(tt -> {
                                     if (eType.getTypeArguments().isEmpty()) {
@@ -1265,6 +1271,18 @@ public class Generator {
                                 }));
                                 intf.findCompilationUnit().get().addImport(external.getDeclaration().getFullyQualifiedName().get());
                             }
+                            org.getExtendedTypes().forEach(t -> {
+                                var p = getParsed(t);
+
+                                if (nonNull(p)) {
+                                    if (p.isProcessed()) {
+                                        handleParsedExtendedType(parsed, parsed, spec, null, parsed.getProperties(), t, true);
+                                    }
+                                } else {
+                                    handleExternalInterface(parsed, org, spec, null, t, true);
+                                }
+                            });
+
                             return true;
                         }
                     }
@@ -1647,7 +1665,7 @@ public class Generator {
 
     private static void processInnerClass(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration cls) {
         cls.getImplementedTypes().forEach(t -> {
-            if (handleExternalInterface(parsed, declaration, spec, null, t)) {
+            if (handleExternalInterface(parsed, declaration, spec, null, t, false)) {
                 handleType(cls, spec, t);
                 spec.addImplementedType(t);
             }

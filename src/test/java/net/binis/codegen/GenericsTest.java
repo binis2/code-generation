@@ -27,7 +27,11 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+
+import static net.binis.codegen.generation.core.Helpers.lookup;
 
 @Slf4j
 class GenericsTest extends BaseCodeGenTest {
@@ -80,10 +84,34 @@ class GenericsTest extends BaseCodeGenTest {
     }
 
     @Test
+    void testGenericsWithCompiledInheritedInterface() {
+        testSingle("generics/Prototype7.java", "generics/Prototype7-0.java", "generics/Prototype7-1.java");
+    }
+
+
+    @Test
     void testGenericsWithCompiledEnum() {
         testSingle("generics/Prototype8.java", "generics/Prototype8-0.java", "generics/Prototype8-1.java", 2);
     }
 
+    @Test
+    void testGenericsWithInheritedInterfaceThatInheritsComiledInterface() {
+        lookup.registerExternalLookup(s -> {
+            if ("net.binis.codegen.types.TestType".equals(s)) {
+                return """
+                        package net.binis.codegen.types;
+                                            
+                        import net.binis.codegen.objects.Typeable;
+                                            
+                        public interface TestType extends Typeable<TestType> {
+                                            
+                        }
+                        """;
+            }
+            return null;
+        });
+        testSingleSkip("generics/Prototype9.java", "generics/Prototype9-0.java", "generics/Prototype9-1.java", true, true);
+    }
 
 
 }

@@ -377,8 +377,7 @@ public class Helpers {
     public static boolean methodExists(ClassOrInterfaceDeclaration spec, Method declaration, boolean isClass) {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(declaration.getName()) &&
-                                m.getParameters().size() == declaration.getParameterCount() &&
-                                m.getType().asString().equals(declaration.getReturnType().getSimpleName())
+                                m.getParameters().size() == declaration.getParameterCount()
                         //TODO: Match parameter types also
                 ) || !isClass && ancestorMethodExists(spec, declaration);
     }
@@ -465,7 +464,7 @@ public class Helpers {
                 .map(t -> loadClass(getExternalClassName(unit, t.getNameAsString())))
                 .filter(Objects::nonNull)
                 .anyMatch(c -> Arrays.stream(c.getMethods()).anyMatch(
-                        m -> m.getName().equals(declaration.getName()) && m.getReturnType().equals(declaration.getReturnType())
+                        m -> m.getName().equals(declaration.getName()) && m.getParameterCount() == declaration.getParameterCount()
                 ));
     }
 
@@ -476,7 +475,7 @@ public class Helpers {
                 .map(t -> loadClass(getExternalClassName(unit, t.getNameAsString())))
                 .filter(Objects::nonNull)
                 .anyMatch(c -> Arrays.stream(c.getMethods()).anyMatch(
-                        m -> m.getName().equals(methodName)
+                        m -> m.getName().equals(methodName) && m.getParameterCount() == declaration.getParameters().size()
                 ));
     }
 
