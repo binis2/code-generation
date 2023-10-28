@@ -105,7 +105,8 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
         if (isNull(mGet)) {
             mGet = findMethod("get", cls, int.class);
         }
-        return CodeFactory.create(containedClass, invoke(mGet, instance, index));
+        var inst = invoke(mGet, instance, index);
+        return CodeFactory.create(containedClass, inst);
     }
 
     @SuppressWarnings("unchecked")

@@ -39,7 +39,7 @@ public class CGName extends JavaCompilerObject {
         instance = invoke("fromString", instance, name);
     }
 
-    public CGName(Object instance) {
+    public CGName(Object instance, boolean dummy) {
         super();
         this.instance = instance;
     }

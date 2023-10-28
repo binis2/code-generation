@@ -45,7 +45,7 @@ public class CGModifiers extends CGTree {
         instance = invoke("getModifiers", declaration.getInstance());
     }
 
-    public CGModifiers(Object instance) {
+    public CGModifiers(Object instance, boolean dummy) {
         super(instance);
         declaration = null;
     }

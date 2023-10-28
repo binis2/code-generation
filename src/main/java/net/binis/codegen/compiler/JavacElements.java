@@ -38,7 +38,7 @@ public class JavacElements extends JavaCompilerObject {
 
     public CGName getName(CharSequence cs) {
         var method = findMethod("getName", cls, CharSequence.class);
-        return new CGName(invoke(method, instance, cs));
+        return new CGName(invoke(method, instance, cs), true);
     }
 
     @Override

@@ -166,12 +166,12 @@ public class TreeMaker extends JavaCompilerObject {
 
     public CGModifiers Modifiers(long flags, CGList<CGAnnotation> annotations) {
         var method = findMethod("Modifiers", instance.getClass(), long.class, CGList.theClass());
-        return new CGModifiers(invoke(method, instance, flags, nonNull(annotations) ? annotations.getInstance() : CGList.nil(CGAnnotation.class)));
+        return new CGModifiers(invoke(method, instance, flags, nonNull(annotations) ? annotations.getInstance() : CGList.nil(CGAnnotation.class)), true);
     }
 
     public CGModifiers Modifiers(long flags) {
         var method = findMethod("Modifiers", instance.getClass(), long.class);
-        return new CGModifiers(invoke(method, instance, flags));
+        return new CGModifiers(invoke(method, instance, flags), true);
     }
 
     public CGBlock Block(long flags, CGList<CGStatement> stats) {

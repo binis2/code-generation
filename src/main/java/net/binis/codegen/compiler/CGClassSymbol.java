@@ -52,6 +52,6 @@ public class CGClassSymbol extends CGSymbol {
     }
 
     public CGName getQualifiedName() {
-        return new CGName(invoke("getQualifiedName", instance));
+        return new CGName(invoke("getQualifiedName", instance), true);
     }
 }
