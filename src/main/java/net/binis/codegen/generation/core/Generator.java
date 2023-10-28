@@ -205,7 +205,7 @@ public class Generator {
         if (nonNull(parsed.getRawElements())) {
             var name = getElementName(node);
             return parsed.getRawElements().stream()
-                    .map(Pair::getKey)
+                    .map(Parsables.Entry.Bag::getElement)
                     .filter(e -> name.equals(getElementName(e)))
                     .findFirst()
                     .orElse(null);

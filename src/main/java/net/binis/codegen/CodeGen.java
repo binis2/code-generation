@@ -143,15 +143,19 @@ public class CodeGen {
         for (var file : files) {
             try {
                 var parse = parser.parse(file.getKey());
-                var unit = parse.getResult().orElseThrow(() -> new GenericCodeGenException("Can't parse file '" + file + "'!"));
-                var pack = unit.getPackageDeclaration().orElseThrow(() -> new GenericCodeGenException("'" + file + "' have no package declaration!"));
-                var fileName = pack.getNameAsString().replace('.', '/') + '/' + unit.getType(0).getNameAsString();
-                log.info("Parsed {} - {}", fileName, parse);
-                parse.getResult().ifPresent(u ->
-                        u.getTypes().forEach(t ->
-                                handleType(parser, t, fileName, file.getValue().getElements())));
+                if (parse.getProblems().isEmpty()) {
+                    var unit = parse.getResult().get();
+                    var pack = unit.getPackageDeclaration().orElseThrow(() -> new GenericCodeGenException("'" + file.getValue().getFileName() + "' have no package declaration!"));
+                    var fileName = pack.getNameAsString().replace('.', '/') + '/' + unit.getType(0).getNameAsString();
+                    log.info("Parsed {} - {}", fileName, parse);
+                    parse.getResult().ifPresent(u ->
+                            u.getTypes().forEach(t ->
+                                    handleType(parser, t, fileName, file.getValue().getElements())));
+                } else {
+                    log.warn("Unable to parse file {}! Some BinisCodeGen features might not be available!", file.getValue().getFileName());
+                }
             } catch (Exception e) {
-                log.error("Unable to parse {}", file, e);
+                log.error("Unable to parse {}", file.getValue().getFileName(), e);
             }
         }
 
@@ -175,7 +179,7 @@ public class CodeGen {
 
 
     @SuppressWarnings("unchecked")
-    public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName, List<Pair<Element, Object>> elements) {
+    public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName, List<Parsables.Entry.Bag> elements) {
         var pack = t.findCompilationUnit().get().getPackageDeclaration().orElseThrow(() -> new GenericCodeGenException("'" + fileName + "' have no package declaration!"));
         var className = pack.getNameAsString() + '.' + t.getNameAsString();
         if (t.getAnnotationByName("ConstantPrototype").isPresent()) {
@@ -204,7 +208,7 @@ public class CodeGen {
     }
 
     @SuppressWarnings("unchecked")
-    public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, JavaParser parser, List<Pair<Element, Object>> elements) {
+    public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, JavaParser parser, List<Parsables.Entry.Bag> elements) {
         if (type.isClassOrInterfaceDeclaration()) {
             var properties = Generator.getCodeAnnotationProperties(type.asClassOrInterfaceDeclaration());
 
@@ -233,9 +237,9 @@ public class CodeGen {
                                             .build());
                         } else {
                             ann.get().forEach(prototype ->
-                            with(ErrorHelpers.calculatePrototypeAnnotationError(nested.asClassOrInterfaceDeclaration(), prototype.getValue()), message ->
-                                    lookup.error(message, withRes(elements, el -> el.stream().map(Pair::getKey).filter(e ->
-                                            ElementKind.CLASS.equals(e.getKind()) && e.getSimpleName().toString().equals(nested.getNameAsString())).findFirst().orElse(null)))));
+                                    with(ErrorHelpers.calculatePrototypeAnnotationError(nested.asClassOrInterfaceDeclaration(), prototype.getValue()), message ->
+                                            lookup.error(message, withRes(elements, el -> el.stream().map(Parsables.Entry.Bag::getElement).filter(e ->
+                                                    ElementKind.CLASS.equals(e.getKind()) && e.getSimpleName().toString().equals(nested.getNameAsString())).findFirst().orElse(null)))));
                         }
                     }
                 });

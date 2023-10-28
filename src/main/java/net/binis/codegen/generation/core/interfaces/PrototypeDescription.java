@@ -29,6 +29,7 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import net.binis.codegen.annotation.type.EmbeddedModifierType;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.GeneratedFile;
+import net.binis.codegen.generation.core.Parsables;
 import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.objects.Pair;
 import net.binis.codegen.options.CodeOption;
@@ -102,7 +103,7 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     Element getPrototypeElement();
 
-    List<Pair<Element, Object>> getRawElements();
+    List<Parsables.Entry.Bag> getRawElements();
 
     Element findElement(String name, ElementKind... kind);
 

@@ -361,7 +361,7 @@ public class Structures {
         @EqualsAndHashCode.Exclude
         @Builder.Default
         @ToString.Exclude
-        protected List<Pair<Element, Object>> rawElements = new ArrayList<>();
+        protected List<Parsables.Entry.Bag> rawElements = new ArrayList<>();
 
         @Getter(AccessLevel.NONE)
         @Setter(AccessLevel.NONE)
@@ -381,7 +381,7 @@ public class Structures {
         public Element getPrototypeElement() {
             if (nonNull(rawElements)) {
                 return rawElements.stream()
-                        .map(Pair::getKey)
+                        .map(Parsables.Entry.Bag::getElement)
                         .filter(e -> ElementKind.INTERFACE.equals(e.getKind()) && e.getSimpleName().toString().equals(declaration.getNameAsString()))
                         .findFirst()
                         .orElse(null);
@@ -392,7 +392,7 @@ public class Structures {
         public Element findElement(String name, ElementKind... kind) {
             if (nonNull(rawElements)) {
                 return rawElements.stream()
-                        .map(Pair::getKey)
+                        .map(Parsables.Entry.Bag::getElement)
                         .filter(e -> in(e.getKind(), kind) && e.getSimpleName().toString().equals(name))
                         .findFirst()
                         .orElse(null);
@@ -552,7 +552,7 @@ public class Structures {
         protected String id;
 
         @Builder(builderMethodName = "bldr")
-        public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, List<PrototypeDataHandler> additionalProperties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, CompilationUnit declarationUnit, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean codeEnum, String parentClassName, ClassOrInterfaceDeclaration parent, String parentPackage, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, CompilationUnit interfaceUnit, CompilationUnit implementationUnit, Map<String, List<ElementDescription>> elements, Element element, List<Pair<Element, Object>> rawElements, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
+        public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, List<PrototypeDataHandler> additionalProperties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, CompilationUnit declarationUnit, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean codeEnum, String parentClassName, ClassOrInterfaceDeclaration parent, String parentPackage, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, CompilationUnit interfaceUnit, CompilationUnit implementationUnit, Map<String, List<ElementDescription>> elements, Element element, List<Parsables.Entry.Bag> rawElements, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
             super(processed, invalid, parser, compiled, prototypeFileName, prototypeClassName, properties, additionalProperties, parsedName, parsedFullName, interfaceName, interfaceFullName, constants, declaration, declarationUnit, files, custom, base, mixIn, nested, codeEnum, parentClassName, parent, parentPackage, embeddedModifierType, classes, fields, spec, intf, interfaceUnit, implementationUnit, elements, rawElements, element, initializers, customInitializers, postProcessActions);
             this.id = id;
             this.files = initFiles();

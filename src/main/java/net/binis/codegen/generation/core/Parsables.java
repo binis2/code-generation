@@ -20,6 +20,8 @@ package net.binis.codegen.generation.core;
  * #L%
  */
 
+import lombok.Builder;
+import lombok.Data;
 import net.binis.codegen.objects.Pair;
 
 import javax.lang.model.element.Element;
@@ -31,8 +33,8 @@ public class Parsables extends HashMap<String, Parsables.Entry> implements Itera
         return new Parsables();
     }
 
-    public Entry file(String name) {
-        return computeIfAbsent(name, k -> new Entry());
+    public Entry file(String source) {
+        return computeIfAbsent(source, k -> new Entry());
     }
 
     @Override
@@ -40,25 +42,43 @@ public class Parsables extends HashMap<String, Parsables.Entry> implements Itera
         return entrySet().iterator();
     }
 
-    public static class Entry implements Iterable<Pair<Element, Object>> {
-        protected List<Pair<Element, Object>> elements = new ArrayList<>();
+    public static class Entry implements Iterable<Entry.Bag> {
+        protected List<Entry.Bag> elements = new ArrayList<>();
 
         protected Entry() {
             //Do nothing
         }
 
-        public void add(Element element, Object annotation) {
-            elements.add(Pair.of(element, annotation));
+        public void add(Element element, Object annotation, String fileName) {
+            elements.add(Bag.builder().element(element).annotation(annotation).fileName(fileName).build());
+        }
+
+        public String getFileName() {
+            if (elements.isEmpty()) {
+                return "unknown";
+            } else {
+                return elements.getFirst().getFileName();
+            }
         }
 
         @Override
-        public Iterator<Pair<Element, Object>> iterator() {
+        public Iterator<Entry.Bag> iterator() {
             return elements.iterator();
         }
 
-        public List<Pair<Element, Object>> getElements() {
+        public List<Entry.Bag> getElements() {
             return Collections.unmodifiableList(elements);
         }
+
+        @Data
+        @Builder
+        public static class Bag {
+            private Element element;
+            private Object annotation;
+            private String fileName;
+        }
+
     }
+
 
 }
