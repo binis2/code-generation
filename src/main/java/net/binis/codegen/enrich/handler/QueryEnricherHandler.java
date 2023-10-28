@@ -385,25 +385,27 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                             subType = prototype.getInterfaceName();
                         }
 
-                        var returnType = QUERY_JOIN_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">, " + QUERY_JOIN_AGGREGATE_OPERATION + "<" + subType + "." + QUERY_OP_FIELDS + "<" + subType + "." + QUERY_AGGREGATE + "<Number, " + subType + "." + QUERY_SELECT + "<Number>>>, " + subType + "." + QUERY_SELECT + "<Number>>>";
+                        if (isNull(prototype) || !prototype.isCodeEnum()) {
+                            var returnType = QUERY_JOIN_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">, " + QUERY_JOIN_AGGREGATE_OPERATION + "<" + subType + "." + QUERY_OP_FIELDS + "<" + subType + "." + QUERY_AGGREGATE + "<Number, " + subType + "." + QUERY_SELECT + "<Number>>>, " + subType + "." + QUERY_SELECT + "<Number>>>";
 
-                        select.addMethod(name)
-                                .setType(returnType)
-                                .setBody(null);
+                            select.addMethod(name)
+                                    .setType(returnType)
+                                    .setBody(null);
 
-                        impl.addMethod(name)
-                                .setType(QUERY_JOIN_COLLECTION_FUNCTIONS)
-                                .addModifier(PUBLIC)
-                                .setBody(new BlockStmt()
-                                        .addStatement(new ReturnStmt("(" + QUERY_JOIN_COLLECTION_FUNCTIONS + ") joinStart(\"" + fName + "\", " + subType + "." + QUERY_ORDER + ".class)")));
+                            impl.addMethod(name)
+                                    .setType(QUERY_JOIN_COLLECTION_FUNCTIONS)
+                                    .addModifier(PUBLIC)
+                                    .setBody(new BlockStmt()
+                                            .addStatement(new ReturnStmt("(" + QUERY_JOIN_COLLECTION_FUNCTIONS + ") joinStart(\"" + fName + "\", " + subType + "." + QUERY_ORDER + ".class)")));
 
-                        if (nonNull(prototype)) {
-                            var orderIntf = prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY);
-                            if (nonNull(orderIntf)) {
-                                prototype.registerPostProcessAction(() ->
-                                        Helpers.addInitializer(prototype, orderIntf, (LambdaExpr) expression("() -> " + prototype.getInterfaceName() + ".find().aggregate()"), false));
-                            } else {
-                                error(prototype.getPrototypeClassName() + " isn't enriched with QueryEnricher. Either use QueryEnricher or use the generated interface as reference instead!", prototype.getElement());
+                            if (nonNull(prototype)) {
+                                var orderIntf = prototype.getRegisteredClass(Constants.QUERY_ORDER_INTF_KEY);
+                                if (nonNull(orderIntf)) {
+                                    prototype.registerPostProcessAction(() ->
+                                            Helpers.addInitializer(prototype, orderIntf, (LambdaExpr) expression("() -> " + prototype.getInterfaceName() + ".find().aggregate()"), false));
+                                } else {
+                                    error(prototype.getPrototypeClassName() + " isn't enriched with QueryEnricher. Either use QueryEnricher or use the generated interface as reference instead!", prototype.getElement());
+                                }
                             }
                         }
                     } else {
