@@ -402,7 +402,7 @@ or you can use the annotation processor
 <dependency>
     <groupId>dev.binis</groupId>
     <artifactId>code-generator-annotation</artifactId>
-    <version>1.1.14</version>
+    <version>1.1.15</version>
     <scope>compile</scope>
 </dependency>
 ```
@@ -412,7 +412,7 @@ or you can use the annotation processor
     <dependency>
         <groupId>dev.binis</groupId>
         <artifactId>code-generator</artifactId>
-        <version>1.1.14</version>
+        <version>1.1.15</version>
     </dependency>
 ```
 
