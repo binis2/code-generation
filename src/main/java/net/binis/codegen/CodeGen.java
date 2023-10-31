@@ -21,6 +21,7 @@ package net.binis.codegen;
  */
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.AnnotationDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -138,8 +139,11 @@ public class CodeGen {
         });
     }
 
+    @SuppressWarnings("unchecked")
     public static void processSources(Parsables files) {
         var parser = lookup.getParser();
+        var unParsable = new ArrayList<Parsables.Entry>();
+
         for (var file : files) {
             try {
                 var parse = parser.parse(file.getKey());
@@ -153,6 +157,7 @@ public class CodeGen {
                                     handleType(parser, t, fileName, file.getValue().getElements())));
                 } else {
                     log.warn("Unable to parse file {}! Some BinisCodeGen features might not be available!", file.getValue().getFileName());
+                    unParsable.add(file.getValue());
                 }
             } catch (Exception e) {
                 log.error("Unable to parse {}", file.getValue().getFileName(), e);
@@ -175,6 +180,11 @@ public class CodeGen {
             list.forEach(Helpers::finalizeEnrichers);
             list.forEach(Helpers::postProcessEnrichers);
         });
+
+        if (!unParsable.isEmpty()) {
+            log.info("Attempting to process unparsable files...");
+            unParsable.forEach(Helpers::handleEnrichers);
+        }
     }
 
 

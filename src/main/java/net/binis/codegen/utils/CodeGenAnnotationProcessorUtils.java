@@ -125,10 +125,13 @@ public class CodeGenAnnotationProcessorUtils {
      */
     private static Object tryGetDelegateField(Class<?> delegateClass, Object instance) {
         try {
-            return Reflection.getFieldValue(instance, "delegate");
+            var field = findField(instance.getClass(), "delegate");
+            if (nonNull(field)) {
+                return getFieldValue(field, instance);
+            }
         } catch (Exception e) {
-            return null;
         }
+        return null;
     }
 
     /**

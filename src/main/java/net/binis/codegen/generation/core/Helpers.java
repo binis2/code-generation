@@ -68,8 +68,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.*;
 import static net.binis.codegen.generation.core.EnrichHelpers.annotation;
-import static net.binis.codegen.generation.core.Generator.generateCodeForClass;
-import static net.binis.codegen.generation.core.Generator.handleType;
+import static net.binis.codegen.generation.core.Generator.*;
 import static net.binis.codegen.tools.Reflection.instantiate;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.nullCheck;
@@ -936,6 +935,47 @@ public class Helpers {
     public static void handleEnrichers(PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
         getEnrichersList(parsed).forEach(e -> safeEnrich(e, parsed));
     }
+
+    @SuppressWarnings("unchecked")
+    public static void handleEnrichers(Parsables.Entry entry) {
+        for (var bag : entry) {
+            try {
+                if (bag.getAnnotation() instanceof Class cls) {
+                    var prop = Structures.defaultProperties.get(cls.getCanonicalName());
+                    if (nonNull(prop)) {
+                        var properties = prop.get().build();
+                        properties.setPrototypeAnnotation(cls);
+                        properties.setEnrichers(new ArrayList<>());
+                        Tools.with(properties.getPredefinedEnrichers(), list ->
+                                list.forEach(e -> checkEnrichers(properties.getEnrichers(), e)));
+
+                        properties.setInheritedEnrichers(new ArrayList<>());
+                        Tools.with(properties.getPredefinedInheritedEnrichers(), list ->
+                                list.forEach(e -> checkEnrichers(properties.getInheritedEnrichers(), e)));
+
+                        var desc = Structures.ParsedElementDescription.builder()
+                                .element(bag.getElement())
+                                .properties(properties)
+                                .build();
+                        var list = getEnrichersList(desc);
+                        var parsed = (PrototypeDescription) Structures.Parsed.builder()
+                                .properties(properties)
+                                .element(bag.getElement())
+                                .prototypeClassName(cls.getCanonicalName())
+                                .build();
+                        list.forEach(e -> log.info("Enriching {} with {}", bag.getElement().toString(), e.getClass()));
+                        list.forEach(e -> safeEnrich(e, parsed));
+                        list.forEach(e -> e.finalizeEnrich(parsed));
+                        list.forEach(e -> e.postProcess(parsed));
+                        list.forEach(e -> safeEnrich(e, desc));
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Failed to enrich {} with {}", bag.getElement().toString(), bag.getAnnotation());
+            }
+        }
+    }
+
 
     private static void safeEnrich(PrototypeEnricher enricher, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
         try {
