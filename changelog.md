@@ -1,4 +1,14 @@
 # Change Log
+**29-10-2023** ver. 1.1.15
+* Core: Some Reflection routines made friendlier to use.
+* Core: Added description to @CodeAugment.
+* Generation: Fixed QueryEnricher to not generate join handling for CodeEnum lists.
+* Generation: Added handling for inherited plain interfaces declared in the same module mixed with compiled interfaces.
+* Generation: Fixed compiler ambiguity.
+* Generation: Added ability to process not parsable files (if new language features are used).
+* Annotation Processor: Properly logging file name if parsing failed.
+* IDEA Plugin: Description on @CodeAugment is displayed on mouse-over.
+
 **24-10-2023** ver. 1.1.14
 * Generation: Fixed usage of compiled Enum prototypes. 
 * Generation: Fixed handling of prototypes as generic type arguments.
