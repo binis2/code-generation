@@ -1,4 +1,7 @@
 # Change Log
+**01-11-2023** ver. 1.1.16
+* Generation: Added element enrichment for unparsable files.
+* 
 **29-10-2023** ver. 1.1.15
 * Core: Some Reflection routines made friendlier to use.
 * Core: Added description to @CodeAugment.
