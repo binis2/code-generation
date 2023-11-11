@@ -106,13 +106,13 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
         var intf = description.getInterface();
         Helpers.addSuppressWarningsUnchecked(spec);
 
-        with(intf.findCompilationUnit().get(), unit -> unit
+        with(description.getInterfaceUnit(), unit -> unit
                 .addImport("java.util.List")
                 .addImport("net.binis.codegen.creator.EntityCreator")
                 .addImport("net.binis.codegen.spring.query.*")
                 .addImport("java.util.Optional")
         );
-        with(spec.findCompilationUnit().get(), unit -> unit
+        with(description.getImplementationUnit(), unit -> unit
                 .addImport("java.util.List")
                 .addImport("net.binis.codegen.factory.CodeFactory")
                 .addImport("net.binis.codegen.creator.EntityCreator")

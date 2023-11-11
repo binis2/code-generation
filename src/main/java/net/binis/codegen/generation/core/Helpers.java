@@ -607,7 +607,7 @@ public class Helpers {
                     if (!parsed.isProcessed() && !parsed.equals(prsd)) {
                         generateCodeForClass(parsed.getDeclaration().findCompilationUnit().get(), parsed);
                     }
-                    generic = new ClassOrInterfaceType(parsed.getInterfaceName());
+                    generic = new ClassOrInterfaceType(null, parsed.getInterfaceName());
                 }
             }
             result.put(types.get(i), generic);
@@ -1381,5 +1381,13 @@ public class Helpers {
             return Optional.empty();
         }
     }
+
+    public static CompilationUnit envelopWithDummyClass(MethodDeclaration description) {
+        var dummy = new CompilationUnit();
+        dummy.setPackageDeclaration("dummy");
+        dummy.addClass("Dummy").addMember(description);
+        return dummy;
+    }
+
 
 }

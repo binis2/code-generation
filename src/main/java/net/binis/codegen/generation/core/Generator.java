@@ -1953,13 +1953,6 @@ public class Generator {
         return result;
     }
 
-    private static CompilationUnit envelopWithDummyClass(MethodDeclaration description) {
-        var dummy = new CompilationUnit();
-        dummy.setPackageDeclaration("dummy");
-        dummy.addClass("Dummy").addMember(description);
-        return dummy;
-    }
-
     public static void addGetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
         var name = getGetterName(declaration.getNameAsString(), declaration.getType().asString());
         if (!methodExists(spec, declaration, name, isClass)) {

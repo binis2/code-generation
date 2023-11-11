@@ -67,12 +67,13 @@ public class EnrichHelpers {
     }
 
     public static PrototypeField addField(PrototypeDescription<ClassOrInterfaceDeclaration> description, String name, Type type) {
-        var field = description.getImplementation().addField(String.class, name, Modifier.Keyword.PROTECTED);
-
+        var field = description.getImplementation().addField(type, name, Modifier.Keyword.PROTECTED);
+        var desc = new MethodDeclaration().setName(name).setType(type);
+        Helpers.envelopWithDummyClass(desc);
         var result = Structures.FieldData.builder()
                 .parsed((Structures.Parsed<ClassOrInterfaceDeclaration>) description)
                 .declaration(field)
-                .description(new MethodDeclaration().setName(name).setType(type))
+                .description(desc)
                 .name(name)
                 .fullType(Helpers.getExternalClassNameIfExists(description.getDeclarationUnit(), type.asString()))
                 .type(type)
@@ -82,6 +83,12 @@ public class EnrichHelpers {
         return result;
     }
 
+    public static PrototypeField addField(PrototypeDescription<ClassOrInterfaceDeclaration> description, String name, Class<?> type) {
+        var field = addField(description, name, type.getSimpleName());
+        field.getDescription().findCompilationUnit().ifPresent(unit ->
+                unit.addImport(type));
+        return field;
+    }
 
     private EnrichHelpers() {
         //Do nothing
