@@ -231,6 +231,10 @@ public class Helpers {
         return result;
     }
 
+    public static String getExternalClassName(Node node, ClassOrInterfaceType type) {
+        return getExternalClassName(node, type.getNameWithScope());
+    }
+
     public static String getFQName(NodeWithName<?> node) {
         return getExternalClassName((Node) node, node.getNameAsString());
     }
@@ -367,8 +371,7 @@ public class Helpers {
     public static boolean methodExists(ClassOrInterfaceDeclaration spec, String name, Method declaration, boolean isClass) {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(name) &&
-                                m.getParameters().size() == declaration.getParameterCount() &&
-                                m.getType().asString().equals(declaration.getReturnType().getSimpleName())
+                                m.getParameters().size() == declaration.getParameterCount()
                         //TODO: Match parameter types also
                 ) || !isClass && ancestorMethodExists(spec, declaration);
     }
@@ -384,21 +387,15 @@ public class Helpers {
     public static boolean methodExists(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass) {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(declaration.getNameAsString()) &&
-                                m.getParameters().size() == declaration.getParameters().size() &&
-                                m.getType().equals(declaration.getType())
+                                m.getParameters().size() == declaration.getParameters().size()
                         //TODO: Match parameter types also
                 ) || !isClass && ancestorMethodExists(spec, declaration, declaration.getNameAsString());
     }
 
     public static boolean methodExists(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String methodName, boolean isClass) {
-        var type = declaration.getType().asString();
-        var actual = declaration.getTypeParameters().stream().map(TypeParameter::asString).anyMatch(s -> s.equals(type)) ? type :
-                declaration.getParentNode().isPresent() ? handleType((ClassOrInterfaceDeclaration) declaration.getParentNode().get(), spec, declaration.getType()) : type;
-
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(methodName) &&
-                                m.getParameters().size() == declaration.getParameters().size() &&
-                                (m.getType().asString().equals(actual) || declaration.getTypeParameters().isNonEmpty())
+                                m.getParameters().size() == declaration.getParameters().size()
                         //TODO: Match parameter types also
                 ) || !isClass && ancestorMethodExists(spec, declaration, methodName);
     }
@@ -406,8 +403,7 @@ public class Helpers {
     public static boolean methodExists(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String methodName, boolean isClass) {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(methodName) &&
-                                m.getParameters().size() == 1 &&
-                                m.getType().equals(declaration.getDeclaration().getVariable(0).getType())
+                                m.getParameters().size() == 1
                         //TODO: Match parameter types also
                 ) || !isClass && ancestorMethodExists(spec, declaration, methodName);
     }
@@ -513,8 +509,7 @@ public class Helpers {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.isDefault() &&
                                 m.getNameAsString().equals(method.getName()) &&
-                                m.getParameters().size() == method.getParameterCount() &&
-                                m.getTypeAsString().equals(method.getReturnType().getSimpleName())
+                                m.getParameters().size() == method.getParameterCount()
                         //TODO: Match parameter types also
                 );
     }
@@ -1352,7 +1347,7 @@ public class Helpers {
 
     public static String typeToString(Type type) {
         if (type.isClassOrInterfaceType()) {
-            return type.asClassOrInterfaceType().getNameAsString();
+            return type.asClassOrInterfaceType().getNameWithScope();
         } else {
             return type.asString();
         }

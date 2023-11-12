@@ -77,6 +77,7 @@ import static net.binis.codegen.generation.core.EnrichHelpers.*;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.generation.core.Structures.VALUE;
 import static net.binis.codegen.tools.Reflection.loadClass;
+import static net.binis.codegen.tools.Reflection.loadNestedClass;
 import static net.binis.codegen.tools.Tools.*;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
@@ -1209,9 +1210,9 @@ public class Generator {
     }
 
     private static boolean handleExternalInterface(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, ClassOrInterfaceType type, boolean alreadyAdded) {
-        var className = getExternalClassName(declaration.findCompilationUnit().get(), type.getNameAsString());
+        var className = getExternalClassName(declaration.findCompilationUnit().get(), type);
         if (nonNull(className)) {
-            var cls = loadClass(className);
+            var cls = loadNestedClass(className);
             if (nonNull(cls)) {
                 if (cls.isInterface()) {
                     var generics = cls.getGenericInterfaces();
@@ -1398,11 +1399,11 @@ public class Generator {
     }
 
     public static String handleType(CompilationUnit source, CompilationUnit destination, Type type, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
-        var result = type.isClassOrInterfaceType() ? type.asClassOrInterfaceType().getNameAsString() : type.toString();
+        var result = type.isClassOrInterfaceType() ? type.asClassOrInterfaceType().getNameWithScope() : type.toString();
         if (type.isClassOrInterfaceType()) {
             var generic = handleGenericTypes(source, destination, type.asClassOrInterfaceType(), prototypeMap);
             if (!isEmpty(generic)) {
-                result = type.asClassOrInterfaceType().getNameAsString() + "<" + String.join(",", generic) + ">";
+                result = type.asClassOrInterfaceType().getNameWithScope() + "<" + String.join(",", generic) + ">";
             }
         }
 

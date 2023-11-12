@@ -95,7 +95,7 @@ class GenericsTest extends BaseCodeGenTest {
     }
 
     @Test
-    void testGenericsWithInheritedInterfaceThatInheritsComiledInterface() {
+    void testGenericsWithInheritedInterfaceThatInheritsCompiledInterface() {
         lookup.registerExternalLookup(s -> {
             if ("net.binis.codegen.types.TestType".equals(s)) {
                 return """
