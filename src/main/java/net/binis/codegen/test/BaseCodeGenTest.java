@@ -128,7 +128,11 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
     }
 
     protected TestClassLoader testSingleSkip(String prototype, String resClass, String resInterface, boolean skipPrototype, boolean skipCompilation) {
-        return testSingleExecute(prototype, resClass, resInterface, null, 1, null, skipCompilation, false, skipPrototype);
+        return testSingleSkip(prototype, resClass, resInterface, 1, skipPrototype, skipCompilation);
+    }
+
+    protected TestClassLoader testSingleSkip(String prototype, String resClass, String resInterface, int expected, boolean skipPrototype, boolean skipCompilation) {
+        return testSingleExecute(prototype, resClass, resInterface, null, expected, null, skipCompilation, false, skipPrototype);
     }
 
 
@@ -178,7 +182,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
             stream = (Stream) lookup.custom().stream();
         }
         stream.sorted((o1, o2) -> Boolean.compare(isNull(o1.getCompiled()), isNull(o2.getCompiled()))).forEach(parsed -> {
-            if (isNull(parsed.getCompiled()) && (!parsed.isNested() || isNull(parsed.getParentClassName()))) {
+            if (isNull(parsed.getCompiled()) && (!parsed.isNested() || isNull(parsed.getParentClassName())) && !parsed.isExternal()) {
                 if (nonNull(pathToSave)) {
                     save(parsed.getProperties().getClassName(), parsed.getFiles().get(0), pathToSave);
                     save(parsed.getProperties().getInterfaceName(), parsed.getFiles().get(1), pathToSave);

@@ -44,6 +44,8 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.Generator.getCodeAnnotations;
+import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Tools.nullCheck;
 
 @Slf4j
@@ -122,27 +124,36 @@ public class PrototypeLookupHandler implements PrototypeLookup {
         var result = parsed.get(prototype);
         if (isNull(result)) {
             handleExternal(prototype);
+            return parsed.get(prototype);
         }
         return result;
     }
 
     @SuppressWarnings("unchecked")
-    private void handleExternal(String prototype) {
+    private PrototypeDescription<ClassOrInterfaceDeclaration> handleExternal(String prototype) {
         if (nonNull(externalLookup) && !external.containsKey(prototype)) {
             var code = externalLookup.apply(prototype);
             if (nonNull(code)) {
                 var res = parser.parse(code).getResult();
-                if (res.isPresent() && res.get().getType(0).isTypeDeclaration()) {
-                    external.put(prototype, Structures.Parsed.builder()
-                            .declaration(res.get().getType(0).asTypeDeclaration())
-                            .declarationUnit(res.get())
-                            .spec(res.get().getType(0).isClassOrInterfaceDeclaration() ? res.get().getType(0).asClassOrInterfaceDeclaration() : null)
-                            .build());
+                if (res.isPresent()) {
+                    var type = res.get().getType(0);
+
+                    if (getCodeAnnotations(type).isPresent()) {
+                        Helpers.handleType(parser, type, null, null, true);
+                        return parsed.get(prototype);
+                    } else {
+                        return external.put(prototype, Structures.Parsed.builder()
+                                .declaration(type.asTypeDeclaration())
+                                .declarationUnit(res.get())
+                                .spec(type.isClassOrInterfaceDeclaration() ? type.asClassOrInterfaceDeclaration() : null)
+                                .build());
+                    }
                 }
             } else {
                 external.put(prototype, null);
             }
         }
+        return null;
     }
 
     @Override

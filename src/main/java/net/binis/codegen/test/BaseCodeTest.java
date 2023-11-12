@@ -130,7 +130,7 @@ public abstract class BaseCodeTest {
 
                 parse.getResult().ifPresent(u ->
                         u.getTypes().forEach(t ->
-                                CodeGen.handleType(parser, t, resource, null)));
+                                Helpers.handleType(parser, t, resource, null)));
             });
         }
     }

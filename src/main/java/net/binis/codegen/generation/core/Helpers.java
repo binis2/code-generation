@@ -20,6 +20,7 @@ package net.binis.codegen.generation.core;
  * #L%
  */
 
+import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.Node;
@@ -38,6 +39,7 @@ import com.github.javaparser.ast.type.TypeParameter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.Default;
 import net.binis.codegen.annotation.Ignore;
+import net.binis.codegen.annotation.type.GenerationStrategy;
 import net.binis.codegen.annotation.validation.AliasFor;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
@@ -55,6 +57,7 @@ import net.binis.codegen.tools.Tools;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
+import javax.lang.model.element.ElementKind;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -71,8 +74,7 @@ import static net.binis.codegen.generation.core.EnrichHelpers.annotation;
 import static net.binis.codegen.generation.core.Generator.*;
 import static net.binis.codegen.tools.Reflection.instantiate;
 import static net.binis.codegen.tools.Reflection.loadClass;
-import static net.binis.codegen.tools.Tools.nullCheck;
-import static net.binis.codegen.tools.Tools.with;
+import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
 public class Helpers {
@@ -1383,6 +1385,83 @@ public class Helpers {
         dummy.addClass("Dummy").addMember(description);
         return dummy;
     }
+
+    @SuppressWarnings("unchecked")
+    public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName, List<Parsables.Entry.Bag> elements, boolean external) {
+        var pack = t.findCompilationUnit().get().getPackageDeclaration().orElseThrow(() -> new GenericCodeGenException("'" + fileName + "' have no package declaration!"));
+        var className = pack.getNameAsString() + '.' + t.getNameAsString();
+        if (t.getAnnotationByName("ConstantPrototype").isPresent()) {
+            constantParsed.put(getClassName(t.asClassOrInterfaceDeclaration()),
+                    Structures.Parsed.builder()
+                            .declaration(t.asTypeDeclaration())
+                            .declarationUnit(t.findCompilationUnit().orElse(null))
+                            .prototypeFileName(fileName)
+                            .prototypeClassName(className)
+                            .parser(parser)
+                            .rawElements(elements)
+                            .external(external)
+                            .build());
+        } else {
+            var name = getClassName(t);
+            checkForNestedClasses(t.asTypeDeclaration(), fileName, parser, elements);
+            lookup.registerParsed(name,
+                    Structures.Parsed.builder()
+                            .declaration(t.asTypeDeclaration())
+                            .declarationUnit(t.findCompilationUnit().orElse(null))
+                            .prototypeFileName(fileName)
+                            .prototypeClassName(className)
+                            .parser(parser)
+                            .rawElements(elements)
+                            .external(external)
+                            .build());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName, List<Parsables.Entry.Bag> elements) {
+        handleType(parser, t, fileName, elements, false);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, JavaParser parser, List<Parsables.Entry.Bag> elements) {
+        if (type.isClassOrInterfaceDeclaration()) {
+            var properties = Generator.getCodeAnnotationProperties(type.asClassOrInterfaceDeclaration());
+
+            if (properties.isEmpty() || !GenerationStrategy.PROTOTYPE.equals(properties.get().getStrategy())) {
+                type.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(nested -> {
+                    var ann = Generator.getCodeAnnotations(nested);
+                    if (ann.isPresent()) {
+                        if (nested.asClassOrInterfaceDeclaration().isInterface()) {
+                            var parent = type.findCompilationUnit().get();
+                            var pack = parent.getPackageDeclaration().get().getNameAsString();
+                            var unit = new CompilationUnit().setPackageDeclaration(pack + "." + type.getNameAsString());
+                            var nestedType = nested.clone();
+                            parent.getImports().forEach(unit::addImport);
+                            unit.addType(nestedType);
+                            var cName = getClassName(nestedType);
+
+                            lookup.registerParsed(cName,
+                                    Structures.Parsed.builder()
+                                            .declaration(nestedType.asTypeDeclaration())
+                                            .declarationUnit(unit)
+                                            .prototypeFileName(fileName)
+                                            .prototypeClassName(cName)
+                                            .parser(parser)
+                                            .nested(true)
+                                            .parentPackage(pack)
+                                            .build());
+                        } else {
+                            ann.get().forEach(prototype ->
+                                    with(ErrorHelpers.calculatePrototypeAnnotationError(nested.asClassOrInterfaceDeclaration(), prototype.getValue()), message ->
+                                            lookup.error(message, withRes(elements, el -> el.stream().map(Parsables.Entry.Bag::getElement).filter(e ->
+                                                    ElementKind.CLASS.equals(e.getKind()) && e.getSimpleName().toString().equals(nested.getNameAsString())).findFirst().orElse(null)))));
+                        }
+                    }
+                });
+            }
+        }
+    }
+
 
 
 }
