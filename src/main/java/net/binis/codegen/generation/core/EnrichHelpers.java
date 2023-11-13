@@ -87,6 +87,9 @@ public class EnrichHelpers {
         var field = addField(description, name, type.getSimpleName());
         field.getDescription().findCompilationUnit().ifPresent(unit ->
                 unit.addImport(type));
+        if (!type.isPrimitive() && !type.getPackageName().equals("java.lang")) {
+            description.getDeclarationUnit().addImport(type);
+        }
         return field;
     }
 

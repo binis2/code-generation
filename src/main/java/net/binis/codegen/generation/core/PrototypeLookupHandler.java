@@ -138,7 +138,7 @@ public class PrototypeLookupHandler implements PrototypeLookup {
                 if (res.isPresent()) {
                     var type = res.get().getType(0);
 
-                    if (getCodeAnnotations(type).isPresent()) {
+                    if (!type.isAnnotationDeclaration() && getCodeAnnotations(type).isPresent()) {
                         Helpers.handleType(parser, type, null, null, true);
                         return parsed.get(prototype);
                     } else {
@@ -209,7 +209,11 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     @Override
     public boolean isExternal(String prototype) {
         handleExternal(prototype);
-        return nonNull(external.get(prototype));
+        if (nonNull(external.get(prototype))) {
+            return true;
+        }
+        var p = parsed.get(prototype);
+        return nonNull(p) && p.isExternal();
     }
 
     @Override

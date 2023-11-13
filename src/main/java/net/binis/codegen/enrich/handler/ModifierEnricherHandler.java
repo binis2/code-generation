@@ -472,7 +472,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
 
     private MethodDeclaration addModifier(ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierClassName, String modifierName, boolean isClass, Type generic, String cast, PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         MethodDeclaration method;
-        var type = declaration.isGenericField() ? generic.asString() : declaration.isGenericMethod() ? "Object" : declaration.getType().asString();
+        var type = declaration.isGenericField() ? generic.asString() : declaration.isGenericMethod() ? declaration.getDeclaration().getVariable(0).getType().toString() : declaration.getType().asString();
         if (isNull(type)) {
             type = isNull(declaration.getDescription()) || "dummy".equals(unit(declaration.getDescription()).getPackageDeclaration().get().getNameAsString()) ?
                     handleType(unit(declaration.getDeclaration()), unit(spec), declaration.getDeclaration().getVariables().get(0).getType()) :
