@@ -1,4 +1,14 @@
 # Change Log
+**13-11-2023** ver. 1.1.17
+* Core: Added Reflection.loadNestedClass routine.
+* Generation: Added support for external prototype sources.
+* Generation: Fixed adding field routine to support other types than just String.
+* Generation: Fixed duplicated methods generation.
+* Generation: Fixed generation from compiled classes.
+* Annotation Processor: Support for IDEA partial compilation.
+* IDEA Plugin: Greatly improved discovery of various generated elements.
+* IDEA Plugin: Improved error handling.
+
 **01-11-2023** ver. 1.1.16
 * Generation: Added element enrichment for unparsable files.
 * IDEA Plugin: More reliable cache refreshing on code changes.
