@@ -104,7 +104,7 @@ public abstract class CompiledPrototypesHandler {
     public static boolean handleCompiledEnumPrototype(String compiledPrototype) {
         var result = Holder.of(false);
         Tools.with(loadClass(compiledPrototype), c ->
-                Tools.with(c.getAnnotation(EnumPrototype.class), ann -> {
+                Generator.getCodeAnnotations(c).ifPresent(ann -> {
                     if (c.isEnum()) {
                         var declaration = new CompilationUnit().setPackageDeclaration(c.getPackageName()).addEnum(c.getSimpleName());
 
