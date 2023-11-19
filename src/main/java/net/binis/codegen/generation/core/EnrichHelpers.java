@@ -157,15 +157,15 @@ public class EnrichHelpers {
     }
 
     public static Element deepFindElement(Node node, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
-        ElementUtils.init();
-        var result = deepFindElementList(node, parsed);
-        if (nonNull(result) && !result.isEmpty()) {
-            return (Element) result.get(0).getInstance();
-        } else {
-            return null;
+        if (nonNull(lookup.getRoundEnvironment())) {
+            ElementUtils.init();
+            var result = deepFindElementList(node, parsed);
+            if (nonNull(result) && !result.isEmpty()) {
+                return (Element) result.get(0).getInstance();
+            }
         }
+        return null;
     }
-
 
     private EnrichHelpers() {
         //Do nothing

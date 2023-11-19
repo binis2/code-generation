@@ -196,4 +196,9 @@ public class TreeMaker extends JavaCompilerObject {
         return new CGExpression(invoke(method, instance, type.getInstance()));
     }
 
+    public CGTypeApply TypeApply(CGExpression clazz, CGList<CGExpression> arguments) {
+        var method = findMethod("TypeApply", instance.getClass(), CGExpression.theClass(), CGList.theClass());
+        return new CGTypeApply(invoke(method, instance, clazz.getInstance(), arguments.getInstance()));
+    }
+
 }

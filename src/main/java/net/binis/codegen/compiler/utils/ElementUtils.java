@@ -67,6 +67,7 @@ public class ElementUtils {
         registerClass(result, CGSymtab.class);
         registerClass(result, CGTree.class);
         registerClass(result, CGType.class);
+        registerClass(result, CGTypeApply.class);
         registerClass(result, CGTypeCast.class);
         registerClass(result, CGTypeParameter.class);
         registerClass(result, CGTypeTag.class);
@@ -258,13 +259,14 @@ public class ElementUtils {
 //            return maker.TypeArray(cloneType(maker, att.elemtype));
 //        }
 
-//        if (in instanceof CGTypeApply ta) {
-//            var lb = new ListBuffer<CGExpression>();
-//            for (JCTree.JCExpression typeArg : ta.arguments) {
-//                lb.append(cloneType0(maker, typeArg));
-//            }
-//            return maker.TypeApply(cloneType0(maker, ta.clazz), lb.toList());
-//        }
+        if (in.is(CGTypeApply.theClass())) {
+            var ta = new CGTypeApply(in.getInstance());
+            var lb = CGList.nil(CGExpression.class);
+            for (var typeArg : ta.getTypeArguments()) {
+                lb.append(cloneType(maker, typeArg));
+            }
+            return maker.TypeApply(cloneType(maker, ta.getBaseType()), lb);
+        }
 
 //        if (in instanceof CGWildcard) {
 //            JCTree.JCWildcard w = (JCTree.JCWildcard) in;
