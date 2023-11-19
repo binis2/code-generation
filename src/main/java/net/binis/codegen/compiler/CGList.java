@@ -101,12 +101,21 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
         return (int) invoke("size", instance);
     }
 
+    @SuppressWarnings("unchecked")
     public T get(int index) {
         if (isNull(mGet)) {
             mGet = findMethod("get", cls, int.class);
         }
         var inst = invoke(mGet, instance, index);
-        return CodeFactory.create(containedClass, inst);
+        if (nonNull(inst)) {
+            if (containedClass.equals(JavaCompilerObject.class)) {
+                return (T) nullCheck(CodeFactory.create(inst.getClass(), inst), inst);
+            } else {
+                return CodeFactory.create(containedClass, inst);
+            }
+        } else {
+            return null;
+        }
     }
 
     @SuppressWarnings("unchecked")

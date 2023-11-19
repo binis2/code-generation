@@ -46,6 +46,10 @@ public class CGClassSymbol extends CGSymbol {
         super(instance);
     }
 
+    public CGScope members() {
+        return new CGScope(invoke("members", instance));
+    }
+
     @Override
     protected void init() {
         cls = theClass();

@@ -242,6 +242,10 @@ public class Helpers {
     }
 
     public static String getExternalClassNameIfExists(Node node, String t) {
+        var c = loadClass(t);
+        if (nonNull(c)) {
+            return c.getCanonicalName();
+        }
         var unit = node.findCompilationUnit().orElseThrow(() -> new GenericCodeGenException("Node is not part of unit!"));
         var idx = t.indexOf('<');
         var type = idx == -1 ? t : t.substring(0, idx);
@@ -1462,6 +1466,8 @@ public class Helpers {
         }
     }
 
-
+    public static String getNodeName(Node node) {
+        return node instanceof NodeWithSimpleName<?> s ? s.getNameAsString() : node instanceof NodeWithName<?> n ? n.getNameAsString() : "";
+    }
 
 }

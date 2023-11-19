@@ -23,6 +23,7 @@ package net.binis.codegen.compiler;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.tools.Reflection;
 
+import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
 @Slf4j
@@ -44,6 +45,18 @@ public class CGVarSymbol extends CGSymbol {
     public String getVariableType() {
         return Reflection.getFieldValue(instance, "type").toString();
     }
+
+    public String getVariableSimpleType() {
+        var type = Reflection.getFieldValue(instance, "type");
+        if (nonNull(type)) {
+            var tsym = Reflection.getFieldValue(type, "tsym");
+            if (nonNull(tsym)) {
+                return Reflection.getFieldValue(tsym, "name").toString();
+            }
+        }
+        return type.toString();
+    }
+
 
     @Override
     protected void init() {

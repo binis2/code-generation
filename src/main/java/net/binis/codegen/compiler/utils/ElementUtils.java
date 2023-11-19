@@ -38,6 +38,45 @@ public class ElementUtils {
 
     public static Map<String, Class<? extends JavaCompilerObject>> CLASS_MAP = initClassMap();
 
+    public static void init() {
+        //Just to trigger the static initialization
+    };
+
+    protected static Map<String, Class<? extends JavaCompilerObject>> initClassMap() {
+        var result = new HashMap<String, Class<? extends JavaCompilerObject>>();
+        registerClass(result, CGAnnotation.class);
+        registerClass(result, CGArrayTypeTree.class);
+        registerClass(result, CGAssign.class);
+        registerClass(result, CGBlock.class);
+        registerClass(result, CGClassDeclaration.class);
+        registerClass(result, CGClassSymbol.class);
+        registerClass(result, CGExpression.class);
+        registerClass(result, CGFieldAccess.class);
+        registerClass(result, CGIdent.class);
+        registerClass(result, CGLiteral.class);
+        registerClass(result, CGMethodDeclaration.class);
+        registerClass(result, CGMethodInvocation.class);
+        registerClass(result, CGMethodSymbol.class);
+        registerClass(result, CGModifiers.class);
+        registerClass(result, CGName.class);
+        registerClass(result, CGNewArray.class);
+        registerClass(result, CGPrimitiveTypeTree.class);
+        registerClass(result, CGScope.class);
+        registerClass(result, CGStatement.class);
+        registerClass(result, CGSymbol.class);
+        registerClass(result, CGSymtab.class);
+        registerClass(result, CGTree.class);
+        registerClass(result, CGType.class);
+        registerClass(result, CGTypeCast.class);
+        registerClass(result, CGTypeParameter.class);
+        registerClass(result, CGTypeTag.class);
+        registerClass(result, CGValueExpression.class);
+        registerClass(result, CGVariableDecl.class);
+        registerClass(result, CGVarSymbol.class);
+
+        return result;
+    }
+
     public static CGDeclaration getDeclaration(Element element) {
         var maker = TreeMaker.create();
         return getDeclaration(element, maker);
@@ -193,14 +232,6 @@ public class ElementUtils {
         return classNameIdent;
     }
 
-    protected static Map<String, Class<? extends JavaCompilerObject>> initClassMap() {
-        var result = new HashMap<String, Class<? extends JavaCompilerObject>>();
-        registerClass(result, CGVariableDecl.class);
-        registerClass(result, CGMethodDeclaration.class);
-        registerClass(result, CGClassDeclaration.class);
-        return result;
-    }
-
     protected static void registerClass(Map<String, Class<? extends JavaCompilerObject>> map, Class<? extends JavaCompilerObject> registerClass) {
         if (invokeStatic("theClass", registerClass) instanceof Class<?> cls) {
             map.put(cls.getCanonicalName(), registerClass);
@@ -228,7 +259,7 @@ public class ElementUtils {
 //        }
 
 //        if (in instanceof CGTypeApply ta) {
-//            ListBuffer<CGExpression> lb = new ListBuffer<JCTree.JCExpression>();
+//            var lb = new ListBuffer<CGExpression>();
 //            for (JCTree.JCExpression typeArg : ta.arguments) {
 //                lb.append(cloneType0(maker, typeArg));
 //            }

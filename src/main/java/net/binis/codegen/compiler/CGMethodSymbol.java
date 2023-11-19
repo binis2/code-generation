@@ -27,6 +27,7 @@ import javax.lang.model.element.Modifier;
 import java.util.Set;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.invoke;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
@@ -57,6 +58,11 @@ public class CGMethodSymbol extends CGSymbol {
             modifiers = (Set) invoke("getModifiers", instance);
         }
         return modifiers;
+    }
+
+    public CGType getReturnType() {
+        var type = invoke("getReturnType", instance);
+        return nonNull(type) ? new CGType(type) : null;
     }
 
     public boolean isPublic() {

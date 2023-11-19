@@ -61,6 +61,7 @@ import static net.binis.codegen.generation.core.Constants.*;
 import static net.binis.codegen.generation.core.EnrichHelpers.*;
 import static net.binis.codegen.generation.core.Generator.handleType;
 import static net.binis.codegen.generation.core.Helpers.*;
+import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
@@ -295,13 +296,20 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
             }
             return "BaseModifierImpl";
         }
-        var full = getExternalClassNameIfExists(description.getDeclaration().findCompilationUnit().get(), baseModifier);
-        if (isNull(full) && nonNull(description.getBase())) {
-            full = getExternalClassNameIfExists(description.getBase().getDeclaration().findCompilationUnit().get(), baseModifier);
-        }
-        if (isNull(full)) {
+        String full;
+        var cls = loadClass(baseModifier);
+        if (nonNull(cls)) {
             full = baseModifier;
-            baseModifier = full.substring(Math.max(0, full.lastIndexOf('.') + 1));
+            baseModifier = cls.getSimpleName();
+        } else {
+            full = getExternalClassNameIfExists(description.getDeclaration().findCompilationUnit().get(), baseModifier);
+            if (isNull(full) && nonNull(description.getBase())) {
+                full = getExternalClassNameIfExists(description.getBase().getDeclaration().findCompilationUnit().get(), baseModifier);
+            }
+            if (isNull(full)) {
+                full = baseModifier;
+                baseModifier = full.substring(Math.max(0, full.lastIndexOf('.') + 1));
+            }
         }
 
         var path = full.substring(0, full.indexOf(baseModifier)) + "impl." + baseModifier + "Impl";
@@ -321,7 +329,14 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
             return "BaseModifier";
         }
         if (!description.getProperties().isBase()) {
-            var full = getExternalClassNameIfExists(description.getDeclaration().findCompilationUnit().get(), baseModifier);
+            var cls = loadClass(baseModifier);
+            String full;
+            if (nonNull(cls)) {
+                full = baseModifier;
+                baseModifier = cls.getSimpleName();
+            } else {
+                full = getExternalClassNameIfExists(description.getDeclaration().findCompilationUnit().get(), baseModifier);
+            }
             if (isNull(full)) {
                 full = baseModifier;
                 baseModifier = full.substring(Math.max(0, full.lastIndexOf('.') + 1));
