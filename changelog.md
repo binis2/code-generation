@@ -1,4 +1,11 @@
 # Change Log
+**19-11-2023** ver. 1.1.18
+* Generation: Added discovery of custom compiled enum prototypes.
+* Generation: Improved compiler element discovery.
+* Generation: Improved element wrapper routines.
+* Hibernate: Smarter Hibernate enricher field discovery.
+* IDEA Plugin: Removed hard references to PSIClass.
+
 **13-11-2023** ver. 1.1.17
 * Core: Added Reflection.loadNestedClass routine.
 * Generation: Added support for external prototype sources.
