@@ -39,8 +39,12 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
 import net.binis.codegen.annotation.type.GenerationStrategy;
+import net.binis.codegen.compiler.CGClassSymbol;
+import net.binis.codegen.compiler.CGMethodSymbol;
+import net.binis.codegen.compiler.base.JavaCompilerObject;
 import net.binis.codegen.compiler.utils.ElementAnnotationUtils;
 import net.binis.codegen.compiler.utils.ElementMethodUtils;
+import net.binis.codegen.compiler.utils.ElementUtils;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
@@ -57,6 +61,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.TypeElement;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
@@ -174,9 +179,14 @@ public class Generator {
                         }));
     }
 
-    private static String getElementName(Node node) {
-        var name = node instanceof NodeWithSimpleName<?> s ? s.getNameAsString() : node instanceof NodeWithName<?> n ? n.getNameAsString() : "";
-        if (name.isEmpty() && node instanceof FieldDeclaration field) {
+    protected static String getElementName(Node node) {
+        var name = getNodeName(node);
+        if (node instanceof MethodDeclaration method) {
+            name = "method." + name;
+            for (var param : method.getParameters()) {
+                name += "." + param.getTypeAsString();
+            }
+        } else if (name.isEmpty() && node instanceof FieldDeclaration field) {
             name = "field." + field.getVariables().get(0).getNameAsString();
         } else if (node instanceof Parameter) {
             name = "param." + name;
@@ -190,11 +200,17 @@ public class Generator {
         return name;
     }
 
-    private static String getElementName(Element element) {
+    protected static String getElementName(Element element) {
         var name = element.getSimpleName().toString();
         switch (element.getKind()) {
             case FIELD -> name = "field." + name;
             case PARAMETER -> name = "param." + name;
+            case METHOD -> {
+                name = "method." + name;
+                for (var param : new CGMethodSymbol(element).params()) {
+                    name += "." + param.getVariableSimpleType();
+                }
+            }
         }
         if (nonNull(element.getEnclosingElement()) && !ElementKind.PACKAGE.equals(element.getEnclosingElement().getKind())) {
             return getElementName(element.getEnclosingElement()) + "." + name;
@@ -209,9 +225,9 @@ public class Generator {
                     .map(Parsables.Entry.Bag::getElement)
                     .filter(e -> name.equals(getElementName(e)))
                     .findFirst()
-                    .orElse(null);
+                    .orElseGet(() -> deepFindElement(node, parsed));
         } else {
-            return null;
+            return deepFindElement(node, parsed);
         }
     }
 
@@ -1845,7 +1861,16 @@ public class Generator {
                 }
 
                 handleType(parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, type);
-                prototype = lookup.findParsed(getExternalClassName(parsed.getDeclaration().findCompilationUnit().get(), type.asString()));
+                var full = getExternalClassNameIfExists(parsed.getDeclaration().findCompilationUnit().get(), type.asString());
+                if (isNull(full)) {
+                    full = getExternalClassNameIfExists(parsed.getDeclaration().findCompilationUnit().get(), type.asString() + "Prototype");
+                }
+                if (nonNull(full)) {
+                    prototype = lookup.findParsed(full);
+                    if (isNull(prototype)) {
+                        prototype = lookup.findGenerated(full);
+                    }
+                }
 
                 if (nonNull(prototype)) {
                     type = new ClassOrInterfaceType().setName(prototype.getInterfaceName());
@@ -1855,8 +1880,12 @@ public class Generator {
                 description = new MethodDeclaration().setName(fieldName).setType(type);
             } else {
                 genericMethod = !method.getReturnType().getCanonicalName().equals(parseMethodSignature(method));
-                field = spec.addField(method.getReturnType(), fieldName, PROTECTED);
-                description = new MethodDeclaration().setName(fieldName).setType(method.getReturnType());
+                var type = method.getReturnType().getSimpleName();
+                if (method.getGenericReturnType() instanceof ParameterizedType parameterizedType && parameterizedType.getActualTypeArguments().length > 0) {
+                    type = parameterizedType.toString();
+                }
+                field = spec.addField(type, fieldName, PROTECTED);
+                description = new MethodDeclaration().setName(fieldName).setType(type);
                 if (!method.getReturnType().isPrimitive() && !method.getReturnType().getCanonicalName().startsWith("java.lang.")) {
                     spec.findCompilationUnit().get().addImport(method.getReturnType().getCanonicalName());
                 }

@@ -25,16 +25,27 @@ import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
+import net.binis.codegen.compiler.CGClassSymbol;
+import net.binis.codegen.compiler.CGMethodSymbol;
+import net.binis.codegen.compiler.base.JavaCompilerObject;
+import net.binis.codegen.compiler.utils.ElementUtils;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 
-import static net.binis.codegen.generation.core.Helpers.lookup;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.TypeElement;
+import java.util.ArrayList;
+import java.util.List;
+
+import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.Helpers.*;
 
 public class EnrichHelpers {
 
@@ -92,6 +103,69 @@ public class EnrichHelpers {
         }
         return field;
     }
+
+    @SuppressWarnings("unchecked")
+    public static List<JavaCompilerObject> deepFindElementList(Node node, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        if (node.getParentNode().isEmpty() || node.getParentNode().get() instanceof CompilationUnit) {
+            var name = node instanceof ClassOrInterfaceDeclaration decl ? decl.getFullyQualifiedName().orElse(decl.getNameAsString()) : getNodeName(node);
+            return (List) lookup.getRoundEnvironment().getRootElements().stream()
+                    .filter(TypeElement.class::isInstance)
+                    .map(TypeElement.class::cast)
+                    .filter(e -> e.getQualifiedName().isEmpty() ? e.getSimpleName().toString().equals(name) : e.getQualifiedName().toString().equals(name))
+                    .map(CGClassSymbol::new)
+                    .toList();
+        }
+        var result = deepFindElementList(node.getParentNode().get(), parsed);
+        if (nonNull(result)) {
+            if (node instanceof MethodDeclaration method) {
+                var res = new ArrayList<JavaCompilerObject>();
+                var name = method.getNameAsString();
+                result.stream()
+                        .filter(CGClassSymbol.class::isInstance)
+                        .map(CGClassSymbol.class::cast)
+                        .forEach(t -> {
+                            var it = t.members().getSymbolsByName(name);
+                            while (it.hasNext()) {
+                                res.add(it.next());
+                            }
+                        });
+                result = res;
+            } else if (node instanceof Parameter param) {
+                var res = new ArrayList<JavaCompilerObject>();
+                var name = param.getNameAsString();
+                var type = getExternalClassName(param, param.getTypeAsString());
+                result.stream()
+                        .filter(CGMethodSymbol.class::isInstance)
+                        .map(CGMethodSymbol.class::cast)
+                        .forEach(m -> {
+                            m.params().forEach(p -> {
+                                if ("ErrorType".equals(p.getType().getInstance().getClass().getSimpleName())) {
+                                    if (p.getName().equals(name) && p.getVariableType().toString().equals(param.getTypeAsString())) {
+                                        res.add(p);
+                                    }
+                                } else {
+                                    if (p.getName().equals(name) && p.getVariableType().toString().equals(type)) {
+                                        res.add(p);
+                                    }
+                                }
+                            });
+                        });
+                result = res;
+            }
+        }
+        return result;
+    }
+
+    public static Element deepFindElement(Node node, PrototypeDescription<ClassOrInterfaceDeclaration> parsed) {
+        ElementUtils.init();
+        var result = deepFindElementList(node, parsed);
+        if (nonNull(result) && !result.isEmpty()) {
+            return (Element) result.get(0).getInstance();
+        } else {
+            return null;
+        }
+    }
+
 
     private EnrichHelpers() {
         //Do nothing
