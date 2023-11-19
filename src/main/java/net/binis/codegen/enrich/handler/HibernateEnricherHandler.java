@@ -28,12 +28,15 @@ import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.objects.base.enumeration.CodeEnum;
 
 import java.lang.reflect.Method;
 
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.EnrichHelpers.annotation;
+import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.with;
+import static net.binis.codegen.tools.Tools.withRes;
 
 public class HibernateEnricherHandler extends BaseEnricher implements HibernateEnricher {
 
@@ -46,7 +49,9 @@ public class HibernateEnricherHandler extends BaseEnricher implements HibernateE
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         description.getFields().stream()
                 .filter(field ->
-                        (nonNull(field.getPrototype()) && field.getPrototype().isCodeEnum()) || nonNull(lookup.findEnum(field.getFullType())))
+                        (nonNull(field.getPrototype()) && field.getPrototype().isCodeEnum()) ||
+                                nonNull(lookup.findEnum(field.getFullType())) ||
+                        withRes(loadClass(field.getFullType()), CodeEnum.class::isAssignableFrom, false))
                 .forEach(this::processField);
     }
 
