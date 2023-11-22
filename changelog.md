@@ -1,4 +1,8 @@
 # Change Log
+**22-11-2023** ver. 1.1.19
+* Generation: Fixed discovery of inherited prototype properties.
+* Generation: Fixed element matching when generics are involved.
+
 **19-11-2023** ver. 1.1.18
 * Generation: Added discovery of custom compiled enum prototypes.
 * Generation: Improved compiler element discovery.
