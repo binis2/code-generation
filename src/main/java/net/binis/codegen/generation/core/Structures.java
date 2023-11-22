@@ -62,8 +62,8 @@ import static java.util.Objects.nonNull;
 import static net.binis.codegen.compiler.utils.ElementUtils.getSymbolFullName;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Reflection.loadClass;
-import static net.binis.codegen.tools.Tools.in;
-import static net.binis.codegen.tools.Tools.with;
+import static net.binis.codegen.tools.Tools.*;
+import static net.binis.codegen.tools.Tools.withRes;
 
 @Slf4j
 public class Structures {
@@ -144,6 +144,30 @@ public class Structures {
                 return this;
             }
 
+            public PrototypeDataHandlerBuilder enrichers(List<PrototypeEnricher> enrichers) {
+                if (nonNull(enrichers)) {
+                    if (isNull(this.enrichers)) {
+                        this.enrichers = new ArrayList<>();
+                        this.enrichers.addAll(enrichers);
+                    } else {
+                        enrichers.stream().filter(e -> !this.enrichers.contains(e)).forEach(this.enrichers::add);
+                    }
+                }
+                return this;
+            }
+
+            public PrototypeDataHandlerBuilder inheritedEnrichers(List<PrototypeEnricher> inheritedEnrichers) {
+                if (nonNull(inheritedEnrichers)) {
+                    if (isNull(this.inheritedEnrichers)) {
+                        this.inheritedEnrichers = new ArrayList<>();
+                        this.inheritedEnrichers.addAll(inheritedEnrichers);
+                    } else {
+                        inheritedEnrichers.stream().filter(e -> !this.inheritedEnrichers.contains(e)).forEach(this.inheritedEnrichers::add);
+                    }
+                }
+                return this;
+            }
+
             public PrototypeDataHandlerBuilder predefinedEnrichers(List<Class<? extends Enricher>> predefinedEnrichers) {
                 if (nonNull(predefinedEnrichers)) {
                     if (isNull(this.predefinedEnrichers)) {
@@ -167,6 +191,7 @@ public class Structures {
                 }
                 return this;
             }
+
 
         }
 
@@ -815,9 +840,11 @@ public class Structures {
         });
     }
 
-    private static boolean checkAnnotation(Annotation ann, Class<?> cls, PrototypeDataHandler.PrototypeDataHandlerBuilder builder, BiFunction<Method, Annotation, Object> func) {
+    protected static boolean checkAnnotation(Annotation ann, Class<?> cls, PrototypeDataHandler.PrototypeDataHandlerBuilder builder, BiFunction<Method, Annotation, Object> func) {
         var result = false;
-        if (defaultProperties.containsKey(cls.getCanonicalName())) {
+        var proto = defaultProperties.get(cls.getCanonicalName());
+        if (nonNull(proto)) {
+            copy(builder, proto.get().build());
             readAnnotation(ann, cls, builder, Structures::readAnnotationValue);
             return true;
         } else {
@@ -836,6 +863,32 @@ public class Structures {
         }
         return result;
     }
+
+    protected static void copy(PrototypeDataHandler.PrototypeDataHandlerBuilder builder, PrototypeData proto) {
+        var data = (PrototypeDataHandler) proto;
+
+        builder
+                .base(data.isBase())
+                .name(data.getName())
+                .generateConstructor(data.isGenerateConstructor())
+                .interfaceName(data.getInterfaceName())
+                .interfaceSetters(data.isInterfaceSetters())
+                .classGetters(data.isClassGetters())
+                .classSetters(data.isClassSetters())
+                .generateInterface(data.isGenerateInterface())
+                .generateImplementation(data.isGenerateImplementation())
+                .classPackage(data.getClassPackage())
+                .strategy(data.getStrategy())
+                .basePath(data.getBasePath())
+                .interfacePath(data.getInterfacePath())
+                .implementationPath(data.getImplementationPath())
+                .enrichers(withRes(data.getEnrichers(), ArrayList::new))
+                .inheritedEnrichers(withRes(data.getInheritedEnrichers(), ArrayList::new))
+                .predefinedEnrichers(withRes(data.getPredefinedEnrichers(), ArrayList::new))
+                .predefinedInheritedEnrichers(withRes(data.getPredefinedEnrichers(), ArrayList::new));
+        with(data.getCustom(), custom -> custom.forEach(builder::custom));
+    }
+
 
     public static PrototypeData readAnnotation(Annotation ann) {
         var builder = defaultBuilder();

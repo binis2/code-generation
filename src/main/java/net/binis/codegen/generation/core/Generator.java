@@ -184,7 +184,7 @@ public class Generator {
         if (node instanceof MethodDeclaration method) {
             name = "method." + name;
             for (var param : method.getParameters()) {
-                name += "." + param.getTypeAsString();
+                name += "." + (param.getType().isClassOrInterfaceType() ? param.getType().asClassOrInterfaceType().getName() : param.getTypeAsString());
             }
         } else if (name.isEmpty() && node instanceof FieldDeclaration field) {
             name = "field." + field.getVariables().get(0).getNameAsString();
