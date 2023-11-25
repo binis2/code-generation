@@ -22,6 +22,7 @@ package net.binis.codegen.enrich.handler;
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.type.PrimitiveType;
+import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.enrich.HibernateEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
@@ -38,6 +39,7 @@ import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.with;
 import static net.binis.codegen.tools.Tools.withRes;
 
+@Slf4j
 public class HibernateEnricherHandler extends BaseEnricher implements HibernateEnricher {
 
     private static final Method EQUALS = initEqualsMethod();
@@ -49,14 +51,32 @@ public class HibernateEnricherHandler extends BaseEnricher implements HibernateE
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         description.getFields().stream()
                 .filter(field ->
-                        (nonNull(field.getPrototype()) && field.getPrototype().isCodeEnum()) ||
+                        field.isCollection() ||
+                                (nonNull(field.getPrototype()) && field.getPrototype().isCodeEnum()) ||
                                 nonNull(lookup.findEnum(field.getFullType())) ||
-                        withRes(loadClass(field.getFullType()), CodeEnum.class::isAssignableFrom, false))
+                                withRes(loadClass(field.getFullType()), CodeEnum.class::isAssignableFrom, false))
                 .forEach(this::processField);
     }
 
     private void processField(PrototypeField field) {
-        field.getDeclaration().findCompilationUnit().ifPresent(unit ->
+        var declUnit = field.getDeclaration().findCompilationUnit();
+        if (field.isCollection()) {
+            field.getType().asClassOrInterfaceType().getTypeArguments().ifPresent(types -> {
+                if (types.size() == 1) {
+                    var type = types.get(0).toString();
+                    if (nonNull(field.getTypePrototypes()) && field.getTypePrototypes().containsKey(type) ||
+                            lookup.isGenerated(Helpers.getExternalClassName(declUnit.get(), type))) {
+                        declUnit.ifPresent(unit ->
+                                unit.addImport("jakarta.persistence.ElementCollection"));
+                        field.getDeclaration().addAnnotation(annotation("@ElementCollection"));
+                    }
+                } else {
+                    log.warn("Collection type has more than one type argument, case not implemented!");
+                }
+            });
+        }
+
+        declUnit.ifPresent(unit ->
                 unit.addImport("org.hibernate.annotations.Type"));
 
         field.getDeclaration().addAnnotation(annotation("@Type(net.binis.codegen.hibernate.CodeEnumType.class)"));

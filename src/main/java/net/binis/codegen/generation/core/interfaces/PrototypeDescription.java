@@ -97,6 +97,8 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     boolean isCodeEnum();
 
+    boolean isMixIn();
+
     String getParentClassName();
 
     Map<String, List<ElementDescription>> getElements();

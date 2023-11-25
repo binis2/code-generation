@@ -20,26 +20,23 @@ package net.binis.codegen;
  * #L%
  */
 
-import com.github.javaparser.JavaParser;
-import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.AnnotationDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.annotation.type.GenerationStrategy;
 import net.binis.codegen.discoverer.AnnotationDiscoverer;
 import net.binis.codegen.exception.GenericCodeGenException;
-import net.binis.codegen.generation.core.*;
+import net.binis.codegen.generation.core.Generator;
+import net.binis.codegen.generation.core.Helpers;
+import net.binis.codegen.generation.core.Parsables;
+import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
-import net.binis.codegen.objects.Pair;
 import net.binis.codegen.tools.CollectionUtils;
 import org.apache.commons.cli.*;
 
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -54,8 +51,8 @@ import java.util.List;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Helpers.*;
-import static net.binis.codegen.generation.core.Structures.Parsed;
-import static net.binis.codegen.tools.Tools.*;
+import static net.binis.codegen.tools.Tools.nullCheck;
+import static net.binis.codegen.tools.Tools.with;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Slf4j

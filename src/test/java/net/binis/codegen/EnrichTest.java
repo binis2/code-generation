@@ -22,8 +22,11 @@ package net.binis.codegen;
 
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.test.BaseCodeGenTest;
+import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 class EnrichTest extends BaseCodeGenTest {
 
@@ -57,10 +60,9 @@ class EnrichTest extends BaseCodeGenTest {
 
     @Test
     void enrichCreatorModifierWithMixin() {
-        testSingleWithMixIn("enrich/enrichCreatorModifier.java", "net.binis.codegen.TestImpl",
-                "enrich/enrichCreatorModifierMixIn.java", "net.binis.codegen.MixInImpl",
-                "enrich/enrichCreatorModifierMixIn-0.java", "enrich/enrichCreatorModifierMixIn-1.java",
-                "enrich/enrichCreatorModifierMixIn-2.java");
+        testMulti(List.of(
+                Triple.of("enrich/enrichCreatorModifier.java", "enrich/enrichCreatorModifierMixIn-0.java", "enrich/enrichCreatorModifier-1.java"),
+                Triple.of("enrich/enrichCreatorModifierMixIn.java", null, "enrich/enrichCreatorModifierMixIn-1.java")));
     }
 
     @Test

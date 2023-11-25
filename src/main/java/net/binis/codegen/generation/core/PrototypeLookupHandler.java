@@ -86,9 +86,12 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     public void registerGenerated(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> generated) {
         this.generated.put(prototype, generated);
         if (nonNull(generated.getInterface())) {
+            this.generated.put(generated.getInterfaceFullName(), generated);
             this.generatedInterfaces.put(generated.getInterfaceFullName(), generated);
             this.generatedClasses.put(generated.getInterfaceFullName(), generated.getInterface());
-        } else if (nonNull(generated.getImplementation())) {
+        }
+        if (!generated.isMixIn() && nonNull(generated.getImplementation())) {
+            this.generated.put(generated.getImplementorFullName(), generated);
             this.generatedClasses.put(generated.getImplementorFullName(), generated.getImplementation());
         }
     }
@@ -172,8 +175,12 @@ public class PrototypeLookupHandler implements PrototypeLookup {
 
     @Override
     public PrototypeDescription<ClassOrInterfaceDeclaration> findExternal(String prototype) {
-        handleExternal(prototype);
-        return external.get(prototype);
+        if (nonNull(prototype)) {
+            handleExternal(prototype);
+            return external.get(prototype);
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -203,7 +210,7 @@ public class PrototypeLookupHandler implements PrototypeLookup {
 
     @Override
     public boolean isGenerated(String prototype) {
-        return generated.containsKey(prototype);
+        return generated.containsKey(prototype) || generatedInterfaces.containsKey(prototype) || generatedClasses.containsKey(prototype);
     }
 
     @Override
@@ -239,7 +246,7 @@ public class PrototypeLookupHandler implements PrototypeLookup {
 
     @Override
     public List<PrototypeDescription<ClassOrInterfaceDeclaration>> findGeneratedByFileName(String fileName) {
-        return generated.values().stream().filter(g -> fileName.equals(g.getPrototypeFileName())).collect(Collectors.toList());
+        return generated.values().stream().filter(g -> fileName.equals(g.getPrototypeFileName())).distinct().toList();
     }
 
     public void clean() {

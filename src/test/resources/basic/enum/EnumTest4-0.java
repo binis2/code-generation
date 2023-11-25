@@ -18,7 +18,7 @@ import java.util.List;
 @SuppressWarnings("unchecked")
 public class TestDataImpl implements TestData, Modifiable<TestData.Modify> {
 
-    protected List<Test> getTests;
+    protected List<Test> tests;
 
     {
         CodeFactory.registerType(TestData.class, TestDataImpl::new, null);
@@ -30,12 +30,12 @@ public class TestDataImpl implements TestData, Modifiable<TestData.Modify> {
     public TestDataImpl() {
     }
 
-    public List<Test> getGetTests() {
-        return getTests;
+    public List<Test> getTests() {
+        return tests;
     }
 
-    public void setGetTests(List<Test> getTests) {
-        this.getTests = getTests;
+    public void setTests(List<Test> tests) {
+        this.tests = tests;
     }
 
     public TestData.Modify with() {
@@ -53,8 +53,8 @@ public class TestDataImpl implements TestData, Modifiable<TestData.Modify> {
             return TestDataImpl.this;
         }
 
-        public TestData.Modify getTests(List<Test> getTests) {
-            TestDataImpl.this.getTests = getTests;
+        public TestData.Modify tests(List<Test> tests) {
+            TestDataImpl.this.tests = tests;
             return this;
         }
     }
@@ -72,6 +72,10 @@ public class TestDataImpl implements TestData, Modifiable<TestData.Modify> {
 
         public TestData.QueryOrder order() {
             return (TestData.QueryOrder) _orderStart(new TestDataQueryOrderImpl(this, TestDataQueryExecutorImpl.this::_orderIdentifier));
+        }
+
+        public QueryCollectionFunctions tests() {
+            return $identifier("tests");
         }
 
         @Generated("QueryEnricher")

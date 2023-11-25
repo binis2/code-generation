@@ -32,11 +32,6 @@ import java.util.List;
 @Slf4j
 class EnumBasicsTest extends BaseCodeGenTest {
 
-    @BeforeEach
-    public void cleanUp() {
-        Helpers.cleanUp();
-    }
-
     @Test
     void test() {
         testSingle("basic/enum/EnumTest1.java", "basic/enum/EnumTest1-0.java", "basic/enum/EnumTest1-1.java");
@@ -52,7 +47,8 @@ class EnumBasicsTest extends BaseCodeGenTest {
         testMulti(List.of(
                 Triple.of("basic/enum/EnumTest3.java", "basic/enum/EnumTest3-0.java", "basic/enum/EnumTest3-1.java"),
                 Triple.of("basic/enum/EnumTest3MixIn.java", null, "basic/enum/EnumTest3MixIn-1.java"),
-                Triple.of("basic/enum/EnumTest3MixIn2.java", null, "basic/enum/EnumTest3MixIn2-1.java")));
+                Triple.of("basic/enum/EnumTest3MixIn2.java", null, "basic/enum/EnumTest3MixIn2-1.java"),
+                Triple.of("basic/enum/EnumTest3MixIn3.java", "basic/enum/EnumTest3MixIn3-0.java", "basic/enum/EnumTest3MixIn3-1.java")));
     }
 
     @Test

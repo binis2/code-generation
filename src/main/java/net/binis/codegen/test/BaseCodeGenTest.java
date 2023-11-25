@@ -69,7 +69,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
         var parsed = new ArrayList<>(lookup.parsed());
         for (var entry : parsed) {
             if (!entry.isProcessed()) {
-                Generator.generateCodeForClass(entry.getDeclaration().findCompilationUnit().get(), entry);
+                Generator.generateCodeForClass(entry.getDeclarationUnit(), entry);
             }
         }
 
@@ -177,7 +177,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
             }
         }));
 
-        var stream = lookup.generated().stream();
+        var stream = lookup.generated().stream().distinct();
         if (lookup.generated().isEmpty()) {
             stream = (Stream) lookup.custom().stream();
         }
@@ -388,33 +388,6 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
         });
 
         assertTrue(compile(new TestClassLoader(), list, null, false));
-        return loader;
-    }
-
-    protected TestClassLoader testSingleWithMixIn(String basePrototype, String baseClassName, String prototype, String className, String baseClass, String baseInterface, String mixInInterface) {
-        var src = newList();
-        load(src, basePrototype);
-        load(src, prototype);
-        assertTrue(compile(new TestClassLoader(), src, null, false));
-        generate();
-
-        assertEquals(2, lookup.parsed().size());
-
-        var list = newList();
-
-        with(lookup.findGenerated(baseClassName), parsed ->
-                with(lookup.findGenerated(className), parsedMixIn -> {
-                    compare(parsed.getFiles().get(1), baseInterface);
-                    compare(parsedMixIn.getFiles().get(1), mixInInterface);
-                    compare(parsed.getFiles().get(0), baseClass);
-
-                    list.add(Pair.of(parsed.getInterfaceFullName(), getAsString(parsed.getFiles().get(1))));
-                    list.add(Pair.of(parsedMixIn.getInterfaceFullName(), getAsString(parsedMixIn.getFiles().get(1))));
-                    list.add(Pair.of(parsed.getParsedFullName(), getAsString(parsed.getFiles().get(0))));
-                }));
-
-        var loader = new TestClassLoader();
-        assertTrue(compile(loader, list, null, false));
         return loader;
     }
 

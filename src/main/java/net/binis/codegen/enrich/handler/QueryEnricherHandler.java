@@ -385,7 +385,9 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                             subType = prototype.getInterfaceName();
                         }
 
-                        if (isNull(prototype) || !prototype.isCodeEnum()) {
+                        if (nonNull(prototype) && prototype.isCodeEnum()) {
+                            buildSimpleCollection(entity, select, impl, subType, name, fName);
+                        } else {
                             var returnType = QUERY_JOIN_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">, " + QUERY_JOIN_AGGREGATE_OPERATION + "<" + subType + "." + QUERY_OP_FIELDS + "<" + subType + "." + QUERY_AGGREGATE + "<Number, " + subType + "." + QUERY_SELECT + "<Number>>>, " + subType + "." + QUERY_SELECT + "<Number>>>";
 
                             select.addMethod(name)
@@ -408,17 +410,9 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                                 }
                             }
                         }
-                    } else {
-                        var returnType = QUERY_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">>";
-                        select.addMethod(name)
-                                .setType(returnType)
-                                .setBody(null);
 
-                        impl.addMethod(name)
-                                .setType(QUERY_COLLECTION_FUNCTIONS)
-                                .addModifier(PUBLIC)
-                                .setBody(new BlockStmt()
-                                        .addStatement(new ReturnStmt("$identifier(\"" + fName + "\")")));
+                    } else {
+                        buildSimpleCollection(entity, select, impl, subType, name, fName);
                     }
                 }
             } else {
@@ -520,6 +514,19 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
 
             declaredFields.add(name);
         }
+    }
+
+    private static void buildSimpleCollection(String entity, ClassOrInterfaceDeclaration select, ClassOrInterfaceDeclaration impl, String subType, String name, String fName) {
+        var returnType = QUERY_COLLECTION_FUNCTIONS + "<" + subType + ", " + QUERY_SELECT_OPERATION + "<" + entity + "." + QUERY_SELECT + "<" + QUERY_GENERIC + ">, " + QUERY_OP_FIELDS + "<" + QUERY_ORDER_OPERATION + "<" + entity + "." + QUERY_ORDER + "<" + QUERY_GENERIC + ">, " + QUERY_GENERIC + ">>, " + QUERY_GENERIC + ">>";
+        select.addMethod(name)
+                .setType(returnType)
+                .setBody(null);
+
+        impl.addMethod(name)
+                .setType(QUERY_COLLECTION_FUNCTIONS)
+                .addModifier(PUBLIC)
+                .setBody(new BlockStmt()
+                        .addStatement(new ReturnStmt("$identifier(\"" + fName + "\")")));
     }
 
     private boolean isTransient(PrototypeField field) {

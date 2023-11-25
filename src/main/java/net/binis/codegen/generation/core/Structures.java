@@ -558,6 +558,10 @@ public class Structures {
             list.add(null);
             return list;
         }
+
+        public boolean isMixIn() {
+            return nonNull(mixIn);
+        }
     }
 
     @Data

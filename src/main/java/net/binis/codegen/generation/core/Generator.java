@@ -27,8 +27,6 @@ import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.BlockComment;
 import com.github.javaparser.ast.expr.*;
-import com.github.javaparser.ast.nodeTypes.NodeWithName;
-import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -39,12 +37,9 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.*;
 import net.binis.codegen.annotation.type.GenerationStrategy;
-import net.binis.codegen.compiler.CGClassSymbol;
 import net.binis.codegen.compiler.CGMethodSymbol;
-import net.binis.codegen.compiler.base.JavaCompilerObject;
 import net.binis.codegen.compiler.utils.ElementAnnotationUtils;
 import net.binis.codegen.compiler.utils.ElementMethodUtils;
-import net.binis.codegen.compiler.utils.ElementUtils;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
@@ -61,14 +56,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.TypeElement;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -409,7 +402,7 @@ public class Generator {
         unit.setComment(new BlockComment("Generated code by Binis' code generator."));
         iUnit.setComment(new BlockComment("Generated code by Binis' code generator."));
 
-        lookup.registerGenerated(getClassName(spec), parse);
+        lookup.registerGenerated(properties.getPrototypeFullName(), parse);
 
         cleanUpInterface(typeDeclaration, intf);
         handleClassAnnotations(typeDeclaration, spec, intf);
@@ -482,7 +475,7 @@ public class Generator {
 
         unit.setComment(new BlockComment("Generated code by Binis' code generator."));
 
-        lookup.registerGenerated(getClassName(spec), parse);
+        lookup.registerGenerated(properties.getPrototypeFullName(), parse);
 
         checkForDeclaredConstants(spec);
         checkForClassExpressions(spec, typeDeclaration);
@@ -1187,14 +1180,15 @@ public class Generator {
                 }));
     }
 
-    private static void ensureParsedParents(EnumDeclaration declaration, PrototypeDescription<?> parse) {
+    private static PrototypeDescription<?> ensureParsedParents(EnumDeclaration declaration, PrototypeDescription<?> parse) {
         if (nonNull(parse) && isNull(parse.getCompiled()) && !parse.isProcessed()) {
             if (parse.getDeclaration().isEnumDeclaration()) {
-                generateCodeForEnum(parse.getDeclaration().findCompilationUnit().get(), parse, parse.getDeclaration(), getCodeAnnotations(parse.getDeclaration()).orElse(null));
+                return generateCodeForEnum(parse.getDeclaration().findCompilationUnit().get(), parse, parse.getDeclaration(), getCodeAnnotations(parse.getDeclaration()).orElse(null));
             } else {
                 throw new GenericCodeGenException("Class '" + parse.getDeclaration().getFullyQualifiedName().get() + "' is not enum!");
             }
         }
+        return parse;
     }
 
     private static void implementPrototype(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, PrototypeDescription<ClassOrInterfaceDeclaration> declaration, Map<String, Type> generic, boolean external) {
@@ -1459,15 +1453,24 @@ public class Generator {
 
             if (embedded && nonNull(prototypeMap)) {
                 prototypeMap.put(parse.getDeclaration().getNameAsString(), parse);
+                if (parse.isMixIn()) {
+                    prototypeMap.put(parse.getMixIn().getDeclaration().getNameAsString(), parse.getMixIn());
+                    with(parse.getMixIn().getInterfaceName(), name -> prototypeMap.put(name, parse.getMixIn()));
+                }
                 lookup.addPrototypeMap(parse, prototypeMap);
             }
 
             if (isNull(processing)) {
                 if (!parse.isProcessed()) {
-                    generateCodeForClass(parse.getDeclaration().findCompilationUnit().get(), parse);
+                    generateCodeForClass(parse.getDeclarationUnit(), parse);
                 }
 
-                destination.addImport(parse.getInterface().getFullyQualifiedName().get());
+                if (parse.isCodeEnum() && parse.isMixIn()) {
+                    destination.addImport(parse.getMixIn().getInterface().getFullyQualifiedName().get());
+                    return parse.getMixIn().getInterfaceName();
+                } else {
+                    destination.addImport(parse.getInterface().getFullyQualifiedName().get());
+                }
 
                 return parse.getInterfaceName();
             } else {
@@ -1662,22 +1665,6 @@ public class Generator {
                             next.set(false);
                         })
                 ));
-    }
-
-    public static <T> T findInheritanceProperty(ClassOrInterfaceDeclaration spec, PrototypeData properties, BiFunction<ClassOrInterfaceDeclaration, PrototypeData, T> func) {
-        var data = func.apply(spec, properties);
-        if (isNull(data)) {
-            for (var type : spec.getExtendedTypes()) {
-                var parse = lookup.findGenerated(getClassName(type));
-                if (nonNull(parse)) {
-                    data = findInheritanceProperty(parse.getDeclaration().asClassOrInterfaceDeclaration(), parse.getProperties(), func);
-                    if (nonNull(data)) {
-                        break;
-                    }
-                }
-            }
-        }
-        return data;
     }
 
     private static void processInnerClass(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration declaration, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration cls) {
@@ -2216,7 +2203,7 @@ public class Generator {
         });
     }
 
-    public static void generateCodeForEnum(CompilationUnit declarationUnit, PrototypeDescription<?> prsd, TypeDeclaration<?> type, List<Pair<AnnotationExpr, Structures.PrototypeDataHandler>> prototype) {
+    public static PrototypeDescription<?> generateCodeForEnum(CompilationUnit declarationUnit, PrototypeDescription<?> prsd, TypeDeclaration<?> type, List<Pair<AnnotationExpr, Structures.PrototypeDataHandler>> prototype) {
         if (type.isEnumDeclaration()) {
             var typeDeclaration = type.asEnumDeclaration();
 
@@ -2231,7 +2218,7 @@ public class Generator {
             var mixIn = withRes(properties.getMixInClass(), c ->
                     withRes(getExternalClassName(declarationUnit.findCompilationUnit().get(), c), Generator::findEnum));
 
-            ensureParsedParents(typeDeclaration, mixIn);
+            var mixInParse = ensureParsedParents(typeDeclaration, mixIn);
 
             var iUnit = new CompilationUnit();
             iUnit.addImport("javax.annotation.processing.Generated");
@@ -2257,6 +2244,7 @@ public class Generator {
             parse.setImplementation(spec);
             parse.setInterface(intf);
             parse.setCodeEnum(true);
+            parse.setMixIn((Structures.Parsed) mixInParse);
 
             if (isNull(prsd) || !prsd.isNested() || isNull(prsd.getParentClassName())) {
                 spec.addAnnotation(annotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + properties.getInterfaceName() + "\")"));
@@ -2270,7 +2258,7 @@ public class Generator {
             processEnumImplementation(typeDeclaration, spec);
             handleImports(typeDeclaration, spec);
 
-            lookup.registerGenerated(getClassName(spec), parse);
+            lookup.registerGenerated(properties.getPrototypeFullName(), parse);
 
             if (isNull(mixIn)) {
                 addDefaultCreation(parse, mixIn);
@@ -2286,7 +2274,9 @@ public class Generator {
                     ElementAnnotationUtils.addOrReplaceAnnotation(element, lombok.Generated.class, Map.of()));
 
             parse.setProcessed(true);
+            return parse;
         }
+        return null;
     }
 
     private static PrototypeDescription<?> findEnum(String cls) {

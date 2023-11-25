@@ -6,29 +6,24 @@ import net.binis.codegen.creator.EntityCreatorModifier;
 import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "net.binis.codegen.TestPrototype", comments = "TestImpl")
+@Generated(value = "net.binis.codegen.MixInPrototype", comments = "MixInImpl")
 @Default("net.binis.codegen.TestImpl")
 @SuppressWarnings("unchecked")
-public interface Test {
+public interface MixIn extends Test {
+    MixIn.Modify asMixIn();
 
-    // region starters
-    static Test.Modify create() {
-        return (Test.Modify) EntityCreatorModifier.create(Test.class).with();
-    }
-    // endregion
-
-    String getTitle();
-
-    void setTitle(String title);
-
-    Test.Modify with();
-
-    // region inner classes
-    interface Fields<T> {
-        T title(String title);
+    static MixIn.Modify create() {
+        return ((MixIn) EntityCreatorModifier.create(MixIn.class)).asMixIn();
     }
 
-    interface Modify extends Test.Fields<Test.Modify>, BaseModifier<Test.Modify, Test> {
+    String getSubtitle();
+
+    void setSubtitle(String subtitle);
+
+    interface Fields<T> extends Test.Fields<T> {
+        T subtitle(String subtitle);
     }
-    // endregion
+
+    interface Modify extends MixIn.Fields<MixIn.Modify>, BaseModifier<MixIn.Modify, MixIn> {
+    }
 }

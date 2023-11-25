@@ -18,14 +18,14 @@ public interface TestData {
         return (QueryStarter) EntityCreator.create(TestData.QuerySelect.class);
     }
 
-    List<Test> getGetTests();
+    List<Test> getTests();
 
-    void setGetTests(List<Test> getTests);
+    void setTests(List<Test> tests);
 
     TestData.Modify with();
 
     interface Modify extends BaseModifier<TestData.Modify, TestData> {
-        Modify getTests(List<Test> getTests);
+        Modify tests(List<Test> tests);
     }
 
     interface QueryAggregate<QR, QA> extends QueryExecute<QR>, QueryAggregator<QA, QueryAggregateOperation<QueryOperationFields<TestData.QueryAggregate<TestData, TestData.QuerySelect<Number>>>>, TestData.QueryAggregate<TestData, TestData.QuerySelect<Number>>> {
@@ -50,6 +50,7 @@ public interface TestData {
     }
 
     interface QuerySelect<QR> extends QueryExecute<QR>, QueryModifiers<TestData.QueryName<TestData.QuerySelect<QR>, TestData.QueryOrder<QR>, QR, TestData>>, TestData.QueryFields<QuerySelectOperation<TestData.QuerySelect<QR>, TestData.QueryOrder<QR>, QR>>, TestData.QueryFuncs<QuerySelectOperation<TestData.QuerySelect<QR>, TestData.QueryOrder<QR>, QR>>, QueryOrderStart<QueryOperationFields<QueryOrderOperation<TestData.QueryOrder<QR>, QR>>>, QueryBracket<QuerySelect<QR>> {
+        QueryCollectionFunctions<Test, QuerySelectOperation<TestData.QuerySelect<QR>, QueryOperationFields<QueryOrderOperation<TestData.QueryOrder<QR>, QR>>, QR>> tests();
     }
 
     interface QueryUpdate<QR, QS> extends QueryFields<QueryUpdate<QR, QS>>, QueryWhere<QS>, QueryScript<QueryUpdate<QR, QS>>, UpdatableQuery {

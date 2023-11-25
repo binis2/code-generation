@@ -35,7 +35,6 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.PrimitiveType;
 import com.github.javaparser.ast.type.Type;
-import com.github.javaparser.ast.type.TypeParameter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.Default;
 import net.binis.codegen.annotation.Ignore;
@@ -71,7 +70,8 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Constants.*;
 import static net.binis.codegen.generation.core.EnrichHelpers.annotation;
-import static net.binis.codegen.generation.core.Generator.*;
+import static net.binis.codegen.generation.core.Generator.checkEnrichers;
+import static net.binis.codegen.generation.core.Generator.generateCodeForClass;
 import static net.binis.codegen.tools.Reflection.instantiate;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
@@ -253,8 +253,15 @@ public class Helpers {
         idx = type.indexOf('.');
         var result = nullCheck(getClassImport(unit, type), i -> i.isAsterisk() ? i.getNameAsString() + "." + type : i.getNameAsString());
 
-        if (nonNull(result) && idx > -1) {
-            result += type.substring(idx).replace(".", "$");
+        if (idx > -1) {
+            if (nonNull(result)) {
+                result += type.substring(idx).replace(".", "$");
+            } else {
+                result = unit.getImports().stream().filter(i -> i.getNameAsString().endsWith("." + type)).map(NodeWithName::getNameAsString).findFirst().orElse(null);
+                if (nonNull(result)) {
+                    return result.substring(0, result.length() - type.length()) + type.replace('.', '$');
+                }
+            }
         }
 
         if (isNull(result)) {
