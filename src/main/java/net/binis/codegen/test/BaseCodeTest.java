@@ -25,7 +25,6 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.binis.codegen.CodeGen;
 import net.binis.codegen.discoverer.AnnotationDiscoverer;
 import net.binis.codegen.discovery.Discoverer;
 import net.binis.codegen.generation.core.Helpers;

@@ -42,7 +42,6 @@ import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.interfaces.*;
 import net.binis.codegen.generation.core.types.ModifierType;
-import net.binis.codegen.objects.Pair;
 import net.binis.codegen.options.CodeOption;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
@@ -63,7 +62,6 @@ import static net.binis.codegen.compiler.utils.ElementUtils.getSymbolFullName;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
-import static net.binis.codegen.tools.Tools.withRes;
 
 @Slf4j
 public class Structures {

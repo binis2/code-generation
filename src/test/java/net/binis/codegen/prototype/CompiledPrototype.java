@@ -20,12 +20,12 @@ package net.binis.codegen.prototype;
  * #L%
  */
 
+import jakarta.persistence.OneToOne;
 import net.binis.codegen.annotation.CodeImplementation;
 import net.binis.codegen.annotation.CodePrototype;
 import net.binis.codegen.annotation.Default;
 import net.binis.codegen.spring.annotation.QueryFragment;
 
-import jakarta.persistence.OneToOne;
 import java.util.List;
 
 @CodePrototype(generateImplementation = false)

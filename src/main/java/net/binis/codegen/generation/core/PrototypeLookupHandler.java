@@ -40,12 +40,10 @@ import javax.lang.model.element.Element;
 import javax.tools.Diagnostic;
 import java.util.*;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Generator.getCodeAnnotations;
-import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Tools.nullCheck;
 
 @Slf4j

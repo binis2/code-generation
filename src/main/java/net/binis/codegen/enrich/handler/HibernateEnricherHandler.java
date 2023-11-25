@@ -91,9 +91,7 @@ public class HibernateEnricherHandler extends BaseEnricher implements HibernateE
         field.getDeclaration().addAnnotation(annotation("@Type(net.binis.codegen.hibernate.CodeEnumType.class)"));
 
         //Silencing missing equals and hashCode Hibernate warnings.
-        with(field.getPrototype(), prototype ->
-
-        {
+        with(field.getPrototype(), prototype -> {
             var intf = prototype.getInterface();
             if (!Helpers.methodExists(intf, EQUALS, false)) {
                 intf.addMethod("equals")

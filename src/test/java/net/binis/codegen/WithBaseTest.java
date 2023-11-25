@@ -20,8 +20,8 @@ package net.binis.codegen;
  * #L%
  */
 
-import net.binis.codegen.test.BaseCodeGenTest;
 import net.binis.codegen.generation.core.Helpers;
+import net.binis.codegen.test.BaseCodeGenTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

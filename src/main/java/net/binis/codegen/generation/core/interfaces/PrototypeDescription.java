@@ -31,7 +31,6 @@ import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.GeneratedFile;
 import net.binis.codegen.generation.core.Parsables;
 import net.binis.codegen.generation.core.Structures;
-import net.binis.codegen.objects.Pair;
 import net.binis.codegen.options.CodeOption;
 import org.apache.commons.lang3.tuple.Triple;
 

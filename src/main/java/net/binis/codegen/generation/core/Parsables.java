@@ -22,7 +22,6 @@ package net.binis.codegen.generation.core;
 
 import lombok.Builder;
 import lombok.Data;
-import net.binis.codegen.objects.Pair;
 
 import javax.lang.model.element.Element;
 import java.util.*;

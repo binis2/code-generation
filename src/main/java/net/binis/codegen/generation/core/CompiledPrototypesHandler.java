@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.CodeAnnotation;
 import net.binis.codegen.annotation.CodeImplementation;
 import net.binis.codegen.annotation.CodePrototype;
-import net.binis.codegen.annotation.EnumPrototype;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.factory.CodeFactory;

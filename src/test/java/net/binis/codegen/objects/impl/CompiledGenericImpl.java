@@ -21,8 +21,9 @@ package net.binis.codegen.objects.impl;
  * #L%
  */
 
-import javax.annotation.processing.Generated;
 import net.binis.codegen.objects.CompiledGeneric;
+
+import javax.annotation.processing.Generated;
 
 @Generated(value = "CompiledGenericPrototype", comments = "CompiledGeneric")
 public class CompiledGenericImpl<T> implements CompiledGeneric<T> {
