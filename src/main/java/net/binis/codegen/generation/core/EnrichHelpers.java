@@ -89,6 +89,7 @@ public class EnrichHelpers {
                 .fullType(Helpers.getExternalClassNameIfExists(description.getDeclarationUnit(), type.asString()))
                 .type(type)
                 .ignores(Structures.Ignores.builder().build())
+                .custom(true)
                 .build();
         description.getFields().add(result);
         return result;

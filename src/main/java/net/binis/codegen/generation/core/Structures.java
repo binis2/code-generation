@@ -226,6 +226,7 @@ public class Structures {
         MethodDeclaration interfaceSetter;
         MethodDeclaration implementationGetter;
         MethodDeclaration implementationSetter;
+        boolean custom;
 
         public List<ModifierDescription> getModifiers() {
             if (isNull(modifiers)) {
