@@ -1332,13 +1332,23 @@ public class Generator {
             if (!java.lang.reflect.Modifier.isStatic(method.getModifiers()) && !method.isDefault() && !defaultMethodExists(declaration, method)) {
                 if (method.getParameterCount() == 0 && method.getName().startsWith("get") || method.getName().startsWith("is") && method.getReturnType().getCanonicalName().equals("boolean")) {
                     var field = addFieldFromGetter(parsed, spec, method, generic);
-                    if (nonNull(field) && properties.isClassGetters()) {
-                        addGetterFromGetter(spec, method, true, generic, field);
+                    if (nonNull(field)) {
+                        if (properties.isClassGetters()) {
+                            field.generateGetter();
+                        }
+                        if (properties.isClassSetters()) {
+                            field.generateSetter();
+                        }
                     }
                 } else if (method.getParameterCount() == 1 && method.getName().startsWith("set") && method.getReturnType().getCanonicalName().equals("void")) {
                     var field = addFieldFromSetter(parsed, spec, method, generic);
                     if (nonNull(field) && properties.isClassSetters()) {
-                        addSetterFromSetter(spec, method, true, generic, field);
+                        if (properties.isClassGetters()) {
+                            field.generateGetter();
+                        }
+                        if (properties.isClassSetters()) {
+                            field.generateSetter();
+                        }
                     }
                 } else {
                     log.error("Method {} of {} is nor getter or setter. Not implemented!", method.getName(), cls.getCanonicalName());
@@ -1482,8 +1492,8 @@ public class Generator {
                 if (handleCompiledPrototype(full)) {
                     return handleType(source, destination, type, embedded, prototypeMap);
                 } else {
-                    if (!full.contains(".prototype.")) { //TODO: Better way to hanle prototype self references
-                        destination.findCompilationUnit().ifPresent(u -> u.addImport(full));
+                    if (!full.contains(".prototype.") && !full.startsWith("dummy.")) { //TODO: Better way to hanle prototype self references
+                        destination.findCompilationUnit().ifPresent(u -> importType(u, full));
                     }
                 }
             }
@@ -1898,7 +1908,7 @@ public class Generator {
                     .generics(generic)
                     .genericMethod(genericMethod)
                     .fullType(genericMethod ? null : getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
-                    .type(genericMethod ? lookup.getParser().parseType(parseMethodSignature(method)).getResult().get() : field.getElementType())
+                    .type(discoverType(method, genericMethod, field))
                     //TODO: enable ignores
                     .prototype(prototype)
                     .build();
@@ -1913,7 +1923,11 @@ public class Generator {
         return result;
     }
 
-    private static PrototypeField addFieldFromSetter(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, Method method, Map<String, Type> generic) {
+    protected static Type discoverType(Method method, boolean genericMethod, FieldDeclaration field) {
+        return genericMethod ? lookup.getParser().parseType(parseMethodSignature(method)).getResult().get() : field.getElementType();
+    }
+
+    protected static PrototypeField addFieldFromSetter(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, Method method, Map<String, Type> generic) {
         PrototypeField result = null;
         var fieldName = getFieldName(method.getName());
         var genericMethod = false;
@@ -1955,7 +1969,7 @@ public class Generator {
                     .generics(generic)
                     .genericMethod(genericMethod)
                     .fullType(genericMethod ? null : getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
-                    .type(genericMethod ? lookup.getParser().parseType(parseMethodSignature(method)).getResult().get() : field.getElementType())
+                    .type(discoverType(method, genericMethod, field))
                     //TODO: enable ignores
                     //TODO: enable prototypes
                     .build();
@@ -2059,6 +2073,11 @@ public class Generator {
         if (isNull(returnType)) {
             handleType(type, spec, declaration.getType());
         }
+
+        if (isClass && field.isGenericMethod() && !returnType.equals(field.getDeclaration().getVariable(0).getType().asString())) {
+            returnType = "Object";
+        }
+
         var method = new MethodDeclaration()
                 .setName(name)
                 .setType("void")
@@ -2073,6 +2092,9 @@ public class Generator {
 
                 if (declaration.getTypeParameters().isNonEmpty()) {
                     method.getParameter(0).setType("Object");
+                }
+                if (field.isGenericMethod()) {
+                    addSuppressWarningsUnchecked(method);
                 }
             } else {
                 method.setBody(null);

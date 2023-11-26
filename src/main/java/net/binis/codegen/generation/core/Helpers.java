@@ -242,13 +242,14 @@ public class Helpers {
     }
 
     public static String getExternalClassNameIfExists(Node node, String t) {
-        var c = loadClass(t);
+        var idx = t.indexOf('<');
+        var type = idx == -1 ? t : t.substring(0, idx);
+        var c = loadClass(type);
         if (nonNull(c)) {
             return c.getCanonicalName();
         }
+
         var unit = node.findCompilationUnit().orElseThrow(() -> new GenericCodeGenException("Node is not part of unit!"));
-        var idx = t.indexOf('<');
-        var type = idx == -1 ? t : t.substring(0, idx);
 
         idx = type.indexOf('.');
         var result = nullCheck(getClassImport(unit, type), i -> i.isAsterisk() ? i.getNameAsString() + "." + type : i.getNameAsString());
@@ -1192,6 +1193,17 @@ public class Helpers {
             unit.addImport(cls.getCanonicalName());
         }
     }
+
+    public static void importType(CompilationUnit unit, String type) {
+        if (!type.startsWith("java.lang.")) {
+            var idx = type.indexOf('<');
+            if (idx > 0) {
+                type = type.substring(0, idx);
+            }
+            unit.addImport(type);
+        }
+    }
+
 
     public static Map<String, Type> buildGenerics(ClassOrInterfaceType type, ClassOrInterfaceDeclaration cls) {
         var generics = new HashMap<String, Type>();

@@ -14,4 +14,8 @@ public class TestImpl implements Test {
     public String getType() {
         return type;
     }
+
+    public void setType(String type) {
+        this.type = type;
+    }
 }
