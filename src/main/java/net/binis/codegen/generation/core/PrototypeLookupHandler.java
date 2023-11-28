@@ -135,20 +135,29 @@ public class PrototypeLookupHandler implements PrototypeLookup {
         if (nonNull(externalLookup) && !external.containsKey(prototype)) {
             var code = externalLookup.apply(prototype);
             if (nonNull(code)) {
-                var res = parser.parse(code).getResult();
-                if (res.isPresent()) {
-                    var type = res.get().getType(0);
+                var res = parser.parse(code);
+                if (res.isSuccessful() && res.getResult().isPresent()) {
+                    var unit = res.getResult().get();
+                    if (unit.getTypes().isNonEmpty()) {
+                        var type = unit.getType(0);
 
-                    if (!type.isAnnotationDeclaration() && getCodeAnnotations(type).isPresent()) {
-                        Helpers.handleType(parser, type, null, null, true);
-                        return parsed.get(prototype);
+                        if (!type.isAnnotationDeclaration() && getCodeAnnotations(type).isPresent()) {
+                            Helpers.handleType(parser, type, null, null, true);
+                            return parsed.get(prototype);
+                        } else {
+                            return external.put(prototype, Structures.Parsed.builder()
+                                    .declaration(type.asTypeDeclaration())
+                                    .declarationUnit(unit)
+                                    .spec(type.isClassOrInterfaceDeclaration() ? type.asClassOrInterfaceDeclaration() : null)
+                                    .build());
+                        }
                     } else {
-                        return external.put(prototype, Structures.Parsed.builder()
-                                .declaration(type.asTypeDeclaration())
-                                .declarationUnit(res.get())
-                                .spec(type.isClassOrInterfaceDeclaration() ? type.asClassOrInterfaceDeclaration() : null)
-                                .build());
+                        log.warn("Source parsed for '{}' but no types are found!", prototype);
+                        external.put(prototype, null);
                     }
+                } else {
+                    log.warn("Source found for '{}' but it is not parsable. Some of the generation features might not be available!", prototype);
+                    external.put(prototype, null);
                 }
             } else {
                 external.put(prototype, null);
