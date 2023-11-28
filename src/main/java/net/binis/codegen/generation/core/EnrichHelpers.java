@@ -45,6 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.CollectionsHandler.isCollection;
 import static net.binis.codegen.generation.core.Helpers.*;
 
 public class EnrichHelpers {
@@ -73,6 +74,10 @@ public class EnrichHelpers {
         return lookup.getParser().parseAnnotation(code).getResult().get();
     }
 
+    public static MethodDeclaration method(String code) {
+        return lookup.getParser().parseMethodDeclaration(code).getResult().get();
+    }
+
     public static PrototypeField addField(PrototypeDescription<ClassOrInterfaceDeclaration> description, String name, String type) {
         return addField(description, name, new ClassOrInterfaceType(type));
     }
@@ -88,6 +93,7 @@ public class EnrichHelpers {
                 .name(name)
                 .fullType(Helpers.getExternalClassNameIfExists(description.getDeclarationUnit(), type.asString()))
                 .type(type)
+                .collection(isCollection(type))
                 .ignores(Structures.Ignores.builder().build())
                 .custom(true)
                 .build();
