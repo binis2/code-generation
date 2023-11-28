@@ -38,6 +38,8 @@ import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.objects.Pair;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.github.javaparser.ast.Modifier.Keyword.PUBLIC;
@@ -66,11 +68,11 @@ public class CollectionsHandler {
     }
 
     public static boolean isListOrSet(String type) {
-        return ("List".equals(type) || "Set".equals(type) || "CodeList".equals(type) || "CodeSet".equals(type));
+        return ("List".equals(type) || "Set".equals(type) || "CodeList".equals(type) || "CodeSet".equals(type)) || List.class.getCanonicalName().equals(type) || Set.class.getCanonicalName().equals(type);
     }
 
     public static boolean isCollection(String type) {
-        return isListOrSet(type) || "Map".equals(type) || "CodeMap".equals(type);
+        return isListOrSet(type) || "Map".equals(type) || "CodeMap".equals(type) || Map.class.getCanonicalName().equals(type);
     }
 
     public static MethodDeclaration addModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierName, String className, boolean isClass) {
