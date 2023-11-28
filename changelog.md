@@ -1,4 +1,11 @@
 # Change Log
+**26-11-2023** ver. 1.1.20
+* ALL: Updated dependencies. (Spring 6.1, Spring Boot 3.2)
+* Generation: Fields added by enrichers are marked as custom.
+* Generation: Fixed generation of class setters for external interfaces. 
+* Hibernate: Updated to support Hibernate 6.3
+* Hibernate: Added support for collections of enums in Hibernate enricher.
+
 **22-11-2023** ver. 1.1.19
 * Generation: Fixed discovery of inherited prototype properties.
 * Generation: Fixed element matching when generics are involved.
