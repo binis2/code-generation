@@ -136,7 +136,6 @@ public class CodeGen {
         });
     }
 
-    @SuppressWarnings("unchecked")
     public static void processSources(Parsables files) {
         var parser = lookup.getParser();
         var unParsable = new ArrayList<Parsables.Entry>();

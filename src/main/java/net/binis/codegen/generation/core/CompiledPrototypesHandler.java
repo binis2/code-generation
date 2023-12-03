@@ -44,8 +44,7 @@ import java.util.Objects;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.generation.core.EnrichHelpers.annotation;
-import static net.binis.codegen.generation.core.EnrichHelpers.block;
+import static net.binis.codegen.generation.core.EnrichHelpers.*;
 import static net.binis.codegen.generation.core.Generator.generateCodeForClass;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Reflection.loadClass;
@@ -427,15 +426,6 @@ public abstract class CompiledPrototypesHandler {
         for (var intf : cls.getInterfaces()) {
             handleDefaultMethods(intf, declaration);
         }
-    }
-
-    private static String calcBlock(String value) {
-        var result = new StringBuilder().append('{').append(value);
-        if (value.length() > 0 && result.charAt(result.length() - 1) != ';') {
-            result.append(';');
-        }
-        result.append('}');
-        return result.toString();
     }
 
 }

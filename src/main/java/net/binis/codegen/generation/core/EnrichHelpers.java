@@ -79,7 +79,20 @@ public class EnrichHelpers {
     }
 
     public static PrototypeField addField(PrototypeDescription<ClassOrInterfaceDeclaration> description, String name, String type) {
-        return addField(description, name, new ClassOrInterfaceType(type));
+        return addField(description, name, new ClassOrInterfaceType(null, type));
+    }
+
+    public static String calcBlock(String value) {
+        if (nonNull(value)) {
+            var result = new StringBuilder().append('{').append(value);
+            if (!value.isEmpty() && result.charAt(result.length() - 1) != ';') {
+                result.append(';');
+            }
+            result.append('}');
+            return result.toString();
+        } else {
+            return "{}";
+        }
     }
 
     public static PrototypeField addField(PrototypeDescription<ClassOrInterfaceDeclaration> description, String name, Type type) {

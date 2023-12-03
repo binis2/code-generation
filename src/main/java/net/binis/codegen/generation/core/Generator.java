@@ -698,12 +698,31 @@ public class Generator {
         if (!ignores.isForClass()) {
             method.addModifier(PUBLIC);
 
-            declaration.getBody().ifPresent(b -> {
-                var body = b.clone();
-                handleDefaultMethodBody(parse, body, false);
-                method.setBody(body);
-                handleCodeImplementationInjection(parse.getPrototypeElement(), method, declaration);
-            });
+            var ann = declaration.getAnnotationByClass(CodeImplementation.class);
+            if (ann.isPresent()) {
+                var code = "";
+                if (ann.get() instanceof SingleMemberAnnotationExpr a) {
+                    code = getStringValue(a.getMemberValue());
+                } else if (ann.get() instanceof NormalAnnotationExpr a) {
+                    for (var p : a.getPairs()) {
+                        switch (p.getNameAsString()) {
+                            case "value" -> {
+                                code = getStringValue(p.getValue());
+                            }
+                            case "imports" ->
+                                    p.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
+                        }
+                    }
+                }
+                method.setBody(block(calcBlock(code)));
+            } else {
+                declaration.getBody().ifPresent(b -> {
+                    var body = b.clone();
+                    handleDefaultMethodBody(parse, body, false);
+                    method.setBody(body);
+                    handleCodeImplementationInjection(parse.getPrototypeElement(), method, declaration);
+                });
+            }
 
             if (methodExists(spec, method, false)) {
                 spec.getChildNodes().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).filter(m -> m.getNameAsString().equals(method.getNameAsString())).findFirst().ifPresent(spec::remove);
@@ -713,7 +732,16 @@ public class Generator {
         }
     }
 
-    private static void handleCodeImplementationInjection(Element element, MethodDeclaration method, MethodDeclaration original) {
+    protected static String getStringValue(Expression p) {
+        if (p instanceof StringLiteralExpr exp) {
+            return exp.asString();
+        } else {
+            log.warn("Only string literals are supported as values for @CodeImplementation");
+        }
+        return null;
+    }
+
+    protected static void handleCodeImplementationInjection(Element element, MethodDeclaration method, MethodDeclaration original) {
         if (nonNull(element) && !method.isAnnotationPresent(CodeImplementation.class)) {
             element.getEnclosedElements().stream()
                     .filter(e -> ElementKind.METHOD.equals(e.getKind()))
