@@ -1,4 +1,12 @@
 # Change Log
+**03-12-2023** ver. 1.1.21
+* Core: Added ability to propagate exception when using CodeFactory instantiation routines. 
+* Generation: Improved collection type discovery.
+* Generation: Added safeguard for unparsable external prototypes.
+* Generation: @CodeImplementation works for normal prototypes as well.
+* Generation: Fixed collection type flag for custom fields.
+* Annotation Processor: Improved handling of partial compilation.
+
 **26-11-2023** ver. 1.1.20
 * ALL: Updated dependencies. (Spring 6.1, Spring Boot 3.2)
 * Generation: Fields added by enrichers are marked as custom.
