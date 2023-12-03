@@ -59,6 +59,18 @@ public abstract class AnnotationDiscoverer extends Discoverer {
         return result;
     }
 
+    public static List<DiscoveredService> findAnnotations(File file) {
+        var result = new ArrayList<DiscoveredService>();
+        try {
+            try (var stream = new FileInputStream(file)) {
+                Discoverer.processResource(new BufferedReader(new InputStreamReader(stream)), result, false, false);
+            }
+        } catch (Exception e) {
+        }
+        return result;
+    }
+
+
 
     public static void writeTemplate(Filer filer, String className) {
         writeEntry(TEMPLATE, filer, className);
