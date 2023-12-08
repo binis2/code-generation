@@ -637,9 +637,12 @@ public class Helpers {
                 Type generic;
                 if (generics[i] instanceof TypeVariable) {
                     generic = parent.get(generics[i].getTypeName());
-                    var parsed = lookup.findParsed(getExternalClassName(generic.findCompilationUnit().get(), generic.asString()));
-                    if (nonNull(parsed)) {
-                        generic = new ClassOrInterfaceType().setName(parsed.getInterface().getNameAsString());
+                    var gUnit = generic.findCompilationUnit();
+                    if (gUnit.isPresent()) {
+                        var parsed = lookup.findParsed(getExternalClassName(gUnit.get(), generic.asString()));
+                        if (nonNull(parsed)) {
+                            generic = new ClassOrInterfaceType().setName(parsed.getInterface().getNameAsString());
+                        }
                     }
                 } else {
                     var type = (Class) generics[i];
