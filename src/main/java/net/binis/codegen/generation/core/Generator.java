@@ -363,6 +363,7 @@ public class Generator {
             });
         }
 
+        var defaultMethods = new ArrayList<MethodDeclaration>();
         for (var member : type.getMembers()) {
             if (member.isMethodDeclaration()) {
                 var declaration = member.asMethodDeclaration();
@@ -388,7 +389,7 @@ public class Generator {
                         }
                     }
                 } else {
-                    handleDefaultMethod(parse, spec, intf, declaration);
+                    defaultMethods.add(declaration);
                 }
             } else if (member.isClassOrInterfaceDeclaration()) {
                 processInnerClass(parse, typeDeclaration, spec, member.asClassOrInterfaceDeclaration());
@@ -398,6 +399,8 @@ public class Generator {
                 log.error("Can't process method " + member);
             }
         }
+
+        defaultMethods.forEach(declaration -> handleDefaultMethod(parse, spec, intf, declaration));
 
         unit.setComment(new BlockComment("Generated code by Binis' code generator."));
         iUnit.setComment(new BlockComment("Generated code by Binis' code generator."));
