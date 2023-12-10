@@ -684,7 +684,7 @@ public class Generator {
             if (ignores.isForClass()) {
                 declaration.getBody().ifPresent(b -> {
                     var body = b.clone();
-                    handleDefaultInterfaceMethodBody(parse, body, false);
+                    handleDefaultInterfaceMethodBody(parse, body, false, declaration);
                     method.setBody(body).addModifier(DEFAULT);
                     intf.addMember(handleForAnnotations(unit, method, false));
                     handleCodeImplementationInjection(parse.getPrototypeElement(), method, declaration);
@@ -721,7 +721,7 @@ public class Generator {
             } else {
                 declaration.getBody().ifPresent(b -> {
                     var body = b.clone();
-                    handleDefaultMethodBody(parse, body, false);
+                    handleDefaultMethodBody(parse, body, false, declaration);
                     method.setBody(body);
                     handleCodeImplementationInjection(parse.getPrototypeElement(), method, declaration);
                 });
@@ -759,7 +759,7 @@ public class Generator {
         }
     }
 
-    private static MethodDeclaration handleForAnnotations(CompilationUnit unit, MethodDeclaration method, boolean isClass) {
+    protected static MethodDeclaration handleForAnnotations(CompilationUnit unit, MethodDeclaration method, boolean isClass) {
         var chk = isClass ? "ForInterface" : "ForImplementation";
 
         for (var i = method.getAnnotations().size() - 1; i > 0; i--) {
@@ -781,7 +781,7 @@ public class Generator {
         return method;
     }
 
-    private static boolean handleDefaultMethodBody(PrototypeDescription<ClassOrInterfaceDeclaration> parse, Node node, boolean isGetter) {
+    protected static boolean handleDefaultMethodBody(PrototypeDescription<ClassOrInterfaceDeclaration> parse, Node node, boolean isGetter, MethodDeclaration declaration) {
         //TODO: Actual params type checks!
         if (isGetter && node.getParentNode().isPresent() && node.getParentNode().get().getChildNodes().size() == 2 && node.getParentNode().get().getChildNodes().get(1) instanceof SimpleName name) {
             var parent = parse.findField(name.toString());
@@ -802,21 +802,26 @@ public class Generator {
 
                     if (parent.isPresent()) {
                         Tools.with(parent.get().getPrototype(), p ->
-                                handleDefaultMethodBody(p, n, true));
+                                handleDefaultMethodBody(p, n, true, declaration));
 
-                        var exp = new FieldAccessExpr().setName(method.getName());
-                        if (method.getScope().isPresent()) {
-                            exp.setScope(method.getScope().get());
+                        var getter = getGetterName(method.getNameAsString(), parent.get().getType());
+                        if (getter.equals(declaration.getNameAsString())) {
+                            var exp = new FieldAccessExpr().setName(method.getName());
+                            if (method.getScope().isPresent()) {
+                                exp.setScope(method.getScope().get());
+                            }
+                            return node.replace(method, exp);
+                        } else {
+                            method.setName(getter);
                         }
-                        return node.replace(method, exp);
                     } else {
-                        if (handleDefaultMethodBody(parse, n, false)) {
-                            handleDefaultMethodBody(parse, node, false);
+                        if (handleDefaultMethodBody(parse, n, false, declaration)) {
+                            handleDefaultMethodBody(parse, node, false, declaration);
                         }
                     }
                 } else {
-                    if (handleDefaultMethodBody(parse, n, isGetter)) {
-                        handleDefaultMethodBody(parse, node, isGetter);
+                    if (handleDefaultMethodBody(parse, n, isGetter, declaration)) {
+                        handleDefaultMethodBody(parse, node, isGetter, declaration);
                     }
                 }
             }
@@ -824,7 +829,7 @@ public class Generator {
         return false;
     }
 
-    private static boolean handleDefaultInterfaceMethodBody(PrototypeDescription<ClassOrInterfaceDeclaration> parse, Node node, boolean isGetter) {
+    protected static boolean handleDefaultInterfaceMethodBody(PrototypeDescription<ClassOrInterfaceDeclaration> parse, Node node, boolean isGetter, MethodDeclaration declaration) {
         if (isGetter && node.getParentNode().isPresent() && node.getParentNode().get().getChildNodes().size() == 2 && node.getParentNode().get().getChildNodes().get(1) instanceof SimpleName name) {
             var parent = parse.findField(name.toString());
             if (parent.isEmpty() && nonNull(parse.getBase())) {
@@ -844,7 +849,7 @@ public class Generator {
 
                     if (parent.isPresent()) {
                         Tools.with(lookup.findParsed(getExternalClassName(parse.getDeclaration(), parent.get().getType().asString())), p ->
-                                handleDefaultInterfaceMethodBody(p, n, true));
+                                handleDefaultInterfaceMethodBody(p, n, true, declaration));
 
                         if (nonNull(parent.get().getInterfaceGetter())) {
                             method.setName(parent.get().getInterfaceGetter().getName());
@@ -852,13 +857,13 @@ public class Generator {
 
                         return true;
                     } else {
-                        if (handleDefaultInterfaceMethodBody(parse, n, false)) {
-                            handleDefaultInterfaceMethodBody(parse, node, false);
+                        if (handleDefaultInterfaceMethodBody(parse, n, false, declaration)) {
+                            handleDefaultInterfaceMethodBody(parse, node, false, declaration);
                         }
                     }
                 } else {
-                    if (handleDefaultInterfaceMethodBody(parse, n, isGetter)) {
-                        handleDefaultInterfaceMethodBody(parse, node, isGetter);
+                    if (handleDefaultInterfaceMethodBody(parse, n, isGetter, declaration)) {
+                        handleDefaultInterfaceMethodBody(parse, node, isGetter, declaration);
                     }
                 }
             }

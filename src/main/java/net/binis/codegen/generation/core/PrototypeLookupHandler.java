@@ -70,6 +70,10 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     @Setter
     private RoundEnvironment roundEnvironment;
 
+    @Getter
+    @Setter
+    private Set<String> sourcesRoots;
+
 
     @SuppressWarnings("unchecked")
     @Override

@@ -61,6 +61,12 @@ class BasicsTest extends BaseCodeGenTest {
     }
 
     @Test
+    void testFieldFromExternalInterfaceAndDefaultImplementationBoolean() {
+        testSingle("basic/TestDefault3.java", "basic/TestDefault3-0.java", "basic/TestDefault3-1.java");
+    }
+
+
+    @Test
     void testFieldFromInterfaceAndDefaultImplementation() {
         lookup.registerExternalLookup(s -> {
             if ("net.binis.codegen.test.TestTitle".equals(s)) {

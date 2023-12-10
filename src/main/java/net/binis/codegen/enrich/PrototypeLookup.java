@@ -29,10 +29,7 @@ import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.Element;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.UnaryOperator;
 
 public interface PrototypeLookup {
@@ -68,6 +65,10 @@ public interface PrototypeLookup {
 
     RoundEnvironment getRoundEnvironment();
     void setRoundEnvironment(RoundEnvironment roundEnv);
+
+    Set<String> getSourcesRoots();
+    void setSourcesRoots(Set<String> roots);
+
 
     CustomDescription createCustomDescription(String id);
     CustomDescription getCustomDescription(String id);

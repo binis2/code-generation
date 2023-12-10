@@ -12,7 +12,7 @@ public class ExtendedImpl implements Extended {
     }
 
     public String getDoubleExtended() {
-        return this.extended + this.extended;
+        return getExtended() + getExtended();
     }
 
     public String getExtended() {

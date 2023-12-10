@@ -24,7 +24,7 @@ public class TestAnnotationImpl implements TestAnnotation, Modifiable<TestAnnota
 
     // region getters
     public String getDoubleExtended() {
-        return this.extended + this.extended;
+        return getExtended() + getExtended();
     }
 
     public String getExtended() {
