@@ -1,4 +1,16 @@
 # Change Log
+**11-12-2023** ver. 1.1.22
+* Core: Added object proxy routines to CodeFactory.
+* Code: Fixed mapping failure if there are duplicated method signatures.
+* Generation: Default method implementations will prefer getters to direct field access.
+* Generation: Fixed default method implementation when field is not processed yet.
+* Generation: Fixed code generation failure when external interface is used in combination with prototype.
+* Annotation Processor: Detected sources roots are exposed to enrichers.
+* Jackson: Better collection detection handling.
+* Projection: Added object proxy support.
+* Spring Configuration: Improved bridge between Spring application context and CodeFactory.
+* IDEA Plugin: Updated to support IDEA 2023.3
+
 **03-12-2023** ver. 1.1.21
 * Core: Added ability to propagate exception when using CodeFactory instantiation routines. 
 * Generation: Improved collection type discovery.
