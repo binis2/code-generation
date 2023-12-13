@@ -1806,7 +1806,11 @@ public class Generator {
         if (!fieldExists(parsed, fieldName)) {
             FieldDeclaration field;
             if (nonNull(generic) && !generic.isEmpty()) {
-                field = spec.addField(generic.get(method.getTypeAsString()), fieldName, PROTECTED);
+                var type = generic.get(method.getTypeAsString());
+                if (isNull(type)) {
+                    type = method.getType();
+                }
+                field = spec.addField(type, fieldName, PROTECTED);
             } else {
                 if (genericMethod) {
                     field = spec.addField("Object", fieldName, PROTECTED);
@@ -2052,16 +2056,20 @@ public class Generator {
         }
     }
 
-    private static void addGetterFromGetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
+    protected static void addGetterFromGetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
         addGetterFromGetter(spec, declaration, isClass, null, field);
     }
 
-    private static void addGetterFromGetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, Map<String, Type> generic, PrototypeField field) {
+    protected static void addGetterFromGetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, Map<String, Type> generic, PrototypeField field) {
         if (!methodExists(spec, declaration, isClass)) {
             var method = spec
                     .addMethod(declaration.getNameAsString());
             if (nonNull(generic)) {
-                method.setType(generic.get(declaration.getType().asString()));
+                var type = generic.get(method.getTypeAsString());
+                if (isNull(type)) {
+                    type = method.getType();
+                }
+                method.setType(type);
             } else {
                 method.setType(declaration.getType());
             }
@@ -2077,7 +2085,7 @@ public class Generator {
         }
     }
 
-    private static void addGetterFromGetter(ClassOrInterfaceDeclaration spec, Method declaration, boolean isClass, Map<String, Type> generic, PrototypeField field) {
+    protected static void addGetterFromGetter(ClassOrInterfaceDeclaration spec, Method declaration, boolean isClass, Map<String, Type> generic, PrototypeField field) {
         if (!methodExists(spec, declaration, isClass)) {
             var method = spec.addMethod(declaration.getName());
             if (nonNull(generic)) {

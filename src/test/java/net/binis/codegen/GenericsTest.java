@@ -109,5 +109,26 @@ class GenericsTest extends BaseCodeGenTest {
         testSingleSkip("generics/Prototype9.java", "generics/Prototype9-0.java", "generics/Prototype9-1.java", true, true);
     }
 
+    @Test
+    void testGenericsWithNonGenericFields() {
+        lookup.registerExternalLookup(s -> {
+            if ("net.binis.codegen.test.intf.Generic".equals(s)) {
+                return """
+                            package net.binis.codegen.test.intf;
+                            
+                            public interface Generic<T> {
+                            
+                                T getPayload();
+                            
+                                String getOther();
+                            
+                            }
+                        """;
+            }
+            return null;
+        });
+        testSingleSkip("generics/Test6.java", "generics/Test6-0.java", "generics/Test6-1.java", true, true);
+    }
+
 
 }
