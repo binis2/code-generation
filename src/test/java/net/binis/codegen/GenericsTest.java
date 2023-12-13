@@ -130,5 +130,18 @@ class GenericsTest extends BaseCodeGenTest {
         testSingleSkip("generics/Test6.java", "generics/Test6-0.java", "generics/Test6-1.java", true, true);
     }
 
+    @Test
+    void testGenericsWithNonGenericFieldsAndSelfPrototype() {
+        testSingle("generics/Test7.java", "generics/Test7-0.java", "generics/Test7-1.java");
+    }
+
+    @Test
+    void testGenericsWithNonGenericFieldsAndPrototypeFields() {
+        testMulti(List.of(
+                Triple.of("generics/Prototype5.java", "generics/Prototype5-0.java", "generics/Prototype5-1.java"),
+                Triple.of("generics/Test8.java", "generics/Test8-0.java", "generics/Test8-1.java")
+        ));
+    }
+
 
 }

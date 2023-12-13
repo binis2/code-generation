@@ -1,6 +1,7 @@
 /*Generated code by Binis' code generator.*/
 package net.binis.codegen.test;
 
+import net.binis.test.enums.TestEnum;
 import net.binis.codegen.modifier.impl.BaseModifierImpl;
 import net.binis.codegen.modifier.Modifiable;
 import net.binis.codegen.factory.CodeFactory;
@@ -9,9 +10,9 @@ import javax.annotation.processing.Generated;
 @Generated(value = "net.binis.codegen.test.TestPrototype", comments = "Test")
 public class TestImpl implements Test, Modifiable<Test.Modify> {
 
-    protected String other;
+    protected java.lang.String other;
 
-    protected Double payload;
+    protected TestEnum payload;
 
     // region constructor & initializer
     {
@@ -23,11 +24,11 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
     // endregion
 
     // region getters
-    public String getOther() {
+    public java.lang.String getOther() {
         return other;
     }
 
-    public Double getPayload() {
+    public TestEnum getPayload() {
         return payload;
     }
 
@@ -48,12 +49,12 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
             return TestImpl.this;
         }
 
-        public Test.Modify other(String other) {
+        public Test.Modify other(java.lang.String other) {
             TestImpl.this.other = other;
             return this;
         }
 
-        public Test.Modify payload(Double payload) {
+        public Test.Modify payload(TestEnum payload) {
             TestImpl.this.payload = payload;
             return this;
         }

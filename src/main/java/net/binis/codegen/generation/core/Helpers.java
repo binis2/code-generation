@@ -1213,7 +1213,13 @@ public class Helpers {
         var i = 0;
         for (var g : cls.getTypeParameters()) {
             try {
-                generics.put(g.getNameAsString(), type.getTypeArguments().get().get(i));
+                var gen = type.getTypeArguments().get().get(i);
+                var proto = lookup.findParsed(getExternalClassName(type, gen.asString()));
+                if (isNull(proto)) {
+                    generics.put(g.getNameAsString(), gen);
+                } else {
+                    generics.put(g.getNameAsString(), new ClassOrInterfaceType().setName(proto.getInterfaceName()));
+                }
             } catch (NoSuchElementException e) {
                 throw new GenericCodeGenException("Invalid generic type arguments for type " + type.getNameAsString());
             }

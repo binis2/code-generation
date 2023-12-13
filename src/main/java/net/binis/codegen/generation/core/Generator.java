@@ -1237,8 +1237,13 @@ public class Generator {
                     if (!external || parse.getDeclaration().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).noneMatch(m ->
                             m.isDefault() && m.getNameAsString().equals(method.getNameAsString()) && m.getTypeAsString().equals(method.getTypeAsString()))) {
                         var field = addFieldFromGetter(parse, spec, method, generic, external);
-                        if (nonNull(field) && properties.isClassGetters()) {
-                            addGetterFromGetter(spec, method, true, generic, field);
+                        if (nonNull(field)) {
+                            if (properties.isClassGetters()) {
+                                addGetterFromGetter(spec, method, true, generic, field);
+                            }
+                            if (properties.isClassGetters()) {
+                                field.generateSetter();
+                            }
                         }
                     }
                 } else if (method.getNameAsString().startsWith("set")) {
@@ -1728,7 +1733,7 @@ public class Generator {
                 }));
     }
 
-    private static PrototypeField addField(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Type generic) {
+    protected static PrototypeField addField(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Type generic) {
         var compiledAnnotations = false;
         PrototypeField result = null;
         var fieldName = method.getNameAsString();
@@ -1795,11 +1800,11 @@ public class Generator {
         return result;
     }
 
-    private static boolean isGenericType(Type type, TypeDeclaration<ClassOrInterfaceDeclaration> declaration) {
+    protected static boolean isGenericType(Type type, TypeDeclaration<ClassOrInterfaceDeclaration> declaration) {
         return declaration.asClassOrInterfaceDeclaration().getTypeParameters().stream().anyMatch(p -> p.getNameAsString().equals(type.asString()));
     }
 
-    private static PrototypeField addFieldFromGetter(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Map<String, Type> generic, boolean external) {
+    protected static PrototypeField addFieldFromGetter(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Map<String, Type> generic, boolean external) {
         PrototypeField result = null;
         var genericMethod = !method.getTypeParameters().isEmpty() && method.getTypeAsString().equals(method.getTypeParameter(0).getNameAsString());
         var fieldName = getFieldName(method.getNameAsString());
@@ -2064,15 +2069,7 @@ public class Generator {
         if (!methodExists(spec, declaration, isClass)) {
             var method = spec
                     .addMethod(declaration.getNameAsString());
-            if (nonNull(generic)) {
-                var type = generic.get(method.getTypeAsString());
-                if (isNull(type)) {
-                    type = method.getType();
-                }
-                method.setType(type);
-            } else {
-                method.setType(declaration.getType());
-            }
+            method.setType(field.getType());
             if (isClass) {
                 method
                         .addModifier(PUBLIC)
