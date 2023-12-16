@@ -27,11 +27,6 @@ import org.junit.jupiter.api.Test;
 
 class PresetsTest extends BaseCodeGenTest {
 
-    @BeforeEach
-    public void cleanUp() {
-        Helpers.cleanUp();
-    }
-
     @Test
     void test() {
         testSingle("preset/PresetTest1.java", "preset/PresetTest1-0.java", "preset/PresetTest1-1.java");

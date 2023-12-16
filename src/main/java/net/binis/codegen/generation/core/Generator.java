@@ -372,7 +372,7 @@ public class Generator {
                     var ignore = getIgnores(member);
                     PrototypeField field = Structures.FieldData.builder().parsed(parse).build();
                     if (!ignore.isForField()) {
-                        field = addField(parse, typeDeclaration, spec, declaration, null);
+                        field = addField(parse, typeDeclaration, spec, declaration, null, null);
                     }
                     if (!ignore.isForClass()) {
                         if (properties.isClassGetters()) {
@@ -524,7 +524,7 @@ public class Generator {
                 var dummy = envelopWithDummyClass(method);
                 field.getDescription().findCompilationUnit().ifPresent(u -> u.getImports().forEach(dummy::addImport));
 
-                addField(parse, parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, method, nonNull(field.getGenerics()) ? field.getGenerics().values().iterator().next() : buildGeneric(field.getType().asString(), type, parsed.getDeclaration().asClassOrInterfaceDeclaration()));
+                addField(parse, parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, method, nonNull(field.getGenerics()) ? field.getGenerics().values().iterator().next() : buildGeneric(field.getType().asString(), type, parsed.getDeclaration().asClassOrInterfaceDeclaration()), field);
             });
         }
 
@@ -1447,11 +1447,11 @@ public class Generator {
         }
     }
 
-    public static String handleType(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Type type) {
+    public static String handleType(Node source, Node destination, Type type) {
         return handleType(source, destination, type, null);
     }
 
-    public static String handleType(ClassOrInterfaceDeclaration source, ClassOrInterfaceDeclaration destination, Type type, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
+    public static String handleType(Node source, Node destination, Type type, Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> prototypeMap) {
         return handleType(source.findCompilationUnit().get(), destination.findCompilationUnit().get(), type, prototypeMap);
     }
 
@@ -1733,10 +1733,11 @@ public class Generator {
                 }));
     }
 
-    protected static PrototypeField addField(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Type generic) {
+    protected static PrototypeField addField(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Type generic, PrototypeField parent) {
         var compiledAnnotations = false;
         PrototypeField result = null;
         var fieldName = method.getNameAsString();
+        var fieldParent = getFieldParent(parent);
         var fieldProto = findField(parsed, fieldName);
         var field = nonNull(fieldProto) ? fieldProto.getDeclaration() : null;
         var unit = type.findCompilationUnit().get();
@@ -1747,12 +1748,14 @@ public class Generator {
                 field = spec.addField(generic, fieldName, PROTECTED);
             } else {
                 if (method.getTypeParameters().isEmpty() || !method.getType().asString().equals(method.getTypeParameter(0).asString())) {
-                    field = spec.addField(handleType(type, spec, method.getType(), prototypeMap), fieldName, PROTECTED);
+                    field = spec.addField(handleType(nonNull(fieldParent) ? fieldParent.getDescription() : type, spec, method.getType(), prototypeMap), fieldName, PROTECTED);
                 } else {
                     field = spec.addField("Object", fieldName, PROTECTED);
                 }
             }
             var collection = CollectionsHandler.isCollection(field.getVariable(0).getType());
+            var proto = lookup.findParsed(getExternalClassName(unit, method.getType().asString()));
+
             result = Structures.FieldData.builder()
                     .parsed(parsed)
                     .name(fieldName)
@@ -1764,11 +1767,11 @@ public class Generator {
                     .genericField(isGenericType(method.getType(), parsed.getDeclaration()))
                     .generics(nonNull(generic) ? Map.of(generic.asString(), generic) : null)
                     .prototype(collection ? prototypeMap.get(CollectionsHandler.getCollectionType(method.getType())) :
-                            (isNull(generic) ? lookup.findParsed(getExternalClassName(unit, method.getType().asString())) : null))
+                            (isNull(generic) ? proto : null))
                     .typePrototypes(!prototypeMap.isEmpty() ? prototypeMap : null)
                     .type(field.getElementType())
-                    .fullType(getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
-                    .parent(nonNull(parsed.getBase()) ? findField(parsed.getBase(), fieldName) : null)
+                    .fullType(nonNull(proto) ? calcProtoFullType(proto) : getExternalClassNameIfExists(spec, field.getElementType().asString()))
+                    .parent(nonNull(parent) ? parent : nonNull(parsed.getBase()) ? findField(parsed.getBase(), fieldName) : null)
                     .build();
             parsed.getFields().add(result);
         } else {
@@ -1798,6 +1801,16 @@ public class Generator {
         }
         handleFieldAnnotations(unit, field, method, compiledAnnotations, result);
         return result;
+    }
+
+    protected static String calcProtoFullType(PrototypeDescription<ClassOrInterfaceDeclaration> proto) {
+        var properties = proto.getProperties();
+        if (properties.isGenerateInterface()) {
+            return properties.getInterfaceFullName();
+        } else if (properties.isGenerateImplementation()) {
+            return properties.getImplementorFullName();
+        }
+        return null;
     }
 
     protected static boolean isGenericType(Type type, TypeDeclaration<ClassOrInterfaceDeclaration> declaration) {
@@ -1833,7 +1846,7 @@ public class Generator {
                     .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
                     .generics(nonNull(generic) && !generic.isEmpty() ? generic : null)
                     .genericMethod(genericMethod)
-                    .fullType(genericMethod ? null : getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
+                    .fullType(genericMethod ? null : getExternalClassNameIfExists(method, field.getElementType().asString()))
                     .type(genericMethod ? lookup.getParser().parseType(method.getTypeParameter(0).getNameAsString()).getResult().get() : field.getElementType())
                     //TODO: enable prototypes
                     .build();
@@ -2034,7 +2047,8 @@ public class Generator {
         if (!methodExists(spec, declaration, name, isClass)) {
             String rType;
             if (declaration.getTypeParameters().isEmpty()) {
-                rType = handleType(type, spec, declaration.getType());
+                var parent = getFieldParent(field);
+                rType = handleType(nonNull(parent) ? parent.getDescription() : type, spec, declaration.getType());
             } else {
                 rType = declaration.getType().asString();
             }
@@ -2079,6 +2093,8 @@ public class Generator {
                 method.setBody(null);
                 ((Structures.FieldData) field).setInterfaceGetter(method);
             }
+
+            Helpers.addImport(spec, field);
         }
     }
 

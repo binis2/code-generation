@@ -50,6 +50,10 @@ public interface PrototypeData {
         return getInterfacePackage() + "." + getInterfaceName();
     }
 
+    default String getImplementorFullName() {
+        return getClassPackage() + "." + getClassName();
+    }
+
     String getInterfacePackage();
     boolean isInterfaceSetters();
     String getModifierName();

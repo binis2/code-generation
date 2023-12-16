@@ -368,21 +368,22 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     var proto = parsed.getDeclaration().asClassOrInterfaceDeclaration();
                     var generics = buildGenerics(proto.getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(base.getNameAsString())).findFirst().get(), base);
                     parsed.getBase().getFields().forEach(field ->
-                            with(generics.get(field.getType().asString()), t -> with(getExternalClassName(proto.findCompilationUnit().get(), t.asString()), n -> with(lookup.findParsed(n), p -> {
-                                if (p.equals(description)) {
+                            with(generics.get(field.getType().asString()), t -> {
+                                var par = discoverPrototype(proto, t);
+                                if (nonNull(par) && par.equals(description)) {
                                     if (field.isCollection()) {
                                         description.addEmbeddedModifier(EmbeddedModifierType.COLLECTION);
                                     } else {
                                         description.addEmbeddedModifier(EmbeddedModifierType.SINGLE);
                                     }
                                 }
-                            }))));
+                            }));
                 }
             });
         }
     }
 
-    private MethodDeclaration declare(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeData properties, ClassOrInterfaceDeclaration modifierFields, PrototypeField field, TypeDeclaration<ClassOrInterfaceDeclaration> classDeclaration, List<Pair<CompilationUnit, String>> imports) {
+    protected MethodDeclaration declare(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeData properties, ClassOrInterfaceDeclaration modifierFields, PrototypeField field, TypeDeclaration<ClassOrInterfaceDeclaration> classDeclaration, List<Pair<CompilationUnit, String>> imports) {
         MethodDeclaration result = null;
         if (!field.getIgnores().isForModifier()) {
             var pair = getFieldType(description, field);

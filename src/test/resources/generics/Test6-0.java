@@ -30,6 +30,16 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
     public Double getPayload() {
         return payload;
     }
+    // endregion
+
+    // region setters
+    public void setOther(String other) {
+        this.other = other;
+    }
+
+    public void setPayload(Double payload) {
+        this.payload = payload;
+    }
 
     public Test.Modify with() {
         return new TestModifyImpl(this);

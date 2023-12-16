@@ -550,6 +550,26 @@ public class Helpers {
         }
     }
 
+    public static PrototypeDescription<ClassOrInterfaceDeclaration> discoverPrototype(Node node, Type type) {
+        PrototypeDescription<ClassOrInterfaceDeclaration> par = null;
+        if (type.isClassOrInterfaceType()) {
+            par = lookup.findGenerated(type.asString());
+            if (isNull(par)) {
+                par = lookup.findParsed(type.asString());
+            }
+        }
+        if (isNull(par)) {
+            var name = getExternalClassName(node, type.asString());
+            par = lookup.findGenerated(name);
+            if (isNull(par)) {
+                par = lookup.findParsed(name);
+            }
+
+        }
+
+        return par;
+    }
+
     @SuppressWarnings("unchecked")
     public static <T extends Node> T findParentClassOfType(Node node, Class<T> cls, Predicate<T> predicate) {
         var parent = node.getParentNode();
@@ -569,8 +589,7 @@ public class Helpers {
     public static PrototypeField findField(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, String field) {
         var result = parsed.getFields().stream().filter(f -> f.getName().equals(field)).findFirst();
         if (result.isPresent()) {
-            return result.get();
-        }
+            return result.get();        }
         if (nonNull(parsed.getBase())) {
             return findField(parsed.getBase(), field);
         }
@@ -1218,7 +1237,7 @@ public class Helpers {
                 if (isNull(proto)) {
                     generics.put(g.getNameAsString(), gen);
                 } else {
-                    generics.put(g.getNameAsString(), new ClassOrInterfaceType().setName(proto.getInterfaceName()));
+                    generics.put(g.getNameAsString(), new ClassOrInterfaceType(new ClassOrInterfaceType(null, proto.getProperties().getInterfacePackage()), proto.getProperties().getInterfaceName()));
                 }
             } catch (NoSuchElementException e) {
                 throw new GenericCodeGenException("Invalid generic type arguments for type " + type.getNameAsString());
@@ -1245,7 +1264,7 @@ public class Helpers {
                 description.getInterface().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(intf.getNameAsString())).findFirst().ifPresent(t ->
                         type.set(buildGeneric(field.getType().asString(), t, intf)));
                 description.getDeclaration().asClassOrInterfaceDeclaration().getExtendedTypes().stream().filter(t -> t.getNameAsString().equals(field.getParsed().getDeclaration().getNameAsString())).findFirst().ifPresent(t ->
-                        proto.set(lookup.findParsed(getExternalClassName(description.getDeclaration().asClassOrInterfaceDeclaration().findCompilationUnit().get(), buildGeneric(field.getType().asString(), t, intf).asString()))));
+                        proto.set(discoverPrototype(field.getDescription(), buildGeneric(field.getType().asString(), t, intf))));
                 if (type.isPresent()) {
                     return Pair.of(type.get(), proto.get());
                 }
@@ -1415,6 +1434,7 @@ public class Helpers {
         var dummy = new CompilationUnit();
         dummy.setPackageDeclaration("dummy");
         dummy.addClass("Dummy").addMember(description);
+        description.findCompilationUnit().ifPresent(unit -> unit.getImports().forEach(dummy::addImport));
         return dummy;
     }
 
@@ -1497,5 +1517,44 @@ public class Helpers {
     public static String getNodeName(Node node) {
         return node instanceof NodeWithSimpleName<?> s ? s.getNameAsString() : node instanceof NodeWithName<?> n ? n.getNameAsString() : "";
     }
+
+    public static void addImport(Node node, PrototypeField field) {
+        var f = nonNull(field.getParent()) ? getFieldParent(field) : field;
+        if (nonNull(field.getFullType())) {
+            node.findCompilationUnit().ifPresent(unit -> addImport(unit, f.getFullType()));
+        }
+
+        if (nonNull(field.getType()) && field.getType().isClassOrInterfaceType()) {
+            addImport(node, field.getDescription(), f.getType().asClassOrInterfaceType());
+        }
+    }
+
+    public static void addImport(Node dest, Node source, ClassOrInterfaceType type) {
+        dest.findCompilationUnit().ifPresent(unit -> addImport(unit, getExternalClassName(source, type.getNameAsString())));
+        type.getTypeArguments().ifPresent(args ->
+                args.stream()
+                        .filter(Type::isClassOrInterfaceType)
+                        .map(Type::asClassOrInterfaceType)
+                        .forEach(arg -> addImport(dest, source, arg)));
+    }
+
+    public static void addImport(CompilationUnit unit, String imprt) {
+        if (!imprt.startsWith("dummy.") && !isPrimitiveType(imprt)) {
+            unit.addImport(imprt);
+        }
+    }
+
+    public static PrototypeField getFieldParent(PrototypeField parent) {
+        if (nonNull(parent)) {
+            if (isNull(parent.getParent())) {
+                return parent;
+            } else {
+                return getFieldParent(parent.getParent());
+            }
+        }
+        return null;
+    }
+
+
 
 }
