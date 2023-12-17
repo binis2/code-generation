@@ -1,4 +1,12 @@
 # Change Log
+**17-12-2023** ver. 1.1.23
+* Core: Extended reflection routines.
+* Generation: Prototype field description types consistently points to the generated type.
+* Generation: Fixed usage of generic interfaces with non-generic fields.
+* Generation: Fixed generation of generic external interfaces + prototypes.
+* Generation: Fixed generation of setters from external interfaces.
+* Spring: Added ability to mock transactions event if there is Spring context present.
+
 **11-12-2023** ver. 1.1.22
 * Core: Added object proxy routines to CodeFactory.
 * Code: Fixed mapping failure if there are duplicated method signatures.
