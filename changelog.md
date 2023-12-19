@@ -1,4 +1,9 @@
 # Change Log
+**19-12-2023** ver. 1.1.24
+* Core: Made CodeEnum serializable.
+* Generation: Fixed imports for inherited fields.
+* Generation: Fixed missing annotations for inherited fields.
+
 **17-12-2023** ver. 1.1.23
 * Core: Extended reflection routines.
 * Generation: Prototype field description types consistently points to the generated type.
