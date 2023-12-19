@@ -56,6 +56,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
@@ -1778,7 +1779,7 @@ public class Generator {
             var proto = parsed.getFields().stream().filter(d -> d.getName().equals(fieldName)).findFirst();
             if (proto.isPresent()) {
                 result = proto.get();
-                handleType(type, spec, method.getType());
+                handleType(method, spec, method.getType());
                 ((Structures.FieldData) result).setPrototype(isNull(generic) ? lookup.findParsed(getExternalClassName(unit, method.getType().asString())) : null);
                 mergeAnnotations(method, result.getDescription());
             } else {
@@ -1857,6 +1858,7 @@ public class Generator {
                 result = proto.get();
             }
         }
+        handleFieldAnnotations(result.getDescription().findCompilationUnit().get(), result.getDeclaration(), result.getDescription(), false, result);
 
         return result;
     }
