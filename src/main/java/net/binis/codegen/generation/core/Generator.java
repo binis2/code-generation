@@ -806,7 +806,8 @@ public class Generator {
                                 handleDefaultMethodBody(p, n, true, declaration));
 
                         var getter = getGetterName(method.getNameAsString(), parent.get().getType());
-                        if (getter.equals(declaration.getNameAsString())) {
+                        //TODO: Check for parameter types as well
+                        if (getter.equals(declaration.getNameAsString()) && method.getArguments().size() == declaration.getParameters().size() && method.getScope().isEmpty()) {
                             var exp = new FieldAccessExpr().setName(method.getName());
                             if (method.getScope().isPresent()) {
                                 exp.setScope(method.getScope().get());
@@ -815,15 +816,10 @@ public class Generator {
                         } else {
                             method.setName(getter);
                         }
-                    } else {
-                        if (handleDefaultMethodBody(parse, n, false, declaration)) {
-                            handleDefaultMethodBody(parse, node, false, declaration);
-                        }
                     }
-                } else {
-                    if (handleDefaultMethodBody(parse, n, isGetter, declaration)) {
-                        handleDefaultMethodBody(parse, node, isGetter, declaration);
-                    }
+                }
+                if (handleDefaultMethodBody(parse, n, isGetter, declaration)) {
+                    handleDefaultMethodBody(parse, node, isGetter, declaration);
                 }
             }
         }

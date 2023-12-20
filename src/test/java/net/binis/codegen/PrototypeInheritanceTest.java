@@ -38,4 +38,9 @@ class PrototypeInheritanceTest extends BaseCodeGenTest {
                 ));
     }
 
+    @Test
+    void testInheritedDefaultCompiledMethod() {
+        testSingle("inheritance/InheritTest3.java", "inheritance/InheritTest3-0.java", "inheritance/InheritTest3-1.java", 2);
+    }
+
 }
