@@ -43,7 +43,19 @@ public class CGVarSymbol extends CGSymbol {
     }
 
     public String getVariableType() {
+        return trimGenerics(Reflection.getFieldValue(instance, "type").toString());
+    }
+
+    public String getVariableFullType() {
         return Reflection.getFieldValue(instance, "type").toString();
+    }
+
+    protected String trimGenerics(String type) {
+        var idx = type.indexOf('<');
+        if (idx > 0) {
+            return type.substring(0, idx);
+        }
+        return type;
     }
 
     public String getVariableSimpleType() {
