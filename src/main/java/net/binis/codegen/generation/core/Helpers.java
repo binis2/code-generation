@@ -273,11 +273,11 @@ public class Helpers {
         }
 
         if (isNull(result)) {
-            result = findLocalType(unit, t);
+            result = findLocalType(unit, type);
         }
 
         if (isNull(result)) {
-            var cls = loadClass("java.lang." + t);
+            var cls = loadClass("java.lang." + type);
             if (nonNull(cls)) {
                 result = cls.getCanonicalName();
             }
