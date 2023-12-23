@@ -1,4 +1,10 @@
 # Change Log
+**23-12-2023** ver. 1.1.25
+* Generation: Fixed discovery of generic types.
+* Generation: Better handling of generics for CGVarSymbol.
+* Generation: Improved default method body handling.
+* Generation: Better methodExists() handling.
+
 **19-12-2023** ver. 1.1.24
 * Core: Made CodeEnum serializable.
 * Generation: Fixed imports for inherited fields.
