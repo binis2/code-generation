@@ -522,7 +522,7 @@ public class Generator {
         if (!parsed.getProperties().isBase() && !parsed.getProperties().getPrototypeName().equals(parse.getProperties().getMixInClass())) {
             parsed.getFields().forEach(field -> {
                 var method = field.getDescription().clone();
-                var dummy = envelopWithDummyClass(method);
+                var dummy = envelopWithDummyClass(method, field.getDescription());
                 field.getDescription().findCompilationUnit().ifPresent(u -> u.getImports().forEach(dummy::addImport));
 
                 addField(parse, parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, method, nonNull(field.getGenerics()) ? field.getGenerics().values().iterator().next() : buildGeneric(field.getType().asString(), type, parsed.getDeclaration().asClassOrInterfaceDeclaration()), field);
@@ -680,6 +680,7 @@ public class Generator {
         var unit = declaration.findCompilationUnit().get();
         var ignores = getIgnores(declaration);
         var method = declaration.clone().removeModifier(DEFAULT);
+        envelopWithDummyClass(method, declaration);
         method.getAnnotationByClass(Ignore.class).ifPresent(method::remove);
         if (!ignores.isForInterface()) {
             if (ignores.isForClass()) {
@@ -1944,7 +1945,7 @@ public class Generator {
                 }
             }
 
-            var dummy = envelopWithDummyClass(description);
+            var dummy = envelopWithDummyClass(description, field);
 
             for (var ann : method.getDeclaredAnnotations()) {
                 description.addAnnotation(ann.annotationType());
@@ -2005,7 +2006,7 @@ public class Generator {
                 }
             }
 
-            var dummy = envelopWithDummyClass(description);
+            var dummy = envelopWithDummyClass(description, field);
 
             for (var ann : method.getDeclaredAnnotations()) {
                 description.addAnnotation(ann.annotationType());
@@ -2137,6 +2138,7 @@ public class Generator {
                 .setName(name)
                 .setType("void")
                 .addParameter(new Parameter().setName(fieldName).setType(returnType));
+        envelopWithDummyClass(method, field.getDeclaration());
         if (!methodExists(spec, method, name, isClass)) {
             spec.addMember(method);
             if (isClass) {
@@ -2167,15 +2169,15 @@ public class Generator {
     }
 
     private static void addSetterFromSetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, Map<String, Type> generic, PrototypeField field) {
-        if (!methodExists(spec, declaration, isClass)) {
-            var method = spec
-                    .addMethod(declaration.getNameAsString());
-            if (nonNull(generic)) {
-                method.addParameter(new Parameter().setName(field.getName()).setType(generic.get(declaration.getParameter(0).getType().asString())));
-            } else {
-                method.addParameter(new Parameter().setName(field.getName()).setType(declaration.getParameter(0).getType()));
-            }
+        var method = new MethodDeclaration().setName(declaration.getNameAsString()).setType("void");
+        if (nonNull(generic)) {
+            method.addParameter(new Parameter().setName(field.getName()).setType(generic.get(declaration.getParameter(0).getType().asString())));
+        } else {
+            method.addParameter(new Parameter().setName(field.getName()).setType(declaration.getParameter(0).getType()));
+        }
 
+        if (!methodExists(spec, method, isClass, true)) {
+            spec.addMember(method);
 
             if (isClass) {
                 method

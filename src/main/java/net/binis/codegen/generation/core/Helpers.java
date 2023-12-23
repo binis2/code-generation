@@ -398,19 +398,39 @@ public class Helpers {
                 ) || !isClass && ancestorMethodExists(spec, declaration);
     }
 
-    public static boolean methodExists(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass) {
+    public static boolean methodExists(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, boolean weak) {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(declaration.getNameAsString()) &&
-                                m.getParameters().size() == declaration.getParameters().size()
-                        //TODO: Match parameter types also
+                        matchParams(m.getParameters(), declaration.getParameters(), weak)
                 ) || !isClass && ancestorMethodExists(spec, declaration, declaration.getNameAsString());
+    }
+
+    public static boolean methodExists(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass) {
+        return methodExists(spec, declaration, isClass, true);
+    }
+
+    public static boolean matchParams(NodeList<com.github.javaparser.ast.body.Parameter> parameters, NodeList<com.github.javaparser.ast.body.Parameter> parameters1, boolean weak) {
+        if (parameters.size() != parameters1.size()) {
+            return false;
+        }
+
+        for (var i = 0; i < parameters.size(); i++) {
+            var par1 = parameters.get(i);
+            var par2 = parameters1.get(i);
+            var p1 = weak ? par1.getTypeAsString() : getExternalClassName(par1, par1.getTypeAsString());
+            var p2 = weak ? par2.getTypeAsString() : getExternalClassName(par2, par2.getTypeAsString());
+            if (!p1.equals(p2)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public static boolean methodExists(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, String methodName, boolean isClass) {
         return spec.getMethods().stream()
                 .anyMatch(m -> m.getNameAsString().equals(methodName) &&
-                                m.getParameters().size() == declaration.getParameters().size()
-                        //TODO: Match parameter types also
+                        matchParams(m.getParameters(), declaration.getParameters(), false)
                 ) || !isClass && ancestorMethodExists(spec, declaration, methodName);
     }
 
@@ -589,7 +609,8 @@ public class Helpers {
     public static PrototypeField findField(PrototypeDescription<ClassOrInterfaceDeclaration> parsed, String field) {
         var result = parsed.getFields().stream().filter(f -> f.getName().equals(field)).findFirst();
         if (result.isPresent()) {
-            return result.get();        }
+            return result.get();
+        }
         if (nonNull(parsed.getBase())) {
             return findField(parsed.getBase(), field);
         }
@@ -1430,11 +1451,13 @@ public class Helpers {
         }
     }
 
-    public static CompilationUnit envelopWithDummyClass(MethodDeclaration description) {
+    public static CompilationUnit envelopWithDummyClass(MethodDeclaration description, Node original) {
         var dummy = new CompilationUnit();
         dummy.setPackageDeclaration("dummy");
         dummy.addClass("Dummy").addMember(description);
-        description.findCompilationUnit().ifPresent(unit -> unit.getImports().forEach(dummy::addImport));
+        if (nonNull(original)) {
+            original.findCompilationUnit().ifPresent(unit -> unit.getImports().forEach(dummy::addImport));
+        }
         return dummy;
     }
 
@@ -1554,7 +1577,6 @@ public class Helpers {
         }
         return null;
     }
-
 
 
 }
