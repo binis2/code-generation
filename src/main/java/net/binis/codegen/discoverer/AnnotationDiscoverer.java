@@ -53,7 +53,7 @@ public abstract class AnnotationDiscoverer extends Discoverer {
         try {
             loadResources(RESOURCE_PATH, Discoverer.class.getClassLoader()).forEach(s -> Discoverer.processResource(s, result));
         } catch (Exception e) {
-            log.error("Unable to discover annotations!");
+            log.error("Unable to discover annotations!", e);
             loadDefault(result);
         }
         return result;

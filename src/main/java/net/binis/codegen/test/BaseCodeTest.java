@@ -167,6 +167,9 @@ public abstract class BaseCodeTest {
 
         var params = new ArrayList<>(Arrays.asList(args));
         params.add("-Xlint:unchecked");
+        params.add("--enable-preview");
+        params.add("--release");
+        params.add(System.getProperty("java.specification.version"));
         JavaCompiler.CompilationTask task = compiler.getTask(null,
                 fileManager, diagnostics, params, null, getCompilationUnits(files));
 
