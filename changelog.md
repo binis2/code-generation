@@ -1,4 +1,9 @@
 # Change Log
+**27-12-2023** ver. 1.1.26
+* Core: New discoverer type - INIT.
+* Core: Added support for custom discoverer types.
+* Test: Added enablePreview() Java features for tests.
+
 **23-12-2023** ver. 1.1.25
 * Generation: Fixed discovery of generic types.
 * Generation: Better handling of generics for CGVarSymbol.
