@@ -57,9 +57,15 @@ public abstract class BaseCodeTest {
 
     protected JavaParser parser = lookup.getParser();
 
+    protected boolean enablePreview;
+
     static {
         AnnotationDiscoverer.findAnnotations().stream().filter(Discoverer.DiscoveredService::isTemplate).forEach(a ->
                 Structures.registerTemplate(a.getCls()));
+    }
+
+    public void enablePreview() {
+        enablePreview = true;
     }
 
     @BeforeEach
@@ -167,9 +173,11 @@ public abstract class BaseCodeTest {
 
         var params = new ArrayList<>(Arrays.asList(args));
         params.add("-Xlint:unchecked");
-        params.add("--enable-preview");
-        params.add("--release");
-        params.add(System.getProperty("java.specification.version"));
+        if (enablePreview) {
+            params.add("--enable-preview");
+            params.add("--release");
+            params.add(System.getProperty("java.specification.version"));
+        }
         JavaCompiler.CompilationTask task = compiler.getTask(null,
                 fileManager, diagnostics, params, null, getCompilationUnits(files));
 
