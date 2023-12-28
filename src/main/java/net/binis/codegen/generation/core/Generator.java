@@ -1964,7 +1964,7 @@ public class Generator {
                     .ignores(Structures.Ignores.builder().build())
                     .generics(generic)
                     .genericMethod(genericMethod)
-                    .fullType(genericMethod ? null : getExternalClassNameIfExists(spec.findCompilationUnit().get(), field.getElementType().asString()))
+                    .fullType(genericMethod ? null : nonNull(prototype) ? prototype.getInterfaceFullName() : getExternalClassNameIfExists(spec, field.getElementType().asString()))
                     .type(discoverType(method, genericMethod, field))
                     //TODO: enable ignores
                     .prototype(prototype)

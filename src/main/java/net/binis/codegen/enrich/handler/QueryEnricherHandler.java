@@ -416,7 +416,9 @@ public class QueryEnricherHandler extends BaseEnricher implements QueryEnricher 
                     }
                 }
             } else {
-                Helpers.importType(type, fields.findCompilationUnit().get());
+                if (!Helpers.importType(desc, fields)) {
+                    Helpers.importType(type, fields);
+                }
 
                 impl.addMethod(name)
                         .setType(QUERY_SELECT_OPERATION)

@@ -560,7 +560,7 @@ public class Helpers {
             }
         } else {
             if (parsed.isProcessed()) {
-                var type = parsed.getFiles().get(0).getType(0);
+                var type = parsed.isMixIn() ? parsed.getMixIn().getImplementation() : parsed.getImplementation();
                 expr.findCompilationUnit().ifPresent(u -> u.addImport(type.getFullyQualifiedName().get()));
                 return type.getNameAsString();
             } else {
@@ -1159,16 +1159,33 @@ public class Helpers {
         node.getChildNodes().forEach(n -> findUsedTypesInternal(types, n));
     }
 
-    public static void importType(Type type, CompilationUnit destination) {
+    public static void importType(Type type, Node destination) {
         if (!type.isPrimitiveType()) {
-            type.findCompilationUnit().ifPresent(unit -> {
-                var full = Helpers.getExternalClassNameIfExists(type.findCompilationUnit().get(), type.asClassOrInterfaceType().getNameAsString());
+            destination.findCompilationUnit().ifPresent(unit -> {
+                type.findCompilationUnit().ifPresent(dest -> {
+                    var full = getExternalClassName(unit, type.asString());
 
-                if (nonNull(full)) {
-                    destination.addImport(full);
-                }
+                    if (nonNull(full)) {
+                        dest.addImport(full);
+                    }
+                });
             });
         }
+    }
+
+    public static boolean importType(PrototypeField field, Node destination) {
+        if (nonNull(field.getFullType())) {
+            if (!isPrimitiveType(field.getFullType())) {
+                destination.findCompilationUnit().ifPresent(unit -> {
+                    unit.addImport(field.getFullType());
+                    if (nonNull(field.getGenerics())) {
+                        field.getGenerics().values().forEach(t -> importType(t, unit));
+                    }
+                });
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void addInitializer(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration intf, ClassOrInterfaceDeclaration type, boolean embedded) {
