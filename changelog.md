@@ -1,4 +1,10 @@
 # Change Log
+**29-12-2023** ver. 1.1.27
+* Core: CodeFactory default creation now uses external factories as well.
+* Core: Extended Holder to support stream operations.
+* Generator: Improved field type discovery for QueryEnricher.
+* Generator: Fixed recursive type handling when mixIn is used.
+
 **27-12-2023** ver. 1.1.26
 * Core: New discoverer type - INIT.
 * Core: Added support for custom discoverer types.
