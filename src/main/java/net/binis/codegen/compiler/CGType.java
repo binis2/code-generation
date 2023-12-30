@@ -23,6 +23,8 @@ package net.binis.codegen.compiler;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.compiler.base.JavaCompilerObject;
 
+import javax.lang.model.type.TypeKind;
+
 import static net.binis.codegen.tools.Reflection.invoke;
 import static net.binis.codegen.tools.Reflection.loadClass;
 
@@ -50,6 +52,11 @@ public class CGType extends JavaCompilerObject {
     @Override
     public String toString() {
         return instance.toString();
+    }
+
+    public boolean isErrorType() {
+        TypeKind kind = invoke("getKind", instance);
+        return TypeKind.ERROR.equals(kind);
     }
 
     public Class toClass() {

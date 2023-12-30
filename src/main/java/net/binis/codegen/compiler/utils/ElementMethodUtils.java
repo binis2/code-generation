@@ -113,7 +113,12 @@ public class ElementMethodUtils extends ElementUtils {
             var params = decl.getParameters();
             if (params.size() == list.size()) {
                 for (int i = 0; i < params.size(); i++) {
-                    if (!params.get(i).getFullVariableType().equals(list.get(i))) {
+                    var par = params.get(i);
+                    if (par.getSymbol().getType().isErrorType()) {
+                        if (!(list.get(i).endsWith("." + params.get(i).getVariableType()) || params.get(i).getFullVariableType().equals(list.get(i)))) {
+                            return false;
+                        }
+                    } else if (!params.get(i).getFullVariableType().equals(list.get(i))) {
                         return false;
                     }
                 }
