@@ -30,6 +30,7 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.stmt.Statement;
+import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.utils.StringEscapeUtils;
 import lombok.Builder;
 import lombok.Data;
@@ -951,7 +952,21 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
 
     @SuppressWarnings("unchecked")
     protected void formatCode(PrototypeField field, ModifierType modifier, StringBuilder result, String value, String format, boolean collection) {
+        var type = calcType(field, modifier, collection);
+
+        result.append(", ")
+                .append(String.format(format.replaceAll("\\{type}", type.toString()),
+                        value
+                                .replaceAll("\\{type}", type.toString())
+                                .replaceAll("\\{entity}", ModifierType.MODIFIER.equals(modifier) ? field.getDeclaration().findAncestor(ClassOrInterfaceDeclaration.class).get().getNameAsString() + ".this" :  modifier.getValue())));
+    }
+
+    protected Type calcType(PrototypeField field, ModifierType modifier, boolean collection) {
         var type = field.getDeclaration().getVariable(0).getType();
+
+        if (type.isPrimitiveType()) {
+            type = type.asPrimitiveType().toBoxedType();
+        }
 
         if ((collection || ModifierType.COLLECTION.equals(modifier)) && type.isClassOrInterfaceType()) {
             var args = type.asClassOrInterfaceType().getTypeArguments();
@@ -959,12 +974,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                 type = args.get().get(0);
             }
         }
-
-        result.append(", ")
-                .append(String.format(format.replaceAll("\\{type}", type.toString()),
-                        value
-                                .replaceAll("\\{type}", type.toString())
-                                .replaceAll("\\{entity}", (ModifierType.MODIFIER.equals(modifier) ? "(" + field.getDeclaration().findAncestor(ClassOrInterfaceDeclaration.class).get().getNameAsString() + ")" : "") + modifier.getValue())));
+        return type;
     }
 
     protected String buildParamsStr(Object param, Params params, PrototypeField field, ModifierType modifier, boolean collection) {
@@ -972,13 +982,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             return "\"" + StringEscapeUtils.escapeJava(p) + "\"";
         } else if (param instanceof AsCodeHolder holder) {
             var format = "%s".equals(holder.getFormat()) && !StringUtils.isBlank(params.getAsCode()) ? params.getAsCode() : holder.getFormat();
-            var type = field.getDeclaration().getVariable(0).getType();
-            if ((collection || ModifierType.COLLECTION.equals(modifier)) && type.isClassOrInterfaceType()) {
-                var args = type.asClassOrInterfaceType().getTypeArguments();
-                if (args.isPresent() && !args.get().isEmpty()) {
-                    type = args.get().get(0);
-                }
-            }
+            var type = calcType(field, modifier, collection);
             return String.format(format.replaceAll("\\{type}", type.toString()), holder.getValue());
         } else {
             return nonNull(param) ? param.toString() : "null";
