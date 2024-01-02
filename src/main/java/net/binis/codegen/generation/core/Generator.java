@@ -239,6 +239,8 @@ public class Generator {
                 handleNoneStrategy(prsd, type, typeDeclaration, properties);
                 result = true;
             }
+
+            checkForNestedPrototypes(typeDeclaration);
         }
 
         return result;
@@ -1178,7 +1180,6 @@ public class Generator {
 
     }
 
-    @SuppressWarnings("unchecked")
     private static void ensureParsedParents(ClassOrInterfaceDeclaration declaration, PrototypeData properties) {
         for (var extended : declaration.getExtendedTypes()) {
             extended.getTypeArguments().ifPresent(args ->
@@ -1196,6 +1197,10 @@ public class Generator {
                         name -> Tools.with(lookup.findParsed(name), parse ->
                                 condition(!parse.isProcessed(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get(), parse)))));
 
+        checkForNestedPrototypes(declaration);
+    }
+
+    protected static void checkForNestedPrototypes(ClassOrInterfaceDeclaration declaration) {
         declaration.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(cls ->
                 Generator.getCodeAnnotations(cls).ifPresent(ann -> {
                     var clsName = getClassName(cls);
