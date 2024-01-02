@@ -1,4 +1,11 @@
 # Change Log
+**02-01-2024** ver. 1.1.28
+* Core: Added MappingStrategy - FIELDS
+* Generation: Improved method element discovery if the parameter type is ErrorType.
+* Generation: Nested prototypes located in class prototypes are now properly discovered. 
+* Validation: Simplified generated lambda expressions for modifiers.
+* Jackson: Added serialization for @CodeEnum.
+
 **29-12-2023** ver. 1.1.27
 * Core: CodeFactory default creation now uses external factories as well.
 * Core: Extended Holder to support stream operations.
