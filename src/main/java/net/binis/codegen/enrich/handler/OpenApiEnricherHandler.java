@@ -21,14 +21,19 @@ package net.binis.codegen.enrich.handler;
  */
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.expr.ArrayInitializerExpr;
+import com.github.javaparser.ast.expr.StringLiteralExpr;
 import net.binis.codegen.enrich.OpenApiEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.options.Options;
 
+import java.util.Arrays;
+
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.loadClass;
+import static net.binis.codegen.tools.Tools.with;
 
 public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnricher {
 
@@ -55,19 +60,29 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
         }
     }
 
-    private void enrichField(PrototypeField field) {
+    protected void enrichField(PrototypeField field) {
         var getter = field.getInterfaceGetter();
         if (nonNull(getter)) {
             var ann = getter.addAndGetAnnotation("Schema");
             ann.addPair("name", "\"" + field.getName() + "\"");
-//            ann.addPair("title", "\"show me the title\"");
-//            ann.addPair("description", "\"show me the description\"");
-//            ann.addPair("example", "\"show me the example\"");
 
             if (nonNull(field.getDescription().getAnnotationByName("ValidateNull"))) {
                 ann.addPair("required", "true");
             }
 
+            if (nonNull(field.getPrototype()) && field.getPrototype().isCodeEnum()) {
+                var exp = new ArrayInitializerExpr();
+                field.getPrototype().getDeclaration().asEnumDeclaration().getEntries().forEach(e -> exp.getValues().add(new StringLiteralExpr(e.getNameAsString())));
+                ann.addPair("allowableValues", exp);
+            } else {
+                with(loadClass(field.getFullType()), cls -> {
+                    if (cls.isEnum()) {
+                        var exp = new ArrayInitializerExpr();
+                        Arrays.stream(cls.getEnumConstants()).forEach(e -> exp.getValues().add(new StringLiteralExpr(e.toString())));
+                        ann.addPair("allowableValues", exp);
+                    }
+                });
+            }
         }
     }
 
