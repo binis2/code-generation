@@ -300,14 +300,12 @@ public class Helpers {
     }
 
     public static String findLocalType(CompilationUnit unit, String t) {
-        String result = null;
+        String result;
         for (var type : unit.getTypes()) {
             if (t.equals(type.getName().asString())) {
                 return type.getFullyQualifiedName().get();
             }
-            if (type.isClassOrInterfaceDeclaration()) {
-                result = findLocalType(type.asClassOrInterfaceDeclaration(), t);
-            }
+            result = findLocalType(type, t);
 
             if (nonNull(result)) {
                 return result;
@@ -317,11 +315,10 @@ public class Helpers {
         return null;
     }
 
-    public static String findLocalType(ClassOrInterfaceDeclaration parent, String t) {
-        String result = null;
+    public static String findLocalType(TypeDeclaration parent, String t) {
+        String result;
         for (var member : parent.getMembers()) {
-            if (member.isClassOrInterfaceDeclaration()) {
-                var type = member.asClassOrInterfaceDeclaration();
+            if (member instanceof TypeDeclaration<?> type) {
                 if (t.equals(type.getName().asString())) {
                     return type.getFullyQualifiedName().get();
                 }
