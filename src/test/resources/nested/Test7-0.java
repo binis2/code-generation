@@ -1,10 +1,10 @@
 /*Generated code by Binis' code generator.*/
-package net.binis.codegen.jackson.CodeJacksonTestCollectionPrototype;
+package net.binis.codegen.jackson;
 
 import net.binis.codegen.objects.base.enumeration.CodeEnumImpl;
 import javax.annotation.processing.Generated;
 
-@Generated(value = "net.binis.codegen.jackson.CodeJacksonTestCollectionPrototype.Item", comments = "Item")
+@Generated(value = "net.binis.codegen.jackson.BaseClass.Item", comments = "Item")
 public class ItemImpl extends CodeEnumImpl implements Item {
 
     public ItemImpl(int $ordinal, String $name) {

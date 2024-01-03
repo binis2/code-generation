@@ -245,11 +245,45 @@ public class Structures {
         }
 
         @Override
+        public MethodDeclaration forceGenerateGetter() {
+            if (isNull(implementationGetter)) {
+                var cls = (ClassOrInterfaceDeclaration) declaration.getParentNode().get();
+                implementationGetter = Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this, true);
+            }
+            return implementationGetter;
+        }
+
+        @Override
+        public MethodDeclaration forceGenerateSetter() {
+            if (isNull(implementationSetter)) {
+                var cls = (ClassOrInterfaceDeclaration) declaration.getParentNode().get();
+                implementationSetter = Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this, true);
+            }
+            return implementationSetter;
+        }
+
+        @Override
+        public MethodDeclaration forceGenerateInterfaceGetter() {
+            if (isNull(interfaceGetter)) {
+                interfaceGetter = Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getInterface(), description, false, this, true);
+            }
+            return interfaceGetter;
+        }
+
+        @Override
+        public MethodDeclaration forceGenerateInterfaceSetter() {
+            if (isNull(interfaceSetter)) {
+                interfaceSetter = Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getInterface(), description, false, this, true);
+            }
+            return interfaceSetter;
+        }
+
+
+        @Override
         public MethodDeclaration generateGetter() {
             if (isNull(implementationGetter)) {
-                implementationGetter = Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getImplementation(), description, true, this);
                 var cls = (ClassOrInterfaceDeclaration) declaration.getParentNode().get();
-                implementationGetter = Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this);
+                implementationGetter = Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this, false);
             }
             return implementationGetter;
         }
@@ -258,7 +292,7 @@ public class Structures {
         public MethodDeclaration generateSetter() {
             if (isNull(implementationSetter)) {
                 var cls = (ClassOrInterfaceDeclaration) declaration.getParentNode().get();
-                implementationSetter = Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this);
+                implementationSetter = Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this, false);
             }
             return implementationSetter;
         }
@@ -266,7 +300,7 @@ public class Structures {
         @Override
         public MethodDeclaration generateInterfaceGetter() {
             if (isNull(interfaceGetter)) {
-                interfaceGetter = Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getInterface(), description, false, this);
+                interfaceGetter = Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getInterface(), description, false, this, false);
             }
             return interfaceGetter;
         }
@@ -274,7 +308,7 @@ public class Structures {
         @Override
         public MethodDeclaration generateInterfaceSetter() {
             if (isNull(interfaceSetter)) {
-                interfaceSetter = Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getInterface(), description, false, this);
+                interfaceSetter = Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getInterface(), description, false, this, false);
             }
             return interfaceSetter;
         }

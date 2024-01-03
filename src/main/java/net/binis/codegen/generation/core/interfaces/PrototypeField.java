@@ -61,6 +61,12 @@ public interface PrototypeField {
     MethodDeclaration generateInterfaceGetter();
     MethodDeclaration generateInterfaceSetter();
 
+    MethodDeclaration forceGenerateGetter();
+    MethodDeclaration forceGenerateSetter();
+    MethodDeclaration forceGenerateInterfaceGetter();
+    MethodDeclaration forceGenerateInterfaceSetter();
+
+
     interface ModifierDescription {
         ModifierType getType();
         MethodDeclaration getModifier();

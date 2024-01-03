@@ -378,16 +378,16 @@ public class Generator {
                     }
                     if (!ignore.isForClass()) {
                         if (properties.isClassGetters()) {
-                            addGetter(typeDeclaration, spec, declaration, true, field);
+                            addGetter(typeDeclaration, spec, declaration, true, field, false);
                         }
                         if (properties.isClassSetters()) {
-                            addSetter(typeDeclaration, spec, declaration, true, field);
+                            addSetter(typeDeclaration, spec, declaration, true, field, false);
                         }
                     }
                     if (!ignore.isForInterface()) {
-                        addGetter(typeDeclaration, intf, declaration, false, field);
+                        addGetter(typeDeclaration, intf, declaration, false, field, false);
                         if (properties.isInterfaceSetters()) {
-                            addSetter(typeDeclaration, intf, declaration, false, field);
+                            addSetter(typeDeclaration, intf, declaration, false, field, false);
                         }
                     }
                 } else {
@@ -2065,9 +2065,9 @@ public class Generator {
         return result;
     }
 
-    public static MethodDeclaration addGetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
+    public static MethodDeclaration addGetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field, boolean force) {
         var name = getGetterName(declaration.getNameAsString(), declaration.getType().asString());
-        if (!methodExists(spec, declaration, name, isClass)) {
+        if (!methodExists(spec, declaration, name, isClass || force)) {
             String rType;
             if (declaration.getTypeParameters().isEmpty()) {
                 var parent = getFieldParent(field);
@@ -2143,7 +2143,7 @@ public class Generator {
         }
     }
 
-    public static MethodDeclaration addSetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
+    public static MethodDeclaration addSetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field, boolean force) {
         var fieldName = nonNull(field.getName()) ? field.getName() : declaration.getNameAsString();
         var name = getSetterName(fieldName);
         String returnType = null;
@@ -2165,7 +2165,7 @@ public class Generator {
                 .setType("void")
                 .addParameter(new Parameter().setName(fieldName).setType(returnType));
         envelopWithDummyClass(method, field.getDeclaration());
-        if (!methodExists(spec, method, name, isClass)) {
+        if (!methodExists(spec, method, name, isClass || force)) {
             spec.addMember(method);
             if (isClass) {
                 method
