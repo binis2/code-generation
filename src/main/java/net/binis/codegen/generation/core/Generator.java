@@ -2065,7 +2065,7 @@ public class Generator {
         return result;
     }
 
-    public static void addGetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
+    public static MethodDeclaration addGetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
         var name = getGetterName(declaration.getNameAsString(), declaration.getType().asString());
         if (!methodExists(spec, declaration, name, isClass)) {
             String rType;
@@ -2095,7 +2095,9 @@ public class Generator {
                     declaration.getTypeParameters().forEach(method::addTypeParameter);
                 }
             }
+            return method;
         }
+        return null;
     }
 
     protected static void addGetterFromGetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
@@ -2141,7 +2143,7 @@ public class Generator {
         }
     }
 
-    public static void addSetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
+    public static MethodDeclaration addSetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {
         var fieldName = nonNull(field.getName()) ? field.getName() : declaration.getNameAsString();
         var name = getSetterName(fieldName);
         String returnType = null;
@@ -2185,7 +2187,9 @@ public class Generator {
                     declaration.getTypeParameters().forEach(method::addTypeParameter);
                 }
             }
+            return method;
         }
+        return null;
     }
 
     private static void addSetterFromSetter(ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field) {

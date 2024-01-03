@@ -246,27 +246,36 @@ public class Structures {
 
         @Override
         public MethodDeclaration generateGetter() {
-            var cls = (ClassOrInterfaceDeclaration) declaration.getParentNode().get();
-            Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this);
+            if (isNull(implementationGetter)) {
+                implementationGetter = Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getImplementation(), description, true, this);
+                var cls = (ClassOrInterfaceDeclaration) declaration.getParentNode().get();
+                implementationGetter = Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this);
+            }
             return implementationGetter;
         }
 
         @Override
         public MethodDeclaration generateSetter() {
-            var cls = (ClassOrInterfaceDeclaration) declaration.getParentNode().get();
-            Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this);
+            if (isNull(implementationSetter)) {
+                var cls = (ClassOrInterfaceDeclaration) declaration.getParentNode().get();
+                implementationSetter = Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), cls, description, true, this);
+            }
             return implementationSetter;
         }
 
         @Override
         public MethodDeclaration generateInterfaceGetter() {
-            Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getInterface(), description, false, this);
+            if (isNull(interfaceGetter)) {
+                interfaceGetter = Generator.addGetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getInterface(), description, false, this);
+            }
             return interfaceGetter;
         }
 
         @Override
         public MethodDeclaration generateInterfaceSetter() {
-            Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getInterface(), description, false, this);
+            if (isNull(interfaceSetter)) {
+                interfaceSetter = Generator.addSetter(parsed.getDeclaration().asClassOrInterfaceDeclaration(), parsed.getInterface(), description, false, this);
+            }
             return interfaceSetter;
         }
 
