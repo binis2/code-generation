@@ -31,13 +31,14 @@ import net.binis.codegen.options.Options;
 
 import java.util.Arrays;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.with;
 
 public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnricher {
 
-    private static final boolean IS_OPENAPI_AVAILABLE = nonNull(loadClass("io.swagger.v3.oas.annotations.media.Schema"));
+    protected static final boolean IS_OPENAPI_AVAILABLE = nonNull(loadClass("io.swagger.v3.oas.annotations.media.Schema"));
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
@@ -61,7 +62,7 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
     }
 
     protected void enrichField(PrototypeField field) {
-        var getter = field.getInterfaceGetter();
+        var getter = field.generateInterfaceGetter();
         if (nonNull(getter)) {
             var ann = getter.addAndGetAnnotation("Schema");
             ann.addPair("name", "\"" + field.getName() + "\"");
@@ -86,7 +87,7 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
         }
     }
 
-    private boolean generate(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+    protected boolean generate(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         return description.hasOption(Options.GENERATE_OPENAPI_ALWAYS) || (IS_OPENAPI_AVAILABLE && description.hasOption(Options.GENERATE_OPENAPI_IF_AVAILABLE));
     }
 }
