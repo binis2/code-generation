@@ -397,6 +397,8 @@ public class Generator {
                 processInnerClass(parse, typeDeclaration, spec, member.asClassOrInterfaceDeclaration());
             } else if (member.isFieldDeclaration()) {
                 processConstant(parse, typeDeclaration, spec, intf, member.asFieldDeclaration());
+            } else if (member.isEnumDeclaration()) {
+                //Do nothing?
             } else {
                 log.error("Can't process method " + member);
             }
@@ -570,9 +572,9 @@ public class Generator {
     private static void mergeNestedPrototypes(Structures.Parsed<ClassOrInterfaceDeclaration> parse) {
         lookup.parsed().stream().filter(p -> p.isNested() && nonNull(p.getParentClassName()) && p.getParentClassName().equals(parse.getPrototypeClassName())).forEach(p -> {
             parse.getImplementation().addMember(p.getImplementation().addModifier(STATIC));
-            mergeImports(p.getImplementation().findCompilationUnit().get(), parse.getImplementation().findCompilationUnit().get());
+            mergeImports(p.getImplementationUnit(), parse.getImplementation().findCompilationUnit().get());
             parse.getInterface().addMember(p.getInterface());
-            mergeImports(p.getInterface().findCompilationUnit().get(), parse.getInterface().findCompilationUnit().get());
+            mergeImports(p.getInterfaceUnit(), parse.getInterface().findCompilationUnit().get());
         });
     }
 
