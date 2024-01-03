@@ -112,7 +112,7 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     Element findElement(Element parent, String name, ElementKind kind);
 
-    ClassOrInterfaceDeclaration getParent();
+    TypeDeclaration<?> getParent();
 
     String getParentPackage();
 

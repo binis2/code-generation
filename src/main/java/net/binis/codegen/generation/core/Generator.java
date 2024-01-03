@@ -56,7 +56,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
-import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
@@ -103,7 +102,7 @@ public class Generator {
             if (type.isClassOrInterfaceDeclaration()) {
                 getCodeAnnotations(type).ifPresent(prototypes -> {
                     if (type.asClassOrInterfaceDeclaration().isInterface()) {
-                        generateCodeForPrototype(parser, prsd, type, prototypes);
+                        generateCodeForPrototype(prsd, type, prototypes);
                         processed.set(processed.get() + 1);
                     } else if (processForClass(parser, prsd, type, prototypes)) {
                         processed.set(processed.get() + 1);
@@ -246,7 +245,7 @@ public class Generator {
         return result;
     }
 
-    public static void generateCodeForPrototype(CompilationUnit parser, PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, List<Pair<AnnotationExpr, Structures.PrototypeDataHandler>> prototypes) {
+    public static void generateCodeForPrototype(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, List<Pair<AnnotationExpr, Structures.PrototypeDataHandler>> prototypes) {
 
         var typeDeclaration = type.asClassOrInterfaceDeclaration();
 
@@ -1215,7 +1214,25 @@ public class Generator {
                                     .build());
 
                     Tools.with(lookup.findParsed(clsName), parse ->
-                            condition(!parse.isProcessed(), () -> generateCodeForPrototype(declaration.findCompilationUnit().get(), parse, cls, ann)));
+                            condition(!parse.isProcessed(), () -> generateCodeForPrototype(parse, cls, ann)));
+                }));
+
+        declaration.getChildNodes().stream().filter(EnumDeclaration.class::isInstance).map(EnumDeclaration.class::cast).forEach(cls ->
+                Generator.getCodeAnnotations(cls).ifPresent(ann -> {
+                    var clsName = getClassName(cls);
+                    lookup.registerParsed(clsName,
+                            Structures.Parsed.builder()
+                                    .declaration(cls.asTypeDeclaration())
+                                    .declarationUnit(cls.findCompilationUnit().orElse(null))
+                                    .parser(lookup.getParser())
+                                    .nested(true)
+                                    .parentClassName(getClassName(declaration))
+                                    .parent(declaration)
+                                    .codeEnum(true)
+                                    .build());
+
+                    Tools.with(lookup.findParsed(clsName), parse ->
+                            condition(!parse.isProcessed(), () -> generateCodeForEnum(declaration.findCompilationUnit().get(), parse, cls, ann)));
                 }));
     }
 

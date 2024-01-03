@@ -77,6 +77,7 @@ import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
+@SuppressWarnings("unchecked")
 public class Helpers {
 
     public static final Class<?> NAME_DISCOVERER = loadClass("org.springframework.core.StandardReflectionParameterNameDiscoverer");
@@ -1509,12 +1510,10 @@ public class Helpers {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public static void handleType(JavaParser parser, TypeDeclaration<?> t, String fileName, List<Parsables.Entry.Bag> elements) {
         handleType(parser, t, fileName, elements, false);
     }
 
-    @SuppressWarnings("unchecked")
     public static void checkForNestedClasses(TypeDeclaration<?> type, String fileName, JavaParser parser, List<Parsables.Entry.Bag> elements) {
         if (type.isClassOrInterfaceDeclaration()) {
             var properties = Generator.getCodeAnnotationProperties(type.asClassOrInterfaceDeclaration());
@@ -1524,24 +1523,7 @@ public class Helpers {
                     var ann = Generator.getCodeAnnotations(nested);
                     if (ann.isPresent()) {
                         if (nested.asClassOrInterfaceDeclaration().isInterface()) {
-                            var parent = type.findCompilationUnit().get();
-                            var pack = parent.getPackageDeclaration().get().getNameAsString();
-                            var unit = new CompilationUnit().setPackageDeclaration(pack + "." + type.getNameAsString());
-                            var nestedType = nested.clone();
-                            parent.getImports().forEach(unit::addImport);
-                            unit.addType(nestedType);
-                            var cName = getClassName(nestedType);
-
-                            lookup.registerParsed(cName,
-                                    Structures.Parsed.builder()
-                                            .declaration(nestedType.asTypeDeclaration())
-                                            .declarationUnit(unit)
-                                            .prototypeFileName(fileName)
-                                            .prototypeClassName(cName)
-                                            .parser(parser)
-                                            .nested(true)
-                                            .parentPackage(pack)
-                                            .build());
+                            registerNested(type, fileName, parser, nested, false);
                         } else {
                             ann.get().forEach(prototype ->
                                     with(ErrorHelpers.calculatePrototypeAnnotationError(nested.asClassOrInterfaceDeclaration(), prototype.getValue()), message ->
@@ -1550,8 +1532,46 @@ public class Helpers {
                         }
                     }
                 });
+                type.getChildNodes().stream().filter(EnumDeclaration.class::isInstance).map(EnumDeclaration.class::cast).forEach(cls ->
+                        Generator.getCodeAnnotations(cls).ifPresent(ann -> {
+                            var clsName = getClassName(cls);
+                            lookup.registerParsed(clsName,
+                                    Structures.Parsed.builder()
+                                            .declaration(cls.asTypeDeclaration())
+                                            .declarationUnit(cls.findCompilationUnit().orElse(null))
+                                            .parser(lookup.getParser())
+                                            .nested(true)
+                                            .parent(type)
+                                            .codeEnum(true)
+                                            .build());
+
+                            Tools.with(lookup.findParsed(clsName), parse ->
+                                    condition(!parse.isProcessed(), () -> Generator.generateCodeForEnum(type.findCompilationUnit().get(), parse, cls, ann)));
+                        }));
             }
         }
+    }
+
+    private static void registerNested(TypeDeclaration<?> type, String fileName, JavaParser parser, TypeDeclaration nested, boolean isEnum) {
+        var parent = type.findCompilationUnit().get();
+        var pack = parent.getPackageDeclaration().get().getNameAsString();
+        var unit = new CompilationUnit().setPackageDeclaration(pack + "." + type.getNameAsString());
+        var nestedType = nested.clone();
+        parent.getImports().forEach(unit::addImport);
+        unit.addType(nestedType);
+        var cName = getClassName(nestedType);
+
+        lookup.registerParsed(cName,
+                Structures.Parsed.builder()
+                        .declaration(nestedType)
+                        .declarationUnit(unit)
+                        .prototypeFileName(fileName)
+                        .prototypeClassName(cName)
+                        .parser(parser)
+                        .nested(true)
+                        .parentPackage(pack)
+                        .codeEnum(isEnum)
+                        .build());
     }
 
     public static String getNodeName(Node node) {

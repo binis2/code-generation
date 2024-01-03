@@ -355,7 +355,7 @@ public class Structures {
 
         protected String parentClassName;
 
-        protected ClassOrInterfaceDeclaration parent;
+        protected TypeDeclaration parent;
 
         protected String parentPackage;
 

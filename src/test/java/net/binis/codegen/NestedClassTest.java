@@ -52,4 +52,14 @@ class NestedClassTest extends BaseCodeGenTest {
         testSingle("nested/Test5.java", null, null, 2, true);
     }
 
+    @Test
+    void testNestedEnumInPrototype() {
+        testSingle("nested/Test6.java", null, null, 2, true);
+    }
+
+    @Test
+    void testNestedEnum() {
+        testSingle("nested/Test7.java", "nested/Test7-0.java", "nested/Test7-1.java", 2);
+    }
+
 }
