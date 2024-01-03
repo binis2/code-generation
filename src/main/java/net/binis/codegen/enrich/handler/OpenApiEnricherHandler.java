@@ -21,13 +21,16 @@ package net.binis.codegen.enrich.handler;
  */
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.expr.ArrayInitializerExpr;
-import com.github.javaparser.ast.expr.StringLiteralExpr;
+import com.github.javaparser.ast.expr.*;
+import net.binis.codegen.annotation.Default;
 import net.binis.codegen.enrich.OpenApiEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
+import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.objects.base.enumeration.CodeEnum;
 import net.binis.codegen.options.Options;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 
@@ -61,15 +64,19 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
         }
     }
 
+    @SuppressWarnings("unchecked")
     protected void enrichField(PrototypeField field) {
         var getter = field.forceGenerateInterfaceGetter();
         if (nonNull(getter)) {
             var ann = getter.addAndGetAnnotation("Schema");
             ann.addPair("name", "\"" + field.getName() + "\"");
 
-            if (nonNull(field.getDescription().getAnnotationByName("ValidateNull"))) {
-                ann.addPair("required", "true");
-            }
+            field.getDescription().getAnnotationByName("ValidateNull").ifPresent(a ->
+                    ann.addPair("required", "true"));
+            checkForDefaultValue(field, ann);
+            checkForLength(field, ann);
+            checkForRange(field, ann);
+
 
             if (nonNull(field.getPrototype()) && field.getPrototype().isCodeEnum()) {
                 var exp = new ArrayInitializerExpr();
@@ -82,13 +89,62 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
                         var exp = new ArrayInitializerExpr();
                         Arrays.stream(cls.getEnumConstants()).forEach(e -> exp.getValues().add(new StringLiteralExpr(e.toString())));
                         ann.addPair("allowableValues", exp);
+                    } else if (CodeEnum.class.isAssignableFrom(cls)) {
+                        var exp = new ArrayInitializerExpr();
+                        Arrays.stream(CodeFactory.enumValues((Class) cls)).forEach(e -> exp.getValues().add(new StringLiteralExpr(((CodeEnum) e).name())));
+                        ann.addPair("allowableValues", exp);
                     }
                 });
             }
         }
     }
 
+    protected void checkForDefaultValue(PrototypeField field, NormalAnnotationExpr ann) {
+        field.getDescription().getAnnotationByClass(Default.class).ifPresent(a -> {
+            if (a instanceof NormalAnnotationExpr expr) {
+                expr.getPairs().stream().filter(p -> p.getNameAsString().equals("value")).findFirst().ifPresent(p -> {
+                    ann.addPair("defaultValue", strip(p.getValue()));
+                });
+            } else if (a instanceof SingleMemberAnnotationExpr expr) {
+                    ann.addPair("defaultValue", strip(expr.getMemberValue()));
+            }
+        });
+    }
+
+    protected void checkForRange(PrototypeField field, NormalAnnotationExpr ann) {
+        field.getDescription().getAnnotationByName("ValidateRange").ifPresent(a -> {
+            if (a instanceof NormalAnnotationExpr expr) {
+                for (var pair : expr.getPairs()) {
+                    switch (pair.getNameAsString()) {
+                        case "max" -> ann.addPair("maximum", strip(pair.getValue()));
+                        case "min" -> ann.addPair("minimum", strip(pair.getValue()));
+                    }
+                }
+            }
+        });
+    }
+
+    protected void checkForLength(PrototypeField field, NormalAnnotationExpr ann) {
+        field.getDescription().getAnnotationByName("ValidateLength").ifPresent(a -> {
+            if (a instanceof NormalAnnotationExpr expr) {
+                for (var pair : expr.getPairs()) {
+                    switch (pair.getNameAsString()) {
+                        case "value", "max" -> ann.addPair("maxLength", pair.getValue());
+                        case "min" -> ann.addPair("minLength", pair.getValue());
+                    }
+                };
+            } else if (a instanceof SingleMemberAnnotationExpr expr) {
+                ann.addPair("maxLength", expr.getMemberValue());
+            }
+        });
+    }
+
     protected boolean generate(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         return description.hasOption(Options.GENERATE_OPENAPI_ALWAYS) || (IS_OPENAPI_AVAILABLE && description.hasOption(Options.GENERATE_OPENAPI_IF_AVAILABLE));
     }
+
+    protected StringLiteralExpr strip(Expression value) {
+        return new StringLiteralExpr(StringUtils.strip(StringUtils.strip(value.toString(), "\""), "\\\""));
+    }
+
 }
