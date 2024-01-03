@@ -1,4 +1,12 @@
 # Change Log
+**03-01-2024** ver. 1.1.29
+* Core: Class casting is used if every other mapping strategy fails.
+* Generation: Added support for nested enums.
+* Generation: Extended OpenApiEnricher to support enums.
+* Generation: OpenApiEnricher annotates non-declared fields as well.
+* Generation: Improved field getter/setter generation utils.
+* Spring Configuration: CodeEnum serialization enabled. 
+
 **02-01-2024** ver. 1.1.28
 * Core: Added MappingStrategy - FIELDS
 * Generation: Improved method element discovery if the parameter type is ErrorType.
