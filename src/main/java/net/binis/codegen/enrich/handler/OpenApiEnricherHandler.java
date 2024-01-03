@@ -62,7 +62,7 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
     }
 
     protected void enrichField(PrototypeField field) {
-        var getter = field.generateInterfaceGetter();
+        var getter = field.forceGenerateInterfaceGetter();
         if (nonNull(getter)) {
             var ann = getter.addAndGetAnnotation("Schema");
             ann.addPair("name", "\"" + field.getName() + "\"");
@@ -75,6 +75,7 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
                 var exp = new ArrayInitializerExpr();
                 field.getPrototype().getDeclaration().asEnumDeclaration().getEntries().forEach(e -> exp.getValues().add(new StringLiteralExpr(e.getNameAsString())));
                 ann.addPair("allowableValues", exp);
+                ann.addPair("type", new StringLiteralExpr("string"));
             } else {
                 with(loadClass(field.getFullType()), cls -> {
                     if (cls.isEnum()) {
