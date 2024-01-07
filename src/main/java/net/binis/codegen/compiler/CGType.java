@@ -25,8 +25,10 @@ import net.binis.codegen.compiler.base.JavaCompilerObject;
 
 import javax.lang.model.type.TypeKind;
 
-import static net.binis.codegen.tools.Reflection.invoke;
-import static net.binis.codegen.tools.Reflection.loadClass;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static net.binis.codegen.tools.Reflection.*;
+import static net.binis.codegen.tools.Tools.withRes;
 
 @Slf4j
 public class CGType extends JavaCompilerObject {
@@ -54,13 +56,28 @@ public class CGType extends JavaCompilerObject {
         return instance.toString();
     }
 
+    public String toSymbolString() {
+        var field = findField(instance.getClass(), "sym");
+        if (nonNull(field)) {
+            var sym = getFieldValue(field, instance);
+            if (nonNull(sym)) {
+                return withRes(invoke("getQualifiedName", sym), Object::toString);
+            }
+        }
+        return null;
+    }
+
     public boolean isErrorType() {
         TypeKind kind = invoke("getKind", instance);
         return TypeKind.ERROR.equals(kind);
     }
 
     public Class toClass() {
-        return loadClass(toString());
+        var cls = loadClass(toString());
+        if (isNull(cls)) {
+            cls = loadClass(toSymbolString());
+        }
+        return cls;
     }
 
 }

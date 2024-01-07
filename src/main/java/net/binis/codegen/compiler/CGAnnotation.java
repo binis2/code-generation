@@ -83,6 +83,7 @@ public class CGAnnotation extends CGExpression {
 
     public void setArguments(CGList<CGExpression> list) {
         onModify(list);
+        list.onModify = this::onModify;
     }
 
     public boolean isAnnotation(Class<? extends Annotation> cls) {

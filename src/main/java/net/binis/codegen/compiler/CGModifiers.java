@@ -72,13 +72,14 @@ public class CGModifiers extends CGTree {
         return annotations;
     }
 
-    private void onModify(CGList<CGAnnotation> list) {
+    protected void onModify(CGList<CGAnnotation> list) {
         setFieldValue(instance, "annotations", list.getInstance());
         annotations = list;
     }
 
     public void setAnnotations(CGList<CGAnnotation> list) {
         onModify(list);
+        list.onModify = this::onModify;
     }
 
 }

@@ -48,7 +48,7 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
         return loadClass("com.sun.tools.javac.util.List");
     }
 
-    protected final Consumer<CGList<T>> onModify;
+    protected Consumer<CGList<T>> onModify;
 
     protected Class<T> containedClass;
     protected static Method mAppend;

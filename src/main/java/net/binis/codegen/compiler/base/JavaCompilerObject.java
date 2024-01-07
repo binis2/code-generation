@@ -27,6 +27,7 @@ import net.binis.codegen.compiler.JavacElements;
 import net.binis.codegen.factory.CodeFactory;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -93,4 +94,5 @@ public abstract class JavaCompilerObject {
     public String toString() {
         return instance.toString();
     }
+
 }

@@ -1001,7 +1001,7 @@ public class Structures {
     }
 
     private static Class checkLoadClass(String r, Class cls) {
-        var result = loadClass(r);
+        Class<?> result = loadClass(r);
 
         if (isNull(result)) {
             if (lookup.isExternal(r)) {

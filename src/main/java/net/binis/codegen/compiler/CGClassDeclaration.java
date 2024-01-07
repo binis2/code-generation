@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.lang.model.element.Element;
 import java.lang.reflect.Modifier;
+import java.util.List;
 
 import static net.binis.codegen.tools.Reflection.getStaticFieldValue;
 import static net.binis.codegen.tools.Reflection.loadClass;
@@ -60,6 +61,10 @@ public class CGClassDeclaration extends CGDeclaration {
     public boolean isInterface() {
         var flags = getModifiers().flags();
         return (flags & Modifier.INTERFACE) == Modifier.INTERFACE && (flags & ANNOTATION) != ANNOTATION;
+    }
+
+    public List<CGMethodDeclaration> getMethods() {
+        return getDefs().stream().filter(CGMethodDeclaration.class::isInstance).map(CGMethodDeclaration.class::cast).toList();
     }
 
     public boolean isEnum() {

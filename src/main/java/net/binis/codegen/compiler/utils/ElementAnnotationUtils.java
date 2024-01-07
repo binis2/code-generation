@@ -39,9 +39,18 @@ public class ElementAnnotationUtils extends ElementUtils {
                 ann.isAnnotation(annotation));
     }
 
+    public static CGAnnotation findAnnotation(CGDeclaration declaration, Class<? extends Annotation> annotation) {
+        return findAnnotation(declaration, ann ->
+                ann.isAnnotation(annotation));
+    }
+
+
     public static CGAnnotation findAnnotation(Element element, Predicate<CGAnnotation> filter) {
-        var decl = getDeclaration(element);
-        for (var ann : decl.getModifiers().getAnnotations()) {
+        return findAnnotation(getDeclaration(element), filter);
+    }
+
+    public static CGAnnotation findAnnotation(CGDeclaration declaration, Predicate<CGAnnotation> filter) {
+        for (var ann : declaration.getModifiers().getAnnotations()) {
             if (filter.test(ann)) {
                 return ann;
             }
@@ -50,15 +59,19 @@ public class ElementAnnotationUtils extends ElementUtils {
     }
 
     public static List<CGAnnotation> findAnnotations(Element element, Predicate<CGAnnotation> filter) {
+        return findAnnotations(getDeclaration(element), filter);
+    }
+
+    public static List<CGAnnotation> findAnnotations(CGDeclaration declaration, Predicate<CGAnnotation> filter) {
         var result = new ArrayList<CGAnnotation>();
-        var decl = getDeclaration(element);
-        for (var ann : decl.getModifiers().getAnnotations()) {
+        for (var ann : declaration.getModifiers().getAnnotations()) {
             if (filter.test(ann)) {
                 result.add(ann);
             }
         }
         return result;
     }
+
 
     public static CGAnnotation createAnnotation(Class<? extends Annotation> annotation, Map<String, Object> attributes) {
         if (isNull(attributes)) {
@@ -80,20 +93,25 @@ public class ElementAnnotationUtils extends ElementUtils {
     }
 
     public static CGAnnotation addAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
-        var maker = TreeMaker.create();
-        var decl = getDeclaration(element, maker);
+        return addAnnotation(getDeclaration(element), annotation, attributes);
+    }
+
+    public static CGAnnotation addAnnotation(CGDeclaration declaration, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
         var ann = createAnnotation(annotation, attributes);
-        decl.getModifiers().getAnnotations().append(ann);
+        declaration.getModifiers().getAnnotations().append(ann);
         return ann;
     }
 
     public static CGAnnotation addAnnotation(Element element, Class<? extends Annotation> annotation, CGList<CGExpression> attributes) {
+        return addAnnotation(getDeclaration(element), annotation, attributes);
+    }
+
+    public static CGAnnotation addAnnotation(CGDeclaration declaration, Class<? extends Annotation> annotation, CGList<CGExpression> attributes) {
         var maker = TreeMaker.create();
 
-        var decl = getDeclaration(element, maker);
         var ann = maker.Annotation(maker.QualIdent(maker.getSymbol(annotation.getCanonicalName())), attributes);
 
-        decl.getModifiers().getAnnotations().append(ann);
+        declaration.getModifiers().getAnnotations().append(ann);
         return ann;
     }
 
@@ -101,8 +119,16 @@ public class ElementAnnotationUtils extends ElementUtils {
         return addAnnotation(element, annotation, expressionToList(attributes));
     }
 
+    public static CGAnnotation addAnnotation(CGDeclaration declaration, Class<? extends Annotation> annotation, CGExpression... attributes) {
+        return addAnnotation(declaration, annotation, expressionToList(attributes));
+    }
+
     public static CGAnnotation addOrReplaceAnnotation(Element element, Class<? extends Annotation> annotation) {
         return addOrReplaceAnnotation(element, annotation, Map.of());
+    }
+
+    public static CGAnnotation addOrReplaceAnnotation(CGDeclaration declaration, Class<? extends Annotation> annotation) {
+        return addOrReplaceAnnotation(declaration, annotation, Map.of());
     }
 
     public static CGAnnotation addOrReplaceAnnotation(Element element, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
@@ -110,9 +136,32 @@ public class ElementAnnotationUtils extends ElementUtils {
         return addAnnotation(element, annotation, attributes);
     }
 
+    public static CGAnnotation addOrReplaceAnnotation(CGDeclaration declaration, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
+        removeAnnotation(declaration, annotation);
+        return addAnnotation(declaration, annotation, attributes);
+    }
+
     public static CGAnnotation addOrReplaceAnnotation(Element element, Class<? extends Annotation> annotation, CGExpression... attributes) {
         removeAnnotation(element, annotation);
         return addAnnotation(element, annotation, attributes);
+    }
+
+    public static CGAnnotation addOrReplaceAnnotation(CGDeclaration declaration, Class<? extends Annotation> annotation, CGExpression... attributes) {
+        removeAnnotation(declaration, annotation);
+        return addAnnotation(declaration, annotation, attributes);
+    }
+
+    public static CGAnnotation getAnnotation(Element element, Class<? extends Annotation> annotation) {
+        return getAnnotation(getDeclaration(element), annotation);
+    }
+
+    public static CGAnnotation getAnnotation(CGDeclaration declaration, Class<? extends Annotation> annotation) {
+        for (var ann : declaration.getModifiers().getAnnotations()) {
+            if (ann.isAnnotation(annotation)) {
+                return ann;
+            }
+        }
+        return null;
     }
 
     public static CGAnnotation replaceAnnotation(Element element, CGAnnotation oldAnnotation, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
@@ -120,9 +169,19 @@ public class ElementAnnotationUtils extends ElementUtils {
         return addAnnotation(element, annotation, attributes);
     }
 
+    public static CGAnnotation replaceAnnotation(CGDeclaration declaration, CGAnnotation oldAnnotation, Class<? extends Annotation> annotation, Map<String, Object> attributes) {
+        removeAnnotation(declaration, oldAnnotation);
+        return addAnnotation(declaration, annotation, attributes);
+    }
+
     public static CGAnnotation replaceAnnotation(Element element, CGAnnotation oldAnnotation, Class<? extends Annotation> annotation, CGExpression... attributes) {
         removeAnnotation(element, oldAnnotation);
         return addAnnotation(element, annotation, attributes);
+    }
+
+    public static CGAnnotation replaceAnnotation(CGDeclaration declaration, CGAnnotation oldAnnotation, Class<? extends Annotation> annotation, CGExpression... attributes) {
+        removeAnnotation(declaration, oldAnnotation);
+        return addAnnotation(declaration, annotation, attributes);
     }
 
     public static CGAnnotation replaceAnnotationWithAttributes(Element element, CGAnnotation oldAnnotation, Class<? extends Annotation> annotation) {
@@ -130,62 +189,79 @@ public class ElementAnnotationUtils extends ElementUtils {
         return addAnnotation(element, annotation, oldAnnotation.getArguments());
     }
 
+    public static CGAnnotation replaceAnnotationWithAttributes(CGDeclaration declaration, CGAnnotation oldAnnotation, Class<? extends Annotation> annotation) {
+        removeAnnotation(declaration, oldAnnotation);
+        return addAnnotation(declaration, annotation, oldAnnotation.getArguments());
+    }
+
     public static CGAnnotation removeAnnotation(Element element, Class<? extends Annotation> annotation) {
+        return removeAnnotation(getDeclaration(element), annotation);
+    }
+
+    public static CGAnnotation removeAnnotation(CGDeclaration declaration, Class<? extends Annotation> annotation) {
         CGAnnotation result = null;
-        var decl = getDeclaration(element);
         var list = CGList.nil(CGAnnotation.class);
-        for (var ann : decl.getModifiers().getAnnotations()) {
+        for (var ann : declaration.getModifiers().getAnnotations()) {
             if (!ann.isAnnotation(annotation)) {
                 list = list.append(ann);
             } else {
                 result = ann;
             }
         }
-        decl.getModifiers().setAnnotations(list);
+        declaration.getModifiers().setAnnotations(list);
         return result;
     }
 
     public static CGAnnotation removeAnnotation(Element element, CGAnnotation annotation) {
+        return removeAnnotation(getDeclaration(element), annotation);
+    }
+
+    public static CGAnnotation removeAnnotation(CGDeclaration declaration, CGAnnotation annotation) {
         CGAnnotation result = null;
-        var decl = getDeclaration(element);
         var list = CGList.nil(CGAnnotation.class);
-        for (var ann : decl.getModifiers().getAnnotations()) {
+        for (var ann : declaration.getModifiers().getAnnotations()) {
             if (!ann.getInstance().equals(annotation.getInstance())) {
                 list = list.append(ann);
             } else {
                 result = ann;
             }
         }
-        decl.getModifiers().setAnnotations(list);
+        declaration.getModifiers().setAnnotations(list);
         return result;
     }
 
     public static void addAnnotationAttribute(Element element, Class<? extends Annotation> annotation, String name, Object value) {
-        var decl = getDeclaration(element);
-        for (var ann : decl.getModifiers().getAnnotations()) {
+        addAnnotationAttribute(getDeclaration(element), annotation, name, value);
+    }
+
+    public static void addAnnotationAttribute(CGDeclaration declaration, Class<? extends Annotation> annotation, String name, Object value) {
+        for (var ann : declaration.getModifiers().getAnnotations()) {
             if (ann.isAnnotation(annotation)) {
-                addAnnotationAttribute(element, ann, name, value);
+                addAnnotationAttribute(ann, name, value);
                 break;
             }
         }
     }
 
-    public static void addAnnotationAttribute(Element element, CGAnnotation annotation, String name, Object value) {
+    public static void addAnnotationAttribute(CGAnnotation annotation, String name, Object value) {
         var maker = TreeMaker.create();
         annotation.getArguments().append(maker.Assign(maker.Ident(CGName.create(name)), calcExpression(maker, value)));
     }
 
     public static void removeAnnotationAttribute(Element element, Class<? extends Annotation> annotation, String name) {
-        var decl = getDeclaration(element);
-        for (var ann : decl.getModifiers().getAnnotations()) {
+        removeAnnotationAttribute(getDeclaration(element), annotation, name);
+    }
+
+    public static void removeAnnotationAttribute(CGDeclaration declaration, Class<? extends Annotation> annotation, String name) {
+        for (var ann : declaration.getModifiers().getAnnotations()) {
             if (ann.isAnnotation(annotation)) {
-                removeAnnotationAttribute(element, ann, name);
+                removeAnnotationAttribute(ann, name);
                 break;
             }
         }
     }
 
-    public static void removeAnnotationAttribute(Element element, CGAnnotation annotation, String name) {
+    public static void removeAnnotationAttribute(CGAnnotation annotation, String name) {
         var list = CGList.nil(CGExpression.class);
         for (var attr : annotation.getArguments()) {
             if (attr.getInstance().getClass().equals(CGAssign.theClass())) {
@@ -201,16 +277,19 @@ public class ElementAnnotationUtils extends ElementUtils {
     }
 
     public static void replaceAnnotationAttribute(Element element, Class<? extends Annotation> annotation, String name, Object value) {
-        var decl = getDeclaration(element);
-        for (var ann : decl.getModifiers().getAnnotations()) {
+        replaceAnnotationAttribute(getDeclaration(element), annotation, name, value);
+    }
+
+    public static void replaceAnnotationAttribute(CGDeclaration declaration, Class<? extends Annotation> annotation, String name, Object value) {
+        for (var ann : declaration.getModifiers().getAnnotations()) {
             if (ann.isAnnotation(annotation)) {
-                replaceAnnotationAttribute(element, ann, name, value);
+                replaceAnnotationAttribute(ann, name, value);
                 break;
             }
         }
     }
 
-    public static void replaceAnnotationAttribute(Element element, CGAnnotation annotation, String name, Object value) {
+    public static void replaceAnnotationAttribute(CGAnnotation annotation, String name, Object value) {
         var maker = TreeMaker.create();
 
         var list = CGList.nil(CGExpression.class);
@@ -227,6 +306,20 @@ public class ElementAnnotationUtils extends ElementUtils {
             }
         }
         annotation.setArguments(list);
+    }
+
+    public static void addIfMissingAnnotationAttribute(CGAnnotation annotation, String name, Object value) {
+        var maker = TreeMaker.create();
+
+        for (var attr : annotation.getArguments()) {
+            if (attr.getInstance().getClass().equals(CGAssign.theClass())) {
+                var assign = new CGAssign(attr.getInstance());
+                if (assign.getVariable().getInstance().toString().equals(name)) {
+                    return;
+                }
+            }
+        }
+        annotation.getArguments().append(maker.Assign(maker.Ident(CGName.create(name)), calcExpression(maker, value)));
     }
 
     protected static CGList<CGExpression> expressionToList(CGExpression... expressions) {

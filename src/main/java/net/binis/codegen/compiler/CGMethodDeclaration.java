@@ -28,6 +28,7 @@ import javax.lang.model.element.Element;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.*;
+import static net.binis.codegen.tools.Tools.withRes;
 
 @Slf4j
 public class CGMethodDeclaration extends CGDeclaration {
@@ -75,5 +76,10 @@ public class CGMethodDeclaration extends CGDeclaration {
         var body = getFieldValue(instance, "body");
         return nonNull(body) ? new CGBlock(body) : null;
     }
+
+    public CGType getReturnType() {
+        return withRes(getFieldValue(instance, "restype"), CGType::new);
+    }
+
 
 }
