@@ -1,4 +1,12 @@
 # Change Log
+**07-01-2024** ver. 1.2.0
+* Core: Mapper can now register additional mappers/converters for same type combinations.
+* Generator: Added OpenApiElementEnricher.
+* Generator: (**Breaking change**) Some annotation element enrichment methods were striped off from redundant parameters.
+* Generator: Extended annotation element enrichment utils.
+* Generator: Fixed OpenApiEnricher required flag generation. 
+* Projections: Fixed discovery and execution of interface methods.
+
 **03-01-2024** ver. 1.1.29
 * Core: Class casting is used if every other mapping strategy fails.
 * Generation: Added support for nested enums.
@@ -6,6 +14,7 @@
 * Generation: OpenApiEnricher annotates non-declared fields as well.
 * Generation: Improved field getter/setter generation utils.
 * Spring Configuration: CodeEnum serialization enabled. 
+* IDEA Plugin: Added checks for already existing elements before augmenting classes.
 
 **02-01-2024** ver. 1.1.28
 * Core: Added MappingStrategy - FIELDS
