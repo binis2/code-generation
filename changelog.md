@@ -1,4 +1,9 @@
 # Change Log
+**10-01-2024** ver. 1.2.1
+* Core: Added CodeMapper annotation.
+* Core: Added method to CodeFactory to get all registered enums.
+* Core: Reduced log spam if field is not found with Reflection. 
+
 **07-01-2024** ver. 1.2.0
 * Core: Mapper can now register additional mappers/converters for same type combinations.
 * Generator: Added OpenApiElementEnricher.
