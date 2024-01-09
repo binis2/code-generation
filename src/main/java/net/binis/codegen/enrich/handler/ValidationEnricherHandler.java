@@ -990,14 +990,19 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
     }
 
     protected boolean isValidationAnnotation(AnnotationExpr annotation) {
-        var name = Helpers.getExternalClassNameIfExists(annotation.findCompilationUnit().get(), annotation.getNameAsString());
-        var external = lookup.findExternal(name);
-        if (nonNull(external)) {
-            return withRes(external.getDeclaration(), decl ->
-                    decl.isAnnotationPresent(Validate.class) || decl.isAnnotationPresent(Sanitize.class) || decl.isAnnotationPresent(Execute.class));
+        var unit = annotation.findCompilationUnit();
+        if (unit.isPresent()) {
+            var name = Helpers.getExternalClassNameIfExists(unit.get(), annotation.getNameAsString());
+            var external = lookup.findExternal(name);
+            if (nonNull(external)) {
+                return withRes(external.getDeclaration(), decl ->
+                        decl.isAnnotationPresent(Validate.class) || decl.isAnnotationPresent(Sanitize.class) || decl.isAnnotationPresent(Execute.class));
+            }
+            return withRes(loadClass(name), cls ->
+                    Validate.class.equals(cls) || cls.isAnnotationPresent(Validate.class) || Sanitize.class.equals(cls) || cls.isAnnotationPresent(Sanitize.class) || Execute.class.equals(cls) || cls.isAnnotationPresent(Execute.class), false);
+        } else {
+            return false;
         }
-        return withRes(loadClass(name), cls ->
-                Validate.class.equals(cls) || cls.isAnnotationPresent(Validate.class) || Sanitize.class.equals(cls) || cls.isAnnotationPresent(Sanitize.class) || Execute.class.equals(cls) || cls.isAnnotationPresent(Execute.class), false);
     }
 
     protected void buildValidationForm(PrototypeDescription<ClassOrInterfaceDeclaration> description, StringBuilder form) {

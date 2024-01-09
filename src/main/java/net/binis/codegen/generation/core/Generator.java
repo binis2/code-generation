@@ -47,6 +47,7 @@ import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.map.annotation.CodeMapping;
 import net.binis.codegen.objects.Pair;
 import net.binis.codegen.options.CodeOption;
 import net.binis.codegen.tools.Holder;
@@ -1570,7 +1571,11 @@ public class Generator {
                 Tools.with(getExternalClassName(unit, a.getNameAsString()), name -> {
                     var ann = loadClass(name);
                     if (nonNull(ann)) {
-                        if (ForInterface.class.equals(ann)) {
+                        if (CodeMapping.class.equals(ann)) {
+                            handleAnnotation(unit, proto.generateInterfaceGetter(), a);
+                            handleAnnotation(unit, proto.generateGetter(), a);
+                            handleAnnotation(unit, field, a);
+                        } else if (ForInterface.class.equals(ann)) {
                             next.set(true);
                             return;
                         } else if (isNull(ann.getAnnotation(CodeAnnotation.class)) && isNull(ann.getAnnotation(CodePrototypeTemplate.class))) {
