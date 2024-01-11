@@ -1,4 +1,7 @@
 # Change Log
+**11-01-2024** ver. 1.2.2
+* Core: Fixed concurrency issue with CodeFactory.
+
 **10-01-2024** ver. 1.2.1
 * Core: Added CodeMapper annotation.
 * Core: Added method to CodeFactory to get all registered enums.
