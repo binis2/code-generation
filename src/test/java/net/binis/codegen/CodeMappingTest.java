@@ -32,4 +32,10 @@ class CodeMappingTest extends BaseCodeGenTest {
         testSingle("mapping/Test1.java", "mapping/Test1-0.java", "mapping/Test1-1.java");
     }
 
+    @Test
+    void testIgnore() {
+        testSingle("mapping/Test2.java", "mapping/Test2-0.java", "mapping/Test2-1.java");
+    }
+
+
 }

@@ -667,6 +667,9 @@ public class Structures {
         private boolean forModifier;
 
         private boolean forQuery;
+        private boolean forMapper;
+        private boolean forProjection;
+        private boolean forToString;
     }
 
     @Data

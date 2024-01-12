@@ -765,6 +765,12 @@ public class Helpers {
                                             result.forModifier(pair.getValue().asBooleanLiteralExpr().getValue());
                                     case "forQuery" ->
                                             result.forQuery(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forMapper" ->
+                                            result.forMapper(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forProjection" ->
+                                            result.forProjection(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forToString" ->
+                                            result.forToString(pair.getValue().asBooleanLiteralExpr().getValue());
                                     default -> {
                                         //Do nothing
                                     }

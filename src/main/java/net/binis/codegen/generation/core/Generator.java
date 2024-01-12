@@ -1565,12 +1565,20 @@ public class Generator {
         }
     }
 
-    private static void handleFieldAnnotations(CompilationUnit unit, FieldDeclaration field, MethodDeclaration method, boolean compiledAnnotations, PrototypeField proto) {
+    protected static void handleFieldAnnotations(CompilationUnit unit, FieldDeclaration field, MethodDeclaration method, boolean compiledAnnotations, PrototypeField proto) {
         var next = Holder.of(false);
-        method.getAnnotations().forEach(a ->
-                Tools.with(getExternalClassName(unit, a.getNameAsString()), name -> {
+        method.getAnnotations().forEach(an ->
+                Tools.with(getExternalClassName(unit, an.getNameAsString()), name -> {
                     var ann = loadClass(name);
                     if (nonNull(ann)) {
+                        AnnotationExpr a;
+                        if (Ignore.class.equals(ann) && proto.getIgnores().isForMapper()) {
+                            ann = (Class) CodeMapping.class;
+                            a = new NormalAnnotationExpr().setName(new Name(CodeMapping.class.getSimpleName()));
+                            a.asNormalAnnotationExpr().addPair("ignore", new BooleanLiteralExpr(true));
+                        } else {
+                            a = an;
+                        }
                         if (CodeMapping.class.equals(ann)) {
                             handleAnnotation(unit, proto.generateInterfaceGetter(), a);
                             handleAnnotation(unit, proto.generateGetter(), a);
@@ -1622,13 +1630,13 @@ public class Generator {
                             if (parsed.getDeclaration().getAnnotationByClass(CodeAnnotation.class).isEmpty() && parsed.getDeclaration().getAnnotationByClass(CodePrototypeTemplate.class).isEmpty()) {
                                 if (next.get()) {
                                     if (Helpers.annotationHasTarget(parsed, "ElementType.METHOD")) {
-                                        handleAnnotation(unit, proto.generateInterfaceGetter(), a);
+                                        handleAnnotation(unit, proto.generateInterfaceGetter(), an);
                                     } else {
                                         log.warn("Invalid annotation target {}", name);
                                     }
                                 } else {
                                     if (Helpers.annotationHasTarget(parsed, "ElementType.FIELD")) {
-                                        handleAnnotation(unit, field, a);
+                                        handleAnnotation(unit, field, an);
                                     } else {
                                         log.warn("Invalid annotation target {}", name);
                                     }
@@ -1637,9 +1645,9 @@ public class Generator {
                         } else {
                             if (compiledAnnotations) {
                                 if (next.get()) {
-                                    handleMissingAnnotation(unit, proto.generateInterfaceGetter(), a);
+                                    handleMissingAnnotation(unit, proto.generateInterfaceGetter(), an);
                                 } else {
-                                    handleMissingAnnotation(unit, field, a);
+                                    handleMissingAnnotation(unit, field, an);
                                 }
                             } else {
                                 log.warn("Can't process annotation {}", name);
