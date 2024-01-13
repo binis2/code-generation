@@ -2429,6 +2429,7 @@ public class Generator {
         }
 
         declaration.getMethods().forEach(spec::addMember);
+        declaration.getFields().stream().filter(f -> f.getModifiers().contains(Modifier.staticModifier())).forEach(spec::addMember);
 
         spec.addMethod("equals", PUBLIC)
                 .addParameter(Object.class, "o")
@@ -2468,7 +2469,7 @@ public class Generator {
         });
 
         declaration.getFields().stream().filter(f -> !f.getModifiers().contains(Modifier.staticModifier())).forEach(f ->
-                EnrichHelpers.addField(parse, f.getVariable(0).getNameAsString(), f.getElementType()).getDeclaration().setAnnotations(f.getAnnotations()));
+                EnrichHelpers.addField(parse, f.getVariable(0).getNameAsString(), f.getElementType()).getDeclaration().setAnnotations(f.getAnnotations()).addModifier(FINAL));
 
         declaration.getFields().stream().filter(f -> f.isAnnotationPresent(Getter.class)).forEach(f ->
                 intf.addMethod(getGetterName(f.getVariable(0).getNameAsString(), f.getVariable(0).getType())).setType(f.getVariable(0).getType()).setBody(null));

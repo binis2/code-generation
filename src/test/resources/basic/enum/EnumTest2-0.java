@@ -11,12 +11,12 @@ public class TestImpl extends CodeEnumImpl implements Test {
     public static final String CONSTANT = "const";
 
     @Getter
-    private final boolean check;
+    protected final boolean check;
 
-    private final String label;
+    protected final String label;
 
     @Getter
-    private final int value;
+    protected final int value;
 
     public TestImpl(int $ordinal, String $name, String label, boolean check, int value) {
         super($ordinal, $name);
