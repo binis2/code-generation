@@ -661,32 +661,42 @@ public class Structures {
     @Data
     @Builder
     public static class Ignores {
-        private boolean forField;
-        private boolean forClass;
-        private boolean forInterface;
-        private boolean forModifier;
+        protected boolean forField;
+        protected boolean forClass;
+        protected boolean forInterface;
+        protected boolean forModifier;
 
-        private boolean forQuery;
-        private boolean forMapper;
-        private boolean forProjection;
-        private boolean forToString;
+        protected boolean forQuery;
+        protected boolean forMapper;
+        protected boolean forProjection;
+        protected boolean forToString;
+
+        protected boolean includedForField;
+        protected boolean includedForClass;
+        protected boolean includedForInterface;
+        protected boolean includedForModifier;
+
+        protected boolean includedForQuery;
+        protected boolean includedForMapper;
+        protected boolean includedForProjection;
+        protected boolean includedForToString;
     }
 
     @Data
     @Builder
     public static class Constants {
-        private boolean forPublic;
-        private boolean forClass;
-        private boolean forInterface;
+        protected boolean forPublic;
+        protected boolean forClass;
+        protected boolean forInterface;
     }
 
     @Data
     @Builder
     public static class ProcessingType {
-        private String interfacePackage;
-        private String interfaceName;
-        private String classPackage;
-        private String className;
+        protected String interfacePackage;
+        protected String interfaceName;
+        protected String classPackage;
+        protected String className;
     }
 
     public static PrototypeDataHandler.PrototypeDataHandlerBuilder builder(String type) {

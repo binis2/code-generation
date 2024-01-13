@@ -38,6 +38,7 @@ import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.Default;
 import net.binis.codegen.annotation.Ignore;
+import net.binis.codegen.annotation.Include;
 import net.binis.codegen.annotation.type.GenerationStrategy;
 import net.binis.codegen.annotation.validation.AliasFor;
 import net.binis.codegen.enrich.Enricher;
@@ -755,22 +756,33 @@ public class Helpers {
                             if (node instanceof MemberValuePair pair) {
                                 var name = pair.getNameAsString();
                                 switch (name) {
-                                    case "forField" ->
-                                            result.forField(pair.getValue().asBooleanLiteralExpr().getValue());
-                                    case "forClass" ->
-                                            result.forClass(pair.getValue().asBooleanLiteralExpr().getValue());
-                                    case "forInterface" ->
-                                            result.forInterface(pair.getValue().asBooleanLiteralExpr().getValue());
-                                    case "forModifier" ->
-                                            result.forModifier(pair.getValue().asBooleanLiteralExpr().getValue());
-                                    case "forQuery" ->
-                                            result.forQuery(pair.getValue().asBooleanLiteralExpr().getValue());
-                                    case "forMapper" ->
-                                            result.forMapper(pair.getValue().asBooleanLiteralExpr().getValue());
-                                    case "forProjection" ->
-                                            result.forProjection(pair.getValue().asBooleanLiteralExpr().getValue());
-                                    case "forToString" ->
-                                            result.forToString(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forField" -> result.forField(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forClass" -> result.forClass(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forInterface" -> result.forInterface(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forModifier" -> result.forModifier(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forQuery" -> result.forQuery(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forMapper" -> result.forMapper(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forProjection" -> result.forProjection(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forToString" -> result.forToString(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    default -> {
+                                        //Do nothing
+                                    }
+                                }
+                            }
+                        });
+                    } else if (Include.class.equals(cls)) {
+                        annotation.getChildNodes().forEach(node -> {
+                            if (node instanceof MemberValuePair pair) {
+                                var name = pair.getNameAsString();
+                                switch (name) {
+                                    case "forField" -> result.includedForField(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forClass" -> result.includedForClass(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forInterface" -> result.includedForInterface(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forModifier" -> result.includedForModifier(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forQuery" -> result.includedForQuery(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forMapper" -> result.includedForMapper(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forProjection" -> result.includedForProjection(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forToString" -> result.includedForToString(pair.getValue().asBooleanLiteralExpr().getValue());
                                     default -> {
                                         //Do nothing
                                     }
@@ -783,7 +795,19 @@ public class Helpers {
                                 .forClass(ann.forClass())
                                 .forInterface(ann.forInterface())
                                 .forModifier(ann.forModifier())
-                                .forQuery(ann.forQuery()));
+                                .forQuery(ann.forQuery())
+                                .forMapper(ann.forMapper())
+                                .forProjection(ann.forProjection())
+                                .forToString(ann.forToString()));
+                        Tools.with(cls.getAnnotation(Include.class), ann -> result
+                                .includedForField(ann.forField())
+                                .includedForClass(ann.forClass())
+                                .includedForInterface(ann.forInterface())
+                                .includedForModifier(ann.forModifier())
+                                .includedForQuery(ann.forQuery())
+                                .includedForMapper(ann.forMapper())
+                                .includedForProjection(ann.forProjection())
+                                .includedForToString(ann.forToString()));
                     }
                 })));
         return result.build();
@@ -811,8 +835,7 @@ public class Helpers {
                         switch (name) {
                             case "isPublic" -> result.forPublic(pair.getValue().asBooleanLiteralExpr().getValue());
                             case "forClass" -> result.forClass(pair.getValue().asBooleanLiteralExpr().getValue());
-                            case "forInterface" ->
-                                    result.forInterface(pair.getValue().asBooleanLiteralExpr().getValue());
+                            case "forInterface" -> result.forInterface(pair.getValue().asBooleanLiteralExpr().getValue());
                             default -> {
                                 //Do nothing
                             }
@@ -1601,9 +1624,9 @@ public class Helpers {
                         .forEach(arg -> addImport(dest, source, arg)));
     }
 
-    public static void addImport(CompilationUnit unit, String imprt) {
+    public static void addImport(Node node, String imprt) {
         if (!imprt.startsWith("dummy.") && !isPrimitiveType(imprt)) {
-            unit.addImport(imprt);
+            node.findCompilationUnit().ifPresent(unit -> unit.addImport(imprt));
         }
     }
 
