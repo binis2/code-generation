@@ -97,7 +97,7 @@ public class EnrichHelpers {
 
     public static PrototypeField addField(PrototypeDescription<ClassOrInterfaceDeclaration> description, String name, Type type) {
         var field = description.getImplementation().addField(type, name, Modifier.Keyword.PROTECTED);
-        var desc = new MethodDeclaration().setName(name).setType(type);
+        var desc = new MethodDeclaration().setName(name).setType(type).setBody(null);
         Helpers.envelopWithDummyClass(desc, field);
         var result = Structures.FieldData.builder()
                 .parsed((Structures.Parsed<ClassOrInterfaceDeclaration>) description)

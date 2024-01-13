@@ -70,6 +70,7 @@ import java.util.function.UnaryOperator;
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.CollectionsHandler.isCollection;
 import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledEnumPrototype;
 import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledPrototype;
 import static net.binis.codegen.generation.core.EnrichHelpers.*;
@@ -2374,7 +2375,7 @@ public class Generator {
             unit.setComment(new BlockComment("Generated code by Binis' code generator."));
             iUnit.setComment(new BlockComment("Generated code by Binis' code generator."));
 
-            processEntries(typeDeclaration, intf, mixIn, properties.getOrdinalOffset());
+            processEntries(parse, typeDeclaration, intf, mixIn, properties.getOrdinalOffset());
             processEnumImplementation(typeDeclaration, spec);
             handleImports(typeDeclaration, spec);
 
@@ -2428,7 +2429,6 @@ public class Generator {
         }
 
         declaration.getMethods().forEach(spec::addMember);
-        declaration.getFields().forEach(spec::addMember);
 
         spec.addMethod("equals", PUBLIC)
                 .addParameter(Object.class, "o")
@@ -2440,7 +2440,7 @@ public class Generator {
                 .setBody(block("{ return super.hashCode(); }"));
     }
 
-    private static void processEntries(EnumDeclaration declaration, ClassOrInterfaceDeclaration intf, PrototypeDescription<?> mixIn, long offset) {
+    private static void processEntries(Structures.Parsed parse, EnumDeclaration declaration, ClassOrInterfaceDeclaration intf, PrototypeDescription<?> mixIn, long offset) {
         var name = nonNull(mixIn) ? mixIn.getInterfaceName() : intf.getNameAsString();
 
         if (nonNull(mixIn) && offset == 0L) {
@@ -2466,6 +2466,10 @@ public class Generator {
             method.getModifiers().remove(Modifier.publicModifier());
             intf.addMember(method);
         });
+
+        declaration.getFields().stream().filter(f -> !f.getModifiers().contains(Modifier.staticModifier())).forEach(f ->
+                EnrichHelpers.addField(parse, f.getVariable(0).getNameAsString(), f.getElementType()).getDeclaration().setAnnotations(f.getAnnotations()));
+
         declaration.getFields().stream().filter(f -> f.isAnnotationPresent(Getter.class)).forEach(f ->
                 intf.addMethod(getGetterName(f.getVariable(0).getNameAsString(), f.getVariable(0).getType())).setType(f.getVariable(0).getType()).setBody(null));
 
@@ -2492,7 +2496,7 @@ public class Generator {
         }
     }
 
-    private static Structures.PrototypeDataHandler getEnumProperties(AnnotationExpr prototype) {
+    protected static Structures.PrototypeDataHandler getEnumProperties(AnnotationExpr prototype) {
         var type = (EnumDeclaration) prototype.getParentNode().get();
         var iName = Holder.of(defaultInterfaceName(type));
         var cName = defaultClassName(type);
