@@ -39,7 +39,7 @@ import static net.binis.codegen.compiler.utils.ElementUtils.getDeclaration;
 public class SetterEnricherHandler extends BaseEnricher implements GetterEnricher {
 
     @Override
-    public void enrichElement(ElementDescription description) {
+    public void safeEnrichElement(ElementDescription description) {
         var declaration = getDeclaration(description.getElement());
         if (declaration instanceof CGClassDeclaration cls && !cls.isInterface()) {
             if (!cls.isAnnotation()) {

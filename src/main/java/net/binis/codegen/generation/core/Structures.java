@@ -661,6 +661,8 @@ public class Structures {
     @Data
     @Builder
     public static class Ignores {
+        protected boolean explicitlySet;
+
         protected boolean forField;
         protected boolean forClass;
         protected boolean forInterface;

@@ -42,11 +42,12 @@ import net.binis.codegen.compiler.utils.ElementAnnotationUtils;
 import net.binis.codegen.compiler.utils.ElementMethodUtils;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
-import net.binis.codegen.enrich.handler.constructor.AllArgsConstructorEnricherHandler;
-import net.binis.codegen.enrich.handler.constructor.RequiredArgsConstructorEnricherHandler;
+import net.binis.codegen.enrich.constructor.AllArgsConstructorEnricher;
+import net.binis.codegen.enrich.constructor.NotInitializedArgsConstructorEnricher;
+import net.binis.codegen.enrich.constructor.RequiredArgsConstructorEnricher;
+import net.binis.codegen.enrich.field.GetterEnricher;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.factory.CodeFactory;
-import net.binis.codegen.generation.core.interfaces.ElementDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
@@ -380,7 +381,7 @@ public class Generator {
 
                 if (!declaration.isDefault()) {
                     var ignore = getIgnores(member);
-                    PrototypeField field = Structures.FieldData.builder().parsed(parse).build();
+                    PrototypeField field = Structures.FieldData.builder().parsed(parse).ignores(ignore).build();
                     if (!ignore.isForField()) {
                         field = addField(parse, typeDeclaration, spec, declaration, null, null);
                     }
@@ -1783,6 +1784,7 @@ public class Generator {
         var fieldProto = findField(parsed, fieldName);
         var field = nonNull(fieldProto) ? fieldProto.getDeclaration() : null;
         var unit = type.findCompilationUnit().get();
+        var ignores = getIgnores(method);
         if (isNull(field)) {
             var genericMethod = !method.getTypeParameters().isEmpty() && method.getTypeAsString().equals(method.getTypeParameter(0).getNameAsString());
             var prototypeMap = new HashMap<String, PrototypeDescription<ClassOrInterfaceDeclaration>>();
@@ -1804,7 +1806,7 @@ public class Generator {
                     .description(method)
                     .declaration(field)
                     .collection(collection)
-                    .ignores(getIgnores(method))
+                    .ignores(ignores)
                     .genericMethod(genericMethod)
                     .genericField(isGenericType(method.getType(), parsed.getDeclaration()))
                     .generics(nonNull(generic) ? Map.of(generic.asString(), generic) : null)
@@ -1817,6 +1819,10 @@ public class Generator {
                     .build();
             parsed.getFields().add(result);
         } else {
+            if (ignores.isExplicitlySet()) {
+                ((Structures.FieldData) fieldProto).setIgnores(ignores);
+            }
+
             var proto = parsed.getFields().stream().filter(d -> d.getName().equals(fieldName)).findFirst();
             if (proto.isPresent()) {
                 result = proto.get();
@@ -2005,7 +2011,7 @@ public class Generator {
                     .name(fieldName)
                     .declaration(field)
                     .collection(CollectionsHandler.isCollection(field.getVariable(0).getType()))
-                    .ignores(Structures.Ignores.builder().build())
+                    .ignores(getIgnores(method))
                     .generics(generic)
                     .genericMethod(genericMethod)
                     .fullType(genericMethod ? null : nonNull(prototype) ? prototype.getInterfaceFullName() : getExternalClassNameIfExists(spec, field.getElementType().asString()))
@@ -2382,7 +2388,7 @@ public class Generator {
             iUnit.setComment(new BlockComment("Generated code by Binis' code generator."));
 
             processEntries(parse, typeDeclaration, intf, mixIn, properties.getOrdinalOffset());
-            processEnumImplementation(typeDeclaration, spec);
+            processEnumImplementation(parse, typeDeclaration, spec);
             handleImports(typeDeclaration, spec);
 
             lookup.registerGenerated(properties.getPrototypeFullName(), parse);
@@ -2415,7 +2421,7 @@ public class Generator {
         return result;
     }
 
-    private static void processEnumImplementation(EnumDeclaration declaration, ClassOrInterfaceDeclaration spec) {
+    private static void processEnumImplementation(Structures.Parsed desc, EnumDeclaration declaration, ClassOrInterfaceDeclaration spec) {
         var constructor = spec.addConstructor(PUBLIC)
                 .addParameter(int.class, "$ordinal")
                 .addParameter(String.class, "$name")
@@ -2429,10 +2435,49 @@ public class Generator {
             var con = constructors.get(0);
             con.getParameters().forEach(constructor::addParameter);
             con.getBody().getStatements().forEach(s -> constructor.getBody().addStatement(s));
+        } else {
+            var fields = declaration.getFields().stream().filter(f -> !f.getModifiers().contains(Modifier.staticModifier()));
+            var extendConstructor = false;
+            if (desc.hasEnricher(RequiredArgsConstructorEnricher.class)) {
+                fields = fields.filter(f -> f.getModifiers().contains(Modifier.finalModifier()));
+                extendConstructor = true;
+            }
+            if (desc.hasEnricher(NotInitializedArgsConstructorEnricher.class)) {
+                fields = fields.filter(f -> f.getVariable(0).getInitializer().isEmpty());
+                extendConstructor = true;
+            }
+            if (desc.hasEnricher(AllArgsConstructorEnricher.class)) {
+                extendConstructor = true;
+            }
+
+            if (extendConstructor) {
+                fields.forEach(f -> {
+                    var name = f.getVariable(0).getNameAsString();
+                    constructor.addParameter(f.getVariable(0).getType(), name);
+                    constructor.getBody().addStatement("this." + name + " = " + name + ";");
+                });
+            }
         }
 
-        declaration.getMethods().forEach(spec::addMember);
-        declaration.getFields().stream().filter(f -> f.getModifiers().contains(Modifier.staticModifier())).forEach(spec::addMember);
+        declaration.getMethods().forEach(m -> spec.addMember(m.clone().setModifier(PUBLIC, true)));
+        declaration.getFields().stream().filter(f -> f.getModifiers().contains(Modifier.staticModifier())).forEach(f -> spec.addMember(f.clone().setModifier(PROTECTED, true)));
+
+        if (desc.hasEnricher(GetterEnricher.class)) {
+            declaration.getFields().stream()
+                    .filter(f -> !f.getModifiers().contains(Modifier.staticModifier()))
+                    .forEach(f -> {
+                        var type = f.getVariable(0).getType();
+                        var name = getGetterName(f.getVariable(0).getNameAsString(), type);
+                        var method = new MethodDeclaration().setName(name).setType(type).setBody(null);
+
+                        if (!methodExists(desc.getInterface(), method, false, true)) {
+                            desc.getInterface().addMember(method);
+                        }
+                        if (!methodExists(spec, method, false, true)) {
+                            spec.addMember(method.clone().setModifier(PUBLIC, true).setBody(returnBlock(f.getVariable(0).getNameAsString())));
+                        }
+                    });
+        }
 
         spec.addMethod("equals", PUBLIC)
                 .addParameter(Object.class, "o")

@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.utils.CodeGenAnnotationProcessorUtils.isPrototypeTest;
 
 @Slf4j
 public abstract class BaseEnricher implements PrototypeEnricher {
@@ -78,11 +79,11 @@ public abstract class BaseEnricher implements PrototypeEnricher {
         if (nonNull(lookup.getProcessingEnvironment())) {
             if (nonNull(description.getElement())) {
                 safeEnrichElement(description);
-            } else {
-                warn("Unable to enrich element with '" + getClass().getSimpleName() + "' as element is not available!");
             }
         } else {
-            warn("Unable to enrich element with '" + getClass().getSimpleName() + "' as processing environment is not available!");
+            if (!isPrototypeTest()) {
+                warn("Unable to enrich element with '" + getClass().getSimpleName() + "' as processing environment is not available!");
+            }
         }
     }
 

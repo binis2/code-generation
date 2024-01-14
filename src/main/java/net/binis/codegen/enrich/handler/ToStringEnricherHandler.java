@@ -62,14 +62,18 @@ public class ToStringEnricherHandler extends BaseEnricher implements ToStringEnr
                 } else {
                     body.append("\"");
                 }
-                cnt = buildBody(description.getBase(), impl, body);
-                if (cnt == 0) {
-                    body.setLength(body.length() - 7);
+                var pcnt = buildBody(description.getBase(), impl, body);
+                if (pcnt == 0) {
+                    if (cnt == 0) {
+                        body.setLength(body.length() - 5);
+                    } else {
+                        body.setLength(body.length() - 7);
+                    }
                 }
             }
             body.append("\")\"; }");
 
-            method.setBody(block(body.toString()));
+            method.setBody(block(body.toString().replace("\" + \"", "")));
         }
     }
 

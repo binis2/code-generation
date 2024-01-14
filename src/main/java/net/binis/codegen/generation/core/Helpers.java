@@ -752,6 +752,7 @@ public class Helpers {
         member.getAnnotations().forEach(annotation -> Tools.with(getExternalClassName(unit, annotation.getNameAsString()), className ->
                 Tools.with(loadClass(className), cls -> {
                     if (Ignore.class.equals(cls)) {
+                        result.explicitlySet(true);
                         annotation.getChildNodes().forEach(node -> {
                             if (node instanceof MemberValuePair pair) {
                                 var name = pair.getNameAsString();
@@ -771,6 +772,7 @@ public class Helpers {
                             }
                         });
                     } else if (Include.class.equals(cls)) {
+                        result.explicitlySet(true);
                         annotation.getChildNodes().forEach(node -> {
                             if (node instanceof MemberValuePair pair) {
                                 var name = pair.getNameAsString();
@@ -791,6 +793,7 @@ public class Helpers {
                         });
                     } else {
                         Tools.with(cls.getAnnotation(Ignore.class), ann -> result
+                                .explicitlySet(true)
                                 .forField(ann.forField())
                                 .forClass(ann.forClass())
                                 .forInterface(ann.forInterface())
@@ -800,6 +803,7 @@ public class Helpers {
                                 .forProjection(ann.forProjection())
                                 .forToString(ann.forToString()));
                         Tools.with(cls.getAnnotation(Include.class), ann -> result
+                                .explicitlySet(true)
                                 .includedForField(ann.forField())
                                 .includedForClass(ann.forClass())
                                 .includedForInterface(ann.forInterface())
@@ -813,6 +817,30 @@ public class Helpers {
         return result.build();
     }
 
+    public static Structures.Ignores getIgnores(Method method) {
+        var result = Structures.Ignores.builder();
+
+        Tools.with(method.getAnnotation(Ignore.class), ann -> result
+                .explicitlySet(true)
+                .forField(ann.forField())
+                .forClass(ann.forClass())
+                .forInterface(ann.forInterface())
+                .forModifier(ann.forModifier())
+                .forQuery(ann.forQuery())
+                .forMapper(ann.forMapper())
+                .forProjection(ann.forProjection())
+                .forToString(ann.forToString()));
+        Tools.with(method.getAnnotation(Include.class), ann -> result
+                .explicitlySet(true)
+                .includedForField(ann.forField())
+                .includedForClass(ann.forClass())
+                .includedForInterface(ann.forInterface())
+                .includedForModifier(ann.forModifier())
+                .includedForQuery(ann.forQuery())
+                .includedForMapper(ann.forMapper())
+                .includedForProjection(ann.forProjection()));
+        return result.build();
+    }
 
     public static Structures.Ignores getIgnores(BodyDeclaration<?> member) {
         return getIgnores(member.findCompilationUnit().get(), member);

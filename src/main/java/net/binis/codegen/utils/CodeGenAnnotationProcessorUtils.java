@@ -21,6 +21,7 @@ package net.binis.codegen.utils;
  */
 
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.tools.Reflection;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -35,6 +36,17 @@ import static net.binis.codegen.tools.Reflection.*;
 
 @Slf4j
 public class CodeGenAnnotationProcessorUtils {
+
+    public static boolean isPrototypeTest() {
+        var cls = loadClass("net.binis.codegen.test.BaseCodeGenTest");
+        return nonNull(cls) && nonNull(CodeFactory.create(cls));
+    }
+
+    public static boolean isElementTest() {
+        var cls = loadClass("net.binis.codegen.test.BaseCodeGenElementTest");
+        return nonNull(cls) && nonNull(CodeFactory.create(cls));
+    }
+
 
     public static void addOpensForCodeGen(boolean openCompiler) {
         try {
