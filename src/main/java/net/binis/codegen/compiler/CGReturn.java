@@ -1,17 +1,17 @@
-package net.binis.codegen.enrich.handler.constructor;
+package net.binis.codegen.compiler;
 
 /*-
  * #%L
  * code-generator
  * %%
- * Copyright (C) 2021 Binis Belev
+ * Copyright (C) 2021 - 2023 Binis Belev
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,21 +20,28 @@ package net.binis.codegen.enrich.handler.constructor;
  * #L%
  */
 
-import net.binis.codegen.compiler.CGVariableDecl;
-import net.binis.codegen.enrich.constructor.AllArgsConstructorEnricher;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.stream.Stream;
+import static net.binis.codegen.tools.Reflection.invoke;
+import static net.binis.codegen.tools.Reflection.loadClass;
 
-public class AllArgsConstructorEnricherHandler extends BaseArgsConstructorEnricherHandler implements AllArgsConstructorEnricher {
+@Slf4j
+public class CGReturn extends CGStatement {
 
+    public static Class theClass() {
+        return loadClass("com.sun.tools.javac.tree.JCTree$JCReturn");
+    }
 
-    @Override
-    protected Stream<CGVariableDecl> applyFieldsFilter(Stream<CGVariableDecl> stream) {
-        return stream.filter(v -> !v.isStatic());
+    public CGReturn(Object instance) {
+        super(instance);
+    }
+
+    public CGExpression getExpression() {
+        return new CGExpression(invoke("getExpression", instance));
     }
 
     @Override
-    protected String getName() {
-        return "All";
+    protected void init() {
+        cls = theClass();
     }
 }

@@ -34,6 +34,8 @@ import javax.lang.model.element.Element;
 import java.util.Collections;
 import java.util.List;
 
+import static java.util.Objects.nonNull;
+
 @Slf4j
 public abstract class BaseEnricher implements PrototypeEnricher {
 
@@ -73,8 +75,21 @@ public abstract class BaseEnricher implements PrototypeEnricher {
 
     @Override
     public void enrichElement(ElementDescription description) {
+        if (nonNull(lookup.getProcessingEnvironment())) {
+            if (nonNull(description.getElement())) {
+                safeEnrichElement(description);
+            } else {
+                warn("Unable to enrich element with '" + getClass().getSimpleName() + "' as element is not available!");
+            }
+        } else {
+            warn("Unable to enrich element with '" + getClass().getSimpleName() + "' as processing environment is not available!");
+        }
+    }
+
+    protected void safeEnrichElement(ElementDescription description) {
         //Do nothing
     }
+
 
     protected void error(String message) {
         error(message, null);

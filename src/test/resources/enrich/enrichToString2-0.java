@@ -56,6 +56,6 @@ public class TestImpl extends BaseImpl implements Test {
 
     @Override()
     public String toString() {
-        return "Test(title = " + title + ", list = " + CollectionUtils.printInfo(list, true) + ", set = " + CollectionUtils.printInfo(set, true) + ", map = " + CollectionUtils.printInfo(map, true) + ", " + ")";
+        return "Test(title = " + title + ", list = " + CollectionUtils.printInfo(list, true) + ", set = " + CollectionUtils.printInfo(set, true) + ", map = " + CollectionUtils.printInfo(map, true) + ", baseTitle = " + baseTitle + ", baseList = " + CollectionUtils.printInfo(baseList, false) + ", baseSet = " + CollectionUtils.printInfo(baseSet, false) + ", baseMap = " + CollectionUtils.printInfo(baseMap, false) + ")";
     }
 }

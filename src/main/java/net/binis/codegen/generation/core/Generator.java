@@ -42,8 +42,11 @@ import net.binis.codegen.compiler.utils.ElementAnnotationUtils;
 import net.binis.codegen.compiler.utils.ElementMethodUtils;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
+import net.binis.codegen.enrich.handler.constructor.AllArgsConstructorEnricherHandler;
+import net.binis.codegen.enrich.handler.constructor.RequiredArgsConstructorEnricherHandler;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.factory.CodeFactory;
+import net.binis.codegen.generation.core.interfaces.ElementDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
@@ -172,6 +175,12 @@ public class Generator {
                                                 .build())));
                             }
                         }));
+        with(prsd.getElement(), element -> {
+            if (!GenerationStrategy.NONE.equals(prsd.getProperties().getStrategy())) {
+                ElementAnnotationUtils.addOrReplaceAnnotation(element, lombok.Generated.class, Map.of());
+            }
+        });
+
     }
 
     protected static String getElementName(Node node) {
@@ -270,9 +279,6 @@ public class Generator {
 
         processingTypes.remove(typeDeclaration.getNameAsString());
         parse.setProcessed(true);
-
-        with(prsd.getElement(), element ->
-                ElementAnnotationUtils.addOrReplaceAnnotation(element, lombok.Generated.class, Map.of()));
     }
 
     private static Structures.Parsed handlePrototypeStrategy(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, TypeDeclaration<?> type, ClassOrInterfaceDeclaration typeDeclaration, Structures.PrototypeDataHandler properties) {
@@ -2390,9 +2396,6 @@ public class Generator {
             handleImports(typeDeclaration, intf);
 
             processingTypes.remove(typeDeclaration.getNameAsString());
-
-            with(prsd.getElement(), element ->
-                    ElementAnnotationUtils.addOrReplaceAnnotation(element, lombok.Generated.class, Map.of()));
 
             parse.setProcessed(true);
             return parse;

@@ -30,12 +30,17 @@ import java.util.List;
 public class ElementMethodUtils extends ElementUtils {
 
     public static CGMethodDeclaration addMethod(Element element, String name, Class<?> returnType, long flags, List<CGVariableDecl> params, CGBlock body) {
+        return addMethod(element, name, classToExpression(returnType), flags, params, body);
+    }
+
+    public static CGMethodDeclaration addMethod(Element element, String name, CGExpression returnType, long flags, List<CGVariableDecl> params, CGBlock body) {
         var maker = TreeMaker.create();
         var declaration = getDeclaration(element, maker);
-        var def = maker.MethodDef(maker.Modifiers(flags), CGName.create(name), classToExpression(returnType), CGList.nil(CGTypeParameter.class), CGList.from(params, CGVariableDecl.class), CGList.nil(CGExpression.class), body, null);
+        var def = maker.MethodDef(maker.Modifiers(flags), CGName.create(name), returnType, CGList.nil(CGTypeParameter.class), CGList.from(params, CGVariableDecl.class), CGList.nil(CGExpression.class), body, null);
         declaration.getDefs().append(def);
         return def;
     }
+
 
     public static CGMethodDeclaration addConstructor(Element element, long flags, List<CGVariableDecl> params) {
         var maker = TreeMaker.create();
@@ -100,13 +105,15 @@ public class ElementMethodUtils extends ElementUtils {
         return TreeMaker.create().Call(expr);
     }
 
+    public static CGStatement createReturnStatement(CGExpression expr) {
+        return TreeMaker.create().Return(expr);
+    }
 
     public static CGVariableDecl createParameter(Class<?> cls, String name) {
         var maker = TreeMaker.create();
 
         return maker.VarDef(maker.Modifiers(CGFlags.PARAMETER), maker.toName(name), classToExpression(cls), null);
     }
-
 
     public static boolean paramsMatch(Element e, List<String> list) {
         if (getDeclaration(e) instanceof CGMethodDeclaration decl) {

@@ -38,9 +38,9 @@ import static net.binis.codegen.compiler.utils.ElementUtils.getDeclaration;
 public abstract class BaseArgsConstructorEnricherHandler extends BaseEnricher {
 
     @Override
-    public void enrichElement(ElementDescription description) {
+    public void safeEnrichElement(ElementDescription description) {
         var declaration = getDeclaration(description.getElement());
-        if (declaration instanceof CGClassDeclaration cls && !cls.isInterface() && !cls.isEnum()) {
+        if (declaration instanceof CGClassDeclaration cls && !cls.isInterface()) {
             if (!cls.isAnnotation()) {
                 var fields = applyFieldsFilter(cls.getDefs().stream()
                         .filter(CGVariableDecl.class::isInstance)
@@ -66,7 +66,7 @@ public abstract class BaseArgsConstructorEnricherHandler extends BaseEnricher {
 
     protected void createConstructor(CGClassDeclaration cls, List<CGVariableDecl> fields) {
         var maker = TreeMaker.create();
-        var body = ElementMethodUtils.addConstructor(cls, PUBLIC, fields.stream()
+        var body = ElementMethodUtils.addConstructor(cls, cls.isEnum() ? 0 :PUBLIC, fields.stream()
                 .map(f -> maker.VarDef(maker.Modifiers(CGFlags.PARAMETER | CGFlags.FINAL), CGName.create(f.getName().toString()), cloneType(maker, f.getVarType()), null))
                 .toList()).getBody();
         fields.forEach(field ->

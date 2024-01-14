@@ -201,4 +201,10 @@ public class TreeMaker extends JavaCompilerObject {
         return new CGTypeApply(invoke(method, instance, clazz.getInstance(), arguments.getInstance()));
     }
 
+    public CGReturn Return(CGExpression expr) {
+        var method = findMethod("Return", instance.getClass(), CGExpression.theClass());
+        return new CGReturn(invoke(method, instance, expr.getInstance()));
+    }
+
+
 }
