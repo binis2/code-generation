@@ -1,4 +1,13 @@
 # Change Log
+**15-01-2024** ver. 1.2.3
+* Core: Added @Include annotation.
+* Core: Added augment types: GETTER, SETTER
+* Generation: Added prototype ToStringEnricher.
+* Generation: Added element GetterEnricher
+* Generation: Added element SetterEnricher
+* Annotation Processor: Moved utility functions to generation module.
+* IDEA Plugin: Added support for augmenting getters and setters.
+
 **11-01-2024** ver. 1.2.2
 * Core: Fixed concurrency issue with CodeFactory.
 
