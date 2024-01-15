@@ -2460,7 +2460,7 @@ public class Generator {
         }
 
         declaration.getMethods().forEach(m -> spec.addMember(m.clone().setModifier(PUBLIC, true)));
-        declaration.getFields().stream().filter(f -> f.getModifiers().contains(Modifier.staticModifier())).forEach(f -> spec.addMember(f.clone().setModifier(PROTECTED, true)));
+        declaration.getFields().stream().filter(f -> f.getModifiers().contains(Modifier.staticModifier())).forEach(f -> spec.addMember(f.clone().setModifier(PUBLIC, true)));
 
         if (desc.hasEnricher(GetterEnricher.class)) {
             declaration.getFields().stream()

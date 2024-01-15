@@ -54,6 +54,6 @@ public class BaseImpl implements Base {
 
     @Override()
     public String toString() {
-        return "Base(" + ")";
+        return "Base()";
     }
 }
