@@ -52,7 +52,6 @@ import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.tools.Holder;
-import net.binis.codegen.tools.Reflection;
 import net.binis.codegen.tools.Tools;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -1660,6 +1659,10 @@ public class Helpers {
         }
     }
 
+    public static void addImport(Node node, Class cls) {
+        addImport(node, cls.getCanonicalName());
+    }
+
     public static PrototypeField getFieldParent(PrototypeField parent) {
         if (nonNull(parent)) {
             if (isNull(parent.getParent())) {
@@ -1672,33 +1675,58 @@ public class Helpers {
     }
 
 
-    public static void copyAnnotationParams(Annotation ann, NormalAnnotationExpr a) {
+    public static void copyAnnotationParams(Annotation ann, NormalAnnotationExpr a, Node node) {
         for (var method : ann.annotationType().getDeclaredMethods()) {
             var def = method.getDefaultValue();
             var val = invoke(method, ann);
             if (nonNull(val)) {
                 if (isNull(def)) {
-                    a.addPair(method.getName(), calcAnnotationParam(val));
+                    a.addPair(method.getName(), calcAnnotationParam(val, node));
                 } else {
                     if (!def.equals(val)) {
-                        a.addPair(method.getName(), calcAnnotationParam(val));
+                        a.addPair(method.getName(), calcAnnotationParam(val, node));
                     }
                 }
             }
         }
     }
 
-    public static String calcAnnotationParam(Object val) {
+    public static String calcAnnotationParam(Object val, Node node) {
         if (val instanceof String s) {
             return "\"" + s + "\"";
         }
+        if (val instanceof Class c) {
+            node.findCompilationUnit().ifPresent(unit -> unit.addImport(c.getCanonicalName()));
+            return c.getSimpleName() + ".class";
+        }
+        if (val.getClass().isArray()) {
+            var result = new StringBuilder();
+            result.append("{");
+            var arr = (Object[]) val;
+            for (var i = 0; i < arr.length; i++) {
+                if (i > 0) {
+                    result.append(", ");
+                }
+                result.append(calcAnnotationParam(arr[i], node));
+            }
+            result.append("}");
+            return result.toString();
+        }
+        if (val instanceof Enum e) {
+            node.findCompilationUnit().ifPresent(unit -> unit.addImport(e.getDeclaringClass().getCanonicalName()));
+            return e.getDeclaringClass().getSimpleName() + "." + e.name();
+        }
+        if (val instanceof Character c) {
+            return "'" + c + "'";
+        }
+
         return val.toString();
     }
 
     public static boolean annotationTargetsField(Annotation ann) {
         var target = ann.annotationType().getAnnotation(Target.class);
         if (nonNull(target)) {
-            return Arrays.stream(target.value()).anyMatch(ElementType.FIELD::equals);
+            return Arrays.asList(target.value()).contains(ElementType.FIELD);
         }
         return true;
     }

@@ -2001,11 +2001,12 @@ public class Generator {
             for (var ann : method.getDeclaredAnnotations()) {
                 if (isNull(ann.annotationType().getAnnotation(CodeAnnotation.class))) {
                     description.addAnnotation(ann.annotationType());
-                    dummy.addImport(ann.annotationType().getPackageName());
+                    addImport(dummy, ann.annotationType());
+                    addImport(field, ann.annotationType());
                     var a = new NormalAnnotationExpr();
                     a.setName(ann.annotationType().getSimpleName());
 
-                    Helpers.copyAnnotationParams(ann, a);
+                    Helpers.copyAnnotationParams(ann, a, field);
                     if (annotationTargetsField(ann)) {
                         field.addAnnotation(a);
                     } else {
