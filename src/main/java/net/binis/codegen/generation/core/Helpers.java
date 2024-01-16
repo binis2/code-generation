@@ -59,6 +59,8 @@ import org.apache.commons.lang3.tuple.Triple;
 
 import javax.lang.model.element.ElementKind;
 import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
@@ -73,8 +75,7 @@ import static net.binis.codegen.generation.core.Constants.*;
 import static net.binis.codegen.generation.core.EnrichHelpers.annotation;
 import static net.binis.codegen.generation.core.Generator.checkEnrichers;
 import static net.binis.codegen.generation.core.Generator.generateCodeForClass;
-import static net.binis.codegen.tools.Reflection.instantiate;
-import static net.binis.codegen.tools.Reflection.loadClass;
+import static net.binis.codegen.tools.Reflection.*;
 import static net.binis.codegen.tools.Tools.*;
 
 @Slf4j
@@ -838,7 +839,8 @@ public class Helpers {
                 .includedForModifier(ann.forModifier())
                 .includedForQuery(ann.forQuery())
                 .includedForMapper(ann.forMapper())
-                .includedForProjection(ann.forProjection()));
+                .includedForProjection(ann.forProjection())
+                .includedForToString(ann.forToString()));
         return result.build();
     }
 
@@ -1503,7 +1505,7 @@ public class Helpers {
 
         if (nonNull(NAME_DISCOVERER)) {
             var discoverer = CodeFactory.create(NAME_DISCOVERER);
-            if (nonNull(discoverer) && Reflection.invoke("getParameterNames", discoverer, method) instanceof String[] names) {
+            if (nonNull(discoverer) && invoke("getParameterNames", discoverer, method) instanceof String[] names) {
                 return names;
             }
         }
@@ -1669,5 +1671,36 @@ public class Helpers {
         return null;
     }
 
+
+    public static void copyAnnotationParams(Annotation ann, NormalAnnotationExpr a) {
+        for (var method : ann.annotationType().getDeclaredMethods()) {
+            var def = method.getDefaultValue();
+            var val = invoke(method, ann);
+            if (nonNull(val)) {
+                if (isNull(def)) {
+                    a.addPair(method.getName(), calcAnnotationParam(val));
+                } else {
+                    if (!def.equals(val)) {
+                        a.addPair(method.getName(), calcAnnotationParam(val));
+                    }
+                }
+            }
+        }
+    }
+
+    public static String calcAnnotationParam(Object val) {
+        if (val instanceof String s) {
+            return "\"" + s + "\"";
+        }
+        return val.toString();
+    }
+
+    public static boolean annotationTargetsField(Annotation ann) {
+        var target = ann.annotationType().getAnnotation(Target.class);
+        if (nonNull(target)) {
+            return Arrays.stream(target.value()).anyMatch(ElementType.FIELD::equals);
+        }
+        return true;
+    }
 
 }

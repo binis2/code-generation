@@ -1996,13 +1996,22 @@ public class Generator {
             }
 
             var dummy = envelopWithDummyClass(description, field);
+            NormalAnnotationExpr getterAnn = null;
 
             for (var ann : method.getDeclaredAnnotations()) {
-                description.addAnnotation(ann.annotationType());
-                dummy.addImport(ann.annotationType().getPackageName());
-                field.addAnnotation(ann.annotationType());
-                //TODO: Check if the annotation can be applied to field.
-                //TODO: Handle annotation params
+                if (isNull(ann.annotationType().getAnnotation(CodeAnnotation.class))) {
+                    description.addAnnotation(ann.annotationType());
+                    dummy.addImport(ann.annotationType().getPackageName());
+                    var a = new NormalAnnotationExpr();
+                    a.setName(ann.annotationType().getSimpleName());
+
+                    Helpers.copyAnnotationParams(ann, a);
+                    if (annotationTargetsField(ann)) {
+                        field.addAnnotation(a);
+                    } else {
+                        getterAnn = a;
+                    }
+                }
             }
 
             result = Structures.FieldData.builder()
@@ -2016,10 +2025,13 @@ public class Generator {
                     .genericMethod(genericMethod)
                     .fullType(genericMethod ? null : nonNull(prototype) ? prototype.getInterfaceFullName() : getExternalClassNameIfExists(spec, field.getElementType().asString()))
                     .type(discoverType(method, genericMethod, field))
-                    //TODO: enable ignores
+                    .ignores(getIgnores(method))
                     .prototype(prototype)
                     .build();
             parsed.getFields().add(result);
+            if (nonNull(getterAnn)) {
+                result.generateGetter().addAnnotation(getterAnn);
+            }
         } else {
             var proto = parsed.getFields().stream().filter(d -> d.getName().equals(fieldName)).findFirst();
             if (proto.isPresent()) {

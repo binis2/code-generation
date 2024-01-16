@@ -70,6 +70,10 @@ class ToStringEnricherTest extends BaseCodeGenTest {
                 "enrich/enrichToString6-2.java");
     }
 
+    @Test
+    void testAnnotatedInterface() {
+        testSingleExecute("enrich/enrichToString7.java", "enrich/enrichToString7-0.java", "enrich/enrichToString7-1.java", "enrich/enrichToString7-2.java");
+    }
 
 
 
