@@ -221,6 +221,8 @@ public class Structures {
 
         @ToString.Exclude
         private PrototypeField parent;
+        @ToString.Exclude
+        private Map<String, Object> store;
 
         MethodDeclaration interfaceGetter;
         MethodDeclaration interfaceSetter;
@@ -278,6 +280,22 @@ public class Structures {
             return interfaceSetter;
         }
 
+        @Override
+        public void putToStore(String key, Object value) {
+            if (isNull(store)) {
+                store = new HashMap<>();
+            }
+            store.put(key, value);
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public <T> T getFromStore(String key) {
+            if (nonNull(store)) {
+                return (T) store.get(key);
+            }
+            return null;
+        }
 
         @Override
         public MethodDeclaration generateGetter() {

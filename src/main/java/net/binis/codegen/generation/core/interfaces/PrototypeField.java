@@ -66,6 +66,8 @@ public interface PrototypeField {
     MethodDeclaration forceGenerateInterfaceGetter();
     MethodDeclaration forceGenerateInterfaceSetter();
 
+    void putToStore(String key, Object value);
+    <T> T getFromStore(String key);
 
     interface ModifierDescription {
         ModifierType getType();

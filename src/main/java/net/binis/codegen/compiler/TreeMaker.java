@@ -206,5 +206,24 @@ public class TreeMaker extends JavaCompilerObject {
         return new CGReturn(invoke(method, instance, expr.getInstance()));
     }
 
+    public CGTry Try(CGBlock body, CGList<CGCatch> catchers, CGBlock finalizer) {
+        var method = findMethod("Try", instance.getClass(), CGBlock.theClass(), CGList.theClass(), CGBlock.theClass());
+        return new CGTry(invoke(method, instance, body.getInstance(), catchers.getInstance(), nonNull(finalizer) ? finalizer.getInstance() : null));
+    }
+
+    public CGCatch Catch(CGVariableDecl param, CGBlock body) {
+        var method = findMethod("Catch", instance.getClass(), CGVariableDecl.theClass(), CGBlock.theClass());
+        return new CGCatch(invoke(method, instance, param.getInstance(), body.getInstance()));
+    }
+
+    public CGExpressionStatement Exec(CGExpression expr) {
+        var method = findMethod("Exec", instance.getClass(), CGExpression.theClass());
+        return new CGExpressionStatement(invoke(method, instance, expr.getInstance()));
+    }
+
+    public CGUnary Unary(CGTag opcode, CGExpression arg) {
+        var method = findMethod("Unary", instance.getClass(), CGTag.theClass(), CGExpression.theClass());
+        return new CGUnary(invoke(method, instance, opcode.getInstance(), arg.getInstance()));
+    }
 
 }

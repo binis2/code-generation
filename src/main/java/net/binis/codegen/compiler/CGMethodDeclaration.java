@@ -77,9 +77,12 @@ public class CGMethodDeclaration extends CGDeclaration {
         return nonNull(body) ? new CGBlock(body) : null;
     }
 
+    public void setBody(CGBlock body) {
+        setFieldValue(instance, "body", nonNull(body) ? body.getInstance() : null);
+    }
+
     public CGType getReturnType() {
         return withRes(getFieldValue(instance, "restype"), CGType::new);
     }
-
 
 }
