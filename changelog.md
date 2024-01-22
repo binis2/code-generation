@@ -1,4 +1,11 @@
 # Change Log
+**22-01-2024** ver. 1.2.4
+* Generator: @Include/@Ignore works on plain interfaces as expected.
+* Generator: Fixed imports and type handling for annotated plain interfaces.
+* Generator: More element wrappers and utils.
+* ALL: Updated licenses to 2024.
+* ALL: Updated dependencies.
+
 **15-01-2024** ver. 1.2.3
 * Core: Added @Include annotation.
 * Core: Added augment types: GETTER, SETTER
