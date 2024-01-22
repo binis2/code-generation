@@ -226,4 +226,9 @@ public class TreeMaker extends JavaCompilerObject {
         return new CGUnary(invoke(method, instance, opcode.getInstance(), arg.getInstance()));
     }
 
+    public CGThrow Throw(CGExpression expr) {
+        var method = findMethod("Throw", instance.getClass(), CGExpression.theClass());
+        return new CGThrow(invoke(method, instance, expr.getInstance()));
+    }
+
 }

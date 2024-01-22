@@ -67,6 +67,10 @@ public class CGClassDeclaration extends CGDeclaration {
         return getDefs().stream().filter(CGMethodDeclaration.class::isInstance).map(CGMethodDeclaration.class::cast).toList();
     }
 
+    public List<CGVariableDecl> getFields() {
+        return getDefs().stream().filter(CGVariableDecl.class::isInstance).map(CGVariableDecl.class::cast).toList();
+    }
+
     public boolean isEnum() {
         return (getModifiers().flags() & ENUM) == ENUM;
     }

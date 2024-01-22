@@ -52,6 +52,7 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
 
     protected Class<T> containedClass;
     protected static Method mAppend;
+    protected static Method mPrepend;
 
     protected static Method mGet;
 
@@ -78,6 +79,17 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
             mAppend = findMethod("append", cls, Object.class);
         }
         instance = invoke(mAppend, instance, value.getInstance());
+        if (nonNull(onModify)) {
+            onModify.accept(this);
+        }
+        return this;
+    }
+
+    public CGList<T> prepend(T value) {
+        if (isNull(mPrepend)) {
+            mPrepend = findMethod("prepend", cls, Object.class);
+        }
+        instance = invoke(mPrepend, instance, value.getInstance());
         if (nonNull(onModify)) {
             onModify.accept(this);
         }
