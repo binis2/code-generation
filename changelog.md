@@ -3,6 +3,7 @@
 * Generator: @Include/@Ignore works on plain interfaces as expected.
 * Generator: Fixed imports and type handling for annotated plain interfaces.
 * Generator: More element wrappers and utils.
+* Validation: @ValidateNotEmpty targets collections as well.
 * ALL: Updated licenses to 2024.
 * ALL: Updated dependencies.
 
