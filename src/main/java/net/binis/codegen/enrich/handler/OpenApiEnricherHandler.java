@@ -22,10 +22,13 @@ package net.binis.codegen.enrich.handler;
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.expr.*;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
+
 import net.binis.codegen.annotation.Default;
 import net.binis.codegen.enrich.OpenApiEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.factory.CodeFactory;
+import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.objects.base.enumeration.CodeEnum;
@@ -95,6 +98,11 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
                         ann.addPair("allowableValues", exp);
                     }
                 });
+            }
+            if (field.isCollection()) {
+                var arrayAnn = getter.addAndGetAnnotation("ArraySchema");
+                getter.remove(ann);
+                arrayAnn.addPair("schema", ann);
             }
         }
     }
