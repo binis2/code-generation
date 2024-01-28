@@ -22,13 +22,10 @@ package net.binis.codegen.enrich.handler;
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.expr.*;
-import com.github.javaparser.ast.type.ClassOrInterfaceType;
-
 import net.binis.codegen.annotation.Default;
 import net.binis.codegen.enrich.OpenApiEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
 import net.binis.codegen.factory.CodeFactory;
-import net.binis.codegen.generation.core.CollectionsHandler;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
 import net.binis.codegen.objects.base.enumeration.CodeEnum;
@@ -37,7 +34,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.with;
