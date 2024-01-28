@@ -3,7 +3,8 @@
 * Core: Added default mapping for String->UUID.
 * Core: Added more modifying routines to CodeList, CodeSet and CodeMap. 
 * Generator: OpenApiEnricher adds @ArraySchema to collections (thx @Theo Gilonis).
-* Projections: Added Mapper.convert() call to projections if the source and projected types don't match.  
+* Projections: Added Mapper.convert() call to projections if the source and projected types don't match.
+* IDEA Plugin: Fixed false positive validation targets error when target is assignable from the annotated type.
 
 **22-01-2024** ver. 1.2.4
 * Generator: @Include/@Ignore works on plain interfaces as expected.
