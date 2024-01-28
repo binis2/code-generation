@@ -1,4 +1,10 @@
 # Change Log
+**28-01-2024** ver. 1.2.5
+* Core: Added default mapping for String->UUID.
+* Core: Added more modifying routines to CodeList, CodeSet and CodeMap. 
+* Generator: OpenApiEnricher adds @ArraySchema to collections (thx @Theo Gilonis).
+* Projections: Added Mapper.convert() call to projections if the source and projected types don't match.  
+
 **22-01-2024** ver. 1.2.4
 * Generator: @Include/@Ignore works on plain interfaces as expected.
 * Generator: Fixed imports and type handling for annotated plain interfaces.
