@@ -129,7 +129,9 @@ public class TreeMaker extends JavaCompilerObject {
 
     public CGVariableDecl VarDef(CGModifiers mods, CGName name, CGExpression vartype, CGExpression init) {
         var method = findMethod("VarDef", instance.getClass(), CGModifiers.theClass(), CGName.theClass(), CGExpression.theClass(), CGExpression.theClass());
-        return new CGVariableDecl(invoke(method, instance, mods.getInstance(), name.getInstance(), vartype.getInstance(), nonNull(init) ? init.getInstance() : null));
+        var result = new CGVariableDecl(invoke(method, instance, mods.getInstance(), name.getInstance(), vartype.getInstance(), nonNull(init) ? init.getInstance() : null));
+        result.setPos(0);
+        return result;
     }
 
     public CGVariableDecl VarDef(CGModifiers mods, CGName name, CGExpression vartype, CGExpression init, boolean declaredUsingVar) {
