@@ -1,4 +1,10 @@
 # Change Log
+**30-01-2024** ver. 1.2.6
+* Generator: findElement works for enums.
+* Generator: By default new param elements are with pos = 0
+* Generator: surroundWithTryCatch routine now points to the start of the surrounded block.
+* Spring Configuration: Registered explicit JSON conversions Object->String
+
 **28-01-2024** ver. 1.2.5
 * Core: Added default mapping for String->UUID.
 * Core: Added more modifying routines to CodeList, CodeSet and CodeMap. 
