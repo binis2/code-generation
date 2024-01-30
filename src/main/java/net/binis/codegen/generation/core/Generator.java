@@ -1800,6 +1800,10 @@ public class Generator {
             var collection = CollectionsHandler.isCollection(field.getVariable(0).getType());
             var proto = lookup.findParsed(getExternalClassName(unit, method.getType().asString()));
 
+            var fullType = nullCheck(proto, Generator::calcProtoFullType,
+                nullCheck(getExternalClassNameIfExists(spec, field.getElementType().asString()),
+                    getExternalClassNameIfExists(unit, field.getElementType().asString())));
+
             result = Structures.FieldData.builder()
                     .parsed(parsed)
                     .name(fieldName)
@@ -1814,7 +1818,7 @@ public class Generator {
                             (isNull(generic) ? proto : null))
                     .typePrototypes(!prototypeMap.isEmpty() ? prototypeMap : null)
                     .type(field.getElementType())
-                    .fullType(nonNull(proto) ? calcProtoFullType(proto) : getExternalClassNameIfExists(spec, field.getElementType().asString()))
+                    .fullType(fullType)
                     .parent(nonNull(parent) ? parent : nonNull(parsed.getBase()) ? findField(parsed.getBase(), fieldName) : null)
                     .build();
             parsed.getFields().add(result);
