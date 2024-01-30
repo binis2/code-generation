@@ -30,7 +30,9 @@ public class ElementStatementUtils extends ElementUtils {
 
     public static CGTry surroundWithTryCatch(CGBlock block, Class<? extends Throwable> exception, CGBlock exceptionBlock, CGBlock finallyBlock) {
         var maker = TreeMaker.create();
-        var list = CGList.nil(CGCatch.class).append(maker.Catch(maker.VarDef(maker.Modifiers(CGFlags.PARAMETER), maker.toName("ex"), classToExpression(exception), null), exceptionBlock));
+        var variable = maker.VarDef(maker.Modifiers(CGFlags.PARAMETER), maker.toName("ex"), classToExpression(exception), null);
+        variable.setPos(block.getPos());
+        var list = CGList.nil(CGCatch.class).append(maker.Catch(variable, exceptionBlock));
         return maker.Try(block, list, finallyBlock);
     }
 
