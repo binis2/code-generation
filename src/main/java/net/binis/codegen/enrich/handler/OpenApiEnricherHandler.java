@@ -35,7 +35,6 @@ import net.binis.codegen.options.Options;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -101,7 +100,7 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
         }
     }
 
-    private static <T> void generateEnumSchema(Stream<T> enumEntries, Function<T, String> getEnumName, final NormalAnnotationExpr schemaAnnotation) {
+    protected <T> void generateEnumSchema(Stream<T> enumEntries, Function<T, String> getEnumName, NormalAnnotationExpr schemaAnnotation) {
         var exp = new ArrayInitializerExpr();
         enumEntries.forEach(e -> exp.getValues().add(new StringLiteralExpr(getEnumName.apply(e))));
         schemaAnnotation.addPair("allowableValues", exp);
