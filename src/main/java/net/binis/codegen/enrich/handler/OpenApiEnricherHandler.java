@@ -21,7 +21,9 @@ package net.binis.codegen.enrich.handler;
  */
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.EnumConstantDeclaration;
 import com.github.javaparser.ast.expr.*;
+
 import net.binis.codegen.annotation.Default;
 import net.binis.codegen.enrich.OpenApiEnricher;
 import net.binis.codegen.enrich.handler.base.BaseEnricher;
@@ -33,6 +35,8 @@ import net.binis.codegen.options.Options;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.loadClass;
@@ -78,20 +82,13 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
 
 
             if (nonNull(field.getPrototype()) && field.getPrototype().isCodeEnum()) {
-                var exp = new ArrayInitializerExpr();
-                field.getPrototype().getDeclaration().asEnumDeclaration().getEntries().forEach(e -> exp.getValues().add(new StringLiteralExpr(e.getNameAsString())));
-                ann.addPair("allowableValues", exp);
-                ann.addPair("type", new StringLiteralExpr("string"));
+                generateEnumSchema(field.getPrototype().getDeclaration().asEnumDeclaration().getEntries().stream(), EnumConstantDeclaration::getNameAsString, ann);
             } else {
                 with(loadClass(field.getFullType()), cls -> {
                     if (cls.isEnum()) {
-                        var exp = new ArrayInitializerExpr();
-                        Arrays.stream(cls.getEnumConstants()).forEach(e -> exp.getValues().add(new StringLiteralExpr(e.toString())));
-                        ann.addPair("allowableValues", exp);
+                        generateEnumSchema(Arrays.stream(cls.getEnumConstants()), Object::toString, ann);
                     } else if (CodeEnum.class.isAssignableFrom(cls)) {
-                        var exp = new ArrayInitializerExpr();
-                        Arrays.stream(CodeFactory.enumValues((Class) cls)).forEach(e -> exp.getValues().add(new StringLiteralExpr(((CodeEnum) e).name())));
-                        ann.addPair("allowableValues", exp);
+                        generateEnumSchema(Arrays.stream(CodeFactory.enumValues((Class) cls)), CodeEnum::name, ann);
                     }
                 });
             }
@@ -101,6 +98,13 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
                 arrayAnn.addPair("schema", ann);
             }
         }
+    }
+
+    protected <T> void generateEnumSchema(Stream<T> enumEntries, Function<T, String> getEnumName, NormalAnnotationExpr schemaAnnotation) {
+        var exp = new ArrayInitializerExpr();
+        enumEntries.forEach(e -> exp.getValues().add(new StringLiteralExpr(getEnumName.apply(e))));
+        schemaAnnotation.addPair("allowableValues", exp);
+        schemaAnnotation.addPair("type", new StringLiteralExpr("string"));
     }
 
     protected void checkForDefaultValue(PrototypeField field, NormalAnnotationExpr ann) {
