@@ -1,4 +1,9 @@
 # Change Log
+**01-02-2024** ver. 1.2.7
+* Core: Improved CodeFactory.envelop() type routines (@Theo Gilonis)
+* Generator: Improved field full type discovery (@Theo Gilonis)
+* Generator: OpenApiEnricher now correctly adds type=string for enums (@Theo Gilonis)
+
 **30-01-2024** ver. 1.2.6
 * Generator: findElement works for enums.
 * Generator: By default new param elements are with pos = 0
