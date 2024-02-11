@@ -37,10 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import javax.tools.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
@@ -58,6 +55,8 @@ public abstract class BaseCodeTest {
     protected JavaParser parser = lookup.getParser();
 
     protected boolean enablePreview;
+
+    protected Map<String, String> options = new HashMap<>();
 
     static {
         AnnotationDiscoverer.findAnnotations().stream().filter(Discoverer.DiscoveredService::isTemplate).forEach(a ->
@@ -108,6 +107,17 @@ public abstract class BaseCodeTest {
         }
     }
 
+    protected void addOption(String key, String value) {
+        options.put(key, value);
+    }
+
+    protected void removeOption(String key) {
+        options.remove(key);
+    }
+
+    protected void cleanOptions() {
+        options.clear();
+    }
 
     @SuppressWarnings("unchecked")
     protected void load(List<Pair<String, String>> list, String resource) {
@@ -173,6 +183,7 @@ public abstract class BaseCodeTest {
 
         var params = new ArrayList<>(Arrays.asList(args));
         params.add("-Xlint:unchecked");
+        options.forEach((k, v) -> params.add("-A" + k + "=" + v));
         if (enablePreview) {
             params.add("--enable-preview");
             params.add("--release");
