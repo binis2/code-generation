@@ -21,13 +21,10 @@ package net.binis.codegen.enrich.handler.base;
  */
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.generation.core.interfaces.ElementDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 
-@Slf4j
 public abstract class BaseConditionalEnricher extends BaseEnricher {
-
 
     protected boolean shouldEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         return true;

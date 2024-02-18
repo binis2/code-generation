@@ -1,4 +1,9 @@
 # Change Log
+**18-02-2024** ver. 1.2.8
+* Generator: Added support for annotation processor options.
+* Generator: Added BaseConditionalEnricher.
+* Annotation Processor: Fixed possible NPE.
+
 **01-02-2024** ver. 1.2.7
 * Core: Improved CodeFactory.envelop() type routines (@Theo Gilonis)
 * Generator: Improved field full type discovery (@Theo Gilonis)
