@@ -38,11 +38,15 @@ public class Tools {
     }
 
     public static <T, R> T nullCheck(R object, Function<R, T> func) {
-        return nullCheck(object, func, null);
+        return nonNull(object) ? func.apply(object) : null;
     }
 
     public static <T> T nullCheck(T object, T defaultObject) {
         return nonNull(object) ? object : defaultObject;
+    }
+
+    public static <T> T nullCheck(T object, Supplier<T> defaultObjectSupplier) {
+        return nonNull(object) ? object : defaultObjectSupplier.get();
     }
 
     public static <T, R, Q> T nullCheck(R object, Class<Q> iface, Function<Q, T> func) {
@@ -51,6 +55,10 @@ public class Tools {
 
     public static <T, R> T nullCheck(R object, Function<R, T> func, T defaultObject) {
         return nonNull(object) ? func.apply(object) : defaultObject;
+    }
+
+    public static <T, R> T nullCheck(R object, Function<R, T> func, Supplier<T> defaultObjectSupplier) {
+        return nonNull(object) ? func.apply(object) : defaultObjectSupplier.get();
     }
 
     public static <R> void with(R object, Consumer<R> consumer) {
