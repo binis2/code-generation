@@ -30,6 +30,7 @@ import net.binis.codegen.annotation.CodeImplementation;
 import net.binis.codegen.annotation.CodePrototype;
 import net.binis.codegen.enrich.Enricher;
 import net.binis.codegen.enrich.PrototypeEnricher;
+import net.binis.codegen.enrich.handler.base.BaseConditionalEnricher;
 import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.tools.Holder;
 import net.binis.codegen.tools.Tools;
@@ -266,6 +267,9 @@ public abstract class CompiledPrototypesHandler {
                         with(((PrototypeEnricher) e), enricher -> {
                             enricher.init(lookup);
                             list.add(enricher);
+                            if (enricher instanceof BaseConditionalEnricher) {
+                                Structures.supportedOptions.addAll(((BaseConditionalEnricher) enricher).supportedAnnotationProcessorOptions());
+                            }
                         }));
         return list;
     }

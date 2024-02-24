@@ -24,6 +24,9 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import net.binis.codegen.generation.core.interfaces.ElementDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 
+import java.util.List;
+import java.util.Set;
+
 public abstract class BaseConditionalEnricher extends BaseEnricher {
 
     protected boolean shouldEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
@@ -32,6 +35,10 @@ public abstract class BaseConditionalEnricher extends BaseEnricher {
 
     protected boolean shouldEnrich(ElementDescription description) {
         return false;
+    }
+
+    public Set<String> supportedAnnotationProcessorOptions() {
+        return Set.of();
     }
 
     @Override

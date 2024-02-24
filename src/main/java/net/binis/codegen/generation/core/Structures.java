@@ -70,6 +70,8 @@ public class Structures {
 
     public static final Map<String, Supplier<PrototypeDataHandler.PrototypeDataHandlerBuilder>> defaultProperties = new HashMap<>();
 
+    public static final Set<String> supportedOptions = new HashSet<>();
+
     private static final Set<Class<?>> checkedAnnotations = initCheckedAnnotations();
 
     private static Set<Class<?>> initCheckedAnnotations() {
