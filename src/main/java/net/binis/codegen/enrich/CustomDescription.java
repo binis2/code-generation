@@ -30,4 +30,7 @@ public interface CustomDescription extends PrototypeDescription<ClassOrInterface
     void setInterface(ClassOrInterfaceDeclaration intf);
     void setProperties(PrototypeData properties);
 
+    String getPath();
+    void setPath(String path);
+
 }

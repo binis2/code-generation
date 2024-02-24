@@ -636,9 +636,13 @@ public class Structures {
         protected PrototypeDescription<ClassOrInterfaceDeclaration> description;
     }
 
+    @Getter
     public static class CustomParsed extends Parsed<ClassOrInterfaceDeclaration> implements CustomDescription {
-        @Getter
+
         protected String id;
+
+        @Setter
+        protected String path;
 
         @Builder(builderMethodName = "bldr")
         public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, List<PrototypeDataHandler> additionalProperties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, CompilationUnit declarationUnit, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean external, boolean codeEnum, String parentClassName, ClassOrInterfaceDeclaration parent, String parentPackage, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, CompilationUnit interfaceUnit, CompilationUnit implementationUnit, Map<String, List<ElementDescription>> elements, Element element, List<Parsables.Entry.Bag> rawElements, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
@@ -651,6 +655,7 @@ public class Structures {
         public void setProperties(PrototypeData properties) {
             this.properties = (PrototypeDataHandler) properties;
         }
+
     }
 
     @Data

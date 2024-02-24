@@ -27,39 +27,55 @@ import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 public abstract class BaseConditionalEnricher extends BaseEnricher {
 
     protected boolean shouldEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
-        return true;
+        return false;
     }
 
     protected boolean shouldEnrich(ElementDescription description) {
-        return true;
+        return false;
     }
 
     @Override
     public void enrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         if (shouldEnrich(description)) {
-            super.enrich(description);
+            internalEnrich(description);
         }
     }
 
     @Override
     public void finalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         if (shouldEnrich(description)) {
-            super.finalizeEnrich(description);
+            internalFinalizeEnrich(description);
         }
     }
 
     @Override
     public void postProcess(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         if (shouldEnrich(description)) {
-            super.postProcess(description);
+            internalPostProcess(description);
         }
     }
 
     @Override
     public void enrichElement(ElementDescription description) {
         if (shouldEnrich(description)) {
-            super.enrichElement(description);
+            internalEnrichElement(description);
         }
+    }
+
+    protected void internalEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+        //Do nothing
+    }
+
+    protected void internalFinalizeEnrich(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+        //Do nothing
+    }
+
+    protected void internalPostProcess(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
+        //Do nothing
+    }
+
+    protected void internalEnrichElement(ElementDescription description) {
+        //Do nothing
     }
 
 }
