@@ -1,4 +1,9 @@
 # Change Log
+**25-02-2024** ver. 1.2.9
+* Annotation Processor: Added option to control destination of generated files.
+* Annotation Processor: Added support for annotation processor options.
+* Generator: Extended Tools. (@Theo Gilonis)
+
 **18-02-2024** ver. 1.2.8
 * Generator: Added support for annotation processor options.
 * Generator: Added BaseConditionalEnricher.
