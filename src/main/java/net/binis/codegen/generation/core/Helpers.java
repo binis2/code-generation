@@ -1739,4 +1739,8 @@ public class Helpers {
         return true;
     }
 
+    public static ClassOrInterfaceType buildType(Class<?> cls) {
+        return new ClassOrInterfaceType(new ClassOrInterfaceType(null, cls.getPackageName()), cls.getSimpleName());
+    }
+
 }

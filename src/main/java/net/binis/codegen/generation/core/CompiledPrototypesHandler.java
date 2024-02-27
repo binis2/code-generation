@@ -22,8 +22,10 @@ package net.binis.codegen.generation.core;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
+import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.MemberValuePair;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.CodeAnnotation;
 import net.binis.codegen.annotation.CodeImplementation;
@@ -72,6 +74,7 @@ public abstract class CompiledPrototypesHandler {
                         handleFields(c, decl);
                         handleDefaultMethods(c, decl);
                         props = handleProperties(decl, c, ann);
+                        handleExtends(c, decl);
                     } else {
                         var decl = (EnumDeclaration) declaration;
                         props = handleProperties(decl, c, ann);
@@ -98,6 +101,27 @@ public abstract class CompiledPrototypesHandler {
                     result.set(true);
                 }));
         return result.get();
+    }
+
+    protected static void handleExtends(Class<Object> c, ClassOrInterfaceDeclaration decl) {
+        for (var generic : c.getGenericInterfaces()) {
+            if (generic instanceof Class intf) {
+                decl.addExtendedType(intf);
+            } else if (generic instanceof ParameterizedType pt) {
+                var raw = (Class) pt.getRawType();
+                var type = new ClassOrInterfaceType(null, raw.getSimpleName());
+                addImport(decl, raw);
+                var args = new NodeList<com.github.javaparser.ast.type.Type>();
+                for (var arg : pt.getActualTypeArguments()) {
+                    if (arg instanceof Class cls) {
+                        addImport(decl, cls);
+                        args.add(new ClassOrInterfaceType(null, cls.getSimpleName()));
+                    }
+                }
+                type.setTypeArguments(args);
+                decl.addExtendedType(type);
+            }
+        }
     }
 
     public static boolean handleCompiledEnumPrototype(String compiledPrototype) {

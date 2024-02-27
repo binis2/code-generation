@@ -44,5 +44,4 @@ class BaseModifierTest extends BaseCodeGenTest {
         testSingle("base/modifier/baseTest2.java", "base/modifier/baseTest2-0.java", "base/modifier/baseTest2-1.java");
     }
 
-
 }

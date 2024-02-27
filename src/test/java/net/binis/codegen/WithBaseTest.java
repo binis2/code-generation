@@ -72,5 +72,15 @@ class WithBaseTest extends BaseCodeGenTest {
                 Triple.of("base/baseTest4.java", "base/baseTest4-0.java", "base/baseTest4-1.java")));
     }
 
+    @Test
+    void testBaseWithoutModifierAndExternalInterface() {
+        testSingle("base/baseTest5.java", "base/baseTest5-0.java", "base/baseTest5-1.java", 2);
+    }
+
+    @Test
+    void testBaseWithoutModifierAndExternalGenericInterface() {
+        testSingle("base/baseTest6.java", "base/baseTest6-0.java", "base/baseTest6-1.java", 2);
+    }
+
 
 }
