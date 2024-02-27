@@ -219,6 +219,10 @@ public class Helpers {
             return type;
         }
 
+        if (nonNull(lookup.findGenerated(type))) {
+            return type;
+        }
+
         var result = getExternalClassNameIfExists(unit, type);
 
         if (isNull(result)) {
@@ -638,7 +642,7 @@ public class Helpers {
     }
 
     public static Map<String, Type> processGenerics(Structures.Parsed<ClassOrInterfaceDeclaration> prsd, Class<?> cls, NodeList<Type> generics) {
-        Map<String, Type> result = null;
+        Map<String, Type> result;
         var types = parseGenericClassSignature(cls);
 
         if (types.size() != generics.size()) {
@@ -655,7 +659,11 @@ public class Helpers {
                     if (!parsed.isProcessed() && !parsed.equals(prsd)) {
                         generateCodeForClass(parsed.getDeclaration().findCompilationUnit().get(), parsed);
                     }
-                    generic = new ClassOrInterfaceType(null, parsed.getInterfaceName());
+
+                    var pkg = parsed.getInterfaceUnit().getPackageDeclaration();
+                    var scope = pkg.isPresent() ? new ClassOrInterfaceType(null, pkg.get().getNameAsString()) : null;
+
+                    generic = new ClassOrInterfaceType(scope, parsed.getInterfaceName());
                 }
             }
             result.put(types.get(i), generic);

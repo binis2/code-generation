@@ -266,6 +266,9 @@ public class PrototypeLookupHandler implements PrototypeLookup {
         enums.clear();
         external.clear();
         prototypeMaps.clear();
+        generatedClasses.clear();
+        generatedInterfaces.clear();
+        custom.clear();
     }
 
     public void error(String message, Element element) {

@@ -22,8 +22,11 @@ package net.binis.codegen;
 
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.test.BaseCodeGenTest;
+import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 class WithBaseTest extends BaseCodeGenTest {
 
@@ -61,6 +64,13 @@ class WithBaseTest extends BaseCodeGenTest {
         testSingle("base/base3.java", "base/base3-0.java", "base/base3-1.java", 2);
     }
 
+    @Test
+    void withBaseCompiledGeneric() {
+        testMulti(List.of(
+                Triple.of("base/baseTestEnum4.java", "base/baseTestEnum4-0.java", "base/baseTestEnum4-1.java"),
+                Triple.of("base/base4.java", "base/base4-0.java", "base/base4-1.java"),
+                Triple.of("base/baseTest4.java", "base/baseTest4-0.java", "base/baseTest4-1.java")));
+    }
 
 
 }

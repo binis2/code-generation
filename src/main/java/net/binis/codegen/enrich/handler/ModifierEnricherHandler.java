@@ -30,6 +30,7 @@ import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.Embeddable;
@@ -256,7 +257,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
             description.registerClass(MODIFIER_FIELDS_KEY, modifierFields);
             intf.findCompilationUnit().ifPresent(dest ->
                     imports.stream()
-                            .map(pair -> getExternalClassNameIfExists(pair.getKey(), pair.getValue()))
+                            .map(pair -> nonNull(pair.getKey()) ? getExternalClassNameIfExists(pair.getKey(), pair.getValue()) : pair.getValue())
                             .filter(Objects::nonNull)
                             .filter(cls -> !isJavaType(cls))
                             .forEach(dest::addImport));
@@ -463,8 +464,12 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     .setType(MODIFIER_FIELD_GENERIC)
                     .addParameter(type, field.getName())
                     .setBody(null);
-            field.getDeclaration().findCompilationUnit().ifPresent(source ->
-                    imports.add(Pair.of(source, type.asString())));
+            if (nonNull(field.getFullType())) {
+                imports.add(Pair.of(null, field.getFullType()));
+            } else {
+                field.getDeclaration().findCompilationUnit().ifPresent(source ->
+                        imports.add(Pair.of(source, type.asString())));
+            }
         }
     }
 

@@ -608,12 +608,9 @@ public class Generator {
             var statement = Holder.of("");
             ann.getChildNodes().stream().filter(MemberValuePair.class::isInstance).map(MemberValuePair.class::cast).forEach(pair -> {
                 switch (pair.getNameAsString()) {
-                    case "field" ->
-                            statement.set("this." + pair.getValue().asStringLiteralExpr().asString() + " = " + statement.get());
-                    case "expression" ->
-                            statement.set(statement.get() + pair.getValue().asStringLiteralExpr().asString() + ";");
-                    case "imports" ->
-                            pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
+                    case "field" -> statement.set("this." + pair.getValue().asStringLiteralExpr().asString() + " = " + statement.get());
+                    case "expression" -> statement.set(statement.get() + pair.getValue().asStringLiteralExpr().asString() + ";");
+                    case "imports" -> pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
                     default -> log.warn("Invalid @Initialize member {}", pair.getNameAsString());
                 }
             });
@@ -726,8 +723,7 @@ public class Generator {
                             case "value" -> {
                                 code = getStringValue(p.getValue());
                             }
-                            case "imports" ->
-                                    p.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
+                            case "imports" -> p.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
                         }
                     }
                 }
@@ -1801,8 +1797,8 @@ public class Generator {
             var proto = lookup.findParsed(getExternalClassName(unit, method.getType().asString()));
 
             var fullType = nullCheck(proto, Generator::calcProtoFullType,
-                nullCheck(getExternalClassNameIfExists(spec, field.getElementType().asString()),
-                    getExternalClassNameIfExists(unit, field.getElementType().asString())));
+                    nullCheck(getExternalClassNameIfExists(spec, field.getElementType().asString()),
+                            getExternalClassNameIfExists(unit, field.getElementType().asString())));
 
             result = Structures.FieldData.builder()
                     .parsed(parsed)
@@ -1953,39 +1949,49 @@ public class Generator {
         PrototypeField result = null;
         var fieldName = getFieldName(method.getName());
         var genericMethod = false;
+        String full = null;
+        Type fullType = null;
         if (!fieldExists(parsed, fieldName)) {
             FieldDeclaration field;
             MethodDeclaration description;
             PrototypeDescription<ClassOrInterfaceDeclaration> prototype = null;
             if (nonNull(generic)) {
                 var sig = parseMethodSignature(method);
-                var type = generic.get(sig);
-                if (isNull(type)) {
+                fullType = generic.get(sig);
+                if (isNull(fullType)) {
                     if (Helpers.isPrimitiveType(sig)) {
-                        type = new PrimitiveType().setType(PrimitiveType.Primitive.valueOf(sig.toUpperCase()));
+                        fullType = new PrimitiveType().setType(PrimitiveType.Primitive.valueOf(sig.toUpperCase()));
                     } else {
-                        type = new ClassOrInterfaceType().setName(sig);
+                        fullType = new ClassOrInterfaceType().setName(sig);
                     }
                 }
 
-                handleType(parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, type);
-                var full = getExternalClassNameIfExists(parsed.getDeclaration().findCompilationUnit().get(), type.asString());
+                full = fullType instanceof ClassOrInterfaceType t && t.getScope().isPresent() ? t.asString() : getExternalClassNameIfExists(parsed.getDeclaration().findCompilationUnit().get(), fullType.asString());
                 if (isNull(full)) {
-                    full = getExternalClassNameIfExists(parsed.getDeclaration().findCompilationUnit().get(), type.asString() + "Prototype");
+                    full = getExternalClassNameIfExists(parsed.getDeclaration().findCompilationUnit().get(), fullType.asString() + "Prototype");
                 }
                 if (nonNull(full)) {
                     prototype = lookup.findParsed(full);
                     if (isNull(prototype)) {
                         prototype = lookup.findGenerated(full);
                     }
+                    if (isNull(prototype)) {
+                        if (full.equals(parsed.getInterfaceFullName()) || full.equals(parsed.getPrototypeClassName())) {
+                            prototype = parsed;
+                        }
+                    }
+                }
+
+                if (!parsed.equals(prototype)) {
+                    handleType(parsed.getDeclaration().asClassOrInterfaceDeclaration(), spec, fullType);
                 }
 
                 if (nonNull(prototype)) {
-                    type = new ClassOrInterfaceType().setName(prototype.getInterfaceName());
+                    fullType = new ClassOrInterfaceType().setName(prototype.getInterfaceName());
                 }
 
-                field = spec.addField(type, fieldName, PROTECTED);
-                description = new MethodDeclaration().setName(fieldName).setType(type);
+                field = spec.addField(fullType, fieldName, PROTECTED);
+                description = new MethodDeclaration().setName(fieldName).setType(fullType);
             } else {
                 genericMethod = !method.getReturnType().getCanonicalName().equals(parseMethodSignature(method));
                 var type = method.getReturnType().getSimpleName();
@@ -2028,8 +2034,8 @@ public class Generator {
                     .ignores(getIgnores(method))
                     .generics(generic)
                     .genericMethod(genericMethod)
-                    .fullType(genericMethod ? null : nonNull(prototype) ? prototype.getInterfaceFullName() : getExternalClassNameIfExists(spec, field.getElementType().asString()))
-                    .type(discoverType(method, genericMethod, field))
+                    .fullType(nonNull(full) ? full : genericMethod ? null : nonNull(prototype) ? prototype.getInterfaceFullName() : getExternalClassNameIfExists(spec, field.getElementType().asString()))
+                    .type(nonNull(fullType) ? fullType : discoverType(method, genericMethod, field))
                     .ignores(getIgnores(method))
                     .prototype(prototype)
                     .build();
@@ -2585,8 +2591,7 @@ public class Generator {
                             builder.mixInClass(value);
                         }
                     }
-                    case "ordinalOffset" ->
-                            builder.ordinalOffset(pair.getValue().asIntegerLiteralExpr().asNumber().intValue());
+                    case "ordinalOffset" -> builder.ordinalOffset(pair.getValue().asIntegerLiteralExpr().asNumber().intValue());
                     case "enrichers" -> checkEnrichers(builder::enrichers, handleInitializerAnnotation(pair));
                     default -> {
                     }
