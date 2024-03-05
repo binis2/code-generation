@@ -40,10 +40,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -300,7 +297,7 @@ public abstract class CompiledPrototypesHandler {
 
     private static void handleFields(Class<?> c, ClassOrInterfaceDeclaration declaration) {
         var unit = declaration.findCompilationUnit().get();
-        for (var method : c.getDeclaredMethods()) {
+        Arrays.stream(c.getDeclaredMethods()).sorted(Comparator.comparing(Method::getName)).forEach(method -> {
             if (!method.isDefault() && method.getParameterCount() == 0 && !Void.class.equals(method.getReturnType())) {
                 var mtd = declaration.addMethod(method.getName()).setType(buildType(unit, method.getGenericReturnType(), method.getReturnType())).setBody(null);
                 if (!method.getReturnType().isPrimitive()) {
@@ -329,8 +326,7 @@ public abstract class CompiledPrototypesHandler {
                     mtd.addAnnotation(annotation);
                 }
             }
-        }
-
+        });
     }
 
     private static String buildType(CompilationUnit unit, Type type, Class<?> returnType) {
