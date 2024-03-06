@@ -823,7 +823,7 @@ public class Structures {
                                     builder.classPackage(handleStringExpression(member.getDefaultValue().get()));
                             case "strategy" ->
                                     builder.strategy(handleEnumExpression(member.getDefaultValue().get(), GenerationStrategy.class));
-                            default -> builder.custom(member.getNameAsString(), member.getDefaultValue().get());
+                            default -> builder.custom(member.getNameAsString(), handleExpression(member.getDefaultValue().get()));
                         }
                     });
 
@@ -1009,7 +1009,7 @@ public class Structures {
                 case "generateImplementation" -> builder.generateImplementation((boolean) func.apply(method, ann));
                 case "implementationPackage" -> builder.classPackage(handleString(func.apply(method, ann)));
                 case "strategy" -> builder.strategy((GenerationStrategy) func.apply(method, ann));
-                default -> builder.custom(method.getName(), func.apply(method, ann));
+                default -> builder.custom(method.getName(), handleExpression(func.apply(method, ann)));
             }
         }
     }
@@ -1087,7 +1087,7 @@ public class Structures {
 
     }
 
-    private static boolean handleBooleanExpression(Expression expression) {
+    protected static boolean handleBooleanExpression(Expression expression) {
         if (expression.isBooleanLiteralExpr()) {
             return expression.asBooleanLiteralExpr().getValue();
         }
@@ -1096,12 +1096,21 @@ public class Structures {
         return false;
     }
 
-    private static String handleString(Object value) {
+    protected static Object handleExpression(Object object) {
+        if (object instanceof Node node) {
+            node = node.clone();
+            node.setParentNode(null);
+            return node;
+        }
+        return object;
+    }
+
+    protected static String handleString(Object value) {
         var val = (String) value;
         return StringUtils.isBlank(val) ? null : val;
     }
 
-    private static String handleClass(Object value) {
+    protected static String handleClass(Object value) {
         if (nonNull(value)) {
             var val = (Class) value;
             return void.class.equals(val) ? null : val.getCanonicalName();
