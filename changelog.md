@@ -1,4 +1,13 @@
 # Change Log
+**27-02-2024** ver. 1.2.11
+* Generator: The order of fields for compiled prototypes is now guaranteed.
+* Generator: Custom annotation properties now are initialized with clone of the original expression.
+* Projections: Added ability to create proxies with multiple interfaces.
+
+**27-02-2024** ver. 1.2.10
+* Generator: Fixed imports when generics and prototypes are involved.
+* Generator: Fixed handling of extended compiled prototypes.
+
 **25-02-2024** ver. 1.2.9
 * Annotation Processor: Added option to control destination of generated files.
 * Annotation Processor: Added support for annotation processor options.
