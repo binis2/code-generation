@@ -20,6 +20,8 @@ package net.binis.codegen.enrich.handler;
  * #L%
  */
 
+import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.EnumConstantDeclaration;
 import com.github.javaparser.ast.expr.*;
@@ -38,6 +40,7 @@ import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static com.github.javaparser.StaticJavaParser.parseName;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.loadClass;
 import static net.binis.codegen.tools.Tools.with;
@@ -71,11 +74,23 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
     protected void enrichField(PrototypeField field) {
         var getter = field.forceGenerateInterfaceGetter();
         if (nonNull(getter)) {
-            var ann = getter.addAndGetAnnotation("Schema");
-            ann.addPair("name", "\"" + field.getName() + "\"");
+            var ann = field.getDescription().getAnnotationByName("Schema")
+                    .map(AnnotationExpr::clone)
+                    .map(NormalAnnotationExpr.class::cast)
+                    .orElseGet(() -> new NormalAnnotationExpr(parseName("Schema"), new NodeList<>()));
+            getter.addAnnotation(ann);
 
-            field.getDescription().getAnnotationByName("ValidateNull").ifPresent(a ->
-                    ann.addPair("required", "true"));
+            field.getDeclaration().getAnnotationByName("Schema").ifPresent(Node::remove);
+
+            if (notPairExists(ann, "name")) {
+                ann.addPair("name", "\"" + field.getName() + "\"");
+            }
+
+            if (notPairExists(ann, "required")) {
+                field.getDescription().getAnnotationByName("ValidateNull").ifPresent(a ->
+                        ann.addPair("required", "true"));
+            }
+
             checkForDefaultValue(field, ann);
             checkForLength(field, ann);
             checkForRange(field, ann);
@@ -93,9 +108,13 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
                 });
             }
             if (field.isCollection()) {
-                var arrayAnn = getter.addAndGetAnnotation("ArraySchema");
+                var arrayAnn = field.getDescription().getAnnotationByName("ArraySchema")
+                        .map(NormalAnnotationExpr.class::cast)
+                        .orElseGet(() -> new NormalAnnotationExpr(parseName("ArraySchema"), new NodeList<>()));
                 getter.remove(ann);
-                arrayAnn.addPair("schema", ann);
+                if (notPairExists(arrayAnn, "schema")) {
+                    arrayAnn.addPair("schema", ann);
+                }
             }
         }
     }
@@ -103,20 +122,26 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
     protected <T> void generateEnumSchema(Stream<T> enumEntries, Function<T, String> getEnumName, NormalAnnotationExpr schemaAnnotation) {
         var exp = new ArrayInitializerExpr();
         enumEntries.forEach(e -> exp.getValues().add(new StringLiteralExpr(getEnumName.apply(e))));
-        schemaAnnotation.addPair("allowableValues", exp);
-        schemaAnnotation.addPair("type", new StringLiteralExpr("string"));
+        if (notPairExists(schemaAnnotation, "allowableValues")) {
+            schemaAnnotation.addPair("allowableValues", exp);
+        }
+        if (notPairExists(schemaAnnotation, "type")) {
+            schemaAnnotation.addPair("type", new StringLiteralExpr("string"));
+        }
     }
 
     protected void checkForDefaultValue(PrototypeField field, NormalAnnotationExpr ann) {
-        field.getDescription().getAnnotationByClass(Default.class).ifPresent(a -> {
-            if (a instanceof NormalAnnotationExpr expr) {
-                expr.getPairs().stream().filter(p -> p.getNameAsString().equals("value")).findFirst().ifPresent(p -> {
-                    ann.addPair("defaultValue", strip(p.getValue()));
-                });
-            } else if (a instanceof SingleMemberAnnotationExpr expr) {
+        if (notPairExists(ann, "defaultValue")) {
+            field.getDescription().getAnnotationByClass(Default.class).ifPresent(a -> {
+                if (a instanceof NormalAnnotationExpr expr) {
+                    expr.getPairs().stream().filter(p -> p.getNameAsString().equals("value")).findFirst().ifPresent(p -> {
+                        ann.addPair("defaultValue", strip(p.getValue()));
+                    });
+                } else if (a instanceof SingleMemberAnnotationExpr expr) {
                     ann.addPair("defaultValue", strip(expr.getMemberValue()));
-            }
-        });
+                }
+            });
+        }
     }
 
     protected void checkForRange(PrototypeField field, NormalAnnotationExpr ann) {
@@ -124,8 +149,16 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
             if (a instanceof NormalAnnotationExpr expr) {
                 for (var pair : expr.getPairs()) {
                     switch (pair.getNameAsString()) {
-                        case "max" -> ann.addPair("maximum", strip(pair.getValue()));
-                        case "min" -> ann.addPair("minimum", strip(pair.getValue()));
+                        case "max" -> {
+                            if (notPairExists(ann, "maximum")) {
+                                ann.addPair("maximum", strip(pair.getValue()));
+                            }
+                        }
+                        case "min" -> {
+                            if (notPairExists(ann, "minimum")) {
+                                ann.addPair("minimum", strip(pair.getValue()));
+                            }
+                        }
                     }
                 }
             }
@@ -137,12 +170,22 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
             if (a instanceof NormalAnnotationExpr expr) {
                 for (var pair : expr.getPairs()) {
                     switch (pair.getNameAsString()) {
-                        case "value", "max" -> ann.addPair("maxLength", pair.getValue());
-                        case "min" -> ann.addPair("minLength", pair.getValue());
+                        case "value", "max" -> {
+                            if (notPairExists(ann, "maxLength")) {
+                                ann.addPair("maxLength", pair.getValue());
+                            }
+                        }
+                        case "min" -> {
+                            if (notPairExists(ann, "minLength")) {
+                                ann.addPair("minLength", pair.getValue());
+                            }
+                        }
                     }
-                };
+                }
             } else if (a instanceof SingleMemberAnnotationExpr expr) {
-                ann.addPair("maxLength", expr.getMemberValue());
+                if (notPairExists(ann, "maxLength")) {
+                    ann.addPair("maxLength", expr.getMemberValue());
+                }
             }
         });
     }
@@ -153,6 +196,10 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
 
     protected StringLiteralExpr strip(Expression value) {
         return new StringLiteralExpr(StringUtils.strip(StringUtils.strip(value.toString(), "\""), "\\\""));
+    }
+
+    protected boolean notPairExists(NormalAnnotationExpr ann, String name) {
+        return ann.getPairs().stream().noneMatch(p -> p.getNameAsString().equals(name));
     }
 
 }
