@@ -1,5 +1,8 @@
 # Change Log
-**27-02-2024** ver. 1.2.11
+**19-03-2024** ver. 1.2.12
+* Generator: OpenAPIEnricher respects present @Schema annotations.
+
+**07-03-2024** ver. 1.2.11
 * Generator: The order of fields for compiled prototypes is now guaranteed.
 * Generator: Custom annotation properties now are initialized with clone of the original expression.
 * Projections: Added ability to create proxies with multiple interfaces.

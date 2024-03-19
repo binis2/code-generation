@@ -112,6 +112,7 @@ public class OpenApiEnricherHandler extends BaseEnricher implements OpenApiEnric
                         .map(NormalAnnotationExpr.class::cast)
                         .orElseGet(() -> new NormalAnnotationExpr(parseName("ArraySchema"), new NodeList<>()));
                 getter.remove(ann);
+                getter.addAnnotation(arrayAnn);
                 if (notPairExists(arrayAnn, "schema")) {
                     arrayAnn.addPair("schema", ann);
                 }
