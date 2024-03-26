@@ -12,7 +12,7 @@ public class TestAnnotationImpl implements TestAnnotation, Modifiable<TestAnnota
     protected String value;
 
     // region constructor & initializer
-    {
+    static {
         CodeFactory.registerType(TestAnnotation.class, TestAnnotationImpl::new, null);
     }
 

@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverviewCard.AccountOverviewCardPayload> implements AccountOverviewCard, Modifiable<AccountOverviewCard.Modify> {
 
     // region constructor & initializer
-    {
+    static {
         CodeFactory.registerType(AccountOverviewCard.class, AccountOverviewCardImpl::new, null);
     }
 
@@ -41,16 +41,16 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
             return AccountOverviewCardImpl.this;
         }
 
-        public AccountOverviewCard.Modify payload(AccountOverviewCard.AccountOverviewCardPayload payload) {
-            AccountOverviewCardImpl.this.payload = payload;
-            return this;
-        }
-
         public AccountOverviewCard.AccountOverviewCardPayload.EmbeddedSoloModify<AccountOverviewCard.Modify> payload() {
             if (AccountOverviewCardImpl.this.payload == null) {
                 AccountOverviewCardImpl.this.payload = CodeFactory.create(AccountOverviewCard.AccountOverviewCardPayload.class);
             }
             return CodeFactory.modify(this, AccountOverviewCardImpl.this.payload, AccountOverviewCard.AccountOverviewCardPayload.class);
+        }
+
+        public AccountOverviewCard.Modify payload(AccountOverviewCard.AccountOverviewCardPayload payload) {
+            AccountOverviewCardImpl.this.payload = payload;
+            return this;
         }
 
         public AccountOverviewCard.Modify payload$(Consumer<AccountOverviewCard.AccountOverviewCardPayload.Modify> init) {
@@ -91,7 +91,7 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
         protected int raised;
 
         // region constructor & initializer
-        {
+        static {
             CodeFactory.registerType(AccountOverviewCard.AccountOverviewCardPayload.class, AccountOverviewCardPayloadImpl::new, (p, v, r) -> ((AccountOverviewCardPayloadImpl) v).new AccountOverviewCardPayloadImplSoloModifyImpl(p));
         }
 

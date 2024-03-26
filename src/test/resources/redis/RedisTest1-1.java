@@ -22,12 +22,12 @@ public interface RedisTest {
 
     String key();
 
-    static RedisTest load(String key) {
-        return Redis.load(key, RedisTest.class);
-    }
-
     static RedisTest load() {
         return Redis.load(RedisTest.class);
+    }
+
+    static RedisTest load(String key) {
+        return Redis.load(key, RedisTest.class);
     }
 
     RedisTest.Modify with();
@@ -38,7 +38,7 @@ public interface RedisTest {
     }
 
     interface Modify extends RedisTest.Fields<RedisTest.Modify>, BaseModifier<RedisTest.Modify, RedisTest> {
-        Modify list(List<String> list);
         CodeList<String, RedisTest.Modify> list();
+        Modify list(List<String> list);
     }
 }

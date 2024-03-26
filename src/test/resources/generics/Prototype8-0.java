@@ -13,7 +13,7 @@ public class EnumUsingTestImpl implements EnumUsingTest, Modifiable<EnumUsingTes
     protected TestCompiledEnum type;
 
     // region constructor & initializer
-    {
+    static {
         CodeFactory.registerType(EnumUsingTest.class, EnumUsingTestImpl::new, null);
     }
 

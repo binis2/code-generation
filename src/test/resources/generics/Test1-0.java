@@ -13,7 +13,7 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
     protected DefaultPayload payload = null;
 
     // region constructor & initializer
-    {
+    static {
         CodeFactory.registerType(Test.class, TestImpl::new, null);
     }
 

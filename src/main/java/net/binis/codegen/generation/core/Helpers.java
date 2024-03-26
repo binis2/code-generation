@@ -61,7 +61,6 @@ import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.TypeVariable;
 import java.util.*;
@@ -915,9 +914,21 @@ public class Helpers {
         var result = memberIndex(m2) - memberIndex(m1);
         if (result == 0) {
             if (m1 instanceof NodeWithSimpleName m) {
-                return m.getNameAsString().compareTo(((NodeWithSimpleName) m2).getNameAsString());
+                result = m.getNameAsString().compareTo(((NodeWithSimpleName) m2).getNameAsString());
             } else if (m1 instanceof NodeWithVariables m) {
-                return m.getVariable(0).getNameAsString().compareTo(((NodeWithVariables) m2).getVariable(0).getNameAsString());
+                result = m.getVariable(0).getNameAsString().compareTo(((NodeWithVariables) m2).getVariable(0).getNameAsString());
+            }
+
+            if (result == 0 && m1 instanceof MethodDeclaration mtd1 && m2 instanceof MethodDeclaration mtd2) {
+                result = Integer.compare(mtd1.getParameters().size(), mtd2.getParameters().size());
+            }
+
+            if (result == 0 && m1 instanceof ConstructorDeclaration c1 && m2 instanceof ConstructorDeclaration c2) {
+                result = Integer.compare(c1.getParameters().size(), c2.getParameters().size());
+            }
+
+            if (result == 0) {
+                result = m1.toString().compareTo(m2.toString());
             }
         }
         return result;
@@ -1169,7 +1180,7 @@ public class Helpers {
     }
 
     public static BlockStmt getInitializer(ClassOrInterfaceDeclaration type) {
-        return type.getChildNodes().stream().filter(InitializerDeclaration.class::isInstance).map(n -> ((InitializerDeclaration) n).asInitializerDeclaration().getBody()).findFirst().orElseGet(type::addInitializer);
+        return type.getChildNodes().stream().filter(InitializerDeclaration.class::isInstance).map(n -> ((InitializerDeclaration) n).asInitializerDeclaration().getBody()).findFirst().orElseGet(type::addStaticInitializer);
     }
 
     public static boolean isJavaType(String type) {
@@ -1517,7 +1528,7 @@ public class Helpers {
             }
         }
 
-        return (String[]) Arrays.stream(method.getParameters()).map(Parameter::getName).toArray();
+        return (String[]) Arrays.stream(method.getParameters()).map(java.lang.reflect.Parameter::getName).toArray();
     }
 
     @SuppressWarnings("unchecked")

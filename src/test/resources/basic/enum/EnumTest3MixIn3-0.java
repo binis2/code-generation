@@ -24,7 +24,7 @@ public class UseEnumImpl implements UseEnum, Modifiable<UseEnum.Modify> {
 
     protected Test test;
 
-    {
+    static {
         CodeFactory.registerType(UseEnum.class, UseEnumImpl::new, null);
         CodeFactory.registerType(UseEnum.QueryName.class, UseEnumQueryNameImpl::new, null);
         CodeFactory.registerType(UseEnum.QuerySelect.class, UseEnumQueryExecutorImpl::new, null);
@@ -100,32 +100,32 @@ public class UseEnumImpl implements UseEnum, Modifiable<UseEnum.Modify> {
             return (QueryAggregateOperation) _aggregateStart(new UseEnumQueryOrderImpl(this, UseEnumQueryExecutorImpl.this::_aggregateIdentifier));
         }
 
-        public QuerySelectOperation mixIn(Test mixIn) {
-            return $identifier("mixIn", mixIn);
-        }
-
         public QueryFunctions mixIn() {
             return $identifier("mixIn");
         }
 
-        public QuerySelectOperation mixIn2(Test mixIn2) {
-            return $identifier("mixIn2", mixIn2);
+        public QuerySelectOperation mixIn(Test mixIn) {
+            return $identifier("mixIn", mixIn);
         }
 
         public QueryFunctions mixIn2() {
             return $identifier("mixIn2");
         }
 
+        public QuerySelectOperation mixIn2(Test mixIn2) {
+            return $identifier("mixIn2", mixIn2);
+        }
+
         public UseEnum.QueryOrder order() {
             return (UseEnum.QueryOrder) _orderStart(new UseEnumQueryOrderImpl(this, UseEnumQueryExecutorImpl.this::_orderIdentifier));
         }
 
-        public QuerySelectOperation test(Test test) {
-            return $identifier("test", test);
-        }
-
         public QueryFunctions test() {
             return $identifier("test");
+        }
+
+        public QuerySelectOperation test(Test test) {
+            return $identifier("test", test);
         }
 
         @Generated("QueryEnricher")

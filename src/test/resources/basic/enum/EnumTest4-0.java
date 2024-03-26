@@ -20,7 +20,7 @@ public class TestDataImpl implements TestData, Modifiable<TestData.Modify> {
 
     protected List<Test> tests;
 
-    {
+    static {
         CodeFactory.registerType(TestData.class, TestDataImpl::new, null);
         CodeFactory.registerType(TestData.QueryName.class, TestDataQueryNameImpl::new, null);
         CodeFactory.registerType(TestData.QuerySelect.class, TestDataQueryExecutorImpl::new, null);

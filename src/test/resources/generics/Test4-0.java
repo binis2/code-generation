@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverviewCardPayload> implements AccountOverviewCard, Modifiable<AccountOverviewCard.Modify> {
 
     // region constructor & initializer
-    {
+    static {
         CodeFactory.registerType(AccountOverviewCard.class, AccountOverviewCardImpl::new, null);
     }
 
@@ -41,16 +41,16 @@ public class AccountOverviewCardImpl extends CompiledGenericImpl<AccountOverview
             return AccountOverviewCardImpl.this;
         }
 
-        public AccountOverviewCard.Modify payload(AccountOverviewCardPayload payload) {
-            AccountOverviewCardImpl.this.payload = payload;
-            return this;
-        }
-
         public AccountOverviewCardPayload.EmbeddedSoloModify<AccountOverviewCard.Modify> payload() {
             if (AccountOverviewCardImpl.this.payload == null) {
                 AccountOverviewCardImpl.this.payload = CodeFactory.create(AccountOverviewCardPayload.class);
             }
             return CodeFactory.modify(this, AccountOverviewCardImpl.this.payload, AccountOverviewCardPayload.class);
+        }
+
+        public AccountOverviewCard.Modify payload(AccountOverviewCardPayload payload) {
+            AccountOverviewCardImpl.this.payload = payload;
+            return this;
         }
 
         public AccountOverviewCard.Modify payload$(Consumer<AccountOverviewCardPayload.Modify> init) {

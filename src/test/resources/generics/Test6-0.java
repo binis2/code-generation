@@ -14,7 +14,7 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
     protected Double payload;
 
     // region constructor & initializer
-    {
+    static {
         CodeFactory.registerType(Test.class, TestImpl::new, null);
     }
 

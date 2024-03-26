@@ -9,7 +9,7 @@ public class TestImpl extends BaseImpl implements Test {
 
     protected String title;
 
-    {
+    static {
         CodeFactory.registerType(Test.class, TestImpl::new, null);
     }
 

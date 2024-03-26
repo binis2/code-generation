@@ -10,7 +10,7 @@ import javax.annotation.processing.Generated;
 public class TestImpl extends GenericImpl<TestPayload> implements Test, Modifiable<Test.Modify> {
 
     // region constructor & initializer
-    {
+    static {
         CodeFactory.registerType(Test.class, TestImpl::new, null);
     }
 

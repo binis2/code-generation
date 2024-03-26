@@ -31,7 +31,7 @@ public class PresetTestImpl implements PresetTest {
     protected String type;
 
     // region constructor & initializer
-    {
+    static {
         CodeFactory.registerType(PresetTest.class, PresetTestImpl::new, null);
         CodeFactory.registerType(PresetTest.QueryName.class, PresetTestQueryNameImpl::new, null);
         CodeFactory.registerType(PresetTest.QuerySelect.class, PresetTestSelectQueryExecutorImpl::new, null);
@@ -149,12 +149,12 @@ public class PresetTestImpl implements PresetTest {
             return (QueryAggregateOperation) _aggregateStart(new PresetTestQueryOrderImpl(this, PresetTestQueryExecutorImpl.this::_aggregateIdentifier));
         }
 
-        public QuerySelectOperation data(int data) {
-            return $identifier("data", data);
-        }
-
         public QueryFunctions data() {
             return $identifier("data");
+        }
+
+        public QuerySelectOperation data(int data) {
+            return $identifier("data", data);
         }
 
         public QueryCollectionFunctions list_() {
@@ -169,28 +169,28 @@ public class PresetTestImpl implements PresetTest {
             return $identifier("parent", parent);
         }
 
-        public QuerySelectOperation test(boolean test) {
-            return $identifier("test", test);
-        }
-
         public QueryFunctions test() {
             return $identifier("test");
         }
 
-        public QuerySelectOperation title(String title) {
-            return $identifier("title", title);
+        public QuerySelectOperation test(boolean test) {
+            return $identifier("test", test);
         }
 
         public QueryFunctions title() {
             return $identifier("title");
         }
 
-        public QuerySelectOperation type(String type) {
-            return $identifier("type", type);
+        public QuerySelectOperation title(String title) {
+            return $identifier("title", title);
         }
 
         public QueryFunctions type() {
             return $identifier("type");
+        }
+
+        public QuerySelectOperation type(String type) {
+            return $identifier("type", type);
         }
 
         @Generated("QueryEnricher")

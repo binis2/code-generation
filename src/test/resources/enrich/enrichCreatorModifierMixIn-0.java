@@ -14,7 +14,7 @@ public class TestImpl implements Test, MixIn, Modifiable<Test.Modify> {
     protected String title;
 
     // region constructor & initializer
-    {
+    static {
         CodeFactory.registerType(Test.class, TestImpl::new, null);
         CodeFactory.registerType(MixIn.class, TestImpl::new, null);
     }

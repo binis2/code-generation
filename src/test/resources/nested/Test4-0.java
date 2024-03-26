@@ -21,7 +21,7 @@ public class CodeJacksonTestCollectionImpl implements CodeJacksonTestCollection 
 
     protected Set<CodeJacksonTestCollection.Item> set;
 
-    {
+    static {
         CodeFactory.registerType(CodeJacksonTestCollection.class, CodeJacksonTestCollectionImpl::new, null);
     }
 
@@ -72,7 +72,7 @@ public class CodeJacksonTestCollectionImpl implements CodeJacksonTestCollection 
 
         protected String value;
 
-        {
+        static {
             CodeFactory.registerType(CodeJacksonTestCollection.Item.class, ItemImpl::new, null);
         }
 

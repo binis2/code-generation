@@ -12,7 +12,7 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
     protected String title;
 
     // region constructor & initializer
-    {
+    static {
         CodeFactory.registerType(Test.class, TestImpl::new, null);
     }
 

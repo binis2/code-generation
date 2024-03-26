@@ -17,7 +17,7 @@ public class TestRequestImpl implements TestRequest {
     protected String value;
 
     // region constructor & initializer
-    {
+    static {
         CodeFactory.registerType(TestRequest.class, TestRequestImpl::new, null);
     }
 
@@ -49,7 +49,7 @@ public class TestRequestImpl implements TestRequest {
         protected String value;
 
         // region constructor & initializer
-        {
+        static {
             CodeFactory.registerType(TestRequest.SubRequest.class, SubRequestImpl::new, null);
         }
 

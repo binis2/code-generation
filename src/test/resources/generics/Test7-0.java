@@ -15,7 +15,7 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
     protected Test payload;
 
     // region constructor & initializer
-    {
+    static {
         CodeFactory.registerType(Test.class, TestImpl::new, (p, v, r) -> ((TestImpl) v).new TestImplSoloModifyImpl(p));
     }
 
@@ -51,16 +51,16 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
             return (T) this;
         }
 
-        public T payload(Test payload) {
-            TestImpl.this.payload = payload;
-            return (T) this;
-        }
-
         public Test.EmbeddedSoloModify<Test.EmbeddedModify<T, R>> payload() {
             if (TestImpl.this.payload == null) {
                 TestImpl.this.payload = CodeFactory.create(Test.class);
             }
             return CodeFactory.modify(this, TestImpl.this.payload, Test.class);
+        }
+
+        public T payload(Test payload) {
+            TestImpl.this.payload = payload;
+            return (T) this;
         }
     }
 
