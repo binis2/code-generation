@@ -1,4 +1,9 @@
 # Change Log
+**27-03-2024** ver. 1.2.13
+* Generator: Made generated initializers static.
+* Generator: The order of constructors and generated methods is guaranteed.
+* Test: CodeGenMock registers entity manager in CodeFactory.
+
 **19-03-2024** ver. 1.2.12
 * Generator: OpenAPIEnricher respects present @Schema annotations.
 
