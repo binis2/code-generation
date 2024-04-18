@@ -1,4 +1,8 @@
 # Change Log
+**18-04-2024** ver. 1.2.14
+* Projections: Fixed interaction between generic and non-generic custom projections.
+* All: Updated dependencies.
+
 **27-03-2024** ver. 1.2.13
 * Generator: Made generated initializers static.
 * Generator: The order of constructors and generated methods is guaranteed.
