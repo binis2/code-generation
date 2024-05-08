@@ -1,4 +1,7 @@
 # Change Log
+**08-05-2024** ver. 1.2.15
+* Core: All CodeFactory internal collections are now thread-safe.
+
 **18-04-2024** ver. 1.2.14
 * Projections: Fixed interaction between generic and non-generic custom projections.
 * All: Updated dependencies.
