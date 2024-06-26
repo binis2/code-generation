@@ -691,7 +691,7 @@ public class Generator {
         var method = declaration.clone().removeModifier(DEFAULT);
         envelopWithDummyClass(method, declaration);
         method.getAnnotationByClass(Ignore.class).ifPresent(method::remove);
-        if (!ignores.isForInterface()) {
+        if (!ignores.isForInterface() && !method.getNameAsString().equals("_equals") && !method.getNameAsString().equals("_hashCode") ) {
             if (ignores.isForClass()) {
                 declaration.getBody().ifPresent(b -> {
                     var body = b.clone();
@@ -705,12 +705,22 @@ public class Generator {
                     intf.getChildNodes().stream().filter(MethodDeclaration.class::isInstance).map(MethodDeclaration.class::cast).filter(m -> m.getNameAsString().equals(method.getNameAsString())).findFirst().ifPresent(intf::remove);
                 }
 
-                intf.addMember(handleForAnnotations(unit, method.clone(), false).setBody(null));
+                var m = method.clone().setBody(null);
+                intf.addMember(handleForAnnotations(unit, m, false));
+                m.setType(handleType(declaration, intf, method.getType()));
+                m.getParameters().forEach(param -> param.setType(handleType(declaration, intf, param.getType())));
             }
         }
 
         if (!ignores.isForClass()) {
+            var name = method.getNameAsString();
+            if (name.equals("_equals") || name.equals("_hashCode")) {
+                method.setName(name.substring(1, name.length()));
+            }
             method.addModifier(PUBLIC);
+
+            method.setType(handleType(declaration, spec, method.getType()));
+            method.getParameters().forEach(param -> param.setType(handleType(declaration, intf, param.getType())));
 
             var ann = declaration.getAnnotationByClass(CodeImplementation.class);
             if (ann.isPresent()) {
@@ -826,7 +836,18 @@ public class Generator {
                             method.setName(getter);
                         }
                     }
+                } else if (n instanceof MethodReferenceExpr ref) {
+                    Tools.with(lookup.findParsed(getExternalClassName(declaration, ref.getScope().toString())), parsed ->
+                            parsed.findField(ref.getIdentifier()).ifPresent(field -> {
+                                ref.setIdentifier(getGetterName(field.getName(), field.getType()));
+                            }));
+                } else if (n instanceof ClassOrInterfaceType type) {
+                    Tools.with(lookup.findParsed(getExternalClassName(declaration, type.toString())), parsed -> {
+                        type.setName(parsed.getInterfaceName());
+                        addImport(type, parsed.getInterfaceFullName());
+                    });
                 }
+
                 if (handleDefaultMethodBody(parse, n, isGetter, declaration)) {
                     handleDefaultMethodBody(parse, node, isGetter, declaration);
                 }
@@ -1491,7 +1512,8 @@ public class Generator {
         if (type.isClassOrInterfaceType()) {
             var generic = handleGenericTypes(source, destination, type.asClassOrInterfaceType(), prototypeMap);
             if (!isEmpty(generic)) {
-                result = type.asClassOrInterfaceType().getNameWithScope() + "<" + String.join(",", generic) + ">";
+                result = type.asClassOrInterfaceType().getNameWithScope() + "<" + String.join(",", generic.stream().map(t ->
+                        handleType(source, destination, new ClassOrInterfaceType(null, t))).toList()) + ">";
             }
         }
 
@@ -1800,6 +1822,10 @@ public class Generator {
                     nullCheck(getExternalClassNameIfExists(spec, field.getElementType().asString()),
                             getExternalClassNameIfExists(unit, field.getElementType().asString())));
 
+            if (method.getType().isArrayType()) {
+                fullType = fullType + "[]";
+            }
+
             result = Structures.FieldData.builder()
                     .parsed(parsed)
                     .name(fieldName)
@@ -1813,7 +1839,7 @@ public class Generator {
                     .prototype(collection ? prototypeMap.get(CollectionsHandler.getCollectionType(method.getType())) :
                             (isNull(generic) ? proto : null))
                     .typePrototypes(!prototypeMap.isEmpty() ? prototypeMap : null)
-                    .type(field.getElementType())
+                    .type(field.getCommonType())
                     .fullType(fullType)
                     .parent(nonNull(parent) ? parent : nonNull(parsed.getBase()) ? findField(parsed.getBase(), fieldName) : null)
                     .build();

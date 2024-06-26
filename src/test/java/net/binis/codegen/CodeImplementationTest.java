@@ -21,7 +21,10 @@ package net.binis.codegen;
  */
 
 import net.binis.codegen.test.BaseCodeGenTest;
+import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 class CodeImplementationTest extends BaseCodeGenTest {
 
@@ -39,6 +42,14 @@ class CodeImplementationTest extends BaseCodeGenTest {
     void testChangeImplementationNormalExpr() {
         testSingle("basic/CodeImplementation3.java", "basic/CodeImplementation2-0.java", "basic/CodeImplementation2-1.java");
     }
+
+    @Test
+    void testReferencePrototypes() {
+        testMulti(List.of(
+                Triple.of("basic/Test1.java", "basic/Test1-0.java", "basic/Test1-1.java"),
+                Triple.of("basic/CodeImplementation4.java", "basic/CodeImplementation4-0.java", "basic/CodeImplementation4-1.java")));
+    }
+
 
 
 }

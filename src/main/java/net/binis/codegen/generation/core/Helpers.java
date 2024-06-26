@@ -212,6 +212,9 @@ public class Helpers {
     }
 
     public static String getExternalClassName(Node node, String type) {
+        if (type.endsWith("[]")) {
+            type = type.substring(0, type.length() - 2);
+        }
         var unit = node.findCompilationUnit().orElseThrow(() ->
                 new GenericCodeGenException("Node is not part of unit!"));
         if (nonNull(lookup.findParsed(type))) {
@@ -1184,6 +1187,9 @@ public class Helpers {
     }
 
     public static boolean isJavaType(String type) {
+        if (type.endsWith("[]")) {
+            type = type.substring(0, type.length() - 2);
+        }
         return nonNull(type) && primitiveTypes.contains(type) || classExists("java.lang." + type);
     }
 
@@ -1235,24 +1241,28 @@ public class Helpers {
     }
 
     public static void importType(Type type, Node destination) {
+        if (type.isArrayType()) {
+            type = type.asArrayType().getComponentType();
+        }
         if (!type.isPrimitiveType()) {
-            destination.findCompilationUnit().ifPresent(unit -> {
-                type.findCompilationUnit().ifPresent(dest -> {
-                    var full = getExternalClassName(unit, type.asString());
+            var t = type;
+            destination.findCompilationUnit().ifPresent(unit ->
+                t.findCompilationUnit().ifPresent(dest -> {
+                    var full = getExternalClassName(unit, t.asString());
 
                     if (nonNull(full)) {
                         dest.addImport(full);
                     }
-                });
-            });
+                }));
         }
     }
 
     public static boolean importType(PrototypeField field, Node destination) {
         if (nonNull(field.getFullType())) {
-            if (!isPrimitiveType(field.getFullType())) {
+            var type = field.getFullType().endsWith("[]") ? field.getFullType().substring(0, field.getFullType().length() - 2) : field.getFullType();
+            if (!isPrimitiveType(type)) {
                 destination.findCompilationUnit().ifPresent(unit -> {
-                    unit.addImport(field.getFullType());
+                    unit.addImport(type);
                     if (nonNull(field.getGenerics())) {
                         field.getGenerics().values().forEach(t -> importType(t, unit));
                     }

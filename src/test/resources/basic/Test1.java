@@ -8,4 +8,6 @@ public interface TestPrototype {
 
     @DefaultString("asd")
     String title();
+
+    byte[] data();
 }
