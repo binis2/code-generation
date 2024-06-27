@@ -9,9 +9,9 @@ package net.binis.codegen.javaparser;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,6 +38,7 @@ import com.github.javaparser.printer.configuration.ConfigurationOption;
 import com.github.javaparser.printer.configuration.DefaultConfigurationOption;
 import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration.ConfigOption;
 import com.github.javaparser.printer.configuration.PrinterConfiguration;
+import com.github.javaparser.utils.Utils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -158,30 +159,35 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
         }
     }
 
-    protected void printArguments(final NodeList<Expression> args, final Void arg) {
-        printer.print("(");
-        if (!isNullOrEmpty(args)) {
-            boolean columnAlignParameters = (args.size() > 1) && getOption(ConfigOption.COLUMN_ALIGN_PARAMETERS).isPresent();
+    protected <T extends Expression> void printArguments(final NodeList<T> args, final Void arg) {
+        this.printer.print("(");
+        if (!Utils.isNullOrEmpty(args)) {
+            boolean columnAlignParameters = args.size() > 1 && this.getOption(ConfigOption.COLUMN_ALIGN_PARAMETERS).isPresent();
             if (columnAlignParameters) {
-                printer.indentWithAlignTo(printer.getCursor().column);
+                this.printer.indentWithAlignTo(this.printer.getCursor().column);
             }
-            for (final Iterator<Expression> i = args.iterator(); i.hasNext(); ) {
-                final Expression e = i.next();
+
+            Iterator<T> i = args.iterator();
+
+            while (i.hasNext()) {
+                T e = i.next();
                 e.accept(this, arg);
                 if (i.hasNext()) {
-                    printer.print(",");
+                    this.printer.print(",");
                     if (columnAlignParameters) {
-                        printer.println();
+                        this.printer.println();
                     } else {
-                        printer.print(" ");
+                        this.printer.print(" ");
                     }
                 }
             }
+
             if (columnAlignParameters) {
-                printer.unindent();
+                this.printer.unindent();
             }
         }
-        printer.print(")");
+
+        this.printer.print(")");
     }
 
     protected void printPrePostFixOptionalList(final NodeList<? extends Visitable> args, final Void arg, String prefix, String separator, String postfix) {
@@ -776,13 +782,6 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
             printer.print(" ");
             n.getName().get().accept(this, arg);
         }
-    }
-
-    @Override
-    public void visit(final PatternExpr n, final Void arg) {
-        n.getType().accept(this, arg);
-        printer.print(" ");
-        n.getName().accept(this, arg);
     }
 
     @Override

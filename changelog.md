@@ -1,4 +1,10 @@
 # Change Log
+**27-06-2024** ver. 1.2.16
+* Generator: Fixed handling of array types.
+* Generator: Fixed usage of prototypes in default prototype methods.
+* Generator: Added ability to define equals and hashCode functions via prototypes.
+* All: Updated dependencies.
+
 **08-05-2024** ver. 1.2.15
 * Core: All CodeFactory internal collections are now thread-safe.
 
