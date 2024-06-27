@@ -1187,10 +1187,10 @@ public class Helpers {
     }
 
     public static boolean isJavaType(String type) {
-        if (type.endsWith("[]")) {
+        if (nonNull(type) && type.endsWith("[]")) {
             type = type.substring(0, type.length() - 2);
         }
-        return nonNull(type) && primitiveTypes.contains(type) || classExists("java.lang." + type);
+        return nonNull(type) && (primitiveTypes.contains(type) || type.equals("?") || classExists("java.lang." + type));
     }
 
     public static String getJavaType(String type) {

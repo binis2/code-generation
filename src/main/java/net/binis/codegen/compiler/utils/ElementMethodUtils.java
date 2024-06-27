@@ -26,6 +26,9 @@ import net.binis.codegen.compiler.*;
 import javax.lang.model.element.Element;
 import java.util.List;
 
+import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.Helpers.lookup;
+
 @Slf4j
 public class ElementMethodUtils extends ElementUtils {
 
@@ -125,8 +128,15 @@ public class ElementMethodUtils extends ElementUtils {
                         if (!(list.get(i).endsWith("." + params.get(i).getVariableType()) || params.get(i).getFullVariableType().equals(list.get(i)))) {
                             return false;
                         }
-                    } else if (!params.get(i).getFullVariableType().equals(list.get(i))) {
-                        return false;
+                    } else {
+                        var parsed = lookup.findParsed(params.get(i).getFullVariableType());
+                        if (nonNull(parsed)) {
+                            if (!parsed.getInterfaceFullName().equals(list.get(i))) {
+                                return false;
+                            }
+                        } else if (!params.get(i).getFullVariableType().equals(list.get(i))) {
+                            return false;
+                        }
                     }
                 }
                 return true;

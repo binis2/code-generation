@@ -720,7 +720,7 @@ public class Generator {
             method.addModifier(PUBLIC);
 
             method.setType(handleType(declaration, spec, method.getType()));
-            method.getParameters().forEach(param -> param.setType(handleType(declaration, intf, param.getType())));
+            method.getParameters().forEach(param -> param.setType(handleType(declaration, method, param.getType())));
 
             var ann = declaration.getAnnotationByClass(CodeImplementation.class);
             if (ann.isPresent()) {
@@ -771,7 +771,7 @@ public class Generator {
                     .filter(e -> e.getSimpleName().toString().equals(method.getNameAsString()))
                     .filter(e ->
                             ElementMethodUtils.paramsMatch(e, method.getParameters().stream().map(p ->
-                                    getExternalClassName(original, p.getType().asString())).toList()))
+                                    getExternalClassName(method, p.getType().asString())).toList()))
                     .findFirst()
                     .ifPresent(e ->
                             //TODO: Handle imports
@@ -1513,7 +1513,7 @@ public class Generator {
             var generic = handleGenericTypes(source, destination, type.asClassOrInterfaceType(), prototypeMap);
             if (!isEmpty(generic)) {
                 result = type.asClassOrInterfaceType().getNameWithScope() + "<" + String.join(",", generic.stream().map(t ->
-                        handleType(source, destination, new ClassOrInterfaceType(null, t))).toList()) + ">";
+                        t.startsWith("?") ? t : handleType(source, destination, new ClassOrInterfaceType(null, t))).toList()) + ">";
             }
         }
 
@@ -1582,7 +1582,7 @@ public class Generator {
                 if (handleCompiledPrototype(full)) {
                     return handleType(source, destination, type, embedded, prototypeMap);
                 } else {
-                    if (!full.contains(".prototype.") && !full.startsWith("dummy.")) { //TODO: Better way to hanle prototype self references
+                    if (!full.contains(".prototype.") && !full.startsWith("dummy.") && isNull(getExternalClassNameIfExists(destination, type))) { //TODO: Better way to hanle prototype self references
                         destination.findCompilationUnit().ifPresent(u -> importType(u, full));
                     }
                 }
