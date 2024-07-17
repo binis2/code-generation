@@ -1,4 +1,8 @@
 # Change Log
+**16-07-2024** ver. 1.2.17
+* Generator: Added helper routines to add multiple imports with one function call.
+* Generator: @Ignores(forSerialization = true) makes the field transient.
+
 **27-06-2024** ver. 1.2.16
 * Generator: Fixed handling of array types.
 * Generator: Fixed usage of prototypes in default prototype methods.
