@@ -83,6 +83,11 @@ class BasicsTest extends BaseCodeGenTest {
         testSingleSkip("basic/TestDefault2.java", "basic/TestDefault2-0.java", "basic/TestDefault2-1.java", true, true);
     }
 
+    @Test
+    void testTransient() {
+        testSingle("base/baseIgnore1.java", "base/baseIgnore1-0.java", "base/baseIgnore1-1.java");
+    }
+
     public interface TestTitle {
         String getTitle();
     }

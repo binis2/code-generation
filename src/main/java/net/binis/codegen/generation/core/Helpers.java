@@ -775,6 +775,7 @@ public class Helpers {
                                     case "forMapper" -> result.forMapper(pair.getValue().asBooleanLiteralExpr().getValue());
                                     case "forProjection" -> result.forProjection(pair.getValue().asBooleanLiteralExpr().getValue());
                                     case "forToString" -> result.forToString(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forSerialization" -> result.forSerialization(pair.getValue().asBooleanLiteralExpr().getValue());
                                     default -> {
                                         //Do nothing
                                     }
@@ -795,6 +796,7 @@ public class Helpers {
                                     case "forMapper" -> result.includedForMapper(pair.getValue().asBooleanLiteralExpr().getValue());
                                     case "forProjection" -> result.includedForProjection(pair.getValue().asBooleanLiteralExpr().getValue());
                                     case "forToString" -> result.includedForToString(pair.getValue().asBooleanLiteralExpr().getValue());
+
                                     default -> {
                                         //Do nothing
                                     }
@@ -1683,13 +1685,27 @@ public class Helpers {
     }
 
     public static void addImport(Node node, String imprt) {
-        if (!imprt.startsWith("dummy.") && !isPrimitiveType(imprt)) {
-            node.findCompilationUnit().ifPresent(unit -> unit.addImport(imprt));
-        }
+        addImports(node, imprt);
     }
 
     public static void addImport(Node node, Class cls) {
-        addImport(node, cls.getCanonicalName());
+        addImports(node, cls.getCanonicalName());
+    }
+
+    public static void addImports(Node node, String... imprts) {
+        node.findCompilationUnit().ifPresent(unit -> {
+            for (var imprt : imprts) {
+                if (!imprt.startsWith("dummy.") && !isPrimitiveType(imprt)) {
+                    unit.addImport(imprt);
+                }
+            }
+        });
+    }
+
+    public static void addImports(Node node, Class... classes) {
+        for (var cls : classes) {
+            addImport(node, cls.getCanonicalName());
+        }
     }
 
     public static PrototypeField getFieldParent(PrototypeField parent) {

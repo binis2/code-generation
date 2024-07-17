@@ -74,7 +74,6 @@ import java.util.function.UnaryOperator;
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static net.binis.codegen.generation.core.CollectionsHandler.isCollection;
 import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledEnumPrototype;
 import static net.binis.codegen.generation.core.CompiledPrototypesHandler.handleCompiledPrototype;
 import static net.binis.codegen.generation.core.EnrichHelpers.*;
@@ -1824,6 +1823,10 @@ public class Generator {
 
             if (method.getType().isArrayType()) {
                 fullType = fullType + "[]";
+            }
+
+            if (ignores.isForSerialization()) {
+                field.setTransient(true);
             }
 
             result = Structures.FieldData.builder()

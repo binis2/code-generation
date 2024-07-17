@@ -698,6 +698,8 @@ public class Structures {
         protected boolean forProjection;
         protected boolean forToString;
 
+        protected boolean forSerialization;
+
         protected boolean includedForField;
         protected boolean includedForClass;
         protected boolean includedForInterface;
