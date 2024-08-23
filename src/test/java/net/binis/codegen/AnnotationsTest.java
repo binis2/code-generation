@@ -22,7 +22,10 @@ package net.binis.codegen;
 
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.test.BaseCodeGenTest;
+import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 @Slf4j
 class AnnotationsTest extends BaseCodeGenTest {
@@ -41,5 +44,13 @@ class AnnotationsTest extends BaseCodeGenTest {
     void testForDefaultMethod() {
         testSingle("annotation/testForDefault1.java", null, "annotation/testForDefault1-1.java");
     }
+
+    @Test
+    void testInheritedFieldAnnotation() {
+        testMulti(List.of(
+                Triple.of("annotation/testInherit1.java", null, "annotation/testInherit1-1.java"),
+                Triple.of("annotation/testField1.java", "annotation/testField1-0.java", "annotation/testField1-1.java")));
+    }
+
 
 }

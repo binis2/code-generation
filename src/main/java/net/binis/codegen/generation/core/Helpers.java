@@ -65,6 +65,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.TypeVariable;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
@@ -1778,6 +1779,25 @@ public class Helpers {
 
     public static ClassOrInterfaceType buildType(Class<?> cls) {
         return new ClassOrInterfaceType(new ClassOrInterfaceType(null, cls.getPackageName()), cls.getSimpleName());
+    }
+
+    public static void handleAnnotationIgnores(NodeWithAnnotations node, Structures.Ignores ignores) {
+        handleAnnotationIgnores(() -> node, ignores);
+    }
+
+    public static void handleAnnotationIgnores(Supplier<NodeWithAnnotations> node, Structures.Ignores ignores) {
+        if (ignores.isForSerialization() || ignores.isForMapper() || ignores.isForProjection()) {
+            var ann = node.get().addAndGetAnnotation(Ignore.class);
+            if (ignores.isForSerialization()) {
+                ann.addPair("forSerialization", "true");
+            }
+            if (ignores.isForMapper()) {
+                ann.addPair("forMapper", "true");
+            }
+            if (ignores.isForProjection()) {
+                ann.addPair("forProjection", "true");
+            }
+        }
     }
 
 }

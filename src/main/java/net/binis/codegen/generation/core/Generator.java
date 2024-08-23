@@ -51,7 +51,6 @@ import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.interfaces.PrototypeData;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
-import net.binis.codegen.map.annotation.CodeMapping;
 import net.binis.codegen.objects.Pair;
 import net.binis.codegen.options.CodeOption;
 import net.binis.codegen.tools.Holder;
@@ -71,6 +70,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
+import static com.github.javaparser.StaticJavaParser.parseName;
 import static com.github.javaparser.ast.Modifier.Keyword.*;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -1596,52 +1596,43 @@ public class Generator {
                 Tools.with(getExternalClassName(unit, an.getNameAsString()), name -> {
                     var ann = loadClass(name);
                     if (nonNull(ann)) {
-                        AnnotationExpr a;
-                        if (Ignore.class.equals(ann) && proto.getIgnores().isForMapper()) {
-                            ann = (Class) CodeMapping.class;
-                            a = new NormalAnnotationExpr().setName(new Name(CodeMapping.class.getSimpleName()));
-                            a.asNormalAnnotationExpr().addPair("ignore", new BooleanLiteralExpr(true));
-                        } else {
-                            a = an;
-                        }
-                        if (CodeMapping.class.equals(ann)) {
-                            handleAnnotation(unit, proto.generateInterfaceGetter(), a);
-                            handleAnnotation(unit, proto.generateGetter(), a);
-                            handleAnnotation(unit, field, a);
-                        } else if (ForInterface.class.equals(ann)) {
+                        if (ForInterface.class.equals(ann)) {
                             next.set(true);
                             return;
                         } else if (isNull(ann.getAnnotation(CodeAnnotation.class)) && isNull(ann.getAnnotation(CodePrototypeTemplate.class))) {
                             var target = ann.getAnnotation(Target.class);
                             if (next.get()) {
                                 if (target == null || target.toString().contains("METHOD")) {
-                                    handleAnnotation(unit, proto.generateInterfaceGetter(), a);
+                                    handleAnnotation(unit, proto.generateInterfaceGetter(), an);
                                 }
                             } else {
                                 if (target == null || target.toString().contains("FIELD")) {
-                                    handleAnnotation(unit, field, a);
+                                    handleAnnotation(unit, field, an);
                                 }
                             }
                         } else {
                             if (CodeFieldAnnotations.class.isAssignableFrom(ann)) {
-                                a.getChildNodes().stream().filter(ArrayInitializerExpr.class::isInstance).findFirst().ifPresent(e ->
-                                        e.getChildNodes().forEach(n ->
-                                                field.addAnnotation(((StringLiteralExpr) n).asStringLiteralExpr().asString())));
+                                an.getChildNodes().stream().filter(ArrayInitializerExpr.class::isInstance).findFirst().ifPresent(e ->
+                                        e.getChildNodes().stream().filter(StringLiteralExpr.class::isInstance).map(StringLiteralExpr.class::cast).forEach(n ->
+                                                handleMissingAnnotation(unit, field, new NormalAnnotationExpr().setName(parseName(n.asString())), true)));
+                                an.getChildNodes().stream().filter(StringLiteralExpr.class::isInstance).map(StringLiteralExpr.class::cast).findFirst().ifPresent(e ->
+                                        handleMissingAnnotation(unit, field, new NormalAnnotationExpr().setName(parseName(e.asString())), true));
+
                             } else if (Default.class.isAssignableFrom(ann)) {
-                                if (a.isSingleMemberAnnotationExpr()) {
-                                    field.getVariables().iterator().next().setInitializer(a.asSingleMemberAnnotationExpr().getMemberValue().asStringLiteralExpr().asString());
-                                } else if (a.isNormalAnnotationExpr()) {
-                                    a.asNormalAnnotationExpr().getPairs().forEach(p -> {
+                                if (an.isSingleMemberAnnotationExpr()) {
+                                    field.getVariables().iterator().next().setInitializer(an.asSingleMemberAnnotationExpr().getMemberValue().asStringLiteralExpr().asString());
+                                } else if (an.isNormalAnnotationExpr()) {
+                                    an.asNormalAnnotationExpr().getPairs().forEach(p -> {
                                         if (VALUE.equals(p.getName().asString())) {
                                             field.getVariables().iterator().next().setInitializer(p.getValue().asStringLiteralExpr().asString());
                                         }
                                     });
                                 }
                             } else if (DefaultString.class.isAssignableFrom(ann)) {
-                                if (a.isSingleMemberAnnotationExpr()) {
-                                    field.getVariables().iterator().next().setInitializer("\"" + a.asSingleMemberAnnotationExpr().getMemberValue().asStringLiteralExpr().asString() + "\"");
-                                } else if (a.isNormalAnnotationExpr()) {
-                                    a.asNormalAnnotationExpr().getPairs().forEach(p -> {
+                                if (an.isSingleMemberAnnotationExpr()) {
+                                    field.getVariables().iterator().next().setInitializer("\"" + an.asSingleMemberAnnotationExpr().getMemberValue().asStringLiteralExpr().asString() + "\"");
+                                } else if (an.isNormalAnnotationExpr()) {
+                                    an.asNormalAnnotationExpr().getPairs().forEach(p -> {
                                         if (VALUE.equals(p.getName().asString())) {
                                             field.getVariables().iterator().next().setInitializer("\"" + p.getValue().asStringLiteralExpr().asString() + "\"");
                                         }
@@ -1684,7 +1675,7 @@ public class Generator {
         );
     }
 
-    private static void handleAnnotation(CompilationUnit unit, BodyDeclaration<?> body, AnnotationExpr ann) {
+    protected static void handleAnnotation(CompilationUnit unit, BodyDeclaration<?> body, AnnotationExpr ann) {
         body.getAnnotations().stream().filter(a -> a.getNameAsString().equals(ann.getNameAsString())).findFirst().ifPresent(a ->
                 body.getAnnotations().remove(a));
         body.addAnnotation(ann.clone());
@@ -1694,13 +1685,27 @@ public class Generator {
 
     }
 
-    private static void handleMissingAnnotation(CompilationUnit unit, BodyDeclaration<?> body, AnnotationExpr ann) {
+    protected static void handleMissingAnnotation(CompilationUnit unit, BodyDeclaration<?> body, AnnotationExpr ann) {
+        handleMissingAnnotation(unit, body, ann, false);
+    }
+
+    protected static void handleMissingAnnotation(CompilationUnit unit, BodyDeclaration<?> body, AnnotationExpr ann, boolean loadable) {
         var existing = body.getAnnotations().stream().filter(a -> a.getNameAsString().equals(ann.getNameAsString())).findFirst();
         if (existing.isEmpty()) {
-            body.addAnnotation(ann);
-
-            Tools.with(getExternalClassNameIfExists(unit, ann.getNameAsString()), i ->
-                    body.findCompilationUnit().ifPresent(u -> u.addImport(sanitizeImport(i))));
+            var added = Holder.of(false);
+            if (!loadable) {
+                body.addAnnotation(ann);
+                added.set(true);
+            }
+            Tools.with(getExternalClassNameIfExists(unit, ann.getNameAsString()), i -> {
+                if (loadable && nonNull(loadClass(i))) {
+                    body.addAnnotation(ann);
+                    added.set(true);
+                }
+                if (added.get()) {
+                    body.findCompilationUnit().ifPresent(u -> u.addImport(sanitizeImport(i)));
+                }
+            });
         }
     }
 
@@ -1877,6 +1882,8 @@ public class Generator {
             }
         }
         handleFieldAnnotations(unit, field, method, compiledAnnotations, result);
+        handleIgnores(result);
+
         return result;
     }
 
@@ -1935,8 +1942,29 @@ public class Generator {
             }
         }
         handleFieldAnnotations(result.getDescription().findCompilationUnit().get(), result.getDeclaration(), result.getDescription(), false, result);
+        handleIgnores(result);
 
         return result;
+    }
+
+    protected static void handleIgnores(PrototypeField field) {
+        var properties = field.getParsed().getProperties();
+
+        if (properties.isGenerateInterface()) {
+            handleAnnotationIgnores(field::forceGenerateInterfaceGetter, field.getIgnores());
+            if (properties.isInterfaceSetters()) {
+                handleAnnotationIgnores(field::forceGenerateInterfaceSetter, field.getIgnores());
+            }
+        }
+        if (properties.isGenerateImplementation()) {
+            if (properties.isClassGetters()) {
+                handleAnnotationIgnores(field::forceGenerateGetter, field.getIgnores());
+            }
+            if (properties.isClassSetters()) {
+                handleAnnotationIgnores(field::forceGenerateSetter, field.getIgnores());
+            }
+        }
+        handleAnnotationIgnores(field::getDeclaration, field.getIgnores());
     }
 
     private static PrototypeField addFieldFromSetter(Structures.Parsed<ClassOrInterfaceDeclaration> parsed, ClassOrInterfaceDeclaration spec, MethodDeclaration method, Map<String, Type> generic, boolean external) {
@@ -2145,7 +2173,7 @@ public class Generator {
 
     public static MethodDeclaration addGetter(ClassOrInterfaceDeclaration type, ClassOrInterfaceDeclaration spec, MethodDeclaration declaration, boolean isClass, PrototypeField field, boolean force) {
         var name = getGetterName(declaration.getNameAsString(), declaration.getType().asString());
-        if (!methodExists(spec, declaration, name, isClass || force)) {
+        if (force || !methodExists(spec, declaration, name, isClass)) {
             String rType;
             if (declaration.getTypeParameters().isEmpty()) {
                 var parent = getFieldParent(field);
@@ -2265,6 +2293,7 @@ public class Generator {
                     declaration.getTypeParameters().forEach(method::addTypeParameter);
                 }
             }
+
             return method;
         }
         return null;

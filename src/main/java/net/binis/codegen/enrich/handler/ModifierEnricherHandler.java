@@ -408,7 +408,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                     modifier = description.getRegisteredClass(MODIFIER_INTF_KEY);
                     returnType = properties.getModifierName();
                 }
-                addModifier(modifier, field, null, returnType, false, type, cast, description);
+                result = addModifier(modifier, field, null, returnType, false, type, cast, description);
                 var proto = nonNull(pair.getValue()) ? pair.getValue() : field.getPrototype();
                 if (isNull(proto) || (proto.getEmbeddedModifierType().isCollection())) {
                     with(CollectionsHandler.addModifier(description, modifierClass, field, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true), m ->
@@ -452,6 +452,9 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                         cls.findCompilationUnit().ifPresent(u -> u.addImport(Consumer.class));
                     });
                 }
+            }
+            if (nonNull(result)) {
+                handleAnnotationIgnores(result, field.getIgnores());
             }
         }
         return result;
