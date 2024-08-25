@@ -1,4 +1,13 @@
 # Change Log
+**24-08-2024** ver. 1.2.19
+* Core: (**Breaking change**) @CodeMapping annotation removed. Use Ignores(forMapping = true)
+* Core: Improved Reflection utils to allow invoking of protected static methods. 
+* Core: Added @CodeSnippet prototype template (generateImplementation = false, interfaceSetters = false). 
+* Generator: Made @CodeFieldAnnotations smarter. It will only include annotations that are discoverable by the compilation scope. 
+
+**16-07-2024** ver. 1.2.18
+* Core: Improved reflection routines to call inaccessible static methods.
+
 **16-07-2024** ver. 1.2.17
 * Generator: Added helper routines to add multiple imports with one function call.
 * Generator: @Ignores(forSerialization = true) makes the field transient.
