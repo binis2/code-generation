@@ -94,6 +94,7 @@ public class Structures {
     @Builder
     public static class PrototypeDataHandler implements PrototypeData {
         private Class<? extends Annotation> prototypeAnnotation;
+        private AnnotationExpr prototypeAnnotationExpression;
         private String prototypeName;
         private String prototypeFullName;
         private String name;

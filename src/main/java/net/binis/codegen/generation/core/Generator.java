@@ -961,6 +961,7 @@ public class Generator {
             cName = defaultClassName(type);
         }
 
+        builder.prototypeAnnotationExpression(prototype);
         nullCheck(loadClass(prototypeClass), cls -> builder.prototypeAnnotation((Class) cls));
 
         prototype.getChildNodes().forEach(node -> {
@@ -2579,7 +2580,13 @@ public class Generator {
 
         for (var i = 0; i < declaration.getEntries().size(); i++) {
             var entry = declaration.getEntries().get(i);
-            var expression = new StringBuilder("CodeFactory.initializeEnumValue(").append(name).append(".class, \"").append(entry.getNameAsString()).append("\", ").append(offset + i);
+            var expression = new StringBuilder("CodeFactory.initializeEnumValue(").append(name).append(".class, \"").append(entry.getNameAsString()).append("\", ");
+            var ann = entry.getAnnotationByClass(Ordinal.class);
+            if (ann.isEmpty()) {
+                expression.append(offset + i);
+            } else {
+                expression.append(getAnnotationValue(ann.get()));
+            }
             for (var arg : entry.getArguments()) {
                 expression.append(", ").append(arg.toString());
             }
@@ -2636,6 +2643,7 @@ public class Generator {
                 .classPackage(defaultClassPackage(type))
                 .interfacePackage(defaultInterfacePackage(type));
 
+        builder.prototypeAnnotationExpression(prototype);
         nullCheck(loadClass(getExternalClassName(prototype, prototype.getNameAsString())), cls -> builder.prototypeAnnotation((Class) cls));
 
         prototype.getChildNodes().forEach(node -> {

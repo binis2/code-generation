@@ -351,7 +351,7 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
     private void calcEmbeddedModifiersType(PrototypeDescription<ClassOrInterfaceDeclaration> description) {
         var ann = description.getDeclaration().getAnnotationByClass(Embeddable.class);
         if (ann.isPresent()) {
-            description.setEmbeddedModifier(EmbeddedModifierType.valueOf(Helpers.getAnnotationValue(ann.get())));
+            description.setEmbeddedModifier(EmbeddedModifierType.valueOf(Helpers.getEmbeddedAnnotationValue(ann.get())));
         } else {
             lookup.parsed().forEach(parsed -> {
                 parsed.getFields().stream()

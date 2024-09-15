@@ -1427,8 +1427,18 @@ public class Helpers {
         return ((nonNull(left.getMixIn()) ? 2 : 0) + (nonNull(left.getBase()) ? 1 : 0)) - ((nonNull(right.getMixIn()) ? 2 : 0) + (nonNull(right.getBase()) ? 1 : 0));
     }
 
+    public static String getEmbeddedAnnotationValue(AnnotationExpr annotation) {
+        var result = getAnnotationValue(annotation);
+
+        if (isNull(result)) {
+            return "BOTH";
+        }
+
+        return result.substring(Math.max(0, result.lastIndexOf('.') + 1));
+    }
+
     public static String getAnnotationValue(AnnotationExpr annotation) {
-        var result = "BOTH";
+        String result = null;
         if (annotation.isSingleMemberAnnotationExpr()) {
             result = annotation.asSingleMemberAnnotationExpr().getMemberValue().toString();
         } else if (annotation.isNormalAnnotationExpr()) {
@@ -1440,8 +1450,9 @@ public class Helpers {
             }
         }
 
-        return result.substring(Math.max(0, result.lastIndexOf('.') + 1));
+        return result;
     }
+
 
     public static String calcType(ClassOrInterfaceDeclaration spec) {
         var result = spec.getNameAsString();
