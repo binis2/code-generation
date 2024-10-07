@@ -1,4 +1,7 @@
 # Change Log
+**07-10-2024** ver. 1.2.21
+* Generation: Extended element enrichment toolset.
+
 **15-09-2024** ver. 1.2.20
 * Core: Added @Ordinal annotation to allow setting specific ordinal value for enum entry. 
 
