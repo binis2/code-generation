@@ -60,6 +60,11 @@ public class TreeMaker extends JavaCompilerObject {
         return this;
     }
 
+    public CGImport Import(CGFieldAccess qualid, boolean importStatic) {
+        var method = findMethod("Import", instance.getClass(), CGFieldAccess.theClass(), boolean.class);
+        return new CGImport(invoke(method, instance, qualid.getInstance(), importStatic));
+    }
+
     public CGExpression QualIdent(CGSymbol sym) {
         var method = findMethod("QualIdent", instance.getClass(), CGSymbol.theClass());
         return new CGExpression(invoke(method, instance, sym.getInstance()));
@@ -78,6 +83,11 @@ public class TreeMaker extends JavaCompilerObject {
     public CGIdent Ident(CGName name) {
         var method = findMethod("Ident", instance.getClass(), CGName.theClass());
         return new CGIdent(invoke(method, instance, name.getInstance()));
+    }
+
+    public CGIdent Ident(CGSymbol sym) {
+        var method = findMethod("Ident", instance.getClass(), CGSymbol.theClass());
+        return new CGIdent(invoke(method, instance, sym.getInstance()));
     }
 
     public CGLiteral Literal(CGTypeTag tag, Object value) {
@@ -231,6 +241,11 @@ public class TreeMaker extends JavaCompilerObject {
     public CGThrow Throw(CGExpression expr) {
         var method = findMethod("Throw", instance.getClass(), CGExpression.theClass());
         return new CGThrow(invoke(method, instance, expr.getInstance()));
+    }
+
+    public CGLambda Lambda(CGList<CGVariableDecl> params, CGTree body) {
+        var method = findMethod("Lambda", instance.getClass(), CGList.theClass(), CGTree.theClass());
+        return new CGLambda(invoke(method, instance, params.getInstance(), body.getInstance()));
     }
 
 }

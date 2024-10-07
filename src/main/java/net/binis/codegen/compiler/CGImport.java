@@ -9,9 +9,9 @@ package net.binis.codegen.compiler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,28 +22,29 @@ package net.binis.codegen.compiler;
 
 import lombok.extern.slf4j.Slf4j;
 
-import static java.util.Objects.nonNull;
-import static net.binis.codegen.tools.Reflection.invoke;
-import static net.binis.codegen.tools.Reflection.loadClass;
+import static net.binis.codegen.tools.Reflection.*;
 
 @Slf4j
-public class CGFieldAccess extends CGExpression {
+public class CGImport extends CGTree {
 
-    public CGFieldAccess(Object instance) {
+    public CGImport(Object instance) {
         super(instance);
+    }
+
+    public static Class theClass() {
+        return loadClass("com.sun.tools.javac.tree.JCTree$JCImport");
+    }
+
+    public boolean isStatic() {
+        return invoke("isStatic", instance);
+    }
+
+    public CGFieldAccess getQualifiedIdentifier() {
+        return new CGFieldAccess(getFieldValue(instance, "qualid"));
     }
 
     @Override
     protected void init() {
-        cls = loadClass("com.sun.tools.javac.tree.JCTree$JCFieldAccess");
-    }
-
-    public CGExpression getExpression() {
-        var value = invoke("getExpression", instance);
-        return nonNull(value) ? new CGExpression(value) : null;
-    }
-
-    public String getIdentifier() {
-        return invoke("getIdentifier", instance).toString();
+        cls = CGImport.theClass();
     }
 }

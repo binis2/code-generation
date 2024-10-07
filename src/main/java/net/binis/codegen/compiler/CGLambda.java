@@ -20,56 +20,29 @@ package net.binis.codegen.compiler;
  * #L%
  */
 
-import com.sun.source.util.Trees;
 import lombok.extern.slf4j.Slf4j;
-
-import javax.lang.model.element.Element;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.tools.Reflection.*;
-import static net.binis.codegen.tools.Tools.withRes;
 
 @Slf4j
-public class CGMethodDeclaration extends CGDeclaration {
+public class CGLambda extends CGExpression {
 
     protected CGList<CGVariableDecl> params;
 
-    public static Class theClass() {
-        return loadClass("com.sun.tools.javac.tree.JCTree$JCMethodDecl");
-    }
-
-    public static CGMethodDeclaration create(Trees trees, Element element) {
-        return new CGMethodDeclaration(trees, element);
-    }
-
-    public CGMethodDeclaration(Trees trees, Element element) {
-        super(trees, element);
-    }
-
-    public CGMethodDeclaration(Object instance) {
+    public CGLambda(Object instance) {
         super(instance);
-    }
-
-    public CGList<CGVariableDecl> getParameters() {
-        if (isNull(params)) {
-            params = new CGList<>(getFieldValue(instance, "params"), this::onModify, CGVariableDecl.class);
-        }
-        return params;
     }
 
     @Override
     protected void init() {
-        cls = CGMethodDeclaration.theClass();
+        cls = loadClass("com.sun.tools.javac.tree.JCTree$JCLambda");
     }
 
-    protected void onModify(CGList<CGVariableDecl> list) {
-        setFieldValue(instance, "params", list.getInstance());
-        params = list;
-    }
-
-    public boolean isConstructor() {
-        return "<init>".equals(getName().toString());
+    public CGExpression getExpression() {
+        var value = invoke("getExpression", instance);
+        return nonNull(value) ? new CGExpression(value) : null;
     }
 
     public CGBlock getBody() {
@@ -81,8 +54,18 @@ public class CGMethodDeclaration extends CGDeclaration {
         setFieldValue(instance, "body", nonNull(body) ? body.getInstance() : null);
     }
 
-    public CGType getReturnType() {
-        return withRes(getFieldValue(instance, "restype"), CGType::new);
+    public CGList<CGVariableDecl> getParameters() {
+        if (isNull(params)) {
+            params = new CGList<>(getFieldValue(instance, "params"), this::onModify, CGVariableDecl.class);
+        }
+        return params;
     }
+
+    protected void onModify(CGList<CGVariableDecl> list) {
+        setFieldValue(instance, "params", list.getInstance());
+        params = list;
+    }
+
+
 
 }

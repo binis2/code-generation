@@ -74,6 +74,7 @@ public class ElementUtils {
         registerClass(result, CGValueExpression.class);
         registerClass(result, CGVariableDecl.class);
         registerClass(result, CGVarSymbol.class);
+        registerClass(result, CGImport.class);
 
         return result;
     }
@@ -101,6 +102,20 @@ public class ElementUtils {
     protected static CGFieldAccess toType(Class<?> cls) {
         var maker = TreeMaker.create();
         return maker.Select(chainDotsString(maker, cls.getCanonicalName()), maker.toName("class"));
+    }
+
+    public static CGImport importClass(Class<?> cls) {
+        return importClass(cls, false);
+    }
+
+    public static CGImport importClass(Class<?> cls, boolean staticImport) {
+        var maker = TreeMaker.create();
+        return maker.Import(toType(cls), staticImport);
+    }
+
+    public static CGIdent toIdent(Class<?> cls) {
+        var maker = TreeMaker.create();
+        return maker.Ident(maker.getSymbol(cls.getCanonicalName()));
     }
 
     protected static CGExpression chainDots(JavaCompilerObject node, String elem1, String elem2, String... elems) {
