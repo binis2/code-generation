@@ -194,6 +194,24 @@ public class ElementAnnotationUtils extends ElementUtils {
         return addAnnotation(declaration, annotation, oldAnnotation.getArguments());
     }
 
+    public static CGAnnotation removeAnnotation(Element element, String className) {
+        return removeAnnotation(getDeclaration(element), className);
+    }
+
+    public static CGAnnotation removeAnnotation(CGDeclaration declaration, String className) {
+        CGAnnotation result = null;
+        var list = CGList.nil(CGAnnotation.class);
+        for (var ann : declaration.getModifiers().getAnnotations()) {
+            if (!ann.isAnnotation(className)) {
+                list = list.append(ann);
+            } else {
+                result = ann;
+            }
+        }
+        declaration.getModifiers().setAnnotations(list);
+        return result;
+    }
+
     public static CGAnnotation removeAnnotation(Element element, Class<? extends Annotation> annotation) {
         return removeAnnotation(getDeclaration(element), annotation);
     }

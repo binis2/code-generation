@@ -73,7 +73,6 @@ public class CGAnnotation extends CGExpression {
         return null;
     }
 
-
     public CGIdent getAnnotationType() {
         if (isNull(annotationType)) {
             annotationType = new CGIdent(invoke("getAnnotationType", instance));
@@ -87,7 +86,11 @@ public class CGAnnotation extends CGExpression {
     }
 
     public boolean isAnnotation(Class<? extends Annotation> cls) {
-        return getAnnotationType().getType().toString().equals(cls.getCanonicalName());
+        return isAnnotation(cls.getCanonicalName());
+    }
+
+    public boolean isAnnotation(String clsName) {
+        return getAnnotationType().getType().toString().equals(clsName);
     }
 
     protected void onModify(CGList<CGExpression> list) {
