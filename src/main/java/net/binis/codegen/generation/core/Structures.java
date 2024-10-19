@@ -919,7 +919,8 @@ public class Structures {
                         builder.predefinedInheritedEnrichers(handleClassExpression(pair.getValue(), List.class, Enricher.class));
                     case "options" ->
                         builder.options(handleClassExpression(pair.getValue(), Set.class, CodeOption.class));
-                    default -> {}
+                    default ->
+                        builder.custom(name, pair.getValue());
                 }
             } else if (node instanceof Name) {
                 //Continue

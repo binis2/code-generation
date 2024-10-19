@@ -20,6 +20,7 @@ package net.binis.codegen.generation.core.interfaces;
  * #L%
  */
 
+import com.github.javaparser.ast.expr.AnnotationExpr;
 import net.binis.codegen.annotation.type.GenerationStrategy;
 import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.options.CodeOption;
@@ -31,6 +32,7 @@ import java.util.Set;
 
 public interface PrototypeData {
     Class<? extends Annotation> getPrototypeAnnotation();
+    AnnotationExpr getPrototypeAnnotationExpression();
     String getPrototypeName();
     String getPrototypeFullName();
     String getName();
