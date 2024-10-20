@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>dev.binis</groupId>
     <artifactId>code-generator</artifactId>
-    <version>1.2.21</version>
+    <version>1.2.22</version>
     <name>code-generator</name>
     <description>Binis Code Generation</description>
     <url>https://github.com/binis2/code-generation</url>
@@ -53,13 +53,13 @@
 
     <properties>
         <java.version>17</java.version>
-        <dev.binis>1.2.21</dev.binis>
+        <dev.binis>1.2.22</dev.binis>
         <license.licenseName>apache_v2</license.licenseName>
         <resource.delimiter>@</resource.delimiter>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.target>${java.version}</maven.compiler.target>
-        <junit.jupiter.version>5.10.2</junit.jupiter.version>
+        <junit.jupiter.version>5.11.2</junit.jupiter.version>
     </properties>
 
     <dependencies>
@@ -77,12 +77,12 @@
         <dependency>
             <groupId>com.github.javaparser</groupId>
             <artifactId>javaparser-symbol-solver-core</artifactId>
-            <version>3.26.1</version>
+            <version>3.26.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.14.0</version>
+            <version>3.17.0</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -93,12 +93,12 @@
                     <artifactId>junit</artifactId>
                 </exclusion>
             </exclusions>
-            <version>1.8.0</version>
+            <version>1.9.0</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>2.0.13</version>
+            <version>2.0.16</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -119,7 +119,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>5.12.0</version>
+            <version>5.14.2</version>
         </dependency>
     </dependencies>
 
@@ -129,7 +129,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.3.0</version>
+                    <version>3.5.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -176,7 +176,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
-                    <version>3.1.2</version>
+                    <version>3.1.3</version>
                     <executions>
                         <execution>
                             <id>default-deploy</id>
@@ -190,7 +190,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>3.1.1</version>
                     <configuration>
                         <localCheckout>true</localCheckout>
                         <pushChanges>false</pushChanges>
@@ -225,7 +225,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.7.0</version>
+                    <version>3.10.1</version>
                     <executions>
                         <execution>
                             <id>attach-javadocs</id>
@@ -288,7 +288,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.2.4</version>
+                        <version>3.2.7</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -309,7 +309,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
-                <version>2.16.2</version>
+                <version>2.17.1</version>
                 <reportSets>
                     <reportSet>
                         <reports>
