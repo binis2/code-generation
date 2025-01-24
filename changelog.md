@@ -1,8 +1,13 @@
 # Change Log
+**24-01-2025** ver. 1.2.23
+* Generation: Added @CodeDocumentation annotation.
+* IDEA Plugin: Documented elements with @CodeDocumentation are shown as tooltip in IDEA.
+* All: Updated dependencies.
+
 **20-10-2024** ver. 1.2.22
 * Generation: Fixed loading of custom annotation parameters when prototype template is in the same compilation cycle as the targeted class.
 * Generation: Added Element annotation utils to work with class name passed as string.
-* Generation: Updated dependencies. 
+* All: Updated dependencies. 
 
 **07-10-2024** ver. 1.2.21
 * Generation: Extended element enrichment toolset.
