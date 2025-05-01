@@ -71,8 +71,13 @@ public class CollectionsHandler {
         return ("List".equals(type) || "Set".equals(type) || "CodeList".equals(type) || "CodeSet".equals(type)) || List.class.getCanonicalName().equals(type) || Set.class.getCanonicalName().equals(type);
     }
 
+    public static boolean isMap(String type) {
+        return "Map".equals(type) || "CodeMap".equals(type) || Map.class.getCanonicalName().equals(type);
+    }
+
+
     public static boolean isCollection(String type) {
-        return isListOrSet(type) || "Map".equals(type) || "CodeMap".equals(type) || Map.class.getCanonicalName().equals(type);
+        return isListOrSet(type) || isMap(type);
     }
 
     public static MethodDeclaration addModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierName, String className, boolean isClass) {

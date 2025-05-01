@@ -59,6 +59,7 @@ import java.util.stream.Collectors;
 import static com.github.javaparser.ast.Modifier.Keyword.PUBLIC;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static net.binis.codegen.generation.core.CollectionsHandler.isMap;
 import static net.binis.codegen.generation.core.EnrichHelpers.*;
 import static net.binis.codegen.generation.core.Helpers.*;
 import static net.binis.codegen.tools.Reflection.invoke;
@@ -103,7 +104,14 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
 
     protected void handleField(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeField field, StringBuilder code, boolean mixIn) {
         var form = description.hasOption(Options.VALIDATION_FORM) ? formMethod(field) : null;
-        field.getDescription().getAnnotations().stream().filter(this::isValidationAnnotation).forEach(a -> processAnnotation(description, field, a, form, false, mixIn));
+        field.getDescription().getAnnotations().stream().filter(this::isValidationAnnotation).forEach(a -> {
+            if (a.getNameAsString().contains("AllBut")) {
+                description.getFields().stream().filter(f -> !f.equals(field)).forEach(f ->
+                        processAnnotation(description, f, a, form, false, mixIn));
+            } else {
+                processAnnotation(description, field, a, form, false, mixIn);
+            }
+        });
 
         if (field.isCollection()) {
             field.getDescription().getType().asClassOrInterfaceType().getTypeArguments().ifPresent(args ->
@@ -247,8 +255,9 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
 
         field.getModifiers().stream()
                 .filter(m -> !mixIn || m.getOrigin().equals(description))
+                .filter(modifier -> !ModifierType.COLLECTION.equals(modifier.getType()) || collection)
                 .forEach(modifier ->
-                        addSanitization(field, modifier.getModifier(), params, modifier.getType(), collection));
+                        addSanitization(field, modifier.getModifier(), params, modifier.getType(), collection && !modifier.getType().equals(ModifierType.COLLECTION)));
 
         if (!mixIn && description.hasOption(Options.VALIDATION_FORM)) {
             addSanitization(field, form, params, ModifierType.FORM, collection);
@@ -670,6 +679,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         if (isNull(start)) {
             var exp = new StringBuilder("Validation.start(this.getClass(), \"")
                     .append(field.getName())
+                    .append((ModifierType.COLLECTION.equals(modifier) ? "[value]" : ""))
                     .append("\", ")
                     .append(ModifierType.COLLECTION.equals(modifier) ? VALUE : field.getName())
                     .append(").validate")
@@ -680,7 +690,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                     .append(calcMessage(params))
                     .append(buildParamsStr(params, field, modifier, collection))
                     .append(")");
-            handleStartingExpression(modifier, block, exp);
+            handleStartingExpression(field, modifier, block, exp);
         } else {
             handleChainExpression(field, params, modifier, collection, start.asExpressionStmt(), "validate");
         }
@@ -717,6 +727,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         if (isNull(start)) {
             var exp = new StringBuilder("Validation.start(this.getClass(), \"")
                     .append(field.getName())
+                    .append((ModifierType.COLLECTION.equals(modifier) ? "[value]" : ""))
                     .append("\", ")
                     .append(ModifierType.COLLECTION.equals(modifier) ? VALUE : field.getName())
                     .append(").sanitize")
@@ -725,7 +736,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                     .append(".class")
                     .append(buildParamsStr(params, field, modifier, collection))
                     .append(")");
-            handleStartingExpression(modifier, block, exp);
+            handleStartingExpression(field, modifier, block, exp);
         } else {
             handleChainExpression(field, params, modifier, collection, start.asExpressionStmt(), "sanitize");
         }
@@ -752,7 +763,8 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
 
         field.getModifiers().stream()
                 .filter(m -> !mixIn || m.getOrigin().equals(description))
-                .forEach(modifier -> addExecution(field, modifier.getModifier(), params, modifier.getType(), collection));
+                .filter(modifier -> !ModifierType.COLLECTION.equals(modifier.getType()) || collection)
+                .forEach(modifier -> addExecution(field, modifier.getModifier(), params, modifier.getType(), collection && !modifier.getType().equals(ModifierType.COLLECTION)));
     }
 
     protected void addExecution(PrototypeField field, MethodDeclaration method, Params params, ModifierType modifier, boolean collection) {
@@ -764,8 +776,9 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         if (isNull(start)) {
             var exp = new StringBuilder("Validation.start(this.getClass(), \"")
                     .append(field.getName())
+                    .append((ModifierType.COLLECTION.equals(modifier) ? "[value]" : ""))
                     .append("\", ")
-                    .append(field.getName())
+                    .append(ModifierType.COLLECTION.equals(modifier) ? VALUE : field.getName())
                     .append(").execute")
                     .append(collection ? "Collection(" : "(")
                     .append(params.getCls())
@@ -773,7 +786,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                     .append(calcMessage(params))
                     .append(buildParamsStr(params, field, modifier, collection))
                     .append(")");
-            handleStartingExpression(modifier, block, exp);
+            handleStartingExpression(field, modifier, block, exp);
         } else {
             handleChainExpression(field, params, modifier, collection, start.asExpressionStmt(), "execute");
         }
@@ -863,13 +876,16 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
         }
     }
 
-    protected static void handleStartingExpression(ModifierType modifier, BlockStmt block, StringBuilder exp) {
+    protected static void handleStartingExpression(PrototypeField field, ModifierType modifier, BlockStmt block, StringBuilder exp) {
         if (ModifierType.COLLECTION.equals(modifier)) {
             var ret = block.findFirst(ReturnStmt.class).get();
             var s = ret.findFirst(NameExpr.class).get().toString();
-            exp.insert(0, ", value -> ")
-                    .insert(0, s.substring(0, s.length() - 1))
-                    .append(");");
+            exp.insert(0, ", value -> ");
+            if (isMap(field.getFullType())) {
+                exp.insert(0, ", null");
+            }
+            exp.insert(0, s.substring(0, s.length() - 1))
+            .append(");");
             var expr = statement(exp.toString());
             ret.setExpression(((ExpressionStmt) expr).getExpression());
         } else {
@@ -958,7 +974,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                 .append(String.format(format.replaceAll("\\{type}", type.toString()),
                         value
                                 .replaceAll("\\{type}", type.toString())
-                                .replaceAll("\\{entity}", ModifierType.MODIFIER.equals(modifier) ? field.getDeclaration().findAncestor(ClassOrInterfaceDeclaration.class).get().getNameAsString() + ".this" :  modifier.getValue())));
+                                .replaceAll("\\{entity}", "parent".equals(modifier.getValue()) ? field.getDeclaration().findAncestor(ClassOrInterfaceDeclaration.class).get().getNameAsString() + ".this" :  modifier.getValue())));
     }
 
     protected Type calcType(PrototypeField field, ModifierType modifier, boolean collection) {

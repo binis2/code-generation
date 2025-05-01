@@ -1,4 +1,9 @@
 # Change Log
+**01-05-2025** ver. 1.2.24
+* Validation: Added 'AllBut' validations. All validations that have AllBut in the name will be applied for all the fields of the prototype but on the declared field.
+* Validation: Added more descriptive field name when dealing with collection validations.
+* Validation: Fixed Executions and Sanitizations for collections.
+
 **24-01-2025** ver. 1.2.23
 * Generation: Added @CodeDocumentation annotation.
 * IDEA Plugin: Documented elements with @CodeDocumentation are shown as tooltip in IDEA.

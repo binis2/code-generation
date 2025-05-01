@@ -28,8 +28,8 @@ import lombok.RequiredArgsConstructor;
 public enum ModifierType {
     MAIN("this"),
     MODIFIER("parent"),
-    FORM(null),
-    COLLECTION(null);
+    FORM("parent"),
+    COLLECTION("parent");
 
     private final String value;
 }
