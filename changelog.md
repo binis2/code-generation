@@ -1,4 +1,9 @@
 # Change Log
+
+**09-05-2025** ver. 1.2.25
+* Core: Fixed invocation of custom matchers for abstract source -> destination combinations.
+* Projections: Allowed path projections to consider all available methods, not just the getters.
+
 **01-05-2025** ver. 1.2.24
 * Validation: Added 'AllBut' validations. All validations that have AllBut in the name will be applied for all the fields of the prototype but on the declared field.
 * Validation: Added more descriptive field name when dealing with collection validations.
