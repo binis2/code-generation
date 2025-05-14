@@ -71,5 +71,10 @@ class EnumBasicsTest extends BaseCodeGenTest {
         testSingle("basic/enum/EnumTest6.java", "basic/enum/EnumTest6-0.java", "basic/enum/EnumTest6-1.java");
     }
 
+    @Test
+    void testEmbeddedList() {
+        testSingleExecute("basic/enum/EnumTest7.java", "basic/enum/EnumTest7-0.java", "basic/enum/EnumTest7-1.java", 3, "basic/enum/EnumTest7-2.java");
+    }
+
 
 }

@@ -4,6 +4,7 @@ package net.binis.codegen;
 import net.binis.codegen.spring.query.*;
 import net.binis.codegen.modifier.BaseModifier;
 import net.binis.codegen.creator.EntityCreator;
+import net.binis.codegen.collection.CodeList;
 import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 import java.util.Optional;
@@ -25,6 +26,7 @@ public interface TestData {
     TestData.Modify with();
 
     interface Modify extends BaseModifier<TestData.Modify, TestData> {
+        CodeList<Test, TestData.Modify> tests();
         Modify tests(List<Test> tests);
     }
 

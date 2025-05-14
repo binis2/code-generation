@@ -30,7 +30,6 @@ import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
-import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.Embeddable;
@@ -410,10 +409,10 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
                 }
                 result = addModifier(modifier, field, null, returnType, false, type, cast, description);
                 var proto = nonNull(pair.getValue()) ? pair.getValue() : field.getPrototype();
-                if (isNull(proto) || (proto.getEmbeddedModifierType().isCollection())) {
-                    with(CollectionsHandler.addModifier(description, modifierClass, field, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true), m ->
+                if (isNull(proto) || proto.isCodeEnum() || proto.getEmbeddedModifierType().isCollection()) {
+                    with(CollectionsHandler.addModifier(description, modifierClass, field, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true, nonNull(proto) && proto.isCodeEnum()), m ->
                             field.addModifier(ModifierType.COLLECTION, m, field.getParsed()));
-                    CollectionsHandler.addModifier(description, modifier, field, description.getInterfaceName(), null, false);
+                    CollectionsHandler.addModifier(description, modifier, field, description.getInterfaceName(), null, false, nonNull(proto) && proto.isCodeEnum());
                 }
             } else {
                 addField(field, modifierFields, imports, type);

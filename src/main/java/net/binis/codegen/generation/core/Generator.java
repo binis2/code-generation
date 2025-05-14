@@ -574,6 +574,10 @@ public class Generator {
             p.setParsedName(parse.getParsedName() + '.' + p.getParsedName());
             p.getProperties().setClassPackage(parse.getProperties().getClassPackage() + '.' + parse.getParsedName());
             p.setParsedFullName(parse.getProperties().getClassPackage() + '.' + p.getParsedName());
+            if (p.isCodeEnum() && !p.isMixIn()) {
+                p.getInterface().getAnnotationByName("Default").ifPresent(a ->
+                    a.asSingleMemberAnnotationExpr().setMemberValue(new StringLiteralExpr(parse.getProperties().getClassPackage() + "." + p.getParsedName().replace(".", "$"))));
+            }
         });
     }
 

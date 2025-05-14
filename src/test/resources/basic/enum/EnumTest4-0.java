@@ -9,6 +9,8 @@ import net.binis.codegen.modifier.impl.BaseModifierImpl;
 import net.binis.codegen.modifier.Modifiable;
 import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.creator.EntityCreator;
+import net.binis.codegen.collection.CodeListImpl;
+import net.binis.codegen.collection.CodeList;
 import javax.annotation.processing.Generated;
 import java.util.function.Function;
 import java.util.Optional;
@@ -43,6 +45,7 @@ public class TestDataImpl implements TestData, Modifiable<TestData.Modify> {
     }
 
     @Generated("ModifierEnricher")
+    @SuppressWarnings("unchecked")
     protected class TestDataModifyImpl extends BaseModifierImpl<TestData.Modify, TestData> implements TestData.Modify {
 
         protected TestDataModifyImpl(TestData parent) {
@@ -51,6 +54,13 @@ public class TestDataImpl implements TestData, Modifiable<TestData.Modify> {
 
         public TestData done() {
             return TestDataImpl.this;
+        }
+
+        public CodeList tests() {
+            if (TestDataImpl.this.tests == null) {
+                TestDataImpl.this.tests = new java.util.ArrayList<>();
+            }
+            return new CodeListImpl<>(this, TestDataImpl.this.tests);
         }
 
         public TestData.Modify tests(List<Test> tests) {

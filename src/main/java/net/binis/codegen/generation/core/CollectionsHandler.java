@@ -80,12 +80,12 @@ public class CollectionsHandler {
         return isListOrSet(type) || isMap(type);
     }
 
-    public static MethodDeclaration addModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierName, String className, boolean isClass) {
+    public static MethodDeclaration addModifier(PrototypeDescription<ClassOrInterfaceDeclaration> description, ClassOrInterfaceDeclaration spec, PrototypeField declaration, String modifierName, String className, boolean isClass, boolean isCodeEnum) {
         if (!methodExists(spec, declaration, isClass)) {
             var type = declaration.getDeclaration().getVariables().get(0).getType().asClassOrInterfaceType();
             var collection = isNull(declaration.getDescription()) ?
-                    getCollectionType(unit(declaration.getDeclaration()), unit(spec), type) :
-                    getCollectionType(unit(declaration.getDescription()), unit(spec), declaration.getDescription().getType().asClassOrInterfaceType());
+                    getCollectionType(unit(declaration.getDeclaration()), unit(spec), type, !isCodeEnum) :
+                    getCollectionType(unit(declaration.getDescription()), unit(spec), declaration.getDescription().getType().asClassOrInterfaceType(), !isCodeEnum);
             var generic = collection.getGeneric().stream().map(Pair::getLeft).collect(Collectors.joining(", "));
             spec.findCompilationUnit().ifPresent(u -> {
                 u.addImport(collection.getInterfaceImport());
@@ -125,7 +125,7 @@ public class CollectionsHandler {
         return null;
     }
 
-    public static CollectionType getCollectionType(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type) {
+    public static CollectionType getCollectionType(CompilationUnit source, CompilationUnit destination, ClassOrInterfaceType type, boolean checkPrototype) {
         var generic = getGenericsList(source, destination, type, true);
 
         var builder = CollectionType.builder().generic(generic);
@@ -135,13 +135,13 @@ public class CollectionsHandler {
                     .classType("CodeListImpl")
                     .implementor("java.util.ArrayList")
                     .implementorInterface("java.util.List")
-                    .prototypeParam(isPrototypeParam(type, generic));
+                    .prototypeParam(checkPrototype && isPrototypeParam(type, generic));
             case "Set", "CodeSet" -> builder
                     .type("CodeSet")
                     .classType("CodeSetImpl")
                     .implementor("java.util.HashSet")
                     .implementorInterface("java.util.Set")
-                    .prototypeParam(isPrototypeParam(type, generic));
+                    .prototypeParam(checkPrototype && isPrototypeParam(type, generic));
             case "Map", "CodeMap" -> builder
                     .type("CodeMap")
                     .classType("CodeMapImpl")

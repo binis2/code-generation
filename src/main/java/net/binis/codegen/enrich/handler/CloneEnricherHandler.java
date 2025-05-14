@@ -77,7 +77,7 @@ public class CloneEnricherHandler extends BaseEnricher implements CloneEnricher 
         if (field.isCollection()) {
             spec.findCompilationUnit().get().addImport("java.util.stream.Collectors");
 
-            var collection = CollectionsHandler.getCollectionType(description.getDeclaration().findCompilationUnit().get(), spec.findCompilationUnit().get(), field.getDeclaration().getVariable(0).getType().asClassOrInterfaceType());
+            var collection = CollectionsHandler.getCollectionType(description.getDeclaration().findCompilationUnit().get(), spec.findCompilationUnit().get(), field.getDeclaration().getVariable(0).getType().asClassOrInterfaceType(), true);
 
             var initExpr = "result." + field.getName() + " = " + field.getName();
             switch (collection.getImplementorInterface()) {
