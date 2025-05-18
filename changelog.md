@@ -1,5 +1,12 @@
 # Change Log
 
+**18-05-2025** ver. 1.2.26
+* Core: Added ability to declare producer with custom mapping builder
+* Spring Configuration: Registered explicit XML conversions Object -> String (if jackson xml module is included in the project)
+* Generation: Fixed @Default creation for nested enums.
+* Generation: Fixed generation of modifiers for lists of enum prototypes
+* All: Updated dependencies.
+
 **09-05-2025** ver. 1.2.25
 * Core: Fixed invocation of custom matchers for abstract source -> destination combinations.
 * Projections: Allowed path projections to consider all available methods, not just the getters.
