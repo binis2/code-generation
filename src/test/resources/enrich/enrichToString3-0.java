@@ -5,6 +5,7 @@ import net.binis.codegen.objects.base.enumeration.CodeEnumImpl;
 import javax.annotation.processing.Generated;
 
 @Generated(value = "net.binis.codegen.TestPrototype", comments = "Test")
+@net.binis.codegen.annotation.Generated(by = "net.binis.codegen.TestPrototype")
 public class TestImpl extends CodeEnumImpl implements Test {
 
     protected final String title;

@@ -7,6 +7,7 @@ import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 
 @Generated(value = "net.binis.test.prototype.enums.TestEnumPrototype", comments = "TestEnumImpl")
+@net.binis.codegen.annotation.Generated(by = "net.binis.test.prototype.enums.TestEnumPrototype")
 @Default("net.binis.test.enums.TestEnumImpl")
 public interface TestEnum extends CodeEnum {
 

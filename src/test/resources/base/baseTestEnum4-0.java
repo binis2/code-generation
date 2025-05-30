@@ -5,6 +5,7 @@ import net.binis.codegen.objects.base.enumeration.CodeEnumImpl;
 import javax.annotation.processing.Generated;
 
 @Generated(value = "net.binis.codegen.prototype.TestEnumPrototype", comments = "TestEnum")
+@net.binis.codegen.annotation.Generated(by = "net.binis.codegen.prototype.TestEnumPrototype")
 public class TestEnumImpl extends CodeEnumImpl implements TestEnum {
 
     public TestEnumImpl(int $ordinal, String $name) {

@@ -3,9 +3,12 @@ package net.binis.codegen;
 
 import net.binis.codegen.objects.base.enumeration.CodeEnum;
 import net.binis.codegen.factory.CodeFactory;
+import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 
 @Generated(value = "net.binis.codegen.MixIn2Prototype", comments = "TestImpl")
+@net.binis.codegen.annotation.Generated(by = "net.binis.codegen.MixIn2Prototype")
+@Default("net.binis.codegen.TestImpl")
 public interface MixIn2 extends CodeEnum {
 
     static final Test KNOWN = Test.KNOWN;

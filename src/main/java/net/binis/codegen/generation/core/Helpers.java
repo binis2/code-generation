@@ -1284,7 +1284,7 @@ public class Helpers {
         addInitializerInternal(description, intf, expr, embedded);
     }
 
-    public static void addDefaultCreation(PrototypeDescription<?> description, PrototypeDescription<?> mixIn) {
+    public static void addDefaultCreation(PrototypeDescription<?> description) {
         var intf = description.getInterface();
         if (description.getProperties().isGenerateImplementation() && intf.getAnnotationByName("Default").isEmpty()) {
             var name = description.getImplementorFullName();

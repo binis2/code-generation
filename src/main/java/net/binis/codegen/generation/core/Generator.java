@@ -567,16 +567,21 @@ public class Generator {
     }
 
     private static void adjustNestedPrototypes(Structures.Parsed<ClassOrInterfaceDeclaration> parse) {
-        lookup.parsed().stream().filter(p -> p.isNested() && nonNull(p.getParentClassName()) && p.getParentClassName().equals(parse.getPrototypeClassName())).map(Structures.Parsed.class::cast).forEach(p -> {
+        lookup.parsed().stream().filter(p -> p.isNested() && nonNull(p.getParentClassName()) && p.getParentClassName().equals(parse.getPrototypeClassName())).map(Structures.Parsed.class::cast).sorted((o1, o2) -> Boolean.compare(o1.isMixIn(), o2.isMixIn())).forEach(p -> {
             p.setInterfaceName(parse.getInterfaceName() + '.' + p.getInterfaceName());
             p.getProperties().setInterfacePackage(parse.getProperties().getInterfacePackage() + '.' + parse.getInterfaceName());
             p.setInterfaceFullName(parse.getProperties().getInterfacePackage() + '.' + p.getInterfaceName());
             p.setParsedName(parse.getParsedName() + '.' + p.getParsedName());
             p.getProperties().setClassPackage(parse.getProperties().getClassPackage() + '.' + parse.getParsedName());
             p.setParsedFullName(parse.getProperties().getClassPackage() + '.' + p.getParsedName());
-            if (p.isCodeEnum() && !p.isMixIn()) {
-                p.getInterface().getAnnotationByName("Default").ifPresent(a ->
-                    a.asSingleMemberAnnotationExpr().setMemberValue(new StringLiteralExpr(parse.getProperties().getClassPackage() + "." + p.getParsedName().replace(".", "$"))));
+            if (p.isCodeEnum()) {
+                p.getInterface().getAnnotationByName("Default").ifPresent(a -> {
+                    if (p.isMixIn()) {
+                        a.asSingleMemberAnnotationExpr().setMemberValue(new StringLiteralExpr(parse.getProperties().getClassPackage() + "." + p.getMixIn().getParsedName().replace(".", "$")));
+                    } else {
+                        a.asSingleMemberAnnotationExpr().setMemberValue(new StringLiteralExpr(parse.getProperties().getClassPackage() + "." + p.getParsedName().replace(".", "$")));
+                    }
+                });
             }
         });
     }
@@ -2469,6 +2474,8 @@ public class Generator {
                 spec.addAnnotation(annotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + properties.getInterfaceName() + "\")"));
                 intf.addAnnotation(annotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + (nonNull(mixIn) ? mixIn.getProperties().getClassName() : properties.getClassName()) + "\")"));
             }
+            spec.addAnnotation(annotation("@net.binis.codegen.annotation.Generated(by=\"" + properties.getPrototypeFullName() + "\")"));
+            intf.addAnnotation(annotation("@net.binis.codegen.annotation.Generated(by=\"" + properties.getPrototypeFullName() + "\")"));
 
             unit.setComment(new BlockComment("Generated code by Binis' code generator."));
             iUnit.setComment(new BlockComment("Generated code by Binis' code generator."));
@@ -2479,9 +2486,8 @@ public class Generator {
 
             lookup.registerGenerated(properties.getPrototypeFullName(), parse);
 
-            if (isNull(mixIn)) {
-                addDefaultCreation(parse, mixIn);
-            } else {
+            addDefaultCreation(parse);
+            if (nonNull(mixIn)) {
                 iUnit.addImport(mixIn.getInterfaceFullName());
             }
 

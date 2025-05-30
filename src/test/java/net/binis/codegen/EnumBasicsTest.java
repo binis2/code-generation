@@ -21,6 +21,7 @@ package net.binis.codegen;
  */
 
 import lombok.extern.slf4j.Slf4j;
+import net.binis.codegen.objects.TestCompiledEnumPrototype;
 import net.binis.codegen.test.BaseCodeGenTest;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.Test;
@@ -74,6 +75,11 @@ class EnumBasicsTest extends BaseCodeGenTest {
     @Test
     void testEmbeddedList() {
         testSingleExecute("basic/enum/EnumTest7.java", "basic/enum/EnumTest7-0.java", "basic/enum/EnumTest7-1.java", 3, "basic/enum/EnumTest7-2.java");
+    }
+
+    @Test
+    void testMixInCompiled() {
+        testSingle("basic/enum/EnumTest8.java", "basic/enum/EnumTest8-0.java", "basic/enum/EnumTest8-1.java", 2, true);
     }
 
 

@@ -7,6 +7,7 @@ import net.binis.codegen.annotation.Default;
 import javax.annotation.processing.Generated;
 
 @Generated(value = "net.binis.codegen.jackson.BaseClass.Item", comments = "ItemImpl")
+@net.binis.codegen.annotation.Generated(by = "net.binis.codegen.jackson.BaseClass.Item")
 @Default("net.binis.codegen.jackson.ItemImpl")
 public interface Item extends CodeEnum {
 

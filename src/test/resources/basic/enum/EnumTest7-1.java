@@ -32,6 +32,7 @@ public interface Test {
         Modify list(List<Test.TestEnum> list);
     }
 
+    @net.binis.codegen.annotation.Generated(by = "net.binis.codegen.TestPrototype.TestEnumPrototype")
     @Default("net.binis.codegen.TestImpl$TestEnumImpl")
     public interface TestEnum extends CodeEnum {
 
@@ -52,6 +53,8 @@ public interface Test {
         }
     }
 
+    @net.binis.codegen.annotation.Generated(by = "net.binis.codegen.TestPrototype.TestEnum2Prototype")
+    @Default("net.binis.codegen.TestImpl$TestEnumImpl")
     public interface TestEnum2 extends CodeEnum {
 
         static final TestEnum FOUR = CodeFactory.initializeEnumValue(TestEnum.class, "FOUR", 3);

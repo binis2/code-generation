@@ -138,6 +138,7 @@ public abstract class CompiledPrototypesHandler {
                                 .parser(lookup.getParser())
                                 .interfaceName(props.getInterfaceName())
                                 .interfaceFullName(props.getInterfacePackage() + "." + props.getInterfaceName())
+                                .parsedFullName(props.getClassPackage() + "." + props.getClassName())
                                 .declaration(declaration)
                                 .declarationUnit(declaration.findCompilationUnit().orElse(null));
 

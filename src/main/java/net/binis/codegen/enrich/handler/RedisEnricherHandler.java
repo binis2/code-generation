@@ -51,7 +51,7 @@ public class RedisEnricherHandler extends BaseEnricher implements RedisEnricher 
         addPrefix(description, impl);
         addConstructor(description, intf, impl);
         addLoad(description, intf);
-        Helpers.addDefaultCreation(description, null);
+        Helpers.addDefaultCreation(description);
         Helpers.addInitializer(description, intf, (LambdaExpr) expression("params -> new " + impl.getNameAsString() + "((String) params[0])"), false);
     }
 

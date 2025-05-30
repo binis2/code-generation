@@ -36,6 +36,7 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
     // endregion
 
     // region inner classes
+    @net.binis.codegen.annotation.Generated(by = "net.binis.codegen.TestPrototype.TestEnum2Prototype")
     public static class TestEnum2Impl extends CodeEnumImpl implements TestEnum2 {
 
         public TestEnum2Impl(int $ordinal, String $name) {
@@ -51,6 +52,7 @@ public class TestImpl implements Test, Modifiable<Test.Modify> {
         }
     }
 
+    @net.binis.codegen.annotation.Generated(by = "net.binis.codegen.TestPrototype.TestEnumPrototype")
     public static class TestEnumImpl extends CodeEnumImpl implements TestEnum {
 
         public TestEnumImpl(int $ordinal, String $name) {
