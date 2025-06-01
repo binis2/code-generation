@@ -1,5 +1,12 @@
 # Change Log
 
+**01-06-2025** ver. 1.2.27
+* Core: Added lock capabilities to **Async** flow. 
+* Core: Updated constructor enrichers' error descriptions to match latest IDEA's.
+* Core: Added @Generated
+* Generation: MixIn enums are marked as generated.
+* Generation: Added @Default for MixIn enums.
+
 **18-05-2025** ver. 1.2.26
 * Core: Added ability to declare producer with custom mapping builder
 * Spring Configuration: Registered explicit XML conversions Object -> String (if jackson xml module is included in the project)
