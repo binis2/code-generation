@@ -1,5 +1,8 @@
 # Change Log
 
+**22-08-2025** ver. 1.2.28
+* Core: Added support for virtual threads for **Async** routines.
+
 **01-06-2025** ver. 1.2.27
 * Core: Added lock capabilities to **Async** flow. 
 * Core: Updated constructor enrichers' error descriptions to match latest IDEA's.
