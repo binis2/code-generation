@@ -374,11 +374,12 @@ public class Generator {
         }
 
         var defaultMethods = new ArrayList<MethodDeclaration>();
+        var staticMethods = new ArrayList<MethodDeclaration>();
         for (var member : type.getMembers()) {
             if (member.isMethodDeclaration()) {
                 var declaration = member.asMethodDeclaration();
 
-                if (!declaration.isDefault()) {
+                if (!declaration.isDefault() && !declaration.isStatic()) {
                     var ignore = getIgnores(member);
                     PrototypeField field = Structures.FieldData.builder().parsed(parse).ignores(ignore).build();
                     if (!ignore.isForField()) {
@@ -399,7 +400,11 @@ public class Generator {
                         }
                     }
                 } else {
-                    defaultMethods.add(declaration);
+                    if (declaration.isStatic()) {
+                        staticMethods.add(declaration);
+                    } else {
+                        defaultMethods.add(declaration);
+                    }
                 }
             } else if (member.isClassOrInterfaceDeclaration()) {
                 processInnerClass(parse, typeDeclaration, spec, member.asClassOrInterfaceDeclaration());
@@ -413,6 +418,7 @@ public class Generator {
         }
 
         defaultMethods.forEach(declaration -> handleDefaultMethod(parse, spec, intf, declaration));
+        staticMethods.forEach(declaration -> handleStaticMethod(parse, spec, intf, declaration));
 
         unit.setComment(new BlockComment("Generated code by Binis' code generator."));
         iUnit.setComment(new BlockComment("Generated code by Binis' code generator."));
@@ -723,7 +729,7 @@ public class Generator {
         if (!ignores.isForClass()) {
             var name = method.getNameAsString();
             if (name.equals("_equals") || name.equals("_hashCode")) {
-                method.setName(name.substring(1, name.length()));
+                method.setName(name.substring(1));
             }
             method.addModifier(PUBLIC);
 
@@ -762,6 +768,29 @@ public class Generator {
             spec.addMember(handleForAnnotations(unit, method, true));
         }
     }
+
+    private static void handleStaticMethod(Structures.Parsed<ClassOrInterfaceDeclaration> parse, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, MethodDeclaration declaration) {
+        var unit = declaration.findCompilationUnit().get();
+        var ignores = getIgnores(declaration);
+        var method = declaration.clone().removeModifier(DEFAULT);
+        envelopWithDummyClass(method, declaration);
+        method.getAnnotationByClass(Ignore.class).ifPresent(method::remove);
+        declaration.getBody().ifPresent(b -> {
+            var body = b.clone();
+            handleDefaultInterfaceMethodBody(parse, body, false, declaration);
+            handleCodeImplementationInjection(parse.getPrototypeElement(), method, declaration);
+        });
+
+        if (declaration.getAnnotationByClass(ForImplementation.class).isPresent()) {
+            spec.addMember(handleForAnnotations(unit, method, true));
+        } else {
+            intf.addMember(handleForAnnotations(unit, method, true));
+        }
+        method.setType(handleType(declaration, intf, method.getType()));
+        method.getParameters().forEach(param -> param.setType(handleType(declaration, intf, param.getType())));
+
+    }
+
 
     protected static String getStringValue(Expression p) {
         if (p instanceof StringLiteralExpr exp) {
