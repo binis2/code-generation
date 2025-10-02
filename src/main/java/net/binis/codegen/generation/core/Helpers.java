@@ -908,6 +908,15 @@ public class Helpers {
     }
 
     public static void sortImports(CompilationUnit unit) {
+        var rewrites = lookup.importRewrites();
+        if (!rewrites.isEmpty()) {
+            unit.getImports().forEach(i -> {
+                var rewrite = rewrites.get(i.getNameAsString());
+                if (nonNull(rewrite)) {
+                    i.setName(rewrite);
+                }
+            });
+        }
         unit.getImports().sort((i1, i2) -> i2.getNameAsString().compareTo(i1.getNameAsString()));
     }
 

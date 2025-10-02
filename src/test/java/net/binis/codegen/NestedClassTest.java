@@ -24,6 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.test.BaseCodeGenTest;
 import org.junit.jupiter.api.Test;
 
+import static net.binis.codegen.generation.core.Helpers.lookup;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @Slf4j
 class NestedClassTest extends BaseCodeGenTest {
 
@@ -49,7 +52,9 @@ class NestedClassTest extends BaseCodeGenTest {
 
     @Test
     void testNestedPrototypeInPrototype() {
-        testSingle("nested/Test5.java", null, null, 2, true);
+        testSingle("nested/Test5.java", null, null, 5, false);
+        assertEquals("code.test", lookup.findGenerated("code.test.PriceResponse").getInterfaceUnit().getPackageDeclaration().get().getNameAsString());
+        assertEquals("code.test", lookup.findGenerated("code.test.PriceResponseImpl").getImplementationUnit().getPackageDeclaration().get().getNameAsString());
     }
 
     @Test

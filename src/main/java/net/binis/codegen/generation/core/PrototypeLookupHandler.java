@@ -56,6 +56,7 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> external = new HashMap<>();
     private final Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>> enums = new HashMap<>();
     private final Map<String, CustomDescription> custom = new HashMap<>();
+    private final Map<String, String> importRewrites = new HashMap<>();
     private final List<Pair<Map<String, PrototypeDescription<ClassOrInterfaceDeclaration>>, PrototypeDescription<ClassOrInterfaceDeclaration>>> prototypeMaps = new ArrayList<>();
 
     @Getter
@@ -108,6 +109,11 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     }
 
     @Override
+    public void registerImportRewrite(String oldImport, String newImport) {
+        importRewrites.put(oldImport, newImport);
+    }
+
+    @Override
     public CustomDescription createCustomDescription(String id) {
         return custom.computeIfAbsent(id, k -> Structures.CustomParsed.bldr()
                 .id(id)
@@ -126,6 +132,9 @@ public class PrototypeLookupHandler implements PrototypeLookup {
 
     @Override
     public PrototypeDescription<ClassOrInterfaceDeclaration> findParsed(String prototype) {
+        if (isNull(prototype)) {
+            return null;
+        }
         var result = parsed.get(prototype);
         if (isNull(result)) {
             handleExternal(prototype);
@@ -242,6 +251,11 @@ public class PrototypeLookupHandler implements PrototypeLookup {
     @Override
     public Collection<PrototypeDescription<ClassOrInterfaceDeclaration>> generated() {
         return generated.values();
+    }
+
+    @Override
+    public Map<String, String> importRewrites() {
+        return importRewrites;
     }
 
     @Override

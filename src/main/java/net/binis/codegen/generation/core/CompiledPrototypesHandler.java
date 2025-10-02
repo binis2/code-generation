@@ -87,7 +87,8 @@ public abstract class CompiledPrototypesHandler {
                             .properties(props)
                             .parser(lookup.getParser())
                             .declaration((TypeDeclaration) declaration)
-                            .declarationUnit(unit);
+                            .declarationUnit(unit)
+                            .prototypeClassName(c.getCanonicalName());
 
                     var prsd = parsed.build();
                     lookup.registerParsed(compiledPrototype, prsd);
@@ -140,7 +141,8 @@ public abstract class CompiledPrototypesHandler {
                                 .interfaceFullName(props.getInterfacePackage() + "." + props.getInterfaceName())
                                 .parsedFullName(props.getClassPackage() + "." + props.getClassName())
                                 .declaration(declaration)
-                                .declarationUnit(declaration.findCompilationUnit().orElse(null));
+                                .declarationUnit(declaration.findCompilationUnit().orElse(null))
+                                .prototypeClassName(c.getCanonicalName());
 
                         var prsd = parsed.build();
                         lookup.registerParsed(compiledPrototype, prsd);

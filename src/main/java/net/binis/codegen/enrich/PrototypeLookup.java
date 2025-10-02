@@ -25,6 +25,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.objects.Pair;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
@@ -40,6 +41,7 @@ public interface PrototypeLookup {
     void registerGenerated(String prototype, PrototypeDescription<ClassOrInterfaceDeclaration> generated);
     void registerGeneratedClass(String prototype, TypeDeclaration generated);
     void registerExternalLookup(UnaryOperator<String> lookup);
+    void registerImportRewrite(String oldImport, String newImport);
 
     PrototypeDescription<ClassOrInterfaceDeclaration> findParsed(String prototype);
     PrototypeDescription<ClassOrInterfaceDeclaration> findGenerated(String prototype);
@@ -53,6 +55,7 @@ public interface PrototypeLookup {
     boolean isExternal(String prototype);
     Collection<PrototypeDescription<ClassOrInterfaceDeclaration>> parsed();
     Collection<PrototypeDescription<ClassOrInterfaceDeclaration>> generated();
+    Map<String, String> importRewrites();
 
     List<PrototypeDescription<ClassOrInterfaceDeclaration>> findGeneratedByFileName(String fileName);
 

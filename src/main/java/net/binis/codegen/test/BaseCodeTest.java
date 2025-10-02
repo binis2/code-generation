@@ -183,6 +183,7 @@ public abstract class BaseCodeTest {
 
         var params = new ArrayList<>(Arrays.asList(args));
         params.add("-Xlint:unchecked");
+        params.add("-proc:full");
         options.forEach((k, v) -> params.add("-A" + k + "=" + v));
         if (enablePreview) {
             params.add("--enable-preview");

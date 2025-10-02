@@ -20,10 +20,7 @@ package net.binis.codegen.generation.core;
  * #L%
  */
 
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.Modifier;
-import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.BlockComment;
 import com.github.javaparser.ast.expr.*;
@@ -57,6 +54,7 @@ import net.binis.codegen.tools.Holder;
 import net.binis.codegen.tools.Tools;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Triple;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -103,26 +101,25 @@ public class Generator {
     public static void generateCodeForClass(CompilationUnit parser, PrototypeDescription<ClassOrInterfaceDeclaration> prsd) {
         var processed = Holder.of(0);
 
-        for (var type : parser.getTypes()) {
-            if (type.isClassOrInterfaceDeclaration()) {
-                getCodeAnnotations(type).ifPresent(prototypes -> {
-                    if (type.asClassOrInterfaceDeclaration().isInterface()) {
-                        generateCodeForPrototype(prsd, type, prototypes);
-                        processed.set(processed.get() + 1);
-                    } else if (processForClass(parser, prsd, type, prototypes)) {
-                        processed.set(processed.get() + 1);
-                    } else {
-                        prototypes.forEach(prototype ->
-                                with(ErrorHelpers.calculatePrototypeAnnotationError(type.asClassOrInterfaceDeclaration(), prototype.getValue()), message ->
-                                        lookup.error(message, prsd.findElement(type.getNameAsString(), ElementKind.CLASS, ElementKind.INTERFACE))));
-                    }
-                });
-            } else if (type.isEnumDeclaration()) {
-                getCodeAnnotations(type).ifPresent(prototypes -> {
-                    generateCodeForEnum(parser, prsd, type, prototypes);
+        var type = prsd.getDeclaration();
+        if (type.isClassOrInterfaceDeclaration()) {
+            getCodeAnnotations(type).ifPresent(prototypes -> {
+                if (type.asClassOrInterfaceDeclaration().isInterface()) {
+                    generateCodeForPrototype(prsd, type, prototypes);
                     processed.set(processed.get() + 1);
-                });
-            }
+                } else if (processForClass(parser, prsd, type, prototypes)) {
+                    processed.set(processed.get() + 1);
+                } else {
+                    prototypes.forEach(prototype ->
+                            with(ErrorHelpers.calculatePrototypeAnnotationError(type.asClassOrInterfaceDeclaration(), prototype.getValue()), message ->
+                                    lookup.error(message, prsd.findElement(type.getNameAsString(), ElementKind.CLASS, ElementKind.INTERFACE))));
+                }
+            });
+        } else if (type.isEnumDeclaration()) {
+            getCodeAnnotations(type).ifPresent(prototypes -> {
+                generateCodeForEnum(parser, prsd, type, prototypes);
+                processed.set(processed.get() + 1);
+            });
         }
 
         processElementsForAnnotations(prsd);
@@ -151,7 +148,7 @@ public class Generator {
     }
 
     private static void processNodeForAnnotations(PrototypeDescription<ClassOrInterfaceDeclaration> prsd, CompilationUnit declarationUnit) {
-        declarationUnit.findAll(AnnotationExpr.class).stream()
+        prsd.getDeclaration().findAll(AnnotationExpr.class).stream()
                 .filter(a -> Structures.defaultProperties.containsKey(getExternalClassName(declarationUnit, a.getNameAsString())))
                 .forEach(a ->
                         a.getParentNode().ifPresent(parent -> {
@@ -239,6 +236,7 @@ public class Generator {
         var typeDeclaration = type.asClassOrInterfaceDeclaration();
 
         var result = false;
+        addProcessingType(typeDeclaration.getNameAsString(), null, null, unit(typeDeclaration).getPackageDeclaration().map(PackageDeclaration::getNameAsString).orElse(null), typeDeclaration.getNameAsString());
         for (var prototype : prototypes) {
 
             var properties = prototype.getValue();
@@ -250,9 +248,10 @@ public class Generator {
                 result = true;
             }
 
-            checkForNestedPrototypes(typeDeclaration);
+            checkForNestedPrototypes(typeDeclaration, prsd);
         }
 
+        processingTypes.remove(typeDeclaration.getNameAsString());
         return result;
     }
 
@@ -267,7 +266,7 @@ public class Generator {
         properties.setPrototypeFullName(typeDeclaration.getFullyQualifiedName().orElseThrow());
         addProcessingType(typeDeclaration.getNameAsString(), properties.getInterfacePackage(), properties.getInterfaceName(), properties.getClassPackage(), properties.getClassName());
         ((Structures.Parsed) prsd).setProperties(properties);
-        ensureParsedParents(typeDeclaration, properties);
+        ensureParsedParents(typeDeclaration, properties, prsd);
         handleEnrichersSetup(properties);
 
         var parse = switch (properties.getStrategy()) {
@@ -573,6 +572,23 @@ public class Generator {
     }
 
     private static void adjustNestedPrototypes(Structures.Parsed<ClassOrInterfaceDeclaration> parse) {
+        if (parse.isNested() && nonNull(parse.getParentParsed())) {
+            var parent = parse.getParentParsed();
+            if (!GenerationStrategy.PROTOTYPE.equals(parent.getProperties().getStrategy()) && !parent.getDeclaration().asClassOrInterfaceDeclaration().isInterface()) {
+                var oldIntf = parse.getInterfaceFullName();
+                var oldImpl = parse.getImplementorFullName();
+                parse.getProperties().setInterfacePackage(parent.getProperties().getInterfacePackage());
+                parse.setInterfaceFullName(parent.getProperties().getInterfacePackage() + '.' + parse.getInterfaceName());
+                parse.getProperties().setClassPackage(parent.getProperties().getClassPackage());
+                parse.setParsedFullName(parent.getProperties().getClassPackage() + '.' + parse.getParsedName());
+                parse.getInterfaceUnit().getPackageDeclaration().get().setName(parse.getProperties().getInterfacePackage());
+                parse.getImplementationUnit().getPackageDeclaration().get().setName(parse.getProperties().getClassPackage());
+                parse.setParentClassName(null);
+                lookup.registerImportRewrite(oldIntf, parse.getInterfaceFullName());
+                lookup.registerImportRewrite(oldImpl, parse.getImplementorFullName());
+            }
+        }
+
         lookup.parsed().stream().filter(p -> p.isNested() && nonNull(p.getParentClassName()) && p.getParentClassName().equals(parse.getPrototypeClassName())).map(Structures.Parsed.class::cast).sorted((o1, o2) -> Boolean.compare(o1.isMixIn(), o2.isMixIn())).forEach(p -> {
             p.setInterfaceName(parse.getInterfaceName() + '.' + p.getInterfaceName());
             p.getProperties().setInterfacePackage(parse.getProperties().getInterfacePackage() + '.' + parse.getInterfaceName());
@@ -622,9 +638,12 @@ public class Generator {
             var statement = Holder.of("");
             ann.getChildNodes().stream().filter(MemberValuePair.class::isInstance).map(MemberValuePair.class::cast).forEach(pair -> {
                 switch (pair.getNameAsString()) {
-                    case "field" -> statement.set("this." + pair.getValue().asStringLiteralExpr().asString() + " = " + statement.get());
-                    case "expression" -> statement.set(statement.get() + pair.getValue().asStringLiteralExpr().asString() + ";");
-                    case "imports" -> pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
+                    case "field" ->
+                            statement.set("this." + pair.getValue().asStringLiteralExpr().asString() + " = " + statement.get());
+                    case "expression" ->
+                            statement.set(statement.get() + pair.getValue().asStringLiteralExpr().asString() + ";");
+                    case "imports" ->
+                            pair.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
                     default -> log.warn("Invalid @Initialize member {}", pair.getNameAsString());
                 }
             });
@@ -705,7 +724,7 @@ public class Generator {
         var method = declaration.clone().removeModifier(DEFAULT);
         envelopWithDummyClass(method, declaration);
         method.getAnnotationByClass(Ignore.class).ifPresent(method::remove);
-        if (!ignores.isForInterface() && !method.getNameAsString().equals("_equals") && !method.getNameAsString().equals("_hashCode") ) {
+        if (!ignores.isForInterface() && !method.getNameAsString().equals("_equals") && !method.getNameAsString().equals("_hashCode")) {
             if (ignores.isForClass()) {
                 declaration.getBody().ifPresent(b -> {
                     var body = b.clone();
@@ -747,7 +766,8 @@ public class Generator {
                             case "value" -> {
                                 code = getStringValue(p.getValue());
                             }
-                            case "imports" -> p.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
+                            case "imports" ->
+                                    p.getValue().asArrayInitializerExpr().getValues().stream().map(Expression::asStringLiteralExpr).forEach(i -> unit.addImport(i.asString()));
                         }
                     }
                 }
@@ -1245,7 +1265,7 @@ public class Generator {
 
     }
 
-    private static void ensureParsedParents(ClassOrInterfaceDeclaration declaration, PrototypeData properties) {
+    private static void ensureParsedParents(ClassOrInterfaceDeclaration declaration, PrototypeData properties, PrototypeDescription<ClassOrInterfaceDeclaration> current) {
         for (var extended : declaration.getExtendedTypes()) {
             extended.getTypeArguments().ifPresent(args ->
                     args.forEach(arg -> {
@@ -1262,26 +1282,46 @@ public class Generator {
                         name -> Tools.with(lookup.findParsed(name), parse ->
                                 condition(!parse.isProcessed(), () -> generateCodeForClass(parse.getDeclaration().findCompilationUnit().get(), parse)))));
 
-        checkForNestedPrototypes(declaration);
+        checkForNestedPrototypes(declaration, current);
     }
 
-    protected static void checkForNestedPrototypes(ClassOrInterfaceDeclaration declaration) {
+    protected static void checkForNestedPrototypes(ClassOrInterfaceDeclaration declaration, PrototypeDescription<ClassOrInterfaceDeclaration> parent) {
+        var parsed = new ArrayList<Triple<String, ClassOrInterfaceDeclaration, List<Pair<AnnotationExpr, Structures.PrototypeDataHandler>>>>();
         declaration.getChildNodes().stream().filter(ClassOrInterfaceDeclaration.class::isInstance).map(ClassOrInterfaceDeclaration.class::cast).forEach(cls ->
                 Generator.getCodeAnnotations(cls).ifPresent(ann -> {
                     var clsName = getClassName(cls);
-                    lookup.registerParsed(clsName,
-                            Structures.Parsed.builder()
-                                    .declaration(cls.asTypeDeclaration())
-                                    .declarationUnit(cls.findCompilationUnit().orElse(null))
-                                    .parser(lookup.getParser())
-                                    .nested(true)
-                                    .parentClassName(getClassName(declaration))
-                                    .parent(declaration)
-                                    .build());
+                    var existing = (Structures.Parsed) lookup.findParsed(clsName);
+                    if (isNull(existing)) {
+                        lookup.registerParsed(clsName,
+                                Structures.Parsed.builder()
+                                        .declaration(cls.asTypeDeclaration())
+                                        .declarationUnit(cls.findCompilationUnit().orElse(null))
+                                        .parser(lookup.getParser())
+                                        .nested(true)
+                                        .parentClassName(getClassName(declaration))
+                                        .parent(declaration)
+                                        .parentParsed(parent)
+                                        .prototypeClassName(clsName)
+                                        .build());
+                    } else {
+                        existing.setDeclaration(cls.asTypeDeclaration());
+                        existing.setDeclarationUnit(cls.findCompilationUnit().orElse(null));
+                        existing.setParser(lookup.getParser());
+                        existing.setNested(true);
+                        existing.setParentClassName(getClassName(declaration));
+                        existing.setParent(declaration);
+                        existing.setParentParsed(parent);
+                        existing.setPrototypeClassName(clsName);
+                        existing.setProcessed(false);
+                        existing.setFields(new ArrayList<>());
+                    }
 
-                    Tools.with(lookup.findParsed(clsName), parse ->
-                            condition(!parse.isProcessed(), () -> generateCodeForPrototype(parse, cls, ann)));
+                    parsed.add(Triple.of(clsName, cls, ann));
                 }));
+        parsed.forEach(triple -> {
+            Tools.with(lookup.findParsed(triple.getLeft()), parse ->
+                    condition(!parse.isProcessed(), () -> generateCodeForPrototype(parse, triple.getMiddle(), triple.getRight())));
+        });
 
         declaration.getChildNodes().stream().filter(EnumDeclaration.class::isInstance).map(EnumDeclaration.class::cast).forEach(cls ->
                 Generator.getCodeAnnotations(cls).ifPresent(ann -> {
@@ -2696,7 +2736,8 @@ public class Generator {
                             builder.mixInClass(value);
                         }
                     }
-                    case "ordinalOffset" -> builder.ordinalOffset(pair.getValue().asIntegerLiteralExpr().asNumber().intValue());
+                    case "ordinalOffset" ->
+                            builder.ordinalOffset(pair.getValue().asIntegerLiteralExpr().asNumber().intValue());
                     case "enrichers" -> checkEnrichers(builder::enrichers, handleInitializerAnnotation(pair));
                     default -> {
                     }
