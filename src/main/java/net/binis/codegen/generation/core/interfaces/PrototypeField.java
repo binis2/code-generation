@@ -42,6 +42,7 @@ public interface PrototypeField {
     boolean isGenericMethod();
     boolean isGenericField();
     boolean isCustom();
+    boolean isOverride();
     Structures.Ignores getIgnores();
     PrototypeDescription<ClassOrInterfaceDeclaration> getPrototype();
     Map<String, Type> getGenerics();

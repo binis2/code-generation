@@ -1156,6 +1156,27 @@ public class Helpers {
         Helpers.handleImports(parsed.getDeclaration(), parsed.getImplementation());
 
         getEnrichersList(parsed).forEach(e -> e.postProcess(parsed));
+
+        lookup.parsed().stream().forEach(p ->
+            p.getFields().stream().filter(PrototypeField::isOverride).forEach(f -> {
+                if (nonNull(f.getParent())) {
+                    if (nonNull(f.getDeclaration()) && nonNull(f.getParent().getDeclaration()) && f.getDeclaration().toString().equals(f.getParent().getDeclaration().toString())) {
+                        f.getDeclaration().remove();
+                    }
+                    if (nonNull(f.getImplementationGetter()) && nonNull(f.getParent().getImplementationGetter()) && f.getImplementationGetter().toString().equals(f.getParent().getImplementationGetter().toString())) {
+                        f.getImplementationGetter().remove();
+                    }
+                    if (nonNull(f.getImplementationSetter()) && nonNull(f.getParent().getImplementationSetter()) && f.getImplementationSetter().toString().equals(f.getParent().getImplementationSetter().toString())) {
+                        f.getImplementationSetter().remove();
+                    }
+                    if (nonNull(f.getInterfaceGetter()) && nonNull(f.getParent().getInterfaceGetter()) && f.getInterfaceGetter().toString().equals(f.getParent().getInterfaceGetter().toString())) {
+                        f.getInterfaceGetter().remove();
+                    }
+                    if (nonNull(f.getInterfaceSetter()) && nonNull(f.getParent().getInterfaceSetter()) && f.getInterfaceSetter().toString().equals(f.getParent().getInterfaceSetter().toString())) {
+                        f.getInterfaceSetter().remove();
+                    }
+                }
+            }));
     }
 
     public static void handleEnrichers(ElementDescription method) {

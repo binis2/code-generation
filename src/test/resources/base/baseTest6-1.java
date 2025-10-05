@@ -7,6 +7,10 @@ import javax.annotation.processing.Generated;
 
 @Generated(value = "net.binis.codegen.something.TestPrototype", comments = "TestImpl")
 public interface Test extends BaseCompiledWithExternalGeneric {
+    long getId();
+
+    void setId(long id);
+
     Test.Modify with();
 
     interface Fields<T> {

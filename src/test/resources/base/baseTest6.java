@@ -6,4 +6,7 @@ import net.binis.codegen.objects.prototype.BaseCompiledWithExternalGenericProtot
 
 @CodePrototype(enrichers = ModifierEnricher.class)
 public interface TestPrototype extends BaseCompiledWithExternalGenericPrototype {
+
+    long id();
+
 }

@@ -1958,6 +1958,25 @@ public class Generator {
                 mergeAnnotations(result.getDescription(), unit, method);
                 compiledAnnotations = true;
                 unit = fieldProto.getDescription().findCompilationUnit().get();
+
+                result = Structures.FieldData.builder()
+                        .parsed(parsed)
+                        .name(fieldName)
+                        .description(method)
+                        .declaration(field)
+                        .collection(result.isCollection())
+                        .ignores(ignores)
+                        .genericMethod(result.isGenericMethod())
+                        .genericField(result.isGenericField())
+                        .generics(result.getGenerics())
+                        .prototype(result.getPrototype())
+                        .typePrototypes(result.getTypePrototypes())
+                        .type(field.getCommonType())
+                        .fullType(result.getFullType())
+                        .parent(result)
+                        .override(true)
+                        .build();
+                parsed.getFields().add(result);
             }
         }
         handleFieldAnnotations(unit, field, method, compiledAnnotations, result);

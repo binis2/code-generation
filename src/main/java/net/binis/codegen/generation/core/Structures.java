@@ -212,6 +212,7 @@ public class Structures {
         private boolean external;
         private boolean genericMethod;
         private boolean genericField;
+        private boolean override;
         private Structures.Ignores ignores;
         @ToString.Exclude
         private PrototypeDescription<ClassOrInterfaceDeclaration> prototype;

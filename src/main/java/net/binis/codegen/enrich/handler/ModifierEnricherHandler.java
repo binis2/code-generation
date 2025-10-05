@@ -385,75 +385,77 @@ public class ModifierEnricherHandler extends BaseEnricher implements ModifierEnr
 
     protected MethodDeclaration declare(PrototypeDescription<ClassOrInterfaceDeclaration> description, PrototypeData properties, ClassOrInterfaceDeclaration modifierFields, PrototypeField field, TypeDeclaration<ClassOrInterfaceDeclaration> classDeclaration, List<Pair<CompilationUnit, String>> imports) {
         MethodDeclaration result = null;
-        if (!field.getIgnores().isForModifier()) {
-            var pair = getFieldType(description, field);
-            var type = pair.getKey();
-            var modifierClass = description.getRegisteredClass(EMBEDDED_MODIFIER_KEY);
-            var modifier = description.getRegisteredClass(EMBEDDED_MODIFIER_INTF_KEY);
-            var returnType = TYPE_PARAMETER;
-            var cast = TYPE_PARAMETER;
-            if (isNull(modifierClass)) {
-                modifierClass = description.getRegisteredClass(MODIFIER_KEY);
-                returnType = properties.getLongModifierName();
-                cast = null;
-            }
-
-            if (nonNull(modifierClass)) {
-                result = addModifier(modifierClass, field, isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), returnType, true, type, cast, description);
-            }
-
-            if (CollectionsHandler.isCollection(type)) {
-                if (isNull(modifier)) {
-                    modifier = description.getRegisteredClass(MODIFIER_INTF_KEY);
-                    returnType = properties.getModifierName();
+        if (!field.isOverride()) {
+            if (!field.getIgnores().isForModifier()) {
+                var pair = getFieldType(description, field);
+                var type = pair.getKey();
+                var modifierClass = description.getRegisteredClass(EMBEDDED_MODIFIER_KEY);
+                var modifier = description.getRegisteredClass(EMBEDDED_MODIFIER_INTF_KEY);
+                var returnType = TYPE_PARAMETER;
+                var cast = TYPE_PARAMETER;
+                if (isNull(modifierClass)) {
+                    modifierClass = description.getRegisteredClass(MODIFIER_KEY);
+                    returnType = properties.getLongModifierName();
+                    cast = null;
                 }
-                result = addModifier(modifier, field, null, returnType, false, type, cast, description);
-                var proto = nonNull(pair.getValue()) ? pair.getValue() : field.getPrototype();
-                if (isNull(proto) || proto.isCodeEnum() || proto.getEmbeddedModifierType().isCollection()) {
-                    with(CollectionsHandler.addModifier(description, modifierClass, field, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true, nonNull(proto) && proto.isCodeEnum()), m ->
-                            field.addModifier(ModifierType.COLLECTION, m, field.getParsed()));
-                    CollectionsHandler.addModifier(description, modifier, field, description.getInterfaceName(), null, false, nonNull(proto) && proto.isCodeEnum());
+
+                if (nonNull(modifierClass)) {
+                    result = addModifier(modifierClass, field, isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), returnType, true, type, cast, description);
                 }
-            } else {
-                addField(field, modifierFields, imports, type);
-                var proto = nonNull(pair.getValue()) ? pair.getValue() : field.getPrototype();
-                if (nonNull(proto) && proto.getEmbeddedModifierType().isSolo()) {
+
+                if (CollectionsHandler.isCollection(type)) {
                     if (isNull(modifier)) {
                         modifier = description.getRegisteredClass(MODIFIER_INTF_KEY);
+                        returnType = properties.getModifierName();
                     }
-                    returnType = Helpers.calcType(modifier);
-                    modifier.addMethod(field.getName()).setType(proto.getInterfaceName() + ".EmbeddedSoloModify<" + returnType + ">").setBody(null);
-                    var className = isNull(description.getMixIn()) ? description.getProperties().getClassName() : description.getMixIn().getProperties().getClassName();
-                    modifierClass.addMethod(field.getName(), PUBLIC).setType(proto.getInterfaceName() + ".EmbeddedSoloModify<" + ((ClassOrInterfaceDeclaration) modifier.getParentNode().get()).getNameAsString() + "." + returnType + ">").setBody(block(
-                            "{ if (" + className + ".this." + field.getName() + " == null) {" +
-                                    className + ".this." + field.getName() + " = CodeFactory.create(" + proto.getInterfaceName() + ".class);}" +
-                                    "return CodeFactory.modify(this, " + className + ".this." + field.getName() + ", " + proto.getInterfaceName() + ".class); }"));
-                    modifierClass.findCompilationUnit().ifPresent(u -> {
-                        u.addImport("net.binis.codegen.factory.CodeFactory");
-                        u.addImport(proto.getInterfaceFullName());
-                    });
-
-                    modifier.findCompilationUnit().ifPresent(u -> u.addImport(proto.getInterfaceFullName()));
-
-                    with(description.getRegisteredClass(MODIFIER_INTF_KEY), cls -> {
-                        cls.addMethod(field.getName() + "$").setType(properties.getModifierName()).addParameter("Consumer<" + proto.getInterfaceName() + ".Modify>", "init").setBody(null);
-                        cls.findCompilationUnit().ifPresent(u -> u.addImport(Consumer.class));
-                    });
-
-                    with(description.getRegisteredClass(MODIFIER_KEY), cls -> {
-                        var methodName = isNull(proto.getMixIn()) ? Constants.MODIFIER_METHOD_NAME : Constants.MIXIN_MODIFYING_METHOD_PREFIX + proto.getInterfaceName();
-                        cls.addMethod(field.getName() + "$", PUBLIC).setType(properties.getInterfaceName() + "." + properties.getModifierName()).addParameter("Consumer<" + proto.getInterfaceName() + ".Modify>", "init").setBody(block(
+                    result = addModifier(modifier, field, null, returnType, false, type, cast, description);
+                    var proto = nonNull(pair.getValue()) ? pair.getValue() : field.getPrototype();
+                    if (isNull(proto) || proto.isCodeEnum() || proto.getEmbeddedModifierType().isCollection()) {
+                        with(CollectionsHandler.addModifier(description, modifierClass, field, properties.getLongModifierName(), isNull(properties.getMixInClass()) ? properties.getClassName() : description.getMixIn().getParsedName(), true, nonNull(proto) && proto.isCodeEnum()), m ->
+                                field.addModifier(ModifierType.COLLECTION, m, field.getParsed()));
+                        CollectionsHandler.addModifier(description, modifier, field, description.getInterfaceName(), null, false, nonNull(proto) && proto.isCodeEnum());
+                    }
+                } else {
+                    addField(field, modifierFields, imports, type);
+                    var proto = nonNull(pair.getValue()) ? pair.getValue() : field.getPrototype();
+                    if (nonNull(proto) && proto.getEmbeddedModifierType().isSolo()) {
+                        if (isNull(modifier)) {
+                            modifier = description.getRegisteredClass(MODIFIER_INTF_KEY);
+                        }
+                        returnType = Helpers.calcType(modifier);
+                        modifier.addMethod(field.getName()).setType(proto.getInterfaceName() + ".EmbeddedSoloModify<" + returnType + ">").setBody(null);
+                        var className = isNull(description.getMixIn()) ? description.getProperties().getClassName() : description.getMixIn().getProperties().getClassName();
+                        modifierClass.addMethod(field.getName(), PUBLIC).setType(proto.getInterfaceName() + ".EmbeddedSoloModify<" + ((ClassOrInterfaceDeclaration) modifier.getParentNode().get()).getNameAsString() + "." + returnType + ">").setBody(block(
                                 "{ if (" + className + ".this." + field.getName() + " == null) {" +
                                         className + ".this." + field.getName() + " = CodeFactory.create(" + proto.getInterfaceName() + ".class);}" +
-                                        "init.accept(" + className + ".this." + field.getName() + "." + methodName + "());" +
-                                        "return this;}"
-                        ));
-                        cls.findCompilationUnit().ifPresent(u -> u.addImport(Consumer.class));
-                    });
+                                        "return CodeFactory.modify(this, " + className + ".this." + field.getName() + ", " + proto.getInterfaceName() + ".class); }"));
+                        modifierClass.findCompilationUnit().ifPresent(u -> {
+                            u.addImport("net.binis.codegen.factory.CodeFactory");
+                            u.addImport(proto.getInterfaceFullName());
+                        });
+
+                        modifier.findCompilationUnit().ifPresent(u -> u.addImport(proto.getInterfaceFullName()));
+
+                        with(description.getRegisteredClass(MODIFIER_INTF_KEY), cls -> {
+                            cls.addMethod(field.getName() + "$").setType(properties.getModifierName()).addParameter("Consumer<" + proto.getInterfaceName() + ".Modify>", "init").setBody(null);
+                            cls.findCompilationUnit().ifPresent(u -> u.addImport(Consumer.class));
+                        });
+
+                        with(description.getRegisteredClass(MODIFIER_KEY), cls -> {
+                            var methodName = isNull(proto.getMixIn()) ? Constants.MODIFIER_METHOD_NAME : Constants.MIXIN_MODIFYING_METHOD_PREFIX + proto.getInterfaceName();
+                            cls.addMethod(field.getName() + "$", PUBLIC).setType(properties.getInterfaceName() + "." + properties.getModifierName()).addParameter("Consumer<" + proto.getInterfaceName() + ".Modify>", "init").setBody(block(
+                                    "{ if (" + className + ".this." + field.getName() + " == null) {" +
+                                            className + ".this." + field.getName() + " = CodeFactory.create(" + proto.getInterfaceName() + ".class);}" +
+                                            "init.accept(" + className + ".this." + field.getName() + "." + methodName + "());" +
+                                            "return this;}"
+                            ));
+                            cls.findCompilationUnit().ifPresent(u -> u.addImport(Consumer.class));
+                        });
+                    }
                 }
-            }
-            if (nonNull(result)) {
-                handleAnnotationIgnores(result, field.getIgnores());
+                if (nonNull(result)) {
+                    handleAnnotationIgnores(result, field.getIgnores());
+                }
             }
         }
         return result;
