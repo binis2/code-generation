@@ -489,8 +489,7 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
     public void visit(final ArrayType n, final Void arg) {
         final List<ArrayType> arrayTypeBuffer = new LinkedList<>();
         Type type = n;
-        while (type instanceof ArrayType) {
-            final ArrayType arrayType = (ArrayType) type;
+        while (type instanceof ArrayType arrayType) {
             arrayTypeBuffer.add(arrayType);
             type = arrayType.getComponentType();
         }
@@ -1886,7 +1885,7 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
         printer.print("???;");
     }
 
-    private void printOrphanCommentsBeforeThisChildNode(final Node node) {
+    protected void printOrphanCommentsBeforeThisChildNode(final Node node) {
     }
 
     private void printOrphanCommentsAfterThisChildNode(final Node node) {
@@ -1894,7 +1893,7 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
         printComment(node.getOrphanComments().stream().filter(LineComment.class::isInstance).filter(c -> "endregion".equals(c.getContent())).findFirst(), null);
     }
 
-    private void printOrphanCommentsEnding(final Node node) {
+    protected void printOrphanCommentsEnding(final Node node) {
     }
 
     private void indentIf(boolean expr) {
@@ -1907,7 +1906,7 @@ public class CodeGenPrettyPrinterVisitor extends DefaultPrettyPrinterVisitor {
             printer.unindent();
     }
 
-    private Optional<ConfigurationOption> getOption(ConfigOption cOption) {
+    protected Optional<ConfigurationOption> getOption(ConfigOption cOption) {
         return configuration.get(new DefaultConfigurationOption(cOption));
     }
 }
