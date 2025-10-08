@@ -1,5 +1,14 @@
 # Change Log
 
+**08-10-2025** ver. 1.2.29
+* Core: Added register mapping function with key
+* Core: Force initializing a code enum when calling enumValueOf
+* Core: Added mapping for conversions between Collections and Arrays
+* Generation: Added support for static functions in prototypes.
+* Generation: Better support for nested types
+* Generation: Better handling for overridden fields.
+* Spring Configuration: Added mappers for String to Object with JSON and XML mapping keys.
+
 **22-08-2025** ver. 1.2.28
 * Core: Added support for virtual threads for **Async** routines.
 
