@@ -383,7 +383,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
     }
 
     protected void handleAliases(PrototypeField field, AnnotationExpr annotation, Class<?> annotationClass, Params.ParamsBuilder params) {
-        var list = new ArrayList<Object>();
+        var list = new ArrayList<>();
         var parOrder = Arrays.stream(annotationClass.getDeclaredMethods())
                 .filter(m -> Arrays.stream(m.getDeclaredAnnotations())
                         .filter(a -> a.annotationType().isAssignableFrom(AliasFor.class))
@@ -627,7 +627,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             return value.asDoubleLiteralExpr().asDouble();
         } else if (value.isBooleanLiteralExpr()) {
             return value.asBooleanLiteralExpr().getValue();
-        } else if (value.isBinaryExpr()) {
+        } else if (value.isBinaryExpr() || value.isClassExpr()) {
             return value;
         }
         //TODO: Handle external constants
@@ -954,6 +954,10 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                     result.append(", \"")
                             .append(StringEscapeUtils.escapeJava(p))
                             .append("\"");
+                } else if (param instanceof Class cls) {
+                    result.append(", ")
+                            .append(cls)
+                            .append(".class");
                 } else if (param instanceof AsCodeHolder holder) {
                     var format = "%s".equals(holder.getFormat()) && !StringUtils.isBlank(params.getAsCode()) ? params.getAsCode() : holder.getFormat();
                     formatCode(field, modifier, result, holder.getValue(), format, collection);
@@ -1085,8 +1089,10 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             if (field.isCollection()) {
                 cls.set(getExternalClassName(field.getDescription(), field.getType().asClassOrInterfaceType().getTypeArguments().get().get(0).toString()));
             }
-
-            if (params.getTargets().stream().noneMatch(c -> c.equals(cls.get()))) {
+            var loaded = loadClass(cls.get());
+            if (params.getTargets().stream().noneMatch(c -> c.equals(cls.get()) ||
+                    (nonNull(loaded) && withRes(loadClass(c),
+                            loadedTarget -> loadedTarget.isAssignableFrom(loaded), false)))) {
                 var element = field.getParsed().findElement(field.getParsed().getPrototypeElement(), field.getName(), ElementKind.METHOD);
                 error("Target '" + cls + "' is not in the list of allowed targets for '" + params.getCls() + "': " + params.getTargets(), element);
             }
