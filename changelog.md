@@ -1,4 +1,9 @@
 # Change Log
+**15-10-2025** ver. 1.2.29
+* Core: Better mapping handling for asymmetric structures
+* Generation: Handling of class expressions for validation params.
+* Spring Configuration: Added map to object convertor.
+* Validation: Added enum validator.
 
 **08-10-2025** ver. 1.2.29
 * Core: Added register mapping function with key
