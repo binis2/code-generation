@@ -38,4 +38,8 @@ public interface ReferencePrototype {
     default int _hashCode() {
         return title().hashCode();
     }
+
+    default String _toString() {
+        return title();
+    }
 }

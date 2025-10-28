@@ -724,7 +724,7 @@ public class Generator {
         var method = declaration.clone().removeModifier(DEFAULT);
         envelopWithDummyClass(method, declaration);
         method.getAnnotationByClass(Ignore.class).ifPresent(method::remove);
-        if (!ignores.isForInterface() && !method.getNameAsString().equals("_equals") && !method.getNameAsString().equals("_hashCode")) {
+        if (!ignores.isForInterface() && !method.getNameAsString().equals("_equals") && !method.getNameAsString().equals("_hashCode") && !method.getNameAsString().equals("_toString") && !method.getNameAsString().equals("_clone")) {
             if (ignores.isForClass()) {
                 declaration.getBody().ifPresent(b -> {
                     var body = b.clone();
@@ -747,7 +747,7 @@ public class Generator {
 
         if (!ignores.isForClass()) {
             var name = method.getNameAsString();
-            if (name.equals("_equals") || name.equals("_hashCode")) {
+            if (name.equals("_equals") || name.equals("_hashCode") || name.equals("_toString") || name.equals("_clone")) {
                 method.setName(name.substring(1));
             }
             method.addModifier(PUBLIC);
