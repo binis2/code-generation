@@ -52,28 +52,30 @@ public class ToStringEnricherHandler extends BaseEnricher implements ToStringEnr
         if (nonNull(impl)) {
             var name = nonNull(intf) ? intf.getNameAsString() : impl.getNameAsString();
 
-            var method = impl.addMethod("toString", PUBLIC).setType("String").addAnnotation(Override.class);
-            var body = new StringBuilder();
-            body.append("{ return \"").append(name).append("(");
-            var cnt = buildBody(description, impl, body);
-            if (nonNull(description.getBase())) {
-                if (cnt > 0) {
-                    body.append("\", ");
-                } else {
-                    body.append("\"");
-                }
-                var pcnt = buildBody(description.getBase(), impl, body);
-                if (pcnt == 0) {
-                    if (cnt == 0) {
-                        body.setLength(body.length() - 5);
+            if (impl.getMethodsByName("toString").stream().noneMatch(m -> m.getParameters().isEmpty())) {
+                var method = impl.addMethod("toString", PUBLIC).setType("String").addAnnotation(Override.class);
+                var body = new StringBuilder();
+                body.append("{ return \"").append(name).append("(");
+                var cnt = buildBody(description, impl, body);
+                if (nonNull(description.getBase())) {
+                    if (cnt > 0) {
+                        body.append("\", ");
                     } else {
-                        body.setLength(body.length() - 7);
+                        body.append("\"");
+                    }
+                    var pcnt = buildBody(description.getBase(), impl, body);
+                    if (pcnt == 0) {
+                        if (cnt == 0) {
+                            body.setLength(body.length() - 5);
+                        } else {
+                            body.setLength(body.length() - 7);
+                        }
                     }
                 }
-            }
-            body.append("\")\"; }");
+                body.append("\")\"; }");
 
-            method.setBody(block(body.toString().replace("\" + \"", "")));
+                method.setBody(block(body.toString().replace("\" + \"", "")));
+            }
         }
     }
 

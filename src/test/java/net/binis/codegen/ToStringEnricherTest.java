@@ -75,6 +75,9 @@ class ToStringEnricherTest extends BaseCodeGenTest {
         testSingleExecute("enrich/enrichToString7.java", "enrich/enrichToString7-0.java", "enrich/enrichToString7-1.java", "enrich/enrichToString7-2.java");
     }
 
-
+    @Test
+    void testWithCustomToStringDeclared() {
+        testSingleExecute("enrich/enrichToString8.java", "enrich/enrichToString8-0.java", "enrich/enrichToString8-1.java", "enrich/enrichToString8-2.java");
+    }
 
 }
