@@ -1,5 +1,15 @@
 # Change Log
-**15-10-2025** ver. 1.2.29
+**02-11-2025** ver. 1.2.31
+* Core: Improved mapping discovery.
+* Core: Improved mapping of inherited data objects.
+* Generation: Added ability to define toString and clone methods for prototypes.
+* Hibernate: Added Tuple to Object mapping.
+* Jackson: Moved Map To Object mapping into Jackson module.
+* Jackson: Fixed serialization of custom collections (ex. ImmutableObjects)
+* Spring: Fixed query references.
+* Spring: Improved tuples handling.
+
+**15-10-2025** ver. 1.2.30
 * Core: Better mapping handling for asymmetric structures
 * Generation: Handling of class expressions for validation params.
 * Spring Configuration: Added map to object convertor.
