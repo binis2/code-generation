@@ -88,7 +88,8 @@ public abstract class CompiledPrototypesHandler {
                             .parser(lookup.getParser())
                             .declaration((TypeDeclaration) declaration)
                             .declarationUnit(unit)
-                            .prototypeClassName(c.getCanonicalName());
+                            .prototypeClassName(c.getCanonicalName())
+                            .ignores(getIgnores(c));
 
                     var prsd = parsed.build();
                     lookup.registerParsed(compiledPrototype, prsd);

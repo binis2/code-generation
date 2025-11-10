@@ -435,6 +435,9 @@ public class Generator {
         handleMixin(parse);
         mergeNestedPrototypes(parse);
 
+        handleAnnotationIgnores(intf, prsd.getIgnores());
+        handleAnnotationIgnores(spec, prsd.getIgnores());
+
         handleImports(typeDeclaration, spec);
         handleImports(typeDeclaration, intf);
         return parse;
@@ -1302,6 +1305,7 @@ public class Generator {
                                         .parent(declaration)
                                         .parentParsed(parent)
                                         .prototypeClassName(clsName)
+                                        .ignores(getIgnores(cls.asTypeDeclaration()))
                                         .build());
                     } else {
                         existing.setDeclaration(cls.asTypeDeclaration());
@@ -1314,6 +1318,7 @@ public class Generator {
                         existing.setPrototypeClassName(clsName);
                         existing.setProcessed(false);
                         existing.setFields(new ArrayList<>());
+                        existing.setIgnores(getIgnores(cls.asTypeDeclaration()));
                     }
 
                     parsed.add(Triple.of(clsName, cls, ann));
@@ -1335,6 +1340,7 @@ public class Generator {
                                     .parentClassName(getClassName(declaration))
                                     .parent(declaration)
                                     .codeEnum(true)
+                                    .ignores(getIgnores(cls.asTypeDeclaration()))
                                     .build());
 
                     Tools.with(lookup.findParsed(clsName), parse ->

@@ -374,6 +374,8 @@ public class Structures {
         protected String interfaceName;
         protected String interfaceFullName;
 
+        protected Ignores ignores;
+
         @EqualsAndHashCode.Exclude
         @Builder.Default
         @ToString.Exclude
@@ -651,8 +653,8 @@ public class Structures {
         protected String path;
 
         @Builder(builderMethodName = "bldr")
-        public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, List<PrototypeDataHandler> additionalProperties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, CompilationUnit declarationUnit, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean external, boolean codeEnum, String parentClassName, ClassOrInterfaceDeclaration parent, PrototypeDescription<ClassOrInterfaceDeclaration> parentParsed, String parentPackage, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, CompilationUnit interfaceUnit, CompilationUnit implementationUnit, Map<String, List<ElementDescription>> elements, Element element, List<Parsables.Entry.Bag> rawElements, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
-            super(processed, invalid, parser, compiled, prototypeFileName, prototypeClassName, properties, additionalProperties, parsedName, parsedFullName, interfaceName, interfaceFullName, constants, declaration, declarationUnit, files, custom, base, mixIn, nested, external, codeEnum, parentClassName, parent, parentParsed, parentPackage, embeddedModifierType, classes, fields, spec, intf, interfaceUnit, implementationUnit, elements, rawElements, element, initializers, customInitializers, postProcessActions);
+        public CustomParsed(String id, boolean processed, boolean invalid, JavaParser parser, Class<?> compiled, String prototypeFileName, String prototypeClassName, PrototypeDataHandler properties, List<PrototypeDataHandler> additionalProperties, String parsedName, String parsedFullName, String interfaceName, String interfaceFullName, Ignores ignores, Map<String, PrototypeConstant> constants, TypeDeclaration<ClassOrInterfaceDeclaration> declaration, CompilationUnit declarationUnit, List<CompilationUnit> files, Map<String, GeneratedFileHandler> custom, Parsed<ClassOrInterfaceDeclaration> base, Parsed<ClassOrInterfaceDeclaration> mixIn, boolean nested, boolean external, boolean codeEnum, String parentClassName, ClassOrInterfaceDeclaration parent, PrototypeDescription<ClassOrInterfaceDeclaration> parentParsed, String parentPackage, EmbeddedModifierType embeddedModifierType, Map<String, ClassOrInterfaceDeclaration> classes, List<PrototypeField> fields, ClassOrInterfaceDeclaration spec, ClassOrInterfaceDeclaration intf, CompilationUnit interfaceUnit, CompilationUnit implementationUnit, Map<String, List<ElementDescription>> elements, Element element, List<Parsables.Entry.Bag> rawElements, List<Triple<ClassOrInterfaceDeclaration, Node, PrototypeDescription<ClassOrInterfaceDeclaration>>> initializers, List<Consumer<BlockStmt>> customInitializers, List<Runnable> postProcessActions) {
+            super(processed, invalid, parser, compiled, prototypeFileName, prototypeClassName, properties, additionalProperties, parsedName, parsedFullName, interfaceName, interfaceFullName, ignores, constants, declaration, declarationUnit, files, custom, base, mixIn, nested, external, codeEnum, parentClassName, parent, parentParsed, parentPackage, embeddedModifierType, classes, fields, spec, intf, interfaceUnit, implementationUnit, elements, rawElements, element, initializers, customInitializers, postProcessActions);
             this.id = id;
             this.files = initFiles();
         }
@@ -703,6 +705,7 @@ public class Structures {
         protected boolean forToString;
 
         protected boolean forSerialization;
+        protected boolean forValidation;
 
         protected boolean includedForField;
         protected boolean includedForClass;

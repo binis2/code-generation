@@ -74,6 +74,8 @@ public interface PrototypeDescription<T extends TypeDeclaration<T>> {
 
     List<PrototypeField> getFields();
 
+    Structures.Ignores getIgnores();
+
     ClassOrInterfaceDeclaration getImplementation();
     CompilationUnit getImplementationUnit();
     ClassOrInterfaceDeclaration getInterface();

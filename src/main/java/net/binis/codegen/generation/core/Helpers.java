@@ -60,6 +60,7 @@ import javax.lang.model.element.ElementKind;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.TypeVariable;
@@ -777,6 +778,7 @@ public class Helpers {
                                     case "forProjection" -> result.forProjection(pair.getValue().asBooleanLiteralExpr().getValue());
                                     case "forToString" -> result.forToString(pair.getValue().asBooleanLiteralExpr().getValue());
                                     case "forSerialization" -> result.forSerialization(pair.getValue().asBooleanLiteralExpr().getValue());
+                                    case "forValidation" -> result.forValidation(pair.getValue().asBooleanLiteralExpr().getValue());
                                     default -> {
                                         //Do nothing
                                     }
@@ -830,10 +832,10 @@ public class Helpers {
         return result.build();
     }
 
-    public static Structures.Ignores getIgnores(Method method) {
+    public static Structures.Ignores getIgnores(AnnotatedElement element) {
         var result = Structures.Ignores.builder();
 
-        Tools.with(method.getAnnotation(Ignore.class), ann -> result
+        Tools.with(element.getAnnotation(Ignore.class), ann -> result
                 .explicitlySet(true)
                 .forField(ann.forField())
                 .forClass(ann.forClass())
@@ -843,7 +845,7 @@ public class Helpers {
                 .forMapper(ann.forMapper())
                 .forProjection(ann.forProjection())
                 .forToString(ann.forToString()));
-        Tools.with(method.getAnnotation(Include.class), ann -> result
+        Tools.with(element.getAnnotation(Include.class), ann -> result
                 .explicitlySet(true)
                 .includedForField(ann.forField())
                 .includedForClass(ann.forClass())
@@ -973,7 +975,7 @@ public class Helpers {
     }
 
     public static boolean classExists(String className) {
-        return nonNull(loadClass(className));
+        return nonNull(className) && nonNull(loadClass(className));
     }
 
     public static void cleanUp() {
@@ -1621,6 +1623,7 @@ public class Helpers {
                             .parser(parser)
                             .rawElements(elements)
                             .external(external)
+                            .ignores(getIgnores(t.asTypeDeclaration()))
                             .build());
         } else {
             var name = getClassName(t);
@@ -1634,6 +1637,7 @@ public class Helpers {
                             .parser(parser)
                             .rawElements(elements)
                             .external(external)
+                            .ignores(getIgnores(t.asTypeDeclaration()))
                             .build());
         }
     }
@@ -1671,6 +1675,7 @@ public class Helpers {
                                             .nested(true)
                                             .parent(type)
                                             .codeEnum(true)
+                                            .ignores(getIgnores(cls.asTypeDeclaration()))
                                             .build());
 
                             Tools.with(lookup.findParsed(clsName), parse ->
@@ -1699,6 +1704,7 @@ public class Helpers {
                         .nested(true)
                         .parentPackage(pack)
                         .codeEnum(isEnum)
+                        .ignores(getIgnores(nestedType))
                         .build());
     }
 
@@ -1827,7 +1833,7 @@ public class Helpers {
     }
 
     public static void handleAnnotationIgnores(Supplier<NodeWithAnnotations> node, Structures.Ignores ignores) {
-        if (ignores.isForSerialization() || ignores.isForMapper() || ignores.isForProjection()) {
+        if (ignores.isForSerialization() || ignores.isForMapper() || ignores.isForProjection() || ignores.isForValidation()) {
             var ann = node.get().addAndGetAnnotation(Ignore.class);
             if (ignores.isForSerialization()) {
                 ann.addPair("forSerialization", "true");
@@ -1837,6 +1843,9 @@ public class Helpers {
             }
             if (ignores.isForProjection()) {
                 ann.addPair("forProjection", "true");
+            }
+            if (ignores.isForValidation()) {
+                ann.addPair("forValidation", "true");
             }
         }
     }
