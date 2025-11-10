@@ -1,4 +1,14 @@
 # Change Log
+**10-11-2025** ver. 1.2.32
+* Core: Reflection's loadClass() now supports primitives and arrays.
+* Core: @Ignore is viable on classes.
+* Core: Added @Ignore(forValidation)
+* Generation: Generic collection type parameters are now evaluated on their appropriate place.
+* Hibernate: Fixed CodeEnum issues when serializing as string.
+* Jackson: Automated validation after deserialization can be suppressed with @Ignore(forValidation = true)
+* Validation: @ValidateNotEmpty supports arrays.
+* Validation: @ValidateLength supports collections and arrays.
+
 **02-11-2025** ver. 1.2.31
 * Core: Improved mapping discovery.
 * Core: Improved mapping of inherited data objects.
