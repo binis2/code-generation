@@ -26,6 +26,7 @@ import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.TypeParameter;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.annotation.CodeAnnotation;
 import net.binis.codegen.annotation.CodeImplementation;
@@ -35,6 +36,7 @@ import net.binis.codegen.enrich.PrototypeEnricher;
 import net.binis.codegen.enrich.handler.base.BaseConditionalEnricher;
 import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.tools.Holder;
+import net.binis.codegen.tools.Reflection;
 import net.binis.codegen.tools.Tools;
 import org.apache.commons.lang3.StringUtils;
 
@@ -430,7 +432,20 @@ public abstract class CompiledPrototypesHandler {
             if (method.isDefault()) {
                 var ann = method.getAnnotation(CodeImplementation.class);
                 if (nonNull(ann)) {
-                    var mtd = declaration.addMethod(method.getName(), Modifier.Keyword.DEFAULT).setType(method.getReturnType().getSimpleName());
+                    var mtd = declaration.addMethod(method.getName(), Modifier.Keyword.DEFAULT);
+                    if (Reflection.invoke("hasGenericInformation", method)) {
+                        var info = Reflection.invoke("getGenericInfo", method);
+                        TypeVariable[] params = Reflection.invoke("getTypeParameters", info);
+                        for (var par : params) {
+                            mtd.addTypeParameter(par.getName());
+                        }
+                    }
+                    var ret = method.getGenericReturnType();
+                    if (ret instanceof TypeVariable type) {
+                        mtd.setType(type.toString());
+                    } else {
+                        mtd.setType(method.getReturnType().getSimpleName());
+                    }
                     Helpers.importClass(unit, method.getReturnType());
                     for (var par : method.getParameters()) {
                         mtd.addParameter(par.getType().getSimpleName(), par.getName());
