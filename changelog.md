@@ -1,4 +1,7 @@
 # Change Log
+**25-11-2025** ver. 1.2.32
+* Generation: Improved handling for compiled prototype's generic default methods. 
+
 **10-11-2025** ver. 1.2.32
 * Core: Reflection's loadClass() now supports primitives and arrays.
 * Core: @Ignore is viable on classes.
