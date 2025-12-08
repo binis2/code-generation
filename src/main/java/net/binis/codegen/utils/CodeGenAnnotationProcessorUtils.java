@@ -39,12 +39,12 @@ public class CodeGenAnnotationProcessorUtils {
 
     public static boolean isPrototypeTest() {
         var cls = loadClass("net.binis.codegen.test.BaseCodeGenTest");
-        return nonNull(cls) && nonNull(CodeFactory.create(cls));
+        return nonNull(cls) && CodeFactory.isRegisteredType(cls) && nonNull(CodeFactory.create(cls));
     }
 
     public static boolean isElementTest() {
         var cls = loadClass("net.binis.codegen.test.BaseCodeGenElementTest");
-        return nonNull(cls) && nonNull(CodeFactory.create(cls));
+        return nonNull(cls) && CodeFactory.isRegisteredType(cls) && nonNull(CodeFactory.create(cls));
     }
 
 

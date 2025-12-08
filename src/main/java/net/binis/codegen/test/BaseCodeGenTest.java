@@ -57,7 +57,7 @@ public abstract class BaseCodeGenTest extends BaseCodeTest {
     @BeforeEach
     public void beforeEach() {
         Helpers.cleanUp();
-        CodeFactory.registerType(BaseCodeGenTest.class, () -> this);
+        CodeFactory.forceRegisterType(BaseCodeGenTest.class, () -> this);
     }
 
     @AfterEach

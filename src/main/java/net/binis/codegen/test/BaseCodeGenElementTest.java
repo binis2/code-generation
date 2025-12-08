@@ -32,7 +32,7 @@ public abstract class BaseCodeGenElementTest extends BaseCodeTest {
     @BeforeEach
     public void beforeEach() {
         Helpers.cleanUp();
-        CodeFactory.registerType(BaseCodeGenElementTest.class, () -> this);
+        CodeFactory.forceRegisterType(BaseCodeGenElementTest.class, () -> this);
     }
 
     @AfterEach
