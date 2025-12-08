@@ -1,5 +1,13 @@
 # Change Log
-**25-11-2025** ver. 1.2.32
+**08-12-2025** ver. 1.2.34
+* Core: Fixed overriding creation for types registered as factory.
+* Core: Added default for mappings String -> java.time objects
+* Core: Added new CodeFactory.forceRegister type routine.
+* Spring: Fixed query builder to allow _if() at the start of the query.
+* Test: Better safeguarding for consecutive test executions.
+* Test: Added TestAsyncExecutor.
+
+**25-11-2025** ver. 1.2.33
 * Generation: Improved handling for compiled prototype's generic default methods. 
 
 **10-11-2025** ver. 1.2.32
