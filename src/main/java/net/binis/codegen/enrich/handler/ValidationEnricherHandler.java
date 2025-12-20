@@ -360,6 +360,7 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         params.message((String) m.getDefaultValue()));
 
         var messages = Holder.<List<Object>>blank();
+        var messageAliases = new ArrayList<String>();
         Arrays.stream(annotationClass.getDeclaredMethods())
                 .filter(m -> MESSAGES.equals(m.getName()))
                 .filter(m -> m.getReturnType().equals(String[].class))
@@ -382,8 +383,12 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
                         for (var i = msgs.size(); i <= order; i++) {
                             msgs.add(null);
                         }
+                        for (var i = messageAliases.size(); i <= order; i++) {
+                            messageAliases.add(null);
+                        }
 
                         msgs.set(order, value);
+                        messageAliases.set(order, m.getName());
                     });
         }
 
@@ -397,100 +402,104 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
 
         parOrder.stream().filter(p -> !p.alt).forEach(p ->
                 list.add(checkAsCode(p.getValue(), p.getAnnotation())));
-        var msgs = 0;
-
-        for (var node : annotation.getChildNodes()) {
-            if (node instanceof Name) {
-                //skip
-            } else if (node instanceof MemberValuePair pair) {
-                switch (Arrays.stream(annotationClass.getDeclaredMethods())
-                        .filter(m -> m.getName().equals(pair.getNameAsString()))
-                        .map(m -> m.getDeclaredAnnotation(AliasFor.class))
-                        .filter(Objects::nonNull)
-                        .map(AliasFor::value)
-                        .findFirst()
-                        .orElseGet(pair::getNameAsString)) {
-                    case VALUE -> params.cls(pair.getValue().asClassExpr().getTypeAsString());
-                    case MESSAGE -> params.message(pair.getValue().asStringLiteralExpr().asString());
-                    case MESSAGES -> {
-                        if (pair.getValue().isArrayInitializerExpr()) {
-                            params.messages(pair.getValue().asArrayInitializerExpr().getValues().stream().map(e -> e.asStringLiteralExpr().asString()).collect(Collectors.toList()));
-                        } else if (pair.getValue().isStringLiteralExpr()) {
-                            var msg = pair.getValue().asStringLiteralExpr().asString();
-                            if (messages.isEmpty()) {
-                                messages.set(new ArrayList<>());
-                            }
-                            if (msgs < messages.get().size()) {
-                                messages.get().set(msgs, msg);
-                            } else {
-                                messages.get().add(msg);
-                            }
-                            msgs++;
-                        } else if (pair.getValue().isBinaryExpr()) {
-                            if (messages.isEmpty()) {
-                                messages.set(new ArrayList<>());
-                            }
-                            if (msgs < messages.get().size()) {
-                                messages.get().set(msgs, pair.getValue());
-                            } else {
-                                messages.get().add(pair.getValue());
-                            }
-                            msgs++;
-                        } else {
-                            log.warn("Unhandled expression ({}) in {}", pair.getValue(), field.getParsed().getPrototypeClassName());
-                        }
-                    }
-                    case AS_CODE -> params.asCode(pair.getValue().asStringLiteralExpr().asString());
-                    case TARGETS -> params.targets(processTargets(pair.getValue()));
-                    case PARAMS -> {
-                        if (pair.getValue().isArrayInitializerExpr()) {
-                            list.addAll(pair.getValue().asArrayInitializerExpr().getValues().stream()
-                                    .map(Expression::asStringLiteralExpr)
-                                    .map(StringLiteralExpr::asString)
-                                    .toList());
-                        } else {
-                            var idx = getParamIndex(parOrder, pair.getNameAsString());
-                            if (idx != -1) {
-                                var triple = parOrder.get(idx);
-                                if (triple.isAlt()) {
-                                    list.set(triple.getOrder(), checkAsCode(getParamValue(pair.getValue()), triple.getAnnotation()));
+        if (!annotation.isMarkerAnnotationExpr()) {
+            if (annotation.isSingleMemberAnnotationExpr() && annotation.getChildNodes().size() == 1) {
+                handleExpression(annotation, annotationClass, params, list, parOrder, getParamValue(annotation.asSingleMemberAnnotationExpr().getMemberValue()));
+            } else {
+                for (var node : annotation.getChildNodes()) {
+                    if (node instanceof Name) {
+                        //skip
+                    } else if (node instanceof MemberValuePair pair) {
+                        switch (Arrays.stream(annotationClass.getDeclaredMethods())
+                                .filter(m -> m.getName().equals(pair.getNameAsString()))
+                                .map(m -> m.getDeclaredAnnotation(AliasFor.class))
+                                .filter(Objects::nonNull)
+                                .map(AliasFor::value)
+                                .findFirst()
+                                .orElseGet(pair::getNameAsString)) {
+                            case VALUE -> params.cls(pair.getValue().asClassExpr().getTypeAsString());
+                            case MESSAGE -> params.message(pair.getValue().asStringLiteralExpr().asString());
+                            case MESSAGES -> {
+                                if (pair.getValue().isArrayInitializerExpr()) {
+                                    params.messages(pair.getValue().asArrayInitializerExpr().getValues().stream().map(e -> e.asStringLiteralExpr().asString()).collect(Collectors.toList()));
+                                } else if (pair.getValue().isStringLiteralExpr()) {
+                                    var msg = pair.getValue().asStringLiteralExpr().asString();
+                                    var idx = messageAliases.indexOf(pair.getNameAsString());
+                                    if (messages.isEmpty()) {
+                                        messages.set(new ArrayList<>());
+                                    }
+                                    if (idx < messages.get().size()) {
+                                        messages.get().set(idx, msg);
+                                    } else {
+                                        messages.get().add(msg);
+                                    }
+                                } else if (pair.getValue().isBinaryExpr()) {
+                                    var idx = messageAliases.indexOf(pair.getNameAsString());
+                                    if (messages.isEmpty()) {
+                                        messages.set(new ArrayList<>());
+                                    }
+                                    if (idx < messages.get().size()) {
+                                        messages.get().set(idx, pair.getValue());
+                                    } else {
+                                        messages.get().add(pair.getValue());
+                                    }
                                 } else {
-                                    list.set(idx, checkAsCode(getParamValue(pair.getValue()), triple.getAnnotation()));
+                                    log.warn("Unhandled expression ({}) in {}", pair.getValue(), field.getParsed().getPrototypeClassName());
                                 }
-                            } else {
-                                throw new GenericCodeGenException("Invalid annotation params! " + annotation);
+                            }
+                            case AS_CODE -> params.asCode(pair.getValue().asStringLiteralExpr().asString());
+                            case TARGETS -> params.targets(processTargets(pair.getValue()));
+                            case PARAMS -> {
+                                if (pair.getValue().isArrayInitializerExpr()) {
+                                    list.addAll(pair.getValue().asArrayInitializerExpr().getValues().stream()
+                                            .map(Expression::asStringLiteralExpr)
+                                            .map(StringLiteralExpr::asString)
+                                            .toList());
+                                } else {
+                                    var idx = getParamIndex(parOrder, pair.getNameAsString());
+                                    if (idx != -1) {
+                                        var triple = parOrder.get(idx);
+                                        if (triple.isAlt()) {
+                                            list.set(triple.getOrder(), checkAsCode(getParamValue(pair.getValue()), triple.getAnnotation()));
+                                        } else {
+                                            list.set(idx, checkAsCode(getParamValue(pair.getValue()), triple.getAnnotation()));
+                                        }
+                                    } else {
+                                        throw new GenericCodeGenException("Invalid annotation params! " + annotation);
+                                    }
+                                }
+                            }
+                            default -> {
+                                //Do nothing
                             }
                         }
-                    }
-                    default -> {
-                        //Do nothing
+                    } else if (node instanceof LiteralExpr exp) {
+                        handleExpression(annotation, annotationClass, params, list, parOrder, getParamValue(exp));
+                    } else if (node instanceof NameExpr exp) {
+                        handleExpression(annotation, annotationClass, params, list, parOrder, node);
+                        annotation.findCompilationUnit().flatMap(unit -> Helpers.getStaticImportIfExists(unit, exp.getNameAsString()))
+                                .ifPresent(i -> field.getDeclaration().findCompilationUnit().ifPresent(u -> u.addImport(i, true, false)));
+                    } else if (node instanceof FieldAccessExpr exp) {
+                        annotation.findCompilationUnit().flatMap(unit -> Optional.ofNullable(getExternalClassNameIfExists(unit, exp.getScope().toString()))).ifPresent(cls ->
+                                with(Helpers.lookup.findParsed(cls), p -> {
+                                    var c = p.getConstants().get(exp.getNameAsString());
+                                    if (nonNull(c)) {
+                                        field.getDeclaration().findCompilationUnit().ifPresent(u -> u.addImport(c.getDestination().getFullyQualifiedName().get()));
+                                        var e = expression(c.getDestination().getNameAsString() + "." + c.getName());
+                                        handleExpression(annotation, annotationClass, params, list, parOrder, e);
+                                    } else {
+                                        log.warn("Unknown constant {} on class {}", exp.getNameAsString(), cls);
+                                    }
+                                }, () -> {
+                                    field.getDeclaration().findCompilationUnit().ifPresent(u -> u.addImport(cls));
+                                    handleExpression(annotation, annotationClass, params, list, parOrder, exp);
+                                }));
+                    } else if (node instanceof BinaryExpr) {
+                        handleExpression(annotation, annotationClass, params, list, parOrder, node);
+                    } else {
+                        log.warn("Unhandled expression ({}) in {}", node.toString(), field.getParsed().getPrototypeClassName());
                     }
                 }
-            } else if (node instanceof LiteralExpr exp) {
-                handleExpression(annotation, annotationClass, params, list, parOrder, getParamValue(exp));
-            } else if (node instanceof NameExpr exp) {
-                handleExpression(annotation, annotationClass, params, list, parOrder, node);
-                annotation.findCompilationUnit().flatMap(unit -> Helpers.getStaticImportIfExists(unit, exp.getNameAsString()))
-                        .ifPresent(i -> field.getDeclaration().findCompilationUnit().ifPresent(u -> u.addImport(i, true, false)));
-            } else if (node instanceof FieldAccessExpr exp) {
-                annotation.findCompilationUnit().flatMap(unit -> Optional.ofNullable(getExternalClassNameIfExists(unit, exp.getScope().toString()))).ifPresent(cls ->
-                        with(Helpers.lookup.findParsed(cls), p -> {
-                            var c = p.getConstants().get(exp.getNameAsString());
-                            if (nonNull(c)) {
-                                field.getDeclaration().findCompilationUnit().ifPresent(u -> u.addImport(c.getDestination().getFullyQualifiedName().get()));
-                                var e = expression(c.getDestination().getNameAsString() + "." + c.getName());
-                                handleExpression(annotation, annotationClass, params, list, parOrder, e);
-                            } else {
-                                log.warn("Unknown constant {} on class {}", exp.getNameAsString(), cls);
-                            }
-                        }, () -> {
-                            field.getDeclaration().findCompilationUnit().ifPresent(u -> u.addImport(cls));
-                            handleExpression(annotation, annotationClass, params, list, parOrder, exp);
-                        }));
-            } else if (node instanceof BinaryExpr) {
-                handleExpression(annotation, annotationClass, params, list, parOrder, node);
-            } else {
-                log.warn("Unhandled expression ({}) in {}", node.toString(), field.getParsed().getPrototypeClassName());
             }
         }
         if (!list.isEmpty()) {
@@ -580,11 +589,9 @@ public class ValidationEnricherHandler extends BaseEnricher implements Validatio
             return value.asDoubleLiteralExpr().asDouble();
         } else if (value.isBooleanLiteralExpr()) {
             return value.asBooleanLiteralExpr().getValue();
-        } else if (value.isBinaryExpr() || value.isClassExpr()) {
+        } else {
             return value;
         }
-        //TODO: Handle external constants
-        return null;
     }
 
     protected int getParamIndex(List<ParamHolder> list, String name) {
