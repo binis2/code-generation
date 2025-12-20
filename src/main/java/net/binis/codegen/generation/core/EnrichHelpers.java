@@ -85,8 +85,10 @@ public class EnrichHelpers {
 
     public static String calcBlock(String value) {
         if (nonNull(value)) {
+            value = value.trim();
             var result = new StringBuilder().append('{').append(value);
-            if (!value.isEmpty() && result.charAt(result.length() - 1) != ';') {
+            var end = result.charAt(result.length() - 1);
+            if (!value.isEmpty() && !(end == ';' || end == '}')) {
                 result.append(';');
             }
             result.append('}');

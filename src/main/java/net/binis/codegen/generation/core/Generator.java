@@ -818,6 +818,8 @@ public class Generator {
     protected static String getStringValue(Expression p) {
         if (p instanceof StringLiteralExpr exp) {
             return exp.asString();
+        } if (p instanceof TextBlockLiteralExpr exp) {
+                return exp.asString();
         } else {
             log.warn("Only string literals are supported as values for @CodeImplementation");
         }

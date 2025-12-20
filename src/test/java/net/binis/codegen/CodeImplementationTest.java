@@ -50,6 +50,12 @@ class CodeImplementationTest extends BaseCodeGenTest {
                 Triple.of("basic/CodeImplementation4.java", "basic/CodeImplementation4-0.java", "basic/CodeImplementation4-1.java")));
     }
 
+    @Test
+    void testTextBlock() {
+        testSingle("basic/CodeImplementation5.java", "basic/CodeImplementation5-0.java", "basic/CodeImplementation5-1.java");
+    }
+
+
 
 
 }
