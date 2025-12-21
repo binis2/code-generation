@@ -1,4 +1,11 @@
 # Change Log
+**21-12-2025** ver. 1.2.35
+* Core: Added equals and hashCode for Pair.
+* Generation: Added text blocks support for @CodeImplementation
+* Validation: Fixed wrong validation messages and values in certain cases when using aliases.
+* IDEA Plugin: More formatting tweaks.
+* All: Updated dependencies.
+
 **08-12-2025** ver. 1.2.34
 * Core: Fixed overriding creation for types registered as factory.
 * Core: Added default for mappings String -> java.time objects
