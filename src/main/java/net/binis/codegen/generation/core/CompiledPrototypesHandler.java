@@ -4,7 +4,7 @@ package net.binis.codegen.generation.core;
  * #%L
  * code-generator
  * %%
- * Copyright (C) 2021 - 2024 Binis Belev
+ * Copyright (C) 2021 - 2026 Binis Belev
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,52 +55,55 @@ import static net.binis.codegen.tools.Tools.with;
 @Slf4j
 public abstract class CompiledPrototypesHandler {
 
-    @SuppressWarnings("unchecked")
     public static boolean handleCompiledPrototype(String compiledPrototype) {
+        return Tools.withRes(loadClass(compiledPrototype), CompiledPrototypesHandler::handleCompiledPrototype, false);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static boolean handleCompiledPrototype(Class c) {
         var result = Holder.of(false);
-        Tools.with(loadClass(compiledPrototype), c ->
-                Generator.getCodeAnnotations(c).ifPresent(ann -> {
+        Generator.getCodeAnnotations(c).ifPresent(ann -> {
 
-                    var declaration = c.isEnum() ? new CompilationUnit().setPackageDeclaration(c.getPackageName()).addEnum(c.getSimpleName()) : new CompilationUnit().setPackageDeclaration(c.getPackageName()).addClass(c.getSimpleName()).setInterface(true);
+            var declaration = c.isEnum() ? new CompilationUnit().setPackageDeclaration(c.getPackageName()).addEnum(c.getSimpleName()) : new CompilationUnit().setPackageDeclaration(c.getPackageName()).addClass(c.getSimpleName()).setInterface(true);
 
-                    handleAnnotations(c, declaration);
+            handleAnnotations(c, declaration);
 
-                    Structures.PrototypeDataHandler props;
-                    if (declaration instanceof ClassOrInterfaceDeclaration decl) {
-                        for (var p : c.getTypeParameters()) {
-                            decl.addTypeParameter(p.getName());
-                        }
-                        handleFields(c, decl);
-                        handleDefaultMethods(c, decl);
-                        props = handleProperties(decl, c, ann);
-                        handleExtends(c, decl);
-                    } else {
-                        var decl = (EnumDeclaration) declaration;
-                        props = handleProperties(decl, c, ann);
-                        Arrays.stream(c.getEnumConstants()).forEach(cnst ->
-                                decl.addEntry(new EnumConstantDeclaration(cnst.toString())));
-                        //decl.addEntry();
-                    }
+            Structures.PrototypeDataHandler props;
+            if (declaration instanceof ClassOrInterfaceDeclaration decl) {
+                for (var p : c.getTypeParameters()) {
+                    decl.addTypeParameter(p.getName());
+                }
+                handleFields(c, decl);
+                handleDefaultMethods(c, decl);
+                props = handleProperties(decl, c, ann);
+                handleExtends(c, decl);
+            } else {
+                var decl = (EnumDeclaration) declaration;
+                props = handleProperties(decl, c, ann);
+                Arrays.stream(c.getEnumConstants()).forEach(cnst ->
+                        decl.addEntry(new EnumConstantDeclaration(cnst.toString())));
+                //decl.addEntry();
+            }
 
-                    var unit = declaration.findCompilationUnit().orElse(null);
+            var unit = declaration.findCompilationUnit().orElse(null);
 
-                    var parsed = Structures.Parsed.<ClassOrInterfaceDeclaration>builder()
-                            .compiled(c)
-                            .properties(props)
-                            .parser(lookup.getParser())
-                            .declaration((TypeDeclaration) declaration)
-                            .declarationUnit(unit)
-                            .prototypeClassName(c.getCanonicalName())
-                            .ignores(getIgnores(c));
+            var parsed = Structures.Parsed.<ClassOrInterfaceDeclaration>builder()
+                    .compiled(c)
+                    .properties(props)
+                    .parser(lookup.getParser())
+                    .declaration((TypeDeclaration) declaration)
+                    .declarationUnit(unit)
+                    .prototypeClassName(c.getCanonicalName())
+                    .ignores(getIgnores(c));
 
-                    var prsd = parsed.build();
-                    lookup.registerParsed(compiledPrototype, prsd);
-                    generateCodeForClass(unit, prsd);
+            var prsd = parsed.build();
+            lookup.registerParsed(c.getCanonicalName(), prsd);
+            generateCodeForClass(unit, prsd);
 
-                    //TODO: Implement class annotations
+            //TODO: Implement class annotations
 
-                    result.set(true);
-                }));
+            result.set(true);
+        });
         return result.get();
     }
 

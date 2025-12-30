@@ -4,7 +4,7 @@ package net.binis.codegen.generation.core;
  * #%L
  * code-generator
  * %%
- * Copyright (C) 2021 - 2024 Binis Belev
+ * Copyright (C) 2021 - 2026 Binis Belev
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import net.binis.codegen.enrich.PrototypeLookup;
 import net.binis.codegen.exception.GenericCodeGenException;
 import net.binis.codegen.generation.core.interfaces.PrototypeDescription;
 import net.binis.codegen.generation.core.interfaces.PrototypeField;
+import net.binis.codegen.tools.Reflection;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -45,6 +46,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static net.binis.codegen.generation.core.Generator.getCodeAnnotations;
 import static net.binis.codegen.tools.Tools.nullCheck;
+import static net.binis.codegen.tools.Tools.with;
 
 @Slf4j
 public class PrototypeLookupHandler implements PrototypeLookup {
@@ -97,6 +99,14 @@ public class PrototypeLookupHandler implements PrototypeLookup {
             this.generated.put(generated.getImplementorFullName(), generated);
             this.generatedClasses.put(generated.getImplementorFullName(), generated.getImplementation());
         }
+    }
+
+    public void registerCompiledPrototype(String prototypeClassName) {
+        with(Reflection.loadClass(prototypeClassName), this::registerCompiledPrototype);
+    }
+
+    public void registerCompiledPrototype(Class<?> cls) {
+        CompiledPrototypesHandler.handleCompiledPrototype(cls);
     }
 
     public void registerGeneratedClass(String prototype, TypeDeclaration generated) {
