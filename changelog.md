@@ -1,4 +1,15 @@
 # Change Log
+**02-01-2026** ver. 1.3.0
+* Core: Removed hard dependency to lombok.
+* Generator: Lookup now can explicitly load compiled prototypes.
+* Jackson: Migrated to Jackson 3.
+* Spring: Migrated to Spring 7.
+* Spring-Configuration: Migrated to Spring Boot 4 and Spring 7
+* Hibernate: Migrated to Hibernate 7
+* Projection: Added projections for map values.
+* Projection: Added map backed projection.
+* IDEA Plugin: Added saveAndflush() into the list of special methods.
+
 **21-12-2025** ver. 1.2.35
 * Core: Added equals and hashCode for Pair.
 * Generation: Added text blocks support for @CodeImplementation
