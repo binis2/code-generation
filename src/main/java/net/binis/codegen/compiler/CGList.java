@@ -97,6 +97,20 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
     }
 
     @SuppressWarnings("unchecked")
+    public CGList<T> remove(T value) {
+        var result = CGList.nil(cls);
+        for (var i = 0; i < size(); i++) {
+            var itm = get(i);
+            if (!itm.getInstance().equals(value.getInstance())) {
+                result.append(itm);
+            }
+        }
+        instance = result.instance;
+        onModify.accept(this);
+        return (CGList<T>) result;
+    }
+
+    @SuppressWarnings("unchecked")
     public static <T extends JavaCompilerObject> CGList<T> from(T[] array, Class<T> cls) {
         var method = findMethod("from", theClass(), Object[].class);
         var params = Arrays.stream(array).map(JavaCompilerObject::getInstance).toArray();
@@ -110,7 +124,7 @@ public class CGList<T extends JavaCompilerObject> extends JavaCompilerObject imp
     }
 
     public int size() {
-        return (int) invoke("size", instance);
+        return invoke("size", instance);
     }
 
     @SuppressWarnings("unchecked")

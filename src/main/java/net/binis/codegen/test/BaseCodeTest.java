@@ -27,6 +27,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.binis.codegen.discoverer.AnnotationDiscoverer;
 import net.binis.codegen.discovery.Discoverer;
+import net.binis.codegen.factory.CodeFactory;
 import net.binis.codegen.generation.core.Helpers;
 import net.binis.codegen.generation.core.Structures;
 import net.binis.codegen.javaparser.CodeGenPrettyPrinter;
@@ -169,24 +170,22 @@ public abstract class BaseCodeTest {
             className = loadExecute(files, resExecute);
         }
 
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        var compiler = ToolProvider.getSystemJavaCompiler();
 
-        DiagnosticCollector<JavaFileObject> diagnostics =
-                new DiagnosticCollector<>();
+        var diagnostics = new DiagnosticCollector<JavaFileObject>();
 
         var objects = files.stream().collect(Collectors.toMap(Pair::getKey, f -> new JavaByteObject(f.getKey())));
 
-        StandardJavaFileManager standardFileManager =
-                compiler.getStandardFileManager(diagnostics, null, null);
+        var standardFileManager = compiler.getStandardFileManager(diagnostics, null, null);
 
-        JavaFileManager fileManager = createFileManager(standardFileManager, objects);
+        var fileManager = createFileManager(standardFileManager, objects);
 
         var params = new ArrayList<>(Arrays.asList(args));
         params.add("-Xlint:unchecked");
         if (getMajorJavaVersion() >= 21) {
             params.add("-proc:full");
         }
-        
+
         options.forEach((k, v) -> params.add("-A" + k + "=" + v));
         if (enablePreview) {
             params.add("--enable-preview");

@@ -30,6 +30,7 @@ import net.binis.codegen.generation.core.interfaces.ElementDescription;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static java.util.Objects.nonNull;
 import static net.binis.codegen.compiler.CGFlags.PUBLIC;
 import static net.binis.codegen.compiler.utils.ElementUtils.cloneType;
 import static net.binis.codegen.compiler.utils.ElementUtils.getDeclaration;
@@ -40,19 +41,22 @@ public abstract class BaseArgsConstructorEnricherHandler extends BaseEnricher {
     @Override
     public void safeEnrichElement(ElementDescription description) {
         var declaration = getDeclaration(description.getElement());
-        if (declaration instanceof CGClassDeclaration cls && !cls.isInterface()) {
-            if (!cls.isAnnotation()) {
-                var fields = applyFieldsFilter(cls.getDefs().stream()
-                        .filter(CGVariableDecl.class::isInstance)
-                        .map(CGVariableDecl.class::cast))
-                        .toList();
-                if (!fields.isEmpty() && cls.getDefs().stream()
-                        .filter(CGMethodDeclaration.class::isInstance)
-                        .map(CGMethodDeclaration.class::cast)
-                        .filter(CGMethodDeclaration::isConstructor)
-                        .filter(m -> m.getParameters().size() == fields.size())
-                        .noneMatch(m -> matchParamTypes(m, fields))) {
-                    createConstructor(cls, fields);
+        if (declaration instanceof CGClassDeclaration cls && !cls.isInterface() && !cls.isAnnotation()) {
+            var noArgs = findNoArgsConstructor(cls);
+
+            var fields = applyFieldsFilter(cls.getDefs().stream()
+                    .filter(CGVariableDecl.class::isInstance)
+                    .map(CGVariableDecl.class::cast))
+                    .toList();
+            if (!fields.isEmpty() && cls.getDefs().stream()
+                    .filter(CGMethodDeclaration.class::isInstance)
+                    .map(CGMethodDeclaration.class::cast)
+                    .filter(CGMethodDeclaration::isConstructor)
+                    .filter(m -> m.getParameters().size() == fields.size())
+                    .noneMatch(m -> matchParamTypes(m, fields))) {
+                createConstructor(cls, fields);
+                if (nonNull(noArgs) && noArgs.getBody() != null && noArgs.getBody().getStatements().size() == 1 && noArgs.getBody().getStatements().get(0).toString().equals("super();")) {
+                    cls.getDefs().remove(noArgs);
                 }
             }
         } else {
@@ -66,7 +70,7 @@ public abstract class BaseArgsConstructorEnricherHandler extends BaseEnricher {
 
     protected void createConstructor(CGClassDeclaration cls, List<CGVariableDecl> fields) {
         var maker = TreeMaker.create();
-        var body = ElementMethodUtils.addConstructor(cls, cls.isEnum() ? 0 :PUBLIC, fields.stream()
+        var body = ElementMethodUtils.addConstructor(cls, cls.isEnum() ? 0 : PUBLIC, fields.stream()
                 .map(f -> maker.VarDef(maker.Modifiers(CGFlags.PARAMETER | CGFlags.FINAL), CGName.create(f.getName().toString()), cloneType(maker, f.getVarType()), null))
                 .toList()).getBody();
         fields.forEach(field ->
@@ -81,6 +85,19 @@ public abstract class BaseArgsConstructorEnricherHandler extends BaseEnricher {
             }
         }
         return true;
+    }
+
+    private CGMethodDeclaration findNoArgsConstructor(CGClassDeclaration cls) {
+
+        for (var def : cls.getDefs()) {
+            if (def instanceof CGMethodDeclaration method) {
+                if (method.getName().toString().equals("<init>") && method.getParameters().size() == 0) {
+                    return method;
+                }
+            }
+        }
+
+        return null;
     }
 
     @Override

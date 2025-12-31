@@ -50,12 +50,10 @@ public class CGModifiers extends CGTree {
         declaration = null;
     }
 
-    @SuppressWarnings("unchecked")
     public Set<Modifier> getFlags() {
-        return (Set) invoke("getFlags", instance);
+        return invoke("getFlags", instance);
     }
 
-    @SuppressWarnings("unchecked")
     public long flags() {
         return getFieldValue(instance, "flags");
     }

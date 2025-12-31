@@ -52,7 +52,7 @@ public class ElementMethodUtils extends ElementUtils {
     }
 
     public static CGMethodDeclaration addConstructor(CGClassDeclaration cls, long flags, List<CGVariableDecl> params) {
-        var body = createBlock(createStatement(createMethodInvocation("super")));
+        var body = createBlock();
         var maker = TreeMaker.create();
 
         var def = maker.MethodDef(maker.Modifiers(flags), CGName.create("<init>"), null, CGList.nil(CGTypeParameter.class), CGList.from(params, CGVariableDecl.class), CGList.nil(CGExpression.class), body, null);
