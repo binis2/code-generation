@@ -37,15 +37,15 @@ public class CGTreeInfo {
     protected static Method getStartPos = findMethod("getStartPos", theClass(), CGTree.theClass());;
 
     public static int firstStatPos(JavaCompilerObject tree) {
-        return (int) invokeStatic(firstStartPos, tree.getInstance());
+        return invokeStatic(firstStartPos, tree.getInstance());
     }
 
     public static int endPos(JavaCompilerObject tree) {
-        return (int) invokeStatic(endPos, tree.getInstance());
+        return invokeStatic(endPos, tree.getInstance());
     }
 
     public static int getStartPos(JavaCompilerObject tree) {
-        return (int) invokeStatic(getStartPos, tree.getInstance());
+        return invokeStatic(getStartPos, tree.getInstance());
     }
 
 }

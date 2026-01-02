@@ -3,6 +3,7 @@
 * Core: Removed hard dependency to lombok.
 * Core: Moved Tools from Generator to core.
 * Generator: Lookup now can explicitly load compiled prototypes.
+* Generator: Added remove method to CGList. 
 * Jackson; (**Breaking change**) Moved MappingKeys from Spring-Configuration to Jackson
 * Jackson: (**Breaking change**) Migrated to Jackson 3.
 * Spring: (**Breaking change**) Migrated to Spring 7.
