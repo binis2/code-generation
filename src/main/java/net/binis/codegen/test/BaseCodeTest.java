@@ -182,7 +182,7 @@ public abstract class BaseCodeTest {
 
         var params = new ArrayList<>(Arrays.asList(args));
         params.add("-Xlint:unchecked");
-        if (getMajorJavaVersion() >= 21) {
+        if (Reflection.getJavaVersion() >= 21) {
             params.add("-proc:full");
         }
 
@@ -268,26 +268,6 @@ public abstract class BaseCodeTest {
 
     protected List<Pair<String, String>> newList() {
         return new ArrayList<>();
-    }
-
-    public static int getMajorJavaVersion() {
-        String version = System.getProperty("java.version");
-        if (version.startsWith("1.")) {
-            // Java 8 and earlier have format 1.x
-            version = version.substring(2, 3);
-        } else {
-            // Java 9 and later
-            int dot = version.indexOf(".");
-            if (dot != -1) {
-                version = version.substring(0, dot);
-            } else {
-                int dash = version.indexOf("-");
-                if (dash != -1) {
-                    version = version.substring(0, dash);
-                }
-            }
-        }
-        return Integer.parseInt(version);
     }
 
 }
