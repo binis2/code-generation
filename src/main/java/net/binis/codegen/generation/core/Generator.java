@@ -307,7 +307,7 @@ public class Generator {
         parse.setImplementation(spec);
         parse.setInterface(intf);
 
-        if (isNull(prsd) || !prsd.isNested() || isNull(prsd.getParentClassName())) {
+        if (!prsd.isNested() || isNull(prsd.getParentClassName())) {
             spec.addAnnotation(annotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + properties.getInterfaceName() + "\")"));
             intf.addAnnotation(annotation("@Generated(value=\"" + properties.getPrototypeFullName() + "\", comments=\"" + properties.getClassName() + "\")"));
         }
@@ -1612,7 +1612,18 @@ public class Generator {
         if (arguments.isEmpty() || arguments.get().isEmpty()) {
             return result;
         } else {
-            return arguments.get().stream().map(n -> handleType(source, destination, typeToString(n), true, prototypeMap)).toList();
+            return arguments.get().stream().map(n -> {
+                var t = handleType(source, destination, typeToString(n), true, prototypeMap);
+
+                if (n.isClassOrInterfaceType()) {
+                    var subs = handleGenericTypes(source, destination, n.asClassOrInterfaceType(), prototypeMap);
+                    if (!subs.isEmpty()) {
+                        t = t + "<" + String.join(",", subs) + ">";
+                    }
+                }
+
+                return t;
+            }).toList();
         }
     }
 
