@@ -1,4 +1,11 @@
 # Change Log
+**14-01-2026** ver. 1.3.1
+* Core: Moved getJavaVersion() routine to Reflection.
+* Generation: Proper handling of multi-layered generics.
+* Projection: Projection path works for boolean properties as well.
+* Spring: Fixed wrong tuple() definition.
+* Spring: Better handling of the combination of tuple() and CodeEnum.
+
 **02-01-2026** ver. 1.3.0
 * Core: Removed hard dependency to lombok.
 * Core: Moved Tools from Generator to core.
