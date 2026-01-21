@@ -1,4 +1,7 @@
 # Change Log
+**20-01-2026** ver. 1.3.2
+* Core: Made PairImpl serializable.
+
 **14-01-2026** ver. 1.3.1
 * Core: Moved getJavaVersion() routine to Reflection.
 * Generation: Proper handling of multi-layered generics.
