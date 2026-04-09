@@ -1,4 +1,8 @@
 # Change Log
+**09-04-2026** ver. 1.3.3
+* Code: Fixed mapping of same type objects
+* All: Updated dependencies.
+
 **20-01-2026** ver. 1.3.2
 * Core: Made PairImpl serializable.
 
