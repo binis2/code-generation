@@ -78,6 +78,10 @@ public class CGMethodDeclaration extends CGDeclaration {
     }
 
     public void setBody(CGBlock body) {
+        var old = getBody();
+        if (nonNull(old)) {
+            body.setPos(old.getPos());
+        }
         setFieldValue(instance, "body", nonNull(body) ? body.getInstance() : null);
     }
 

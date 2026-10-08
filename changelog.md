@@ -1,4 +1,10 @@
 # Change Log
+**08-10-2026** ver. 1.4.0
+* All: Migrated to Java 25 (Java 25 is now the minimum required version).
+* All: Updated dependencies.
+* Generation: Fixed element enrichers failing on JDK 23+ with "rootPackage missing!".
+* Plugin: Adapted compiler plugin to the JDK 25 javac diagnostic handler API.
+
 **09-04-2026** ver. 1.3.3
 * Code: Fixed mapping of same type objects
 * All: Updated dependencies.

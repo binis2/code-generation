@@ -26,10 +26,8 @@ import static net.binis.codegen.tools.Reflection.*;
 
 public class JavacElements extends JavaCompilerObject {
 
-    protected static final JavacElements theInstance = new JavacElements();
-
     public static JavacElements create() {
-        return theInstance;
+        return new JavacElements();
     }
 
     protected JavacElements() {
